@@ -45,6 +45,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/DevelopmentalCategory.lean
+      - name: Check Lean arithmetic direction obstruction
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ArithmeticDirection.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
