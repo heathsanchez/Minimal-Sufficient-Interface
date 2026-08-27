@@ -188,6 +188,36 @@ rather than pretending retraction is another refinement step.
 
 See `lean/Kernel.lean` and `tests/test_fortification.py`.
 
+## 6. There is no uniform finite lookahead bound
+
+The all-futures theorem is exact, but a tempting practical shortcut is to replace “all reachable futures” with a fixed context-depth cutoff.
+
+That shortcut is false in general.
+
+For every tested horizon `H = 0,...,20`, `tests/test_horizon_boundary.py` constructs a deterministic finite world with two states whose protected observations agree after every continuation of length at most `H`, but differ after exactly `H+1` steps.
+
+So there is no world-independent finite depth `H` such that
+
+\[
+\text{agreement through depth }H
+\Rightarrow
+\text{full behavioural equivalence}
+\]
+
+for arbitrary finite systems.
+
+The correct operational principle is therefore adaptive:
+
+\[
+\boxed{
+\text{search deeper while a residual can still be exposed; do not promote a fixed horizon to completeness.}
+}
+\]
+
+This is consistent with the finite-recovery theorem, which assumes coverage of the relevant continuation family rather than a universal depth bound.
+
+See `tests/test_horizon_boundary.py`.
+
 ## What survived
 
 The adversarial programme did **not** falsify:
@@ -200,7 +230,7 @@ The adversarial programme did **not** falsify:
 - the typed behavioural quotient construction;
 - monotone refinement under growth of an accessible continuation category.
 
-What broke were stronger developmental interpretations that omitted necessary assumptions about representation coverage, verifier authority, contextual coverage, or retraction.
+What broke were stronger developmental interpretations that omitted necessary assumptions about representation coverage, verifier authority, contextual coverage, retraction, or search horizon.
 
 The fortified architecture is therefore:
 
@@ -213,7 +243,7 @@ The fortified architecture is therefore:
 \downarrow\\
 \text{residual diagnosis}\\
 \downarrow\\
-\text{search inside current representation}\\
+\text{adaptive search inside current representation}\\
 \downarrow\\
 \text{if exhausted: distinguish grammar failure from verifier/drift failure}\\
 \downarrow\\
