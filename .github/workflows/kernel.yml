@@ -23,6 +23,9 @@ jobs:
         run: python examples/capability_bridge.py
       - name: Set up Lean
         uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          use-github-cache: false
       - name: Check Lean kernel theorems
         env:
           LEAN_PATH: lean
