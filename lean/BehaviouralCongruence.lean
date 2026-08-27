@@ -129,4 +129,91 @@ theorem descend_unique (g : M)
   rw [descend_mk]
   exact hF x
 
+section FiniteRecovery
+
+variable [Fintype M] [DecidableEq M]
+
+/-- Equivalence induced by the currently retained finite set of continuations. -/
+def EqBy (B : Finset M) (x y : X) : Prop :=
+  ∀ m, m ∈ B → obs (A.act m x) = obs (A.act m y)
+
+/-- No reachable continuation can further split a pair currently merged by B. -/
+def Terminal (B : Finset M) : Prop :=
+  ∀ m x y, EqBy A obs B x y → obs (A.act m x) = obs (A.act m y)
+
+/-- Exact stopping: no reachable separator remains iff the current finite interface
+    already equals all-futures behavioural equivalence. -/
+theorem terminal_exact (B : Finset M) :
+    Terminal A obs B ↔ ∀ x y, EqBy A obs B x y ↔ BehEq A obs x y := by
+  constructor
+  · intro hterm x y
+    constructor
+    · intro hB m
+      exact hterm m x y hB
+    · intro hstar m hm
+      exact hstar m
+  · intro h m x y hB
+    exact (h x y).mp hB m
+
+/-- A verifier-driven refinement step adds a reachable continuation that actually
+    separates a pair still merged by the current interface. -/
+def RefineStep (B B' : Finset M) : Prop :=
+  ∃ m x y,
+    EqBy A obs B x y ∧
+    obs (A.act m x) ≠ obs (A.act m y) ∧
+    B' = insert m B
+
+/-- A genuine separator can never already be in the retained basis. -/
+theorem refineStep_fresh {B B' : Finset M}
+    (h : RefineStep A obs B B') :
+    ∃ m, m ∉ B ∧ B' = insert m B := by
+  rcases h with ⟨m, x, y, hB, hsep, rfl⟩
+  refine ⟨m, ?_, rfl⟩
+  intro hm
+  exact hsep (hB m hm)
+
+/-- Every genuine verifier-driven refinement step increases the retained basis
+    cardinality by exactly one. -/
+theorem refineStep_card {B B' : Finset M}
+    (h : RefineStep A obs B B') :
+    B'.card = B.card + 1 := by
+  rcases refineStep_fresh A obs h with ⟨m, hm, rfl⟩
+  simp [hm]
+
+/-- Finite recovery theorem.
+
+    Any process over a finite reachable action monoid that, whenever it is not
+    terminal, incorporates some genuine reachable separator, must reach the exact
+    behavioural quotient in at most |M| refinement stages.  The choice of separator
+    is arbitrary: no greedy policy is assumed. -/
+theorem finite_recovery
+    (seq : Nat → Finset M)
+    (progress : ∀ n, ¬ Terminal A obs (seq n) →
+      RefineStep A obs (seq n) (seq (n + 1))) :
+    ∃ n, n ≤ Fintype.card M ∧
+      (∀ x y, EqBy A obs (seq n) x y ↔ BehEq A obs x y) := by
+  by_contra hnone
+  have hnoterm : ∀ n, n ≤ Fintype.card M → ¬ Terminal A obs (seq n) := by
+    intro n hn hterm
+    apply hnone
+    refine ⟨n, hn, ?_⟩
+    exact (terminal_exact A obs (seq n)).mp hterm
+  have hgrow : ∀ n, n ≤ Fintype.card M + 1 → n ≤ (seq n).card := by
+    intro n hn
+    induction n with
+    | zero => exact Nat.zero_le _
+    | succ n ih =>
+        have hncard : n ≤ Fintype.card M := by omega
+        have hstep := progress n (hnoterm n hncard)
+        have hcard := refineStep_card A obs hstep
+        have ih' : n ≤ (seq n).card := ih (by omega)
+        omega
+  have hlower : Fintype.card M + 1 ≤ (seq (Fintype.card M + 1)).card :=
+    hgrow (Fintype.card M + 1) (by omega)
+  have hupper : (seq (Fintype.card M + 1)).card ≤ Fintype.card M := by
+    simpa using Finset.card_le_card (Finset.subset_univ (seq (Fintype.card M + 1)))
+  omega
+
+end FiniteRecovery
+
 end BehaviouralCongruence
