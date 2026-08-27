@@ -133,6 +133,41 @@ Together, the finite experiments now realize:
 \text{new capability}.
 \]
 
+## Compositional closure
+
+The continuation family can also be closed under reachable composition. For a finite generator set `G`, let `G*` be the generated transformation monoid and define the full behavioural relation
+
+\[
+x\sim_* y
+\iff
+\forall f\in G^*,\quad v(f(x))=v(f(y)).
+\]
+
+The first proposed universe, `|X|=3` with binary observations and two generators, produced a useful boundary result: across all **5,832** worlds, the one-step family `{id,g0,g1}` already induced the full behavioural quotient. There were **0** necessary composite separators.
+
+At `|X|=4` with one deterministic generator, the phenomenon appears cleanly. Exhaustive search over all **4,096** worlds finds:
+
+- **576** worlds where `{id,g}` is too coarse relative to `G*`;
+- **576** composite separators added by residual-driven refinement;
+- **0** convergence failures;
+- **0** congruence failures at the final quotient;
+- **0** quotient composition-law failures;
+- **576** exact ablation witnesses, where removing the required composite restores an erroneous merge.
+
+In every world the developmental process converges to
+
+\[
+\boxed{E_\infty=\bigcap_{f\in G^*}\ker(v\circ f),}
+\]
+
+and the final relation is stable under every reachable action, so each action induces a well-defined quotient map and composition survives compression:
+
+\[
+\boxed{[g\circ f]=[g]\circ[f].}
+\]
+
+See [`COMPOSITIONAL_CLOSURE.md`](COMPOSITIONAL_CLOSURE.md) and [`tests/test_compositional_closure.py`](tests/test_compositional_closure.py). This is an exhaustive finite result, not yet a general theorem for arbitrary categories or state spaces.
+
 ## Selection above the kernel
 
 The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator.
@@ -146,7 +181,8 @@ So the layers separate cleanly:
 - **kernel:** what refinements are lawful;
 - **completeness:** when refinement may stop;
 - **selection:** which lawful refinement is cheapest or most useful next;
-- **development:** when verified residuals and interface changes alter the reachable/discoverable capability frontier.
+- **development:** when verified residuals and interface changes alter the reachable/discoverable capability frontier;
+- **composition:** which distinctions must survive all reachable action contexts so quotient dynamics remain coherent.
 
 ## Run
 
@@ -162,4 +198,4 @@ CI runs the exhaustive Python suite, capability bridge, Lean kernel, Lean comple
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded endogenous genesis establishes natural-world invention. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, that bounded endogenous genesis establishes natural-world invention, or that the finite compositional result proves a general categorical fixed-point theorem. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
