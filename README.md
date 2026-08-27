@@ -204,6 +204,37 @@ The general Lean theorem now explains the endpoint:
 
 See [`COMPOSITIONAL_CLOSURE.md`](COMPOSITIONAL_CLOSURE.md) and [`tests/test_compositional_closure.py`](tests/test_compositional_closure.py).
 
+## Counterexample-driven composition discovery
+
+The generated closure and useful composite separators need not be supplied. Starting from primitive actions only, the learner can search words in the primitive language after a verifier exposes a merged pair. In all 4,096 four-state / one-primitive worlds, the 576 worlds that require a proper composite are all recovered with zero failures. In a larger two-primitive branching census over 65,536 worlds, 23,808 require composite discovery and 13,056 require a learned word using both primitive symbols, again with zero recovery or congruence failures.
+
+See [`COUNTEREXAMPLE_COMPOSITION_DISCOVERY.md`](COUNTEREXAMPLE_COMPOSITION_DISCOVERY.md) and [`tests/test_counterexample_composition_discovery.py`](tests/test_counterexample_composition_discovery.py).
+
+## Counterexample-driven constructor law discovery
+
+The next experiment moves uncertainty outward again: the learner is no longer told which binary constructor on actions is the correct one. It begins with a six-law hypothesis family containing sequential composition, reversed composition, left/right projection, and two pointwise alternatives. The verifier supplies only concrete execution counterexamples `(f,g,x,y)`.
+
+Across all **5,832** binary-observation / two-primitive worlds on three states:
+
+- **4,704** worlds uniquely identify sequential composition;
+- **1,128** remain syntactically ambiguous;
+- **0** contain harmful ambiguity;
+- only **20,472** counterexamples are required in total, with at most **4** in any world.
+
+Crucially, every surviving law in every ambiguous world is extensionally identical to true sequential composition on the reachable subalgebra, so it generates the same reachable closure and the same behavioural quotient.
+
+Thus:
+
+\[
+\boxed{
+\textbf{counterexamples recover the composition law up to operational equivalence on the reachable action algebra.}
+}
+\]
+
+The ambiguity is therefore principled rather than a failure: MSI refuses to preserve a distinction between constructor laws when no reachable future can expose one.
+
+See [`CONSTRUCTOR_LAW_DISCOVERY.md`](CONSTRUCTOR_LAW_DISCOVERY.md) and [`tests/test_constructor_law_discovery.py`](tests/test_constructor_law_discovery.py).
+
 ## Selection above the kernel
 
 The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator. Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but a `5 × 4` counterexample shows it is not a general theorem. Dynamic programming shows that optimal next-step value is residual-relative.
@@ -229,16 +260,20 @@ CI runs the exhaustive Python suite, capability bridge, Lean kernel, completenes
 
 This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded endogenous genesis establishes natural-world invention.
 
-The sharp remaining boundary is now morphism genesis. The developmental-category theorem assumes a stage extension has supplied a newly accessible morphism. The next open problem is to make that extension endogenous:
+The sharp remaining boundary has moved again. Composite continuations can be synthesized from residuals, and a supplied finite family of candidate constructor laws can be contracted by verifier counterexamples to the correct operational composition structure. What is still supplied is the **constructor hypothesis language itself**.
+
+The next open problem is constructor genesis:
 
 \[
 \boxed{
 \text{verified obstruction}
 \longrightarrow
-\text{justified new morphism}
+\text{generated constructor candidate}
+\longrightarrow
+\text{retained compositional law}
 \longrightarrow
 \mathcal C_{t+1}.
 }
 \]
 
-That is where verified representation refinement becomes verified growth of the action language itself.
+That is where category-like structure would begin to emerge from a developmental grammar rather than from a hand-listed set of algebraic laws.
