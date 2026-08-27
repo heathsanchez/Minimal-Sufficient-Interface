@@ -1,5 +1,6 @@
 import Std
 import Init.Data.List.Perm
+import Lean.Elab.Tactic.Omega
 
 universe u v w
 
@@ -166,6 +167,33 @@ theorem refineStep_fresh {B B' : List M}
   intro hm
   exact hsep (hB m hm)
 
+/-- A finite-list pigeonhole lemma, proved here because the pinned Lean version
+    does not yet expose the later `Nodup.length_le_of_subset` convenience lemma. -/
+theorem nodup_subset_length {α : Type u} (l₁ l₂ : List α)
+    (hn : l₁.Nodup) (hs : l₁ ⊆ l₂) : l₁.length ≤ l₂.length := by
+  classical
+  induction l₁ generalizing l₂ with
+  | nil => simp
+  | cons a as ih =>
+      have hparts : a ∉ as ∧ as.Nodup := by
+        simpa using hn
+      have ha : a ∈ l₂ := hs (by simp)
+      let p : α → Bool := fun x => decide (x = a)
+      have hsub : as ⊆ l₂.eraseP p := by
+        intro x hx
+        have hxa : x ≠ a := by
+          intro h
+          subst x
+          exact hparts.1 hx
+        have hpx : ¬ p x := by
+          simp [p, hxa]
+        exact (List.mem_eraseP_of_neg hpx).2 (hs (by simp [hx]))
+      have ihle := ih (l₂ := l₂.eraseP p) hparts.2 hsub
+      have hpa : p a := by simp [p]
+      have hlen := List.length_eraseP_of_mem ha hpa
+      simp only [List.length_cons]
+      omega
+
 /-- Finite behavioural-congruence recovery.
 
     `all` is any finite list covering every reachable action. Starting from no
@@ -196,10 +224,9 @@ theorem finite_recovery
         simp [h0]
     | succ n ih =>
         have hncard : n ≤ all.length := by
-          apply Nat.le_of_succ_le_succ
-          simpa [Nat.succ_eq_add_one] using hn
-        have ihbound : n ≤ all.length + 1 :=
-          Nat.le_trans (Nat.le_succ n) hn
+          omega
+        have ihbound : n ≤ all.length + 1 := by
+          omega
         have ihp := ih ihbound
         have hstep := progress n (hnoterm n hncard)
         rcases refineStep_fresh A obs hstep with ⟨m, hm, hnext⟩
@@ -210,15 +237,14 @@ theorem finite_recovery
         · intro a ha
           simp only [List.mem_cons] at ha
           rcases ha with rfl | ha
-          · exact cover m
+          · exact cover _
           · exact ihp.2.1 ha
         · simp [ihp.2.2]
   have hp := hprops (all.length + 1) (Nat.le_refl _)
   have hle : (seq (all.length + 1)).length ≤ all.length :=
-    hp.1.length_le_of_subset hp.2.1
+    nodup_subset_length _ _ hp.1 hp.2.1
   rw [hp.2.2] at hle
-  exact (Nat.not_succ_le_self all.length) (by
-    simpa [Nat.succ_eq_add_one] using hle)
+  omega
 
 end FiniteRecovery
 
