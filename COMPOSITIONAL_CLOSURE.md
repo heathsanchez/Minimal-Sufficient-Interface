@@ -14,68 +14,47 @@ Development begins from only the one-step continuations and repeatedly adds a re
 
 ## Three-state boundary
 
-The first proposed universe was `|X|=3`, binary `v`, and two deterministic generators. Exhaustive search covered
-
-- 8 observations,
-- 27 x 27 ordered generator pairs,
-- 5,832 total worlds.
-
-Unexpectedly, there were **0** worlds where the one-step family `{id,g0,g1}` was too coarse relative to the full generated monoid. On this tiny universe, the one-step quotient already equals the full behavioural quotient in every case.
-
-This falsifies the expectation that three states would exhibit a necessary composite separator.
+The first proposed universe was `|X|=3`, binary `v`, and two deterministic generators. Exhaustive search covered 5,832 total worlds. Unexpectedly, there were **0** worlds where the one-step family `{id,g0,g1}` was too coarse relative to the full generated monoid. On this tiny universe, the one-step quotient already equals the full behavioural quotient in every case.
 
 ## Four-state result
 
-The smallest tested setting where the intended phenomenon appears cleanly is `|X|=4` with one deterministic generator. Exhaustive search covered
-
-- 16 binary observations,
-- 256 deterministic generators,
-- 4,096 total worlds.
-
-Results:
+At `|X|=4` with one deterministic generator, exhaustive search covered 4,096 worlds. Results:
 
 - one-step quotient too coarse: **576** worlds;
 - composite separators added by residual-driven refinement: **576**;
 - convergence failures: **0**;
-- congruence failures at the final behavioural quotient: **0**;
+- congruence failures: **0**;
 - quotient composition-law failures: **0**;
 - exact ablation witnesses: **576**.
 
 Thus every world converged to
 
 \[
-E_\infty
-=
-\bigcap_{f\in G^*}\ker(v\circ f),
+E_\infty=\bigcap_{f\in G^*}\ker(v\circ f),
 \]
 
-and the resulting relation was stable under every reachable action:
-
-\[
-x\sim_* y
-\Longrightarrow
-g(x)\sim_*g(y)
-\qquad \forall g\in G^*.
-\]
-
-Therefore each reachable transformation induces a well-defined map on the quotient, and composition is preserved:
+and the resulting relation was stable under every reachable action. Therefore each reachable transformation induces a well-defined quotient map and composition is preserved:
 
 \[
 [g\circ f]=[g]\circ[f].
 \]
 
-The ablation arm removes the last required composite separator and verifies that an erroneous merge returns in every one of the 576 worlds that required compositional refinement.
+## General Lean theorem
 
-## Interpretation
+The experimental endpoint now has a general monoid-action theorem counterpart in [`lean/BehaviouralCongruence.lean`](lean/BehaviouralCongruence.lean).
 
-Within this exhaustive finite setting, repeated verified refinement does not merely recover an observation-preserving equivalence. It recovers the behavioural congruence induced by all reachable futures, and the compressed quotient retains the composition law of the executable dynamics.
+The Lean development proves that all-futures behavioural equivalence is an equivalence relation, is observation-compatible, is invariant under every reachable action, and contains every other reachable-action-invariant observation-compatible relation.
 
-The strongest safe statement is:
+It also constructs the unique descended quotient action and proves identity and composition preservation. In the finite case, given any finite list covering every reachable action, any refinement process that adds a genuine reachable separator whenever one remains reaches the exact behavioural quotient within the size of that list. No greedy selection rule and no prior knowledge of the final quotient are assumed.
+
+See [`BEHAVIOURAL_CONGRUENCE.md`](BEHAVIOURAL_CONGRUENCE.md) for the theorem package.
+
+The strongest current statement is:
 
 \[
-\boxed{\text{Developmental refinement recovered the behavioural congruence from compositional residuals.}}
+\boxed{\text{MSI refinement computes the maximal observation-compatible behavioural congruence.}}
 \]
 
-This is a finite result, not yet a general theorem for arbitrary state spaces, action categories, or verifier families.
+The remaining open generalization is categorical rather than monoidal: typed morphisms, object-indexed observational congruences, quotient functoriality across objects, and eventually verifier-driven growth of the continuation category itself.
 
 See `tests/test_compositional_closure.py` for the executable census.
