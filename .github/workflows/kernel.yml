@@ -33,6 +33,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/Completeness.lean
+      - name: Check Lean behavioural congruence theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/BehaviouralCongruence.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
