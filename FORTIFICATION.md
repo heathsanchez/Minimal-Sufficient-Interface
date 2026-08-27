@@ -218,6 +218,64 @@ This is consistent with the finite-recovery theorem, which assumes coverage of t
 
 See `tests/test_horizon_boundary.py`.
 
+## 7. Hidden-state refinement cannot repair a causally wrong decomposition
+
+The arithmetic transfer gives a qualitatively different failure mode.
+
+For exact positional addition processed most-significant-digit first, two complete inputs can expose the same currently visible prefix and current digit pair but require different current output digits because a carry is generated in an unseen lower-order suffix.
+
+That means no amount of hidden state computed solely from the already processed prefix can make the local output well-defined. The deciding information has not arrived yet.
+
+The width-two obstruction is machine-checked in Lean as `no_exact_msd_local_emitter` in `lean/ArithmeticDirection.lean`.
+
+The finite representation selector therefore rejects most-significant-first processing and retains least-significant-first processing before performing ordinary MSI hidden-state refinement. `tests/test_arithmetic_order_genesis.py` strengthens this by generating every positional order for widths two through seven: every incorrect order is eliminated by a constructive verifier counterexample, leaving only increasing significance order.
+
+So:
+
+\[
+\boxed{
+\text{some residuals require changing the decomposition, not refining state inside it.}
+}
+\]
+
+This is a concrete domain-level separation between search/state failure and representation/decomposition failure.
+
+## 8. Fixed delay does not rescue the wrong arithmetic direction
+
+A possible repair is to retain most-significant-first processing but delay output by some fixed number of positions.
+
+`tests/test_arithmetic_delay_boundary.py` falsifies that shortcut. For every tested delay `D = 0,...,32`, it constructs a longer addition whose first `D+1` visible positions are identical across two examples while an unseen suffix changes the required first output digit through an arbitrarily long carry-propagation chain.
+
+Thus no world-independent fixed delay is sufficient for arbitrary-length exact addition under that decomposition.
+
+The structural message matches the general no-lookahead result:
+
+\[
+\boxed{
+\text{bounded patience cannot compensate for information flowing opposite the chosen causal factorization.}
+}
+\]
+
+## 9. Correctness does not uniquely identify representation granularity
+
+The arithmetic transfer also breaks a stronger uniqueness claim.
+
+Least-significant-first addition can be made exactly compositional with one decimal digit per local symbol, but also with two decimal digits per local symbol (equivalently base 100 chunks). Both decompositions admit a two-state hidden interface and exact held-out forty-digit computation.
+
+So verifier correctness alone cannot tell the learner whether the “right” block is a digit, a two-digit chunk, or another operationally adequate grouping.
+
+`tests/test_arithmetic_granularity_ambiguity.py` records this explicitly.
+
+Therefore:
+
+\[
+\boxed{
+\text{verification determines admissibility, not a unique representation among equally lawful ones.}
+}
+\]
+
+A cost/value principle is needed above the verifier boundary to choose among operationally equivalent granularities. This is exactly the role of the repo's selection layer.
+
 ## What survived
 
 The adversarial programme did **not** falsify:
@@ -228,9 +286,10 @@ The adversarial programme did **not** falsify:
 - the behavioural-congruence theorem;
 - quotient descent and composition preservation;
 - the typed behavioural quotient construction;
-- monotone refinement under growth of an accessible continuation category.
+- monotone refinement under growth of an accessible continuation category;
+- residual-driven recovery of the two-state arithmetic hidden interface once a lawful causal decomposition is used.
 
-What broke were stronger developmental interpretations that omitted necessary assumptions about representation coverage, verifier authority, contextual coverage, retraction, or search horizon.
+What broke were stronger developmental interpretations that omitted necessary assumptions about representation coverage, verifier authority, contextual coverage, retraction, search horizon, causal decomposition, or representation-selection criteria.
 
 The fortified architecture is therefore:
 
@@ -239,15 +298,21 @@ The fortified architecture is therefore:
 \begin{array}{c}
 \text{trusted protected evidence + provenance}\\
 \downarrow\\
+\text{candidate decomposition / representation}\\
+\downarrow\\
+\text{verify causal and behavioural adequacy}\\
+\downarrow\\
 \text{MSI refinement / behavioural quotient}\\
 \downarrow\\
 \text{residual diagnosis}\\
 \downarrow\\
 \text{adaptive search inside current representation}\\
 \downarrow\\
-\text{if exhausted: distinguish grammar failure from verifier/drift failure}\\
+\text{if exhausted: distinguish state/search failure from representation/verifier/drift failure}\\
 \downarrow\\
-\text{justified representation expansion}\\
+\text{justified representation expansion or decomposition change}\\
+\downarrow\\
+\text{select among lawful alternatives by explicit cost/value}\\
 \downarrow\\
 \text{replay + contextual verification + retention}
 \end{array}
