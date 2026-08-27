@@ -34,20 +34,58 @@ class CostedSelectionLayer(unittest.TestCase):
         return tuple(B)
 
     def test_pair_gain_greedy_is_optimal_on_all_binary_4x4_worlds(self):
-        # This is evidence about the small universe, not a theorem in general.
+        # Exhaustive small-universe census, implemented directly for speed.
         n = m = 4
-        checked = 0
-        for bits in itertools.product((0, 1), repeat=n * m):
-            rows = [bits[i*m:(i+1)*m] for i in range(n)]
-            I = self.interface_from_rows(rows)
-            g = self.greedy_pair_basis(I)
-            optimum = I.minimum_basis()
-            self.assertEqual(len(g), len(optimum))
-            checked += 1
-        self.assertEqual(checked, 2 ** 16)
+
+        def rows_from_mask(mask):
+            return tuple(tuple((mask >> (i*m + c)) & 1 for c in range(m)) for i in range(n))
+
+        def partition(rows, basis_mask):
+            groups = {}
+            for i, row in enumerate(rows):
+                sig = tuple(row[c] for c in range(m) if (basis_mask >> c) & 1)
+                groups.setdefault(sig, []).append(i)
+            return tuple(sorted(tuple(v) for v in groups.values()))
+
+        def relation_size_from_partition(p):
+            return sum(len(g) * len(g) for g in p)
+
+        for mask in range(1 << (n*m)):
+            rows = rows_from_mask(mask)
+            target = partition(rows, (1 << m) - 1)
+
+            optimum = None
+            for r in range(m + 1):
+                for cols in itertools.combinations(range(m), r):
+                    bmask = sum(1 << c for c in cols)
+                    if partition(rows, bmask) == target:
+                        optimum = r
+                        break
+                if optimum is not None:
+                    break
+
+            bmask = 0
+            greedy_len = 0
+            while partition(rows, bmask) != target:
+                cur = partition(rows, bmask)
+                cur_size = relation_size_from_partition(cur)
+                choices = []
+                for c in range(m):
+                    if (bmask >> c) & 1:
+                        continue
+                    nxt = partition(rows, bmask | (1 << c))
+                    gain = cur_size - relation_size_from_partition(nxt)
+                    if gain > 0:
+                        choices.append((gain, -c, c))
+                self.assertTrue(choices)
+                c = max(choices)[2]
+                bmask |= 1 << c
+                greedy_len += 1
+
+            self.assertEqual(greedy_len, optimum)
 
     def test_pair_gain_greedy_is_not_globally_optimal(self):
-        # Minimal counterexample found at |X|=5, |C|=4.
+        # Counterexample at |X|=5, |C|=4.
         rows = [
             (1, 1, 1, 0),
             (0, 1, 1, 0),
@@ -86,8 +124,6 @@ class CostedSelectionLayer(unittest.TestCase):
             return min(vals)
 
         self.assertEqual(future_cost(tuple()), 2)
-        # c2 has the largest immediate split under our deterministic tie-break,
-        # but choosing it raises remaining total cost to 3 in this world.
         greedy_first = self.greedy_pair_basis(I)[0]
         self.assertEqual(1 + future_cost((greedy_first,)), 3)
         better = [c for c in I.continuations if 1 + future_cost((c,)) == 2]
