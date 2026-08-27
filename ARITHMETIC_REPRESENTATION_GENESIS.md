@@ -57,9 +57,9 @@ Thus the developmental chain has become
 
 The next test does not present labels such as `left-to-right` and `right-to-left`.
 
-For width `n`, it mechanically generates every permutation of the `n` positional indices. A candidate order is rejected whenever it tries to emit a position before some lower-significance position capable of changing it through a carry chain.
+For width `n`, [`tests/test_arithmetic_order_genesis.py`](tests/test_arithmetic_order_genesis.py) mechanically generates every permutation of the `n` positional indices. A candidate order is rejected whenever it tries to emit a position before some lower-significance position capable of changing it through a carry chain.
 
-[`tests/test_arithmetic_order_genesis.py`](tests/test_arithmetic_order_genesis.py) exhausts every order for widths two through seven. For each width, all incorrect orders admit a constructive verifier counterexample; the unique survivor is
+The exhaustive census covers widths two through seven. For each width, all incorrect orders admit a constructive verifier counterexample; the unique survivor is
 
 \[
 \boxed{0,1,2,\ldots,n-1}
@@ -67,9 +67,37 @@ For width `n`, it mechanically generates every permutation of the `n` positional
 
 where position `0` is least significant.
 
-This is important conceptually. The system is not rewarded for choosing the human phrase "right to left". It retains the unique processing order under which the local computation can actually be compositional.
+The factorial census is only the judge. A stronger developmental test removes factorial search entirely.
 
-The dependency structure is discovered negatively: every order that exposes an effect before its possible causes is eliminated by a verified future conflict.
+[`tests/test_arithmetic_dependency_graph_learning.py`](tests/test_arithmetic_dependency_graph_learning.py) starts with **no causal precedence relation**. It proposes a topological order under the constraints learned so far. Whenever the proposal exposes a position before an unseen lower-significance cause, the verifier returns a concrete conflicting pair and justifies one new precedence edge
+
+\[
+ i\longrightarrow i+1.
+\]
+
+The learner retains that edge and proposes again. For widths 2, 3, 10, 32, and 128, exactly `n-1` structural counterexamples recover the full chain
+
+\[
+\boxed{0\to1\to2\to\cdots\to n-1}
+\]
+
+and therefore the unique causal processing order.
+
+This matters because the representation is no longer selected by brute-force enumeration. The causal structure itself is accumulated from residuals:
+
+\[
+\boxed{
+\text{bad structural proposal}
+\to
+\text{verified counterexample}
+\to
+\text{new precedence relation}
+\to
+\text{new compositional world}.
+}
+\]
+
+The system is not rewarded for choosing the human phrase "right to left". It develops the dependency relation under which the local computation can actually be compositional.
 
 ## 4. Fixed output delay does not rescue the wrong decomposition
 
@@ -129,13 +157,13 @@ This is a useful fortification rather than a defect. MSI should erase distinctio
 
 ## Interpretation
 
-The arithmetic sequence now demonstrates two distinct developmental moves in one natural domain:
+The arithmetic sequence now demonstrates three distinct developmental moves in one natural domain:
 
 \[
 \boxed{
 \begin{array}{c}
-\textbf{representation development:}\\
-\text{eliminate decompositions in which local composition is causally impossible}\\[4pt]
+\textbf{structural development:}\\
+\text{counterexamples build the causal dependency relation}\\[4pt]
 \downarrow\\[4pt]
 \textbf{state/interface development:}\\
 \text{retain exactly the hidden history distinction needed for future behaviour}\\[4pt]
@@ -152,8 +180,8 @@ The stronger lesson is:
 
 \[
 \boxed{
-\textbf{verified failures can select not only what state must be remembered,
-but which decompositions remain possible at all.}
+\textbf{verified failures can alter both the dependency structure of composition
+and the state distinctions carried across its interfaces.}
 }
 \]
 
@@ -166,15 +194,15 @@ The experiment still supplies substantial structure:
 - positional notation and significance-indexed digit positions;
 - exact trusted addition outcomes;
 - the causal/local transducer objective;
-- finite candidate orders, traversal hypotheses, or chunkings.
+- a grammar of candidate orderings or precedence relations;
+- finite candidate chunkings when granularity is studied.
 
 It does not discover positional notation, invent digits, infer the task of addition from raw sensory data, or derive a unique granularity from correctness alone.
 
-So the result should not be described as open-ended invention. It is a controlled domain-level demonstration that verified counterexamples can move the system outward through two levels of representation:
+So the result should not be described as open-ended invention. It is a controlled domain-level demonstration that verified counterexamples can move the system outward through multiple levels of representation:
 
-1. reject structurally impossible decompositions and retain lawful ones;
-2. discover the minimal latent state inside a lawful decomposition.
-
-The remaining choice among multiple equally lawful decompositions is explicitly a selection problem above the verifier kernel.
+1. grow a causal dependency structure from structural residuals;
+2. discover the minimal latent state inside the resulting lawful decomposition;
+3. expose the remaining operational equivalence class of lawful representations for a separate value/cost selector.
 
 That is the current strongest arithmetic realization of the MSI developmental thesis.
