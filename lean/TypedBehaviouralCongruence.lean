@@ -29,7 +29,7 @@ structure Action where
 
 variable (A : Action C)
 
-/-- Each object has its own verifier-visible observation type. -/
+/- Each object has its own verifier-visible observation type. -/
 variable (Obs : C.Obj → Type z)
 variable (observe : ∀ X, A.State X → Obs X)
 
@@ -78,13 +78,17 @@ theorem behEq_trans {X : C.Obj} {x y z : A.State X}
 theorem behEq_obsCompatible :
     ObsCompatible C A Obs observe (BehEq C A Obs observe) := by
   intro X x y h
-  simpa [A.map_id] using h X (C.id X)
+  have h' := h X (C.id X)
+  rw [A.map_id x, A.map_id y] at h'
+  exact h'
 
 /-- Behavioural equivalence is preserved by every typed morphism. -/
 theorem behEq_congruent :
     Congruent C A (BehEq C A Obs observe) := by
   intro X Y f x y h Z g
-  simpa [A.map_comp] using h Z (C.comp g f)
+  have h' := h Z (C.comp g f)
+  rw [A.map_comp g f x, A.map_comp g f y] at h'
+  exact h'
 
 /-- Universal characterization: contextual behavioural equivalence is the
     greatest observation-compatible categorical congruence family.
