@@ -18,4 +18,6 @@ jobs:
       - name: Exhaustive finite kernel tests
         run: python -m unittest discover -s tests -v
       - name: Capability bridge witness
+        env:
+          PYTHONPATH: .
         run: python examples/capability_bridge.py
