@@ -2,7 +2,6 @@ import itertools
 import unittest
 
 
-
 def compose(f, g):
     """Return f ∘ g for tuple maps."""
     return tuple(f[g[x]] for x in range(len(g)))
@@ -10,25 +9,6 @@ def compose(f, g):
 
 def identity(n):
     return tuple(range(n))
-
-
-def eval_word(word, generators, n):
-    """Execute a word left-to-right as sequential primitive actions.
-
-    The learner is given only primitive actions plus this generic sequential
-    execution mechanism.  It is not given the generated monoid, its elements,
-    or the target behavioural quotient.
-    """
-    out = identity(n)
-    for i in word:
-        out = compose(generators[i], out)
-    return out
-
-
-def all_words(num_generators, max_len):
-    yield ()
-    for k in range(1, max_len + 1):
-        yield from itertools.product(range(num_generators), repeat=k)
 
 
 def hidden_closure(generators, n):
@@ -50,7 +30,10 @@ def signature(x, maps, obs):
 
 
 def relation(maps, obs, n):
-    return tuple(tuple(signature(x, maps, obs) == signature(y, maps, obs) for y in range(n)) for x in range(n))
+    return tuple(
+        tuple(signature(x, maps, obs) == signature(y, maps, obs) for y in range(n))
+        for x in range(n)
+    )
 
 
 def residual_pair(current_maps, target_maps, obs, n):
@@ -65,35 +48,40 @@ def residual_pair(current_maps, target_maps, obs, n):
 
 
 def discover_separator(pair, current_maps, generators, obs, n):
-    """Blind syntax search for the shortest new composite separating the pair.
+    """Blind shortest-word search for a new composite separating the residual.
 
-    No closure table or target separator is supplied.  We enumerate words over
-    primitive actions by length, execute them, deduplicate extensionally, and
-    stop at the first genuinely new behaviour that separates the residual.
-    A finite transformation monoid on n states has at most n^n maps, so length
-    n^n is a safe finite bound for finding any reachable map.
+    The learner is given primitive executable maps and only the generic ability
+    to execute one primitive after an already executable program.  It is not
+    given the generated monoid, a closure table, the target quotient, or the
+    separator identity.  Breadth-first search discovers the shortest extensional
+    map reachable by primitive sequencing that separates the verifier's pair.
     """
     x, y = pair
     current = set(current_maps)
-    seen = set()
-    max_len = n ** n
-    for word in all_words(len(generators), max_len):
-        m = eval_word(word, generators, n)
-        if m in seen:
-            continue
-        seen.add(m)
-        if m in current:
-            continue
-        if obs[m[x]] != obs[m[y]]:
-            return word, m
+    ident = identity(n)
+    # frontier entries are (extensionally evaluated map, primitive-index word)
+    frontier = [(ident, ())]
+    seen = {ident}
+    cursor = 0
+    while cursor < len(frontier):
+        h, word = frontier[cursor]
+        cursor += 1
+        for i, g in enumerate(generators):
+            gh = compose(g, h)
+            if gh in seen:
+                continue
+            seen.add(gh)
+            next_word = word + (i,)
+            frontier.append((gh, next_word))
+            if gh not in current and obs[gh[x]] != obs[gh[y]]:
+                return next_word, gh
     return None
 
 
 def developmental_discovery(generators, obs, n):
     """Counterexample -> synthesized composite -> refined interface until silent."""
-    target = hidden_closure(generators, n)  # oracle only
+    target = hidden_closure(generators, n)  # oracle/judge only
     current = [identity(n)] + list(generators)
-    # extensional dedup while preserving order
     current = list(dict.fromkeys(current))
     discoveries = []
     while True:
@@ -143,7 +131,6 @@ class CounterexampleCompositionDiscovery(unittest.TestCase):
                 if discoveries:
                     worlds_needing_discovery += 1
                     total_discovered += len(discoveries)
-                    # exact causal ablation of the last discovered composite
                     ablated = current[:-1]
                     if relation(ablated, obs, n) != target_rel:
                         ablation_witnesses += 1
@@ -167,15 +154,59 @@ class CounterexampleCompositionDiscovery(unittest.TestCase):
         self.assertEqual(congruence_failures, 0)
         self.assertEqual(ablation_witnesses, worlds_needing_discovery)
 
+    def test_two_primitive_branching_search_recovers_hidden_behavioural_relation(self):
+        """A larger fixed-observation census where separator words may mix primitives."""
+        n = 4
+        obs = (0, 0, 0, 1)
+        maps = list(itertools.product(range(n), repeat=n))
+        total = 0
+        needing_discovery = 0
+        mixed_word_witnesses = 0
+        failures = 0
+        congruence_failures = 0
+        examples = []
+
+        for g0 in maps:
+            for g1 in maps:
+                total += 1
+                current, discoveries, target = developmental_discovery([g0, g1], obs, n)
+                target_rel = relation(target, obs, n)
+                learned_rel = relation(current, obs, n)
+                if learned_rel != target_rel:
+                    failures += 1
+                    continue
+                if not invariant(learned_rel, target, n):
+                    congruence_failures += 1
+                if discoveries:
+                    needing_discovery += 1
+                    if any(len(set(word)) > 1 for _, word, _ in discoveries):
+                        mixed_word_witnesses += 1
+                        if len(examples) < 5:
+                            examples.append((g0, g1, discoveries))
+
+        print(
+            "two-primitive composition discovery census: "
+            f"total_worlds={total}; "
+            f"worlds_needing_discovery={needing_discovery}; "
+            f"mixed_word_witnesses={mixed_word_witnesses}; "
+            f"recovery_failures={failures}; "
+            f"congruence_failures={congruence_failures}; "
+            f"examples={examples}"
+        )
+
+        self.assertEqual(total, 65536)
+        self.assertGreater(needing_discovery, 0)
+        self.assertGreater(mixed_word_witnesses, 0)
+        self.assertEqual(failures, 0)
+        self.assertEqual(congruence_failures, 0)
+
     def test_system_is_not_given_composite_separator_identity(self):
-        # A concrete world from the earlier compositional census.
         n = 4
         obs = (0, 0, 0, 1)
         g = (0, 2, 3, 0)
         current, discoveries, target = developmental_discovery([g], obs, n)
         self.assertTrue(discoveries)
         pair, word, m = discoveries[0]
-        # The learned separator is a proper composite word, not a primitive.
         self.assertGreater(len(word), 1)
         self.assertNotEqual(m, g)
         self.assertEqual(relation(current, obs, n), relation(target, obs, n))
