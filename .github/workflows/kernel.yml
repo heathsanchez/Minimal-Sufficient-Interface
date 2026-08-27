@@ -40,7 +40,11 @@ jobs:
       - name: Check Lean typed behavioural congruence theorem
         env:
           LEAN_PATH: lean
-        run: lean lean/TypedBehaviouralCongruence.lean
+        run: lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+      - name: Check Lean developmental category theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/DevelopmentalCategory.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
