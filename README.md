@@ -42,6 +42,36 @@ The exact stopping boundary is formalized in Lean. If the retained basis `B` is 
 
 This is deliberately paired with a machine-checked counterexample showing that one locally silent continuation does **not** imply global sufficiency. See [`lean/Completeness.lean`](lean/Completeness.lean) and [`lean/Falsifiers.lean`](lean/Falsifiers.lean).
 
+## Behavioural congruence theorem
+
+Let a monoid `M` of reachable actions act on `X`, and let `v : X → O` be the protected observation. Define
+
+\[
+x\sim_*y
+\iff
+\forall m\in M,\quad v(m\cdot x)=v(m\cdot y).
+\]
+
+The general theorem is now machine-checked in [`lean/BehaviouralCongruence.lean`](lean/BehaviouralCongruence.lean). It proves that `~*` is the greatest reachable-action-invariant observation-compatible equivalence relation: any invariant relation contained in `ker(v)` is contained in `~*`.
+
+Every reachable action descends uniquely to the quotient `X/~*`, and the quotient action preserves identity and composition:
+
+\[
+\boxed{\bar 1=\mathrm{id}},
+\qquad
+\boxed{\overline{gf}=\bar g\circ\bar f}.
+\]
+
+In the finite case, given any finite list covering all reachable actions, **any** verifier-driven process that adds a genuine reachable separator whenever one remains reaches the exact behavioural quotient in at most the length of that list. No greedy policy or advance knowledge of the final quotient is assumed.
+
+Thus the theorem-level statement is:
+
+\[
+\boxed{\text{MSI refinement computes the maximal observation-compatible behavioural congruence.}}
+\]
+
+See [`BEHAVIOURAL_CONGRUENCE.md`](BEHAVIOURAL_CONGRUENCE.md) for the theorem package and scope.
+
 ## Developmental bridge
 
 The repo contains a unified finite causal bridge from capability acquisition to new state distinction to new executable capability:
@@ -135,24 +165,16 @@ Together, the finite experiments now realize:
 
 ## Compositional closure
 
-The continuation family can also be closed under reachable composition. For a finite generator set `G`, let `G*` be the generated transformation monoid and define the full behavioural relation
+For a finite generator set `G`, let `G*` be the generated transformation monoid. The first proposed universe, `|X|=3` with binary observations and two generators, produced a useful boundary result: across all **5,832** worlds, the one-step family `{id,g0,g1}` already induced the full behavioural quotient. There were **0** necessary composite separators.
 
-\[
-x\sim_* y
-\iff
-\forall f\in G^*,\quad v(f(x))=v(f(y)).
-\]
-
-The first proposed universe, `|X|=3` with binary observations and two generators, produced a useful boundary result: across all **5,832** worlds, the one-step family `{id,g0,g1}` already induced the full behavioural quotient. There were **0** necessary composite separators.
-
-At `|X|=4` with one deterministic generator, the phenomenon appears cleanly. Exhaustive search over all **4,096** worlds finds:
+At `|X|=4` with one deterministic generator, exhaustive search over all **4,096** worlds finds:
 
 - **576** worlds where `{id,g}` is too coarse relative to `G*`;
 - **576** composite separators added by residual-driven refinement;
 - **0** convergence failures;
 - **0** congruence failures at the final quotient;
 - **0** quotient composition-law failures;
-- **576** exact ablation witnesses, where removing the required composite restores an erroneous merge.
+- **576** exact ablation witnesses.
 
 In every world the developmental process converges to
 
@@ -160,19 +182,15 @@ In every world the developmental process converges to
 \boxed{E_\infty=\bigcap_{f\in G^*}\ker(v\circ f),}
 \]
 
-and the final relation is stable under every reachable action, so each action induces a well-defined quotient map and composition survives compression:
+and the final relation is stable under every reachable action. The general Lean theorem above now explains why this endpoint is forced for arbitrary monoid actions under its assumptions.
 
-\[
-\boxed{[g\circ f]=[g]\circ[f].}
-\]
-
-See [`COMPOSITIONAL_CLOSURE.md`](COMPOSITIONAL_CLOSURE.md) and [`tests/test_compositional_closure.py`](tests/test_compositional_closure.py). This is an exhaustive finite result, not yet a general theorem for arbitrary categories or state spaces.
+See [`COMPOSITIONAL_CLOSURE.md`](COMPOSITIONAL_CLOSURE.md) and [`tests/test_compositional_closure.py`](tests/test_compositional_closure.py).
 
 ## Selection above the kernel
 
 The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator.
 
-Immediate pair-split gain is surprisingly strong in the smallest tested universe: it is cardinality-optimal on all 65,536 binary `4 × 4` worlds. But it is not a general theorem. A `5 × 4` counterexample requires three continuations under deterministic greedy choice while a two-continuation sufficient basis exists.
+Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but it is not a general theorem. A `5 × 4` counterexample requires three continuations under deterministic greedy choice while a two-continuation sufficient basis exists.
 
 The corresponding dynamic-programming test shows that optimal next-step value is residual-relative: the best continuation is the one minimizing total remaining completion cost, not necessarily the one maximizing immediate split gain. See [`tests/test_selection_layer.py`](tests/test_selection_layer.py).
 
@@ -180,9 +198,10 @@ So the layers separate cleanly:
 
 - **kernel:** what refinements are lawful;
 - **completeness:** when refinement may stop;
+- **behavioural congruence:** the coarsest observation-compatible identity stable under all reachable futures;
 - **selection:** which lawful refinement is cheapest or most useful next;
 - **development:** when verified residuals and interface changes alter the reachable/discoverable capability frontier;
-- **composition:** which distinctions must survive all reachable action contexts so quotient dynamics remain coherent.
+- **composition:** which distinctions must survive action contexts so quotient dynamics remain coherent.
 
 ## Run
 
@@ -191,11 +210,14 @@ python -m unittest discover -s tests -v
 python examples/capability_bridge.py
 lean -o lean/Kernel.olean lean/Kernel.lean
 LEAN_PATH=lean lean lean/Completeness.lean
+LEAN_PATH=lean lean lean/BehaviouralCongruence.lean
 LEAN_PATH=lean lean lean/Falsifiers.lean
 ```
 
-CI runs the exhaustive Python suite, capability bridge, Lean kernel, Lean completeness theorem, and Lean falsifiers together.
+CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, behavioural congruence theorem, finite recovery theorem, and falsifiers together.
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, that bounded endogenous genesis establishes natural-world invention, or that the finite compositional result proves a general categorical fixed-point theorem. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, that bounded endogenous genesis establishes natural-world invention, or that the monoid theorem is already a theorem about arbitrary categories or developmental category growth.
+
+The next open layer is typed/categorical: replace one state space and its endomorphism monoid with multiple objects and typed morphisms, then ask whether object-indexed behavioural quotients assemble functorially—and eventually whether the continuation category itself can grow under verified development.
