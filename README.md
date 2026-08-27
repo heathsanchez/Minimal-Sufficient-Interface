@@ -52,7 +52,7 @@ x\sim_*y
 \forall m\in M,\quad v(m\cdot x)=v(m\cdot y).
 \]
 
-The general theorem is now machine-checked in [`lean/BehaviouralCongruence.lean`](lean/BehaviouralCongruence.lean). It proves that `~*` is the greatest reachable-action-invariant observation-compatible equivalence relation: any invariant relation contained in `ker(v)` is contained in `~*`.
+The general theorem is machine-checked in [`lean/BehaviouralCongruence.lean`](lean/BehaviouralCongruence.lean). It proves that `~*` is the greatest reachable-action-invariant observation-compatible equivalence relation: any invariant relation contained in `ker(v)` is contained in `~*`.
 
 Every reachable action descends uniquely to the quotient `X/~*`, and the quotient action preserves identity and composition:
 
@@ -64,13 +64,85 @@ Every reachable action descends uniquely to the quotient `X/~*`, and the quotien
 
 In the finite case, given any finite list covering all reachable actions, **any** verifier-driven process that adds a genuine reachable separator whenever one remains reaches the exact behavioural quotient in at most the length of that list. No greedy policy or advance knowledge of the final quotient is assumed.
 
-Thus the theorem-level statement is:
+Thus:
 
 \[
 \boxed{\text{MSI refinement computes the maximal observation-compatible behavioural congruence.}}
 \]
 
-See [`BEHAVIOURAL_CONGRUENCE.md`](BEHAVIOURAL_CONGRUENCE.md) for the theorem package and scope.
+See [`BEHAVIOURAL_CONGRUENCE.md`](BEHAVIOURAL_CONGRUENCE.md).
+
+## Typed behavioural congruence
+
+The monoid result now lifts to a small category of typed continuations. If `f : X → Y` acts as a typed state transformation and each object has its own protected observation `v_X`, define
+
+\[
+\boxed{
+x\sim_X y
+\iff
+\forall Y\;\forall f:X\to Y,
+\quad v_Y(f(x))=v_Y(f(y)).
+}
+\]
+
+The Lean development in [`lean/TypedBehaviouralCongruence.lean`](lean/TypedBehaviouralCongruence.lean) proves that this is the greatest observation-compatible categorical congruence family. Every typed morphism descends uniquely to the objectwise quotient, and the quotient action preserves identities and composition.
+
+Thus the objectwise minimal sufficient interfaces assemble functorially:
+
+\[
+\boxed{Q(f)([x])=[f(x)]},
+\qquad
+\boxed{Q(1_X)=1_{Q(X)}},
+\qquad
+\boxed{Q(g\circ f)=Q(g)\circ Q(f)}.
+\]
+
+See [`TYPED_BEHAVIOURAL_CONGRUENCE.md`](TYPED_BEHAVIOURAL_CONGRUENCE.md).
+
+## Developmental continuation category
+
+The continuation family itself can now grow. A developmental stage is formalized as a composition-closed family of currently accessible morphisms inside a fixed ambient category. For stage `S`, only accessible continuations participate in behavioural identity:
+
+\[
+x\sim_X^S y
+\iff
+\forall f:X\to Y,\quad S(f)\Rightarrow v_Y(f(x))=v_Y(f(y)).
+\]
+
+[`lean/DevelopmentalCategory.lean`](lean/DevelopmentalCategory.lean) proves the structural growth law
+
+\[
+\boxed{
+S\subseteq T
+\Longrightarrow
+\sim_X^T\subseteq\sim_X^S
+\quad\forall X.
+}
+\]
+
+So expanding the executable continuation subcategory can only refine the interface. If a newly accessible morphism separates a pair merged at the old stage, the new stage must split that pair.
+
+Each stage has its own quotient dynamics; accessible identities and compositions still descend correctly. Moreover, every extension induces a canonical forgetful map from the finer new interface to the coarser old interface:
+
+\[
+\boxed{Q_T(X)\to Q_S(X).}
+\]
+
+At the ambient stage, the stage-relative equivalence is exactly the full typed behavioural congruence.
+
+This gives the theorem-level structural chain
+
+\[
+\boxed{
+\text{new morphism}
+\to
+\text{new protected distinction}
+\to
+\text{finer behavioural quotient}.
+}
+\]
+
+See [`DEVELOPMENTAL_CATEGORY.md`](DEVELOPMENTAL_CATEGORY.md).
 
 ## Developmental bridge
 
@@ -92,42 +164,15 @@ On the same three-state universe, the candidate language is all 27 deterministic
 
 After acquiring `O1`, the executable closure expands and the new protected continuation `v ∘ O1` may refine the interface. A developmental witness is counted only when the unchanged blind search then discovers an emergent nonprimitive `O2` that was outside the old closure, quotient-inadmissible before refinement, quotient-admissible afterward, and lost again under exact `O1` ablation.
 
-The exhaustive census finds:
+The exhaustive census finds **1,872** strict refinements and **220** autonomous post-refinement discovery witnesses.
 
-- **1,872** strict refinements among the nontrivial acquisitions considered;
-- **220** autonomous post-refinement discovery witnesses.
-
-Thus the bounded system realizes the stronger chain
-
-\[
-\boxed{
-O_1
-\to
-\text{new protected separator}
-\to
-Q_1
-\to
-\text{expanded executable closure}
-\to
-\text{autonomously discovered }O_2.
-}
-\]
-
-See [`AUTONOMOUS_DISCOVERY.md`](AUTONOMOUS_DISCOVERY.md) and [`tests/test_autonomous_discovery.py`](tests/test_autonomous_discovery.py). This is a finite exhaustive existence result, not a claim that every acquisition produces useful development or that lexicographic search is itself an intelligent policy.
+See [`AUTONOMOUS_DISCOVERY.md`](AUTONOMOUS_DISCOVERY.md) and [`tests/test_autonomous_discovery.py`](tests/test_autonomous_discovery.py).
 
 ## Endogenous O1 genesis
 
-The next experiment removes the supplied-`O1` assumption too.
+The next finite experiment removes the supplied-`O1` assumption too. A verifier-visible residual drives search over the frozen language of all deterministic three-state transformations. Search chooses a candidate only if it repairs the residual through the existing observation and creates generic future capability value. A separate blind search then returns the first newly enabled nonprimitive `O2`.
 
-The current interface exposes a binary observation `v`; a protected binary target `t` is visible only to the verifier. When `v` merges a pair that `t` separates, the verifier returns that pair as a residual witness. Search then ranges over the frozen language of all deterministic three-state transformations and selects a candidate only if it both repairs the residual through the existing observation `v∘h` and creates generic future capability value: at least one transformation becomes newly reachable and quotient-admissible only after the induced refinement. Candidates are ranked by the number of such newly enabled capabilities, with lexicographic tie-breaking. Neither `O1` nor `O2` is supplied by identity.
-
-A separate blind search then returns the first newly enabled nonprimitive `O2`.
-
-The exhaustive result is:
-
-- **36** binary `(v,t)` worlds contain a live verifier residual;
-- across those worlds and all 27 primitive generators, **648** residual-driven `O1` geneses satisfy the frozen criterion;
-- **all 648** realize the full chain
+The exhaustive result is **36** residual worlds and **648** residual-driven `O1` geneses; all 648 realize the full chain
 
 \[
 \boxed{
@@ -145,63 +190,25 @@ Q_1
 }
 \]
 
-One concrete witness has `v=(0,0,1)`, verifier target `t=(0,1,0)`, primitive `g=(0,0,0)`, residual pair `(0,1)`, synthesized `O1=(1,2,0)`, and discovered `O2=(2,0,1)`. Exact `O1` ablation removes `O2` from the old closure and restores the coarse relation on the residual pair.
-
-See [`ENDOGENOUS_GENESIS.md`](ENDOGENOUS_GENESIS.md) and [`tests/test_endogenous_genesis.py`](tests/test_endogenous_genesis.py). The claim remains bounded: the search uses a finite candidate language and an explicit generic future-capability-value criterion; it does not establish natural-world operator invention.
-
-Together, the finite experiments now realize:
-
-\[
-\text{verified failure}
-\to
-\text{capability search}
-\to
-\text{new distinction}
-\to
-\text{changed discoverability}
-\to
-\text{new capability}.
-\]
+See [`ENDOGENOUS_GENESIS.md`](ENDOGENOUS_GENESIS.md) and [`tests/test_endogenous_genesis.py`](tests/test_endogenous_genesis.py).
 
 ## Compositional closure
 
-For a finite generator set `G`, let `G*` be the generated transformation monoid. The first proposed universe, `|X|=3` with binary observations and two generators, produced a useful boundary result: across all **5,832** worlds, the one-step family `{id,g0,g1}` already induced the full behavioural quotient. There were **0** necessary composite separators.
+For a finite generator set `G`, let `G*` be the generated transformation monoid. Across all **5,832** three-state/two-generator worlds, the one-step family already induced the full behavioural quotient. At four states with one deterministic generator, exhaustive search over all **4,096** worlds finds **576** worlds requiring composite separators, with zero convergence, congruence, or quotient-composition failures and 576 exact ablation witnesses.
 
-At `|X|=4` with one deterministic generator, exhaustive search over all **4,096** worlds finds:
-
-- **576** worlds where `{id,g}` is too coarse relative to `G*`;
-- **576** composite separators added by residual-driven refinement;
-- **0** convergence failures;
-- **0** congruence failures at the final quotient;
-- **0** quotient composition-law failures;
-- **576** exact ablation witnesses.
-
-In every world the developmental process converges to
+The general Lean theorem now explains the endpoint:
 
 \[
-\boxed{E_\infty=\bigcap_{f\in G^*}\ker(v\circ f),}
+\boxed{E_\infty=\bigcap_{f\in G^*}\ker(v\circ f).}
 \]
-
-and the final relation is stable under every reachable action. The general Lean theorem above now explains why this endpoint is forced for arbitrary monoid actions under its assumptions.
 
 See [`COMPOSITIONAL_CLOSURE.md`](COMPOSITIONAL_CLOSURE.md) and [`tests/test_compositional_closure.py`](tests/test_compositional_closure.py).
 
 ## Selection above the kernel
 
-The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator.
+The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator. Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but a `5 × 4` counterexample shows it is not a general theorem. Dynamic programming shows that optimal next-step value is residual-relative.
 
-Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but it is not a general theorem. A `5 × 4` counterexample requires three continuations under deterministic greedy choice while a two-continuation sufficient basis exists.
-
-The corresponding dynamic-programming test shows that optimal next-step value is residual-relative: the best continuation is the one minimizing total remaining completion cost, not necessarily the one maximizing immediate split gain. See [`tests/test_selection_layer.py`](tests/test_selection_layer.py).
-
-So the layers separate cleanly:
-
-- **kernel:** what refinements are lawful;
-- **completeness:** when refinement may stop;
-- **behavioural congruence:** the coarsest observation-compatible identity stable under all reachable futures;
-- **selection:** which lawful refinement is cheapest or most useful next;
-- **development:** when verified residuals and interface changes alter the reachable/discoverable capability frontier;
-- **composition:** which distinctions must survive action contexts so quotient dynamics remain coherent.
+See [`tests/test_selection_layer.py`](tests/test_selection_layer.py).
 
 ## Run
 
@@ -211,13 +218,27 @@ python examples/capability_bridge.py
 lean -o lean/Kernel.olean lean/Kernel.lean
 LEAN_PATH=lean lean lean/Completeness.lean
 LEAN_PATH=lean lean lean/BehaviouralCongruence.lean
+LEAN_PATH=lean lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+LEAN_PATH=lean lean lean/DevelopmentalCategory.lean
 LEAN_PATH=lean lean lean/Falsifiers.lean
 ```
 
-CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, behavioural congruence theorem, finite recovery theorem, and falsifiers together.
+CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, monoid behavioural congruence and finite recovery, typed behavioural congruence, developmental continuation-category theorem, and falsifiers together.
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, that bounded endogenous genesis establishes natural-world invention, or that the monoid theorem is already a theorem about arbitrary categories or developmental category growth.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded endogenous genesis establishes natural-world invention.
 
-The next open layer is typed/categorical: replace one state space and its endomorphism monoid with multiple objects and typed morphisms, then ask whether object-indexed behavioural quotients assemble functorially—and eventually whether the continuation category itself can grow under verified development.
+The sharp remaining boundary is now morphism genesis. The developmental-category theorem assumes a stage extension has supplied a newly accessible morphism. The next open problem is to make that extension endogenous:
+
+\[
+\boxed{
+\text{verified obstruction}
+\longrightarrow
+\text{justified new morphism}
+\longrightarrow
+\mathcal C_{t+1}.
+}
+\]
+
+That is where verified representation refinement becomes verified growth of the action language itself.
