@@ -1,33 +1,40 @@
 # Minimal Sufficient Interface
 
-A tiny relational kernel for justified state distinction under protected continuations.
+A tiny mathematical kernel for justified refinement under protected distinctions.
 
-The seed is
+## Canonical kernel
+
+The frozen core is two equations:
 
 \[
-x \sim_B y \iff \forall c\in B,\;P(x,c)=P(y,c).
+\boxed{E_{t+1}=E_t\wedge K_t}
 \]
 
-Two situations are identified exactly while the retained protected continuations cannot distinguish their protected outcomes.
+and, for the state-identification realization,
 
-A verified separator forces refinement. Certified sameness requires coverage of the relevant continuation space.
+\[
+\boxed{E_B=\bigcap_{c\in B}K_c.}
+\]
 
-This repository deliberately contains only the foundational semantics, executable reference kernel, exhaustive finite checks, and one capability-interface bridge. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications, not assumptions.
+The first is the abstract refinement law: verified constraints accumulate by an idempotent, commutative, associative meet. The second gives that algebra its intended meaning here: the current interface keeps exactly the sameness that survives every retained protected distinction.
 
-## Core laws
+Equivalently, if each protected continuation is represented by an outcome map `c : X → O_c`,
 
-For situations `X`, protected continuations `C`, outcomes `O`, and `P : X × C → O`:
+\[
+x\,E_B\,y
+\iff
+\forall c\in B,\;c(x)=c(y).
+\]
 
-1. `~_B` is an equivalence relation.
-2. If `B ⊆ B'`, then `~_{B'} ⊆ ~_B`.
-3. Adding a continuation `c` gives `~_{B∪{c}} = ~_B ∩ ker(P_c)`.
-4. A live residual is a currently merged pair separated by some protected continuation.
-5. Any separator of a live residual gives strict refinement.
-6. With finite `C`, repeated lawful residual repair terminates at `~_C`.
-7. Local silence of one continuation does not imply global sufficiency; sufficiency is exactly absence of separators over the covered continuation family.
-8. A capability `f : X → X` acts on the quotient `X/~_B` iff it preserves `~_B`.
+So two situations remain identified exactly while the retained protected continuations cannot distinguish them.
 
-See [`SPEC.md`](SPEC.md) for formal statements and claim boundaries.
+See [`KERNEL.md`](KERNEL.md) for the canonical snapshot, [`SPEC.md`](SPEC.md) for the full relational development, and [`FINAL_KERNEL.md`](FINAL_KERNEL.md) for the algebraic compression boundary.
+
+## What follows from it
+
+A verified separator forces strict refinement. Evidence order and duplication do not matter. Certified sufficiency requires coverage of the relevant separator space. Finite strict refinement converges. A capability acts on a quotient exactly when it preserves the current equivalence relation.
+
+The repo includes an executable reference implementation, exhaustive finite checks, counterexamples to stronger false claims, and one capability-interface bridge.
 
 ## Run
 
@@ -36,8 +43,6 @@ python -m unittest discover -s tests -v
 python examples/capability_bridge.py
 ```
 
-The finite tests exhaust all binary protected-outcome tables with `|X|=3, |C|=3`, plus targeted larger counterexamples to stronger claims.
-
 ## Scope
 
-This repo does **not** claim that arbitrary open-ended intelligence is captured by the kernel, that separators can always be discovered cheaply, or that lawful repair is cardinality-optimal. It isolates the mathematics that stronger systems may build on.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, or that lawful refinement is cardinality-optimal. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
