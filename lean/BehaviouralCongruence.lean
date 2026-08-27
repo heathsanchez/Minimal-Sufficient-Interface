@@ -181,7 +181,9 @@ theorem finite_recovery
       RefineStep A obs (seq n) (seq (n + 1))) :
     ∃ n, n ≤ all.length ∧
       (∀ x y, EqBy A obs (seq n) x y ↔ BehEq A obs x y) := by
-  by_contra hnone
+  classical
+  apply Classical.byContradiction
+  intro hnone
   have hnoterm : ∀ n, n ≤ all.length → ¬ Terminal A obs (seq n) := by
     intro n hn hterm
     apply hnone
