@@ -87,6 +87,26 @@ Therefore no world-independent fixed delay can repair the most-significant-first
 
 This is the arithmetic analogue of the repo's no-uniform-lookahead falsifier. The issue is not insufficient search depth inside a good interface. The information flow points the wrong way.
 
+## 5. The discovered hidden-state structure is not decimal-specific
+
+[`tests/test_arithmetic_base_invariance.py`](tests/test_arithmetic_base_invariance.py) repeats the interface-discovery procedure independently in every positional base from 2 through 16.
+
+For each base, the learner starts from an indiscriminate history interface and uses only equality of verified future output digits. In every base the minimum behavioural partition has exactly two states, and a single retained future context is enough to expose them.
+
+The external judge can identify those two classes after the fact as carry-out `0` and carry-out `1`, but that semantic interpretation is not supplied to the learner.
+
+So the structural object being recovered is invariant across a family of coordinate systems:
+
+\[
+\boxed{
+\text{base changes}
+\quad\text{but}\quad
+\text{minimal behavioural memory for two-addend local addition remains two-state}.
+}
+\]
+
+This does not mean the digit-specific transition tables themselves transfer unchanged across bases. The invariant is the minimal latent interface structure required by the compositional dependency.
+
 ## Interpretation
 
 The arithmetic sequence now demonstrates two distinct developmental moves in one natural domain:
@@ -120,8 +140,7 @@ That is closer to structural development than merely fitting parameters inside a
 
 The experiment still supplies substantial structure:
 
-- positional decimal notation;
-- the decomposition into digit positions;
+- positional notation and significance-indexed digit positions;
 - exact trusted addition outcomes;
 - the causal/local transducer objective;
 - finite candidate orders or traversal hypotheses.
