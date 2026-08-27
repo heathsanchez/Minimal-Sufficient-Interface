@@ -28,7 +28,7 @@ jobs:
       - name: Check Lean kernel theorems
         env:
           LEAN_PATH: lean
-        run: lean lean/Kernel.lean
+        run: lean -o lean/Kernel.olean lean/Kernel.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
