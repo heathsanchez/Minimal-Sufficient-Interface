@@ -66,6 +66,17 @@ theorem le_antisymm {a b : L} (hab : K.Le a b) (hba : K.Le b a) : a = b := by
     _ = K.meet b a := K.comm a b
     _ = b := hba
 
+/-- A meet update cannot perform a genuine retraction/coarsening. If an update
+    `E' = E ∧ A` is also at least as coarse as `E`, then it changed nothing.
+    Retraction therefore requires provenance/recomputation above this kernel. -/
+theorem update_cannot_coarsen {E A E' : L}
+    (hupdate : E' = K.meet E A)
+    (hcoarse : K.Le E E') : E' = E := by
+  have href : K.Le E' E := by
+    rw [hupdate]
+    exact K.update_refines E A
+  exact K.le_antisymm href hcoarse
+
 end MeetKernel
 
 /-- Concrete protected-continuation semantics, without requiring finite sets. -/
@@ -117,5 +128,13 @@ theorem trans (B : List C) {x y z : X}
     EquivalentOn P B x z := by
   intro c hc
   exact (hxy c hc).trans (hyz c hc)
+
+/-- Removing protected continuations can only coarsen observational identity.
+    This is the provenance-side dual of monotone meet refinement. -/
+theorem antitone_basis {B T : List C}
+    (hBT : ∀ c, c ∈ B → c ∈ T) {x y : X}
+    (hT : EquivalentOn P T x y) : EquivalentOn P B x y := by
+  intro c hc
+  exact hT c (hBT c hc)
 
 end EquivalentOn
