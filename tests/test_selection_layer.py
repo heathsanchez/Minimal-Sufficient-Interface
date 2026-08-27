@@ -85,25 +85,27 @@ class CostedSelectionLayer(unittest.TestCase):
             self.assertEqual(greedy_len, optimum)
 
     def test_pair_gain_greedy_is_not_globally_optimal(self):
-        # Counterexample at |X|=5, |C|=4.
+        # Counterexample at |X|=5, |C|=4. With the deterministic lowest-index
+        # tie-break used above, greedy chooses c0 first and needs 3 tests;
+        # the sufficient basis {c1,c2} needs only 2.
         rows = [
             (1, 1, 1, 0),
-            (0, 1, 1, 0),
             (1, 0, 1, 0),
+            (1, 1, 0, 0),
             (0, 0, 0, 0),
             (0, 0, 0, 0),
         ]
         I = self.interface_from_rows(rows)
         greedy = self.greedy_pair_basis(I)
         optimum = I.minimum_basis()
-        self.assertEqual(len(optimum), 2)
-        self.assertEqual(len(greedy), 3)
+        self.assertEqual(optimum, (1, 2))
+        self.assertEqual(greedy, (0, 1, 2))
 
     def test_optimal_future_cost_is_residual_relative(self):
         rows = [
             (1, 1, 1, 0),
-            (0, 1, 1, 0),
             (1, 0, 1, 0),
+            (1, 1, 0, 0),
             (0, 0, 0, 0),
             (0, 0, 0, 0),
         ]
@@ -125,9 +127,10 @@ class CostedSelectionLayer(unittest.TestCase):
 
         self.assertEqual(future_cost(tuple()), 2)
         greedy_first = self.greedy_pair_basis(I)[0]
+        self.assertEqual(greedy_first, 0)
         self.assertEqual(1 + future_cost((greedy_first,)), 3)
         better = [c for c in I.continuations if 1 + future_cost((c,)) == 2]
-        self.assertTrue(better)
+        self.assertEqual(better, [1, 2])
 
 
 if __name__ == "__main__":
