@@ -49,7 +49,7 @@ theorem behEq_trans {x y z : X}
   exact (hxy m).trans (hyz m)
 
 /-- Behavioural equivalence is contained in the observation kernel. -/
-theorem behEq_obsCompatible : ObsCompatible A obs (BehEq A obs) := by
+theorem behEq_obsCompatible : ObsCompatible obs (BehEq A obs) := by
   intro x y h
   simpa [A.one_act] using h A.one
 
@@ -68,7 +68,7 @@ theorem behEq_invariant : Invariant A (BehEq A obs) := by
 theorem greatest_invariant
     (R : X → X → Prop)
     (hInv : Invariant A R)
-    (hObs : ObsCompatible A obs R) :
+    (hObs : ObsCompatible obs R) :
     ∀ x y, R x y → BehEq A obs x y := by
   intro x y hxy m
   exact hObs (A.act m x) (A.act m y) (hInv m x y hxy)
@@ -103,7 +103,7 @@ theorem descend_one :
   intro q
   refine Quotient.inductionOn q ?_
   intro x
-  simp [descend, A.one_act]
+  rw [descend_mk, A.one_act]
 
 /-- Descending preserves composition. -/
 theorem descend_mul (g f : M) :
@@ -113,7 +113,7 @@ theorem descend_mul (g f : M) :
   intro q
   refine Quotient.inductionOn q ?_
   intro x
-  simp [descend, A.mul_act]
+  rw [descend_mk, descend_mk, descend_mk, A.mul_act]
 
 /-- Uniqueness on quotient representatives: a quotient map agreeing with the
     action on every representative is extensionally the descended map. -/
@@ -126,6 +126,7 @@ theorem descend_unique (g : M)
   intro q
   refine Quotient.inductionOn q ?_
   intro x
-  simpa [descend] using hF x
+  rw [descend_mk]
+  exact hF x
 
 end BehaviouralCongruence
