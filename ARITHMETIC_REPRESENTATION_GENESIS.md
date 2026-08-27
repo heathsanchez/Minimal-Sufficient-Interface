@@ -71,6 +71,22 @@ This is important conceptually. The system is not rewarded for choosing the huma
 
 The dependency structure is discovered negatively: every order that exposes an effect before its possible causes is eliminated by a verified future conflict.
 
+## 4. Fixed output delay does not rescue the wrong decomposition
+
+A natural objection is that most-significant-first processing might become compositional if the system simply waits a fixed number of positions before emitting an output.
+
+[`tests/test_arithmetic_delay_boundary.py`](tests/test_arithmetic_delay_boundary.py) attacks that possibility directly. For every tested delay `D = 0,...,32`, it constructs two additions that are identical through the first `D+1` visible most-significant positions but require different first output digits. The distinguishing carry is generated one position farther into the unseen suffix and propagated backward through a chain of sum-nine positions.
+
+Therefore no world-independent fixed delay can repair the most-significant-first causal decomposition for arbitrary-length exact addition:
+
+\[
+\boxed{
+\forall D\;\exists\text{ a longer addition whose deciding carry lies beyond delay }D.
+}
+\]
+
+This is the arithmetic analogue of the repo's no-uniform-lookahead falsifier. The issue is not insufficient search depth inside a good interface. The information flow points the wrong way.
+
 ## Interpretation
 
 The arithmetic sequence now demonstrates two distinct developmental moves in one natural domain:
