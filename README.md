@@ -214,26 +214,48 @@ See [`COUNTEREXAMPLE_COMPOSITION_DISCOVERY.md`](COUNTEREXAMPLE_COMPOSITION_DISCO
 
 The next experiment moves uncertainty outward again: the learner is no longer told which binary constructor on actions is the correct one. It begins with a six-law hypothesis family containing sequential composition, reversed composition, left/right projection, and two pointwise alternatives. The verifier supplies only concrete execution counterexamples `(f,g,x,y)`.
 
-Across all **5,832** binary-observation / two-primitive worlds on three states:
+Across all **5,832** binary-observation / two-primitive worlds on three states, **4,704** worlds uniquely identify sequential composition, **1,128** remain syntactically ambiguous, and **0** contain harmful ambiguity. Every surviving law in an ambiguous world is extensionally identical to true sequential composition on the reachable subalgebra.
 
-- **4,704** worlds uniquely identify sequential composition;
-- **1,128** remain syntactically ambiguous;
-- **0** contain harmful ambiguity;
-- only **20,472** counterexamples are required in total, with at most **4** in any world.
+See [`CONSTRUCTOR_LAW_DISCOVERY.md`](CONSTRUCTOR_LAW_DISCOVERY.md) and [`tests/test_constructor_law_discovery.py`](tests/test_constructor_law_discovery.py).
 
-Crucially, every surviving law in every ambiguous world is extensionally identical to true sequential composition on the reachable subalgebra, so it generates the same reachable closure and the same behavioural quotient.
+## Grammar-driven constructor genesis
 
-Thus:
+The final finite step removes that hand-written law menu too. The learner receives only the generative syntax
+
+\[
+\boxed{t ::= x \mid F(t) \mid G(t)}
+\]
+
+and mechanically generates all terms through depth 3. Sequential composition `F(G(x))` is therefore generated rather than supplied as a named candidate.
+
+Exhausting all **729** ordered pairs of deterministic primitive transformations on three states gives:
+
+- **558** worlds with a unique surviving constructor syntax;
+- **171** worlds with only operationally equivalent syntactic ambiguity;
+- **0** harmful ambiguity;
+- **3,626** verifier counterexamples in total, with at most **7** in any world;
+- **0** identity-law failures for the retained operation;
+- **0** associativity failures.
+
+The deterministic shortest retained term is `F(G(x))` in **728/729** worlds. The sole exception is the trivial reachable algebra, where composition itself is operationally indistinguishable from the identity term.
+
+Thus the finite developmental chain is now closed at the constructor level:
 
 \[
 \boxed{
-\textbf{counterexamples recover the composition law up to operational equivalence on the reachable action algebra.}
+\text{counterexample}
+\to
+\text{generated constructor}
+\to
+\text{retained composition}
+\to
+\text{generated continuations}
+\to
+\text{behavioural congruence}.
 }
 \]
 
-The ambiguity is therefore principled rather than a failure: MSI refuses to preserve a distinction between constructor laws when no reachable future can expose one.
-
-See [`CONSTRUCTOR_LAW_DISCOVERY.md`](CONSTRUCTOR_LAW_DISCOVERY.md) and [`tests/test_constructor_law_discovery.py`](tests/test_constructor_law_discovery.py).
+See [`CONSTRUCTOR_GENESIS.md`](CONSTRUCTOR_GENESIS.md) and [`tests/test_constructor_genesis.py`](tests/test_constructor_genesis.py).
 
 ## Selection above the kernel
 
@@ -258,22 +280,8 @@ CI runs the exhaustive Python suite, capability bridge, Lean kernel, completenes
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded endogenous genesis establishes natural-world invention.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded constructor synthesis establishes open-ended natural-world invention.
 
-The sharp remaining boundary has moved again. Composite continuations can be synthesized from residuals, and a supplied finite family of candidate constructor laws can be contracted by verifier counterexamples to the correct operational composition structure. What is still supplied is the **constructor hypothesis language itself**.
+The finite/theorem-level skeleton is now intentionally complete. The repo establishes a progression from verified distinctions to exact behavioural quotients, functorial quotient dynamics, endogenous capability/continuation discovery, counterexample-driven recovery of operational composition, and grammar-driven synthesis of a composition constructor.
 
-The next open problem is constructor genesis:
-
-\[
-\boxed{
-\text{verified obstruction}
-\longrightarrow
-\text{generated constructor candidate}
-\longrightarrow
-\text{retained compositional law}
-\longrightarrow
-\mathcal C_{t+1}.
-}
-\]
-
-That is where category-like structure would begin to emerge from a developmental grammar rather than from a hand-listed set of algebraic laws.
+The remaining frontier is no longer another small finite kernel experiment. It is **open-ended generative development**: richer typed grammars, learned object/type formation, resource-bounded search, and transfer to natural theorem proving, code repair, or scientific intervention spaces. Those layers should sit above the frozen MSI kernel rather than alter it unless a counterexample forces a change.
