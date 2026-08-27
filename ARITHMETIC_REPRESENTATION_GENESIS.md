@@ -107,6 +107,26 @@ So the structural object being recovered is invariant across a family of coordin
 
 This does not mean the digit-specific transition tables themselves transfer unchanged across bases. The invariant is the minimal latent interface structure required by the compositional dependency.
 
+## 6. Verification does not uniquely determine granularity
+
+The attack also exposes an important non-uniqueness result.
+
+[`tests/test_arithmetic_granularity_ambiguity.py`](tests/test_arithmetic_granularity_ambiguity.py) compares least-significant-first decompositions using one decimal digit per local symbol and two decimal digits per local symbol. Both admit exact two-state quotient dynamics and both compute held-out forty-digit additions exactly.
+
+So compositional correctness alone does **not** tell the system whether the basic block should be a digit, a two-digit chunk, or some other lawful grouping.
+
+That means the strongest possible claim is not that verifier pressure discovers one uniquely privileged representation. It discovers an equivalence class of representations that preserve the required futures. Choosing among equally lawful granularities requires another criterion such as cost, locality, description length, search complexity, or transfer value.
+
+This reconnects the domain experiment to the repo's selection layer:
+
+\[
+\boxed{
+\text{verification determines admissibility; a value/cost principle selects among admissible representations.}
+}
+\]
+
+This is a useful fortification rather than a defect. MSI should erase distinctions that protected futures cannot justify, including distinctions between representational choices that are operationally equivalent at the protected boundary.
+
 ## Interpretation
 
 The arithmetic sequence now demonstrates two distinct developmental moves in one natural domain:
@@ -115,10 +135,13 @@ The arithmetic sequence now demonstrates two distinct developmental moves in one
 \boxed{
 \begin{array}{c}
 \textbf{representation development:}\\
-\text{choose an order in which local composition is causally possible}\\[4pt]
+\text{eliminate decompositions in which local composition is causally impossible}\\[4pt]
 \downarrow\\[4pt]
 \textbf{state/interface development:}\\
-\text{retain exactly the hidden history distinction needed for future behaviour.}
+\text{retain exactly the hidden history distinction needed for future behaviour}\\[4pt]
+\downarrow\\[4pt]
+\textbf{selection above correctness:}\\
+\text{choose among multiple lawful interfaces by explicit resource/value criteria.}
 \end{array}
 }
 \]
@@ -130,7 +153,7 @@ The stronger lesson is:
 \[
 \boxed{
 \textbf{verified failures can select not only what state must be remembered,
-but the decomposition in which a finite compositional state exists.}
+but which decompositions remain possible at all.}
 }
 \]
 
@@ -143,13 +166,15 @@ The experiment still supplies substantial structure:
 - positional notation and significance-indexed digit positions;
 - exact trusted addition outcomes;
 - the causal/local transducer objective;
-- finite candidate orders or traversal hypotheses.
+- finite candidate orders, traversal hypotheses, or chunkings.
 
-It does not discover positional notation, invent digits, or infer the task of addition from raw sensory data.
+It does not discover positional notation, invent digits, infer the task of addition from raw sensory data, or derive a unique granularity from correctness alone.
 
 So the result should not be described as open-ended invention. It is a controlled domain-level demonstration that verified counterexamples can move the system outward through two levels of representation:
 
-1. select the lawful compositional decomposition;
-2. discover the minimal latent state inside that decomposition.
+1. reject structurally impossible decompositions and retain lawful ones;
+2. discover the minimal latent state inside a lawful decomposition.
+
+The remaining choice among multiple equally lawful decompositions is explicitly a selection problem above the verifier kernel.
 
 That is the current strongest arithmetic realization of the MSI developmental thesis.
