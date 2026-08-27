@@ -22,7 +22,7 @@ jobs:
           PYTHONPATH: .
         run: python examples/capability_bridge.py
       - name: Set up Lean
-        uses: leanprover/lean4-action@v1
+        uses: leanprover/lean-action@v1
       - name: Check Lean kernel theorems
         env:
           LEAN_PATH: lean
