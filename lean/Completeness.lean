@@ -25,7 +25,8 @@ theorem noResidual_iff_not_globalResidual (B T : List C) :
     rcases hres with ⟨x, y, hB, hnotT⟩
     exact hnotT (h x y hB)
   · intro h x y hB
-    by_contra hnotT
+    apply Classical.byContradiction
+    intro hnotT
     exact h ⟨x, y, hB, hnotT⟩
 
 /-- If the retained family B is covered by target T, target-equivalence implies B-equivalence. -/
