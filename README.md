@@ -85,10 +85,52 @@ Q_1
 
 See [`AUTONOMOUS_DISCOVERY.md`](AUTONOMOUS_DISCOVERY.md) and [`tests/test_autonomous_discovery.py`](tests/test_autonomous_discovery.py). This is a finite exhaustive existence result, not a claim that every acquisition produces useful development or that lexicographic search is itself an intelligent policy.
 
-This gives a concrete bounded realization of the loop:
+## Endogenous O1 genesis
+
+The next experiment removes the supplied-`O1` assumption too.
+
+The current interface exposes a binary observation `v`; a protected binary target `t` is visible only to the verifier. When `v` merges a pair that `t` separates, the verifier returns that pair as a residual witness. Search then ranges over the frozen language of all deterministic three-state transformations and selects a candidate only if it both repairs the residual through the existing observation `v∘h` and creates generic future capability value: at least one transformation becomes newly reachable and quotient-admissible only after the induced refinement. Candidates are ranked by the number of such newly enabled capabilities, with lexicographic tie-breaking. Neither `O1` nor `O2` is supplied by identity.
+
+A separate blind search then returns the first newly enabled nonprimitive `O2`.
+
+The exhaustive result is:
+
+- **36** binary `(v,t)` worlds contain a live verifier residual;
+- across those worlds and all 27 primitive generators, **648** residual-driven `O1` geneses satisfy the frozen criterion;
+- **all 648** realize the full chain
 
 \[
-\text{what can be done}\;\to\;\text{what can be distinguished}\;\to\;\text{what can subsequently be discovered and done}.
+\boxed{
+\text{verifier residual}
+\to
+\text{endogenous }O_1
+\to
+\text{separator}
+\to
+Q_1
+\to
+\text{expanded closure}
+\to
+\text{autonomous }O_2.
+}
+\]
+
+One concrete witness has `v=(0,0,1)`, verifier target `t=(0,1,0)`, primitive `g=(0,0,0)`, residual pair `(0,1)`, synthesized `O1=(1,2,0)`, and discovered `O2=(2,0,1)`. Exact `O1` ablation removes `O2` from the old closure and restores the coarse relation on the residual pair.
+
+See [`ENDOGENOUS_GENESIS.md`](ENDOGENOUS_GENESIS.md) and [`tests/test_endogenous_genesis.py`](tests/test_endogenous_genesis.py). The claim remains bounded: the search uses a finite candidate language and an explicit generic future-capability-value criterion; it does not establish natural-world operator invention.
+
+Together, the finite experiments now realize:
+
+\[
+\text{verified failure}
+\to
+\text{capability search}
+\to
+\text{new distinction}
+\to
+\text{changed discoverability}
+\to
+\text{new capability}.
 \]
 
 ## Selection above the kernel
@@ -104,7 +146,7 @@ So the layers separate cleanly:
 - **kernel:** what refinements are lawful;
 - **completeness:** when refinement may stop;
 - **selection:** which lawful refinement is cheapest or most useful next;
-- **development:** when a lawful interface change exposes genuinely new discoverable capability.
+- **development:** when verified residuals and interface changes alter the reachable/discoverable capability frontier.
 
 ## Run
 
@@ -120,4 +162,4 @@ CI runs the exhaustive Python suite, capability bridge, Lean kernel, Lean comple
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, or that blind finite search is a sufficient model of general discovery. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, that blind finite search is a sufficient model of general discovery, or that bounded endogenous genesis establishes natural-world invention. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
