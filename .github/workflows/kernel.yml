@@ -21,3 +21,13 @@ jobs:
         env:
           PYTHONPATH: .
         run: python examples/capability_bridge.py
+      - name: Set up Lean
+        uses: leanprover/lean4-action@v1
+      - name: Check Lean kernel theorems
+        env:
+          LEAN_PATH: lean
+        run: lean lean/Kernel.lean
+      - name: Check Lean falsifiers
+        env:
+          LEAN_PATH: lean
+        run: lean lean/Falsifiers.lean
