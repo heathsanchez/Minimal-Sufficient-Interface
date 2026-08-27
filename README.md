@@ -44,7 +44,7 @@ This is deliberately paired with a machine-checked counterexample showing that o
 
 ## Developmental bridge
 
-The repo now contains a unified finite causal bridge from capability acquisition to new state distinction to new executable capability:
+The repo contains a unified finite causal bridge from capability acquisition to new state distinction to new executable capability:
 
 \[
 \boxed{O_1\rightarrow\text{new separator}\rightarrow Q_1\rightarrow\text{new reachable }O_2.}
@@ -54,10 +54,41 @@ The exhaustive three-state census searches binary protected observations, determ
 
 The census finds 1,944 strict capability-induced interface refinements and 744 full causal witnesses. See [`tests/test_capstone_bridge.py`](tests/test_capstone_bridge.py).
 
+## Autonomous post-refinement discovery
+
+The stronger experiment removes the predefined `O2` from the search procedure.
+
+On the same three-state universe, the candidate language is all 27 deterministic maps `X → X` in one fixed lexicographic order. At each stage, a blind discovery rule returns the first candidate that is reachable from the current executable generators, quotient-admissible under the current interface, and neither identity nor an already supplied primitive. The search order is frozen independently of the world and no target `O2` is named or constructed in advance.
+
+After acquiring `O1`, the executable closure expands and the new protected continuation `v ∘ O1` may refine the interface. A developmental witness is counted only when the unchanged blind search then discovers an emergent nonprimitive `O2` that was outside the old closure, quotient-inadmissible before refinement, quotient-admissible afterward, and lost again under exact `O1` ablation.
+
+The exhaustive census finds:
+
+- **1,872** strict refinements among the nontrivial acquisitions considered;
+- **220** autonomous post-refinement discovery witnesses.
+
+Thus the bounded system realizes the stronger chain
+
+\[
+\boxed{
+O_1
+\to
+\text{new protected separator}
+\to
+Q_1
+\to
+\text{expanded executable closure}
+\to
+\text{autonomously discovered }O_2.
+}
+\]
+
+See [`AUTONOMOUS_DISCOVERY.md`](AUTONOMOUS_DISCOVERY.md) and [`tests/test_autonomous_discovery.py`](tests/test_autonomous_discovery.py). This is a finite exhaustive existence result, not a claim that every acquisition produces useful development or that lexicographic search is itself an intelligent policy.
+
 This gives a concrete bounded realization of the loop:
 
 \[
-\text{what can be done}\;\to\;\text{what can be distinguished}\;\to\;\text{what can subsequently be done}.
+\text{what can be done}\;\to\;\text{what can be distinguished}\;\to\;\text{what can subsequently be discovered and done}.
 \]
 
 ## Selection above the kernel
@@ -72,7 +103,8 @@ So the layers separate cleanly:
 
 - **kernel:** what refinements are lawful;
 - **completeness:** when refinement may stop;
-- **selection:** which lawful refinement is cheapest or most useful next.
+- **selection:** which lawful refinement is cheapest or most useful next;
+- **development:** when a lawful interface change exposes genuinely new discoverable capability.
 
 ## Run
 
@@ -88,4 +120,4 @@ CI runs the exhaustive Python suite, capability bridge, Lean kernel, Lean comple
 
 ## Scope
 
-This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, or that every capability acquisition causes a useful refinement. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
+This repository deliberately isolates the foundation. It does **not** claim that arbitrary intelligence reduces to this kernel, that separators are always cheap to discover, that one silent test proves global sufficiency, that immediate greedy split gain is globally optimal, that every capability acquisition causes a useful refinement, or that blind finite search is a sufficient model of general discovery. MathGraph, Triskelion, theorem proving, code repair, robotics, and developmental-agent architectures are applications above the kernel, not assumptions inside it.
