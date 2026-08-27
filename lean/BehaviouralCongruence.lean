@@ -1,4 +1,5 @@
 import Std
+import Init.Data.List.Perm
 
 universe u v w
 
@@ -58,13 +59,8 @@ theorem behEq_invariant : Invariant A (BehEq A obs) := by
   intro g x y h m
   simpa [A.mul_act] using h (A.mul m g)
 
-/-- Greatest-invariant characterization:
-
-    BehEq is the greatest reachable-action-invariant relation contained in ker(obs).
-
-    No equivalence assumptions on R are needed for maximality; if R is an
-    invariant equivalence relation compatible with obs, it is therefore included
-    automatically. -/
+/-- Behavioural equivalence is the greatest reachable-action-invariant relation
+    contained in the observation kernel. -/
 theorem greatest_invariant
     (R : X → X → Prop)
     (hInv : Invariant A R)
@@ -115,8 +111,8 @@ theorem descend_mul (g f : M) :
   intro x
   rw [descend_mk, descend_mk, descend_mk, A.mul_act]
 
-/-- Uniqueness on quotient representatives: a quotient map agreeing with the
-    action on every representative is extensionally the descended map. -/
+/-- The descended map is unique among quotient maps with the expected value on
+    every representative. -/
 theorem descend_unique (g : M)
     (F : BehaviourQuotient A obs → BehaviourQuotient A obs)
     (hF : ∀ x : X,
@@ -131,19 +127,17 @@ theorem descend_unique (g : M)
 
 section FiniteRecovery
 
-variable [Fintype M] [DecidableEq M]
-
-/-- Equivalence induced by the currently retained finite set of continuations. -/
-def EqBy (B : Finset M) (x y : X) : Prop :=
+/-- Equivalence induced by the currently retained list of continuations. -/
+def EqBy (B : List M) (x y : X) : Prop :=
   ∀ m, m ∈ B → obs (A.act m x) = obs (A.act m y)
 
 /-- No reachable continuation can further split a pair currently merged by B. -/
-def Terminal (B : Finset M) : Prop :=
+def Terminal (B : List M) : Prop :=
   ∀ m x y, EqBy A obs B x y → obs (A.act m x) = obs (A.act m y)
 
-/-- Exact stopping: no reachable separator remains iff the current finite interface
-    already equals all-futures behavioural equivalence. -/
-theorem terminal_exact (B : Finset M) :
+/-- Exact stopping: no reachable separator remains iff the current interface is
+    already exactly all-futures behavioural equivalence. -/
+theorem terminal_exact (B : List M) :
     Terminal A obs B ↔ ∀ x y, EqBy A obs B x y ↔ BehEq A obs x y := by
   constructor
   · intro hterm x y
@@ -155,64 +149,74 @@ theorem terminal_exact (B : Finset M) :
   · intro h m x y hB
     exact (h x y).mp hB m
 
-/-- A verifier-driven refinement step adds a reachable continuation that actually
-    separates a pair still merged by the current interface. -/
-def RefineStep (B B' : Finset M) : Prop :=
+/-- A verifier-driven refinement step prepends one reachable continuation that
+    actually separates a pair still merged by the current interface. -/
+def RefineStep (B B' : List M) : Prop :=
   ∃ m x y,
     EqBy A obs B x y ∧
     obs (A.act m x) ≠ obs (A.act m y) ∧
-    B' = insert m B
+    B' = m :: B
 
-/-- A genuine separator can never already be in the retained basis. -/
-theorem refineStep_fresh {B B' : Finset M}
+/-- Every genuine separator is fresh: it cannot already be retained. -/
+theorem refineStep_fresh {B B' : List M}
     (h : RefineStep A obs B B') :
-    ∃ m, m ∉ B ∧ B' = insert m B := by
+    ∃ m, m ∉ B ∧ B' = m :: B := by
   rcases h with ⟨m, x, y, hB, hsep, rfl⟩
   refine ⟨m, ?_, rfl⟩
   intro hm
   exact hsep (hB m hm)
 
-/-- Every genuine verifier-driven refinement step increases the retained basis
-    cardinality by exactly one. -/
-theorem refineStep_card {B B' : Finset M}
-    (h : RefineStep A obs B B') :
-    B'.card = B.card + 1 := by
-  rcases refineStep_fresh A obs h with ⟨m, hm, rfl⟩
-  simp [hm]
+/-- Finite behavioural-congruence recovery.
 
-/-- Finite recovery theorem.
-
-    Any process over a finite reachable action monoid that, whenever it is not
-    terminal, incorporates some genuine reachable separator, must reach the exact
-    behavioural quotient in at most |M| refinement stages.  The choice of separator
-    is arbitrary: no greedy policy is assumed. -/
+    `all` is any finite list covering every reachable action. Starting from no
+    retained continuations, any process that, whenever nonterminal, adds an
+    arbitrary genuine reachable separator must reach the exact behavioural
+    quotient within at most `all.length` steps. No greedy choice rule is assumed. -/
 theorem finite_recovery
-    (seq : Nat → Finset M)
+    (all : List M)
+    (cover : ∀ m : M, m ∈ all)
+    (seq : Nat → List M)
+    (h0 : seq 0 = [])
     (progress : ∀ n, ¬ Terminal A obs (seq n) →
       RefineStep A obs (seq n) (seq (n + 1))) :
-    ∃ n, n ≤ Fintype.card M ∧
+    ∃ n, n ≤ all.length ∧
       (∀ x y, EqBy A obs (seq n) x y ↔ BehEq A obs x y) := by
   by_contra hnone
-  have hnoterm : ∀ n, n ≤ Fintype.card M → ¬ Terminal A obs (seq n) := by
+  have hnoterm : ∀ n, n ≤ all.length → ¬ Terminal A obs (seq n) := by
     intro n hn hterm
     apply hnone
-    refine ⟨n, hn, ?_⟩
-    exact (terminal_exact A obs (seq n)).mp hterm
-  have hgrow : ∀ n, n ≤ Fintype.card M + 1 → n ≤ (seq n).card := by
+    exact ⟨n, hn, (terminal_exact A obs (seq n)).mp hterm⟩
+  have hprops : ∀ n, n ≤ all.length + 1 →
+      (seq n).Nodup ∧ (seq n ⊆ all) ∧ (seq n).length = n := by
     intro n hn
     induction n with
-    | zero => exact Nat.zero_le _
+    | zero =>
+        simp [h0]
     | succ n ih =>
-        have hncard : n ≤ Fintype.card M := by omega
+        have hncard : n ≤ all.length := by
+          apply Nat.le_of_succ_le_succ
+          simpa [Nat.succ_eq_add_one] using hn
+        have ihbound : n ≤ all.length + 1 :=
+          Nat.le_trans (Nat.le_succ n) hn
+        have ihp := ih ihbound
         have hstep := progress n (hnoterm n hncard)
-        have hcard := refineStep_card A obs hstep
-        have ih' : n ≤ (seq n).card := ih (by omega)
-        omega
-  have hlower : Fintype.card M + 1 ≤ (seq (Fintype.card M + 1)).card :=
-    hgrow (Fintype.card M + 1) (by omega)
-  have hupper : (seq (Fintype.card M + 1)).card ≤ Fintype.card M := by
-    simpa using Finset.card_le_card (Finset.subset_univ (seq (Fintype.card M + 1)))
-  omega
+        rcases refineStep_fresh A obs hstep with ⟨m, hm, hnext⟩
+        rw [hnext]
+        constructor
+        · simpa [hm] using ihp.1
+        constructor
+        · intro a ha
+          simp only [List.mem_cons] at ha
+          rcases ha with rfl | ha
+          · exact cover m
+          · exact ihp.2.1 ha
+        · simp [ihp.2.2]
+  have hp := hprops (all.length + 1) (Nat.le_refl _)
+  have hle : (seq (all.length + 1)).length ≤ all.length :=
+    hp.1.length_le_of_subset hp.2.1
+  rw [hp.2.2] at hle
+  exact (Nat.not_succ_le_self all.length) (by
+    simpa [Nat.succ_eq_add_one] using hle)
 
 end FiniteRecovery
 
