@@ -75,7 +75,7 @@ theorem extension_refines {S T : Stage C}
 /-- A newly accessible continuation that separates an old equivalence class
     forces a strict developmental split. -/
 theorem new_separator_forces_split {S T : Stage C}
-    (hST : Extends C S T)
+    (_hST : Extends C S T)
     {X Y : C.Obj} {x y : A.State X} (f : C.Hom X Y)
     (hold : BehEqAt C A Obs observe S X x y)
     (hnew : T.allow f)
@@ -109,6 +109,13 @@ def stageMap (S : Stage C) {X Y : C.Obj}
       intro x y hxy
       exact Quotient.sound (behEqAt_congruent C A Obs observe S f hf hxy))
 
+/-- The stage quotient map has the expected value on representatives. -/
+theorem stageMap_mk (S : Stage C) {X Y : C.Obj}
+    (f : C.Hom X Y) (hf : S.allow f) (x : A.State X) :
+    stageMap C A Obs observe S f hf
+      (Quotient.mk (stageSetoid C A Obs observe S X) x) =
+      Quotient.mk (stageSetoid C A Obs observe S Y) (A.map f x) := rfl
+
 /-- Accessible identities act identically after quotienting. -/
 theorem stageMap_id (S : Stage C) {X : C.Obj} :
     ∀ q : StageQuot C A Obs observe S X,
@@ -116,7 +123,7 @@ theorem stageMap_id (S : Stage C) {X : C.Obj} :
   intro q
   refine Quotient.inductionOn q ?_
   intro x
-  rw [A.map_id]
+  rw [stageMap_mk, A.map_id]
 
 /-- Accessible composition is preserved by the current quotient. -/
 theorem stageMap_comp (S : Stage C) {X Y Z : C.Obj}
@@ -129,7 +136,7 @@ theorem stageMap_comp (S : Stage C) {X Y Z : C.Obj}
   intro q
   refine Quotient.inductionOn q ?_
   intro x
-  rw [A.map_comp]
+  rw [stageMap_mk, stageMap_mk, stageMap_mk, A.map_comp]
 
 /-- Development induces a canonical map from the finer new interface back to
     the coarser old interface.  It simply forgets distinctions introduced by
