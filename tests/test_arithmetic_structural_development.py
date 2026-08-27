@@ -29,20 +29,46 @@ def signature(history, contexts):
     return tuple(oracle_next_digit(history, c) for c in contexts)
 
 
-def relation(histories, contexts):
-    sig = {h: signature(h, contexts) for h in histories}
-    return frozenset((x, y) for x in histories for y in histories if sig[x] == sig[y])
+def partition_keys(histories, contexts):
+    return {h: signature(h, contexts) for h in histories}
+
+
+def same_partition(histories, left_contexts, right_contexts):
+    left = partition_keys(histories, left_contexts)
+    right = partition_keys(histories, right_contexts)
+    # Compare equivalence classes without quadratic pair enumeration.
+    mapping = {}
+    reverse = {}
+    for h in histories:
+        lk, rk = left[h], right[h]
+        if lk in mapping and mapping[lk] != rk:
+            return False
+        if rk in reverse and reverse[rk] != lk:
+            return False
+        mapping[lk] = rk
+        reverse[rk] = lk
+    return True
 
 
 def adaptive_refine(histories, protected_contexts):
     """Start maximally coarse and add only concrete future separators."""
     retained = []
-    full = relation(histories, protected_contexts)
+    full = partition_keys(histories, protected_contexts)
     while True:
-        current = relation(histories, retained)
-        if current == full:
-            return tuple(retained), current
-        witness = next((x, y) for (x, y) in current if (x, y) not in full)
+        current = partition_keys(histories, retained)
+        buckets = {}
+        witness = None
+        for h in histories:
+            key = current[h]
+            full_key = full[h]
+            prev = buckets.get(key)
+            if prev is None:
+                buckets[key] = h
+            elif full[prev] != full_key:
+                witness = (prev, h)
+                break
+        if witness is None:
+            return tuple(retained)
         x, y = witness
         sep = next(c for c in protected_contexts if oracle_next_digit(x, c) != oracle_next_digit(y, c))
         if sep not in retained:
@@ -107,7 +133,7 @@ def digits_lsd(n, width):
 
 
 def add_with_learned_machine(a, b, width, machine):
-    classes, state, transition, output, terminal = machine
+    _, state, transition, output, terminal = machine
     da = digits_lsd(a, width)
     db = digits_lsd(b, width)
     out_digits = []
@@ -130,16 +156,16 @@ class ArithmeticStructuralDevelopment(unittest.TestCase):
         self.assertEqual(oracle_next_digit(h1, pair), 1)
 
     def test_residuals_discover_minimal_compositional_state_and_extrapolate(self):
-        # Discovery sees only histories of length <= 2.  No hidden state variable or
+        # Discovery sees only histories of length <= 2. No hidden state variable or
         # arithmetic carry label is supplied to the learner.
         hs = histories_through(2)
-        retained, recovered_relation = adaptive_refine(hs, DIGIT_PAIRS)
+        retained = adaptive_refine(hs, DIGIT_PAIRS)
         classes = partition(hs, retained)
 
         # The verifier forces exactly two behavioural interface states from an
-        # initially indiscriminate representation, using a concrete future context.
+        # initially indiscriminate representation, using concrete future contexts.
         self.assertEqual(len(classes), 2)
-        self.assertEqual(recovered_relation, relation(hs, DIGIT_PAIRS))
+        self.assertTrue(same_partition(hs, retained, DIGIT_PAIRS))
         self.assertGreaterEqual(len(retained), 1)
 
         machine = learn_machine(hs, retained)
@@ -149,14 +175,13 @@ class ArithmeticStructuralDevelopment(unittest.TestCase):
         self.assertEqual(len(output), 2 * BASE * BASE)
         self.assertEqual(len(terminal), 2)
 
-        # Exhaust every addition through 3 decimal digits: already beyond the
-        # two-digit discovery regime.
+        # Exhaust every addition through 3 decimal digits: beyond the two-digit
+        # discovery regime.
         for a in range(1000):
             for b in range(1000):
                 self.assertEqual(add_with_learned_machine(a, b, 3, machine), a + b)
 
-        # Then test exact length extrapolation far outside discovery.  The cases
-        # are deterministic and include long propagation chains and varied digits.
+        # Then test exact length extrapolation far outside discovery.
         long_cases = [
             (int("9" * 40), 1),
             (int("5" * 40), int("5" * 40)),
