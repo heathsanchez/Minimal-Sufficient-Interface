@@ -191,6 +191,10 @@ theorem nodup_subset_length {α : Type u} (l₁ l₂ : List α)
       have ihle := ih (l₂ := l₂.eraseP p) hparts.2 hsub
       have hpa : p a := by simp [p]
       have hlen := List.length_eraseP_of_mem ha hpa
+      have hpos : 1 ≤ l₂.length := by
+        cases l₂ with
+        | nil => simp at ha
+        | cons b bs => simp
       simp only [List.length_cons]
       omega
 
