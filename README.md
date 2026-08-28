@@ -144,6 +144,20 @@ This gives the theorem-level structural chain
 
 See [`DEVELOPMENTAL_CATEGORY.md`](DEVELOPMENTAL_CATEGORY.md).
 
+### Developmental claim boundary
+
+Capability growth must be typed carefully. A finer interface, a larger reachable closure, a cheaper discovery process, and a larger constructor language are not the same event. In particular, an exact finite witness shows that a protected target can become newly reachable after a regime extension even though the later operation was already syntactically formable in the old raw constructor language:
+
+\[
+\boxed{
+\text{strict reachability growth}
+\not\Rightarrow
+\text{strict formability growth}.
+}
+\]
+
+See [`CLOSURE_RELATIVE_CAPABILITY.md`](CLOSURE_RELATIVE_CAPABILITY.md) for the closure-relative capability witness and the resulting claim discipline.
+
 ## Developmental bridge
 
 The repo contains a unified finite causal bridge from capability acquisition to new state distinction to new executable capability:
