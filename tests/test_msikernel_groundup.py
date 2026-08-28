@@ -15,6 +15,7 @@ from msikernel.lean_bootstrap import (
     lean_continuations,
     rediscovery_workload,
 )
+from msikernel.trace import TraceRow, compile_anonymous_trace_interface
 
 
 class GroundUpMSIKernel(unittest.TestCase):
@@ -97,6 +98,47 @@ class GroundUpMSIKernel(unittest.TestCase):
         self.assertEqual(len(registry.active()), 1)
         registry.revoke("lean-sort")
         self.assertEqual(registry.active(), ())
+
+    def test_anonymous_trace_compiler_recovers_same_future_quotient(self):
+        named = compile_lean_sort_interface()
+        rows = []
+        contexts = tuple(f"k{i}" for i, _ in enumerate(lean_continuations()))
+        for si, state in enumerate(LEAN_STATES):
+            for ci, continuation in enumerate(lean_continuations()):
+                # The trace compiler sees opaque ids and opaque outcome tokens,
+                # not Sort/Pi semantic labels or continuation names.
+                outcome = continuation.observe(state)
+                rows.append(TraceRow(f"s{si}", contexts[ci], (ci, outcome)))
+
+        anonymous, coverage = compile_anonymous_trace_interface(
+            "anonymous-lean-v0", rows, context_order=contexts
+        )
+        self.assertTrue(coverage.complete)
+        for i, x in enumerate(LEAN_STATES):
+            for j, y in enumerate(LEAN_STATES):
+                self.assertEqual(
+                    named.equivalence.equivalent(x, y),
+                    anonymous.equivalence.equivalent(f"s{i}", f"s{j}"),
+                )
+
+    def test_anonymous_trace_compiler_fails_closed_on_missing_future_outcome(self):
+        rows = [
+            TraceRow("s0", "c0", 0),
+            TraceRow("s0", "c1", 1),
+            TraceRow("s1", "c0", 0),
+        ]
+        with self.assertRaisesRegex(ValueError, "incomplete protected continuation matrix"):
+            compile_anonymous_trace_interface(
+                "partial", rows, context_order=("c0", "c1")
+            )
+
+    def test_anonymous_trace_conflicts_are_not_silently_merged(self):
+        rows = [
+            TraceRow("s0", "c0", 0),
+            TraceRow("s0", "c0", 1),
+        ]
+        with self.assertRaisesRegex(ValueError, "conflicting verifier outcomes"):
+            compile_anonymous_trace_interface("conflict", rows)
 
 
 if __name__ == "__main__":
