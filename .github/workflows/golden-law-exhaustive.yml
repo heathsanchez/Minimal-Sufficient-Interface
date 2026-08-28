@@ -1,0 +1,19 @@
+name: Golden law exhaustive
+
+on:
+  push:
+    paths:
+      - 'tests/test_golden_law_exhaustive.py'
+      - '.github/workflows/golden-law-exhaustive.yml'
+  workflow_dispatch:
+
+jobs:
+  golden-law:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exhaustive finite consequential-structure census
+        run: python -m unittest -v tests.test_golden_law_exhaustive
