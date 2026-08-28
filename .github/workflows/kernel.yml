@@ -29,6 +29,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean -o lean/Kernel.olean lean/Kernel.lean
+      - name: Check unique minimal repair theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/MinimalRepair.lean
       - name: Check Lean completeness theorem
         env:
           LEAN_PATH: lean
