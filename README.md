@@ -309,8 +309,9 @@ cost **6** in every grammar; COLD and controls remain at **20/29**.
 The verified result is promoted three more times. An unchanged residual learner
 selects a unique two-block composition at widths 2, 4 and 8; each promotion
 crosses the next common two-call budget, and structural edge interventions are
-predicted exhaustively. Lean independently checks the frozen cross-grammar
-programs, all 131,072 eight-bit input/carry cases, and carry-edge deletion.
+predicted exhaustively. Python checks all 131,072 eight-bit input/carry cases;
+dependency-free Lean independently checks the frozen cross-grammar programs,
+all 8,192 six-bit input/carry cases, and carry-edge deletion.
 
 See
 [`BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md`](BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md),

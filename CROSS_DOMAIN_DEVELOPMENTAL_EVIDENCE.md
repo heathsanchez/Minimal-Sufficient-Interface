@@ -85,8 +85,8 @@ The resulting interface is then promoted through widths 2, 4 and 8. At every
 generation, residual elimination uniquely recovers the correct two-block
 wiring from 60 anonymous candidates, WARM uses two calls, and ancestor ablation
 requires at least four. Structural carry-edge edits are predicted rather than
-merely replayed. Lean independently certifies the frozen programs and the
-eight-bit census.
+merely replayed. Python exhausts the eight-bit census; dependency-free Lean
+independently certifies the frozen programs, a six-bit census, and edge deletion.
 
 See
 [`BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md`](BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md).

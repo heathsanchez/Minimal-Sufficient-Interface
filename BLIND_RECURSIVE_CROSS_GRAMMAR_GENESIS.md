@@ -107,8 +107,9 @@ K_{t+1}\notin Discover_2(G+K_{t-1}).
 }
 \]
 
-Python exhausts every input and both incoming-bit values through width 8. Lean
-independently checks all 131,072 eight-bit cases.
+Python exhausts every input and both incoming-bit values through width 8
+(131,072 cases). Dependency-free Lean independently checks all 8,192 six-bit
+input/carry cases by kernel reduction.
 
 ## Structural interventions
 
@@ -131,7 +132,8 @@ Established:
    a sealed resource frontier against sham, raw-history and ablation controls;
 4. the result compounds through three further verifier-selected promotions;
 5. the learned composition predicts structural interventions;
-6. a separate Lean checker certifies the frozen programs and eight-bit result.
+6. a separate Lean checker certifies the frozen programs, the six-bit recursive
+   census, and the structural edge-deletion intervention.
 
 Not established:
 
