@@ -271,6 +271,28 @@ Thus the finite developmental chain is now closed at the constructor level:
 
 See [`CONSTRUCTOR_GENESIS.md`](CONSTRUCTOR_GENESIS.md) and [`tests/test_constructor_genesis.py`](tests/test_constructor_genesis.py).
 
+## Verified interface compilation
+
+The constructor result now compounds across two promotions in a separate
+resource-bounded synthesis experiment. Starting from variables and NAND only,
+incremental verifier residuals isolate minimum formula representatives for the
+two protected half-adder outputs. Retaining those representatives as unit-cost
+constructors changes the minimum full-adder formula cost from **20** to **6**;
+matched sham and exact-ablation arms remain at 20 under a frozen budget of 6.
+
+The full-adder outputs are then promoted again and recursively composed. Python
+exhausts all input pairs at widths 4 and 6, while Lean independently certifies
+the half adder, full adder, all 256 four-bit pairs and all 4,096 six-bit pairs.
+
+The gain is correctly typed: `20 → 6` is promoted-constructor description
+cost, not fully expanded NAND-gate complexity. It establishes that a verified
+behavioural program can be compiled into the constructor language and causally
+change a later bounded synthesis frontier.
+
+See [`VERIFIED_INTERFACE_COMPILATION.md`](VERIFIED_INTERFACE_COMPILATION.md),
+[`tests/test_verified_interface_compilation.py`](tests/test_verified_interface_compilation.py)
+and [`lean/AdderInterfaceCompilation.lean`](lean/AdderInterfaceCompilation.lean).
+
 ## Selection above the kernel
 
 The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator. Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but a `5 × 4` counterexample shows it is not a general theorem. Dynamic programming shows that optimal next-step value is residual-relative.
@@ -288,9 +310,10 @@ LEAN_PATH=lean lean lean/BehaviouralCongruence.lean
 LEAN_PATH=lean lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
 LEAN_PATH=lean lean lean/DevelopmentalCategory.lean
 LEAN_PATH=lean lean lean/Falsifiers.lean
+lean lean/AdderInterfaceCompilation.lean
 ```
 
-CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, monoid behavioural congruence and finite recovery, typed behavioural congruence, developmental continuation-category theorem, and falsifiers together.
+CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, monoid behavioural congruence and finite recovery, typed behavioural congruence, developmental continuation-category theorem, falsifiers, and the standalone verified-interface compilation certificate.
 
 ## Scope
 
@@ -298,4 +321,5 @@ This repository deliberately isolates the foundation. It does **not** claim that
 
 The finite/theorem-level skeleton is now intentionally complete. The repo establishes a progression from verified distinctions to exact behavioural quotients, functorial quotient dynamics, endogenous capability/continuation discovery, counterexample-driven recovery of operational composition, and grammar-driven synthesis of a composition constructor.
 
-The remaining frontier is no longer another small finite kernel experiment. It is **open-ended generative development**: richer typed grammars, learned object/type formation, resource-bounded search, and transfer to natural theorem proving, code repair, or scientific intervention spaces. Those layers should sit above the frozen MSI kernel rather than alter it unless a counterexample forces a change.
+The remaining frontier is no longer another small finite kernel experiment. It is **open-ended generative development**: richer typed grammars, learned object/type formation, transfer across semantically source-distinct tasks, and natural theorem-proving, code-repair, or scientific-intervention spaces. Those layers should sit above the frozen MSI kernel rather than alter it unless a counterexample forces a change.
+
