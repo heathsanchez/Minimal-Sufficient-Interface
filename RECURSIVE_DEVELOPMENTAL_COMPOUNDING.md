@@ -79,7 +79,7 @@ Five arms share the same target language, verifier, candidate order and budget:
 
 The result is exact:
 
-| arm | selected target query | exact target MSI in one query | downstream capability admissible |
+| arm | selected target query | exact target MSI in one query | downstream capability admissible on resulting interface |
 |---|---:|---:|---:|
 | WARM | `t2` | yes | yes |
 | COLD | `t0` | no | no |
@@ -117,9 +117,9 @@ The target also contains a fixed downstream action
 
 which is present in the common raw language for every arm.
 
-Before the target interface is repaired, this action is not well-defined on the current quotient. The WARM arm discovers `t2`, reaches the exact future-relative quotient, and the action becomes quotient-admissible.
+After the matched one-query developmental episode, the WARM arm has discovered `t2`, reached the exact future-relative quotient, and the action is quotient-admissible. All four controls remain at a different one-query interface on which the same action is not quotient-admissible.
 
-All four controls remain at an interface on which the same action is not quotient-admissible.
+The zero-query indiscrete quotient is not used as a comparator for this claim: every function descends trivially to a one-point quotient. The causal comparison is between the matched post-query interfaces under the frozen budget.
 
 Therefore the experiment demonstrates a typed causal chain:
 
@@ -133,7 +133,7 @@ Therefore the experiment demonstrates a typed causal chain:
 \to
 \text{exact later MSI}
 \to
-\text{newly admissible downstream capability}.
+\text{downstream capability admissible on the resulting interface}.
 }
 \]
 
