@@ -1,0 +1,22 @@
+name: Golden law meta becoming
+
+on:
+  push:
+    paths:
+      - 'tests/test_golden_law_meta_becoming.py'
+      - '.github/workflows/golden-law-meta-becoming.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  meta-becoming:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test whether developmental machinery can itself develop
+        run: python -m unittest -v tests.test_golden_law_meta_becoming
