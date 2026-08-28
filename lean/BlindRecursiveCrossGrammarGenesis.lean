@@ -1,4 +1,5 @@
 import Std
+import Std.Tactic.NativeDecide
 
 set_option maxHeartbeats 0
 set_option maxRecDepth 100000
@@ -61,7 +62,7 @@ theorem threePromotionsEightBitExhaustive :
     (List.range 256).all (fun a =>
       (List.range 256).all (fun b =>
         (List.range 2).all (fun carry => rippleCorrectAt 8 a b carry))) = true := by
-  decide
+  native_decide
 
 /- Structural intervention certificate: deleting the carry edge between the
    low and high two-bit blocks computes two independent protected additions. -/
