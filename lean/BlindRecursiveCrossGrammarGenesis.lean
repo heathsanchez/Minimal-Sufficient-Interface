@@ -27,7 +27,7 @@ def byCarry (a b c : Bool) : Bool := u06 (by1 (u06 a b) (u06 a c)) a
 def cxSum (a b c : Bool) : Bool := u09 (u09 a b) c
 def cxCarry (a b c : Bool) : Bool := u09 (cx1 (u09 a b) (u09 a c)) a
 
-def expectedSum (a b c : Bool) : Bool := a != b != c
+def expectedSum (a b c : Bool) : Bool := u06 (u06 a b) c
 def expectedCarry (a b c : Bool) : Bool :=
   (a && b) || (a && c) || (b && c)
 
@@ -42,7 +42,7 @@ theorem independentGrammarProgramsAgree :
         cxSum x y z == expectedSum x y z &&
         azCarry x y z == expectedCarry x y z &&
         byCarry x y z == expectedCarry x y z &&
-        cxCarry x y z == expectedCarry x y z)))) = true := by
+        cxCarry x y z == expectedCarry x y z))) = true := by
   decide
 
 def bitsLE (n width : Nat) : List Bool :=
