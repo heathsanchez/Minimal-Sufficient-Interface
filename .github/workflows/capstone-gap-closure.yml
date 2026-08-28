@@ -19,8 +19,12 @@ jobs:
         run: python -m unittest tests.test_observation_language_genesis -v
       - name: Residual to minimal behavioural morphism class
         run: python -m unittest tests.test_residual_morphism_class_genesis -v
+      - name: Morphism-class version-space stress test
+        run: python -m unittest tests.test_residual_morphism_class -v
       - name: Untyped residual-driven multi-object category genesis
         run: python -m unittest tests.test_multi_object_category_genesis -v
+      - name: Sparse active category genesis with withheld table
+        run: python -m unittest tests.test_sparse_category_genesis -v
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
