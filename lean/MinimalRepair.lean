@@ -16,7 +16,7 @@ theorem meet_refines_right (a b : L) : K.Le (K.meet a b) b := by
     K.meet (K.meet a b) b = K.meet a (K.meet b b) := K.assoc a b b
     _ = K.meet a b := by rw [K.idem b]
 
-/-- Any state refining both inputs also refines their meet.  Together with
+/-- Any state refining both inputs also refines their meet. Together with
     `update_refines` and `meet_refines_right`, this is the universal property
     of the MSI update. -/
 theorem refines_meet {x a b : L}
@@ -31,19 +31,19 @@ theorem refines_meet {x a b : L}
     the verified constraint `b`: it refines both, and every competing common
     refinement is at least as fine.
 
-    Recall that `K.Le x y` means `x` is a refinement of `y`.  Thus this is the
+    Recall that `K.Le x y` means `x` is a refinement of `y`. Thus this is the
     greatest lower bound in the induced order, equivalently the coarsest state
     among all states that satisfy both requirements. -/
 theorem minimal_justified_repair (a b : L) :
     K.Le (K.meet a b) a ∧
     K.Le (K.meet a b) b ∧
     ∀ x, K.Le x a → K.Le x b → K.Le x (K.meet a b) := by
-  refine ⟨K.update_refines a b, K.meet_refines_right a b, ?_⟩
+  refine ⟨K.update_refines a b, meet_refines_right K a b, ?_⟩
   intro x hxa hxb
-  exact K.refines_meet hxa hxb
+  exact refines_meet K hxa hxb
 
 /-- Any two states satisfying the universal property of the common refinement
-    are equal.  This supplies uniqueness without choosing coordinates or a
+    are equal. This supplies uniqueness without choosing coordinates or a
     concrete representation of the refinement lattice. -/
 theorem unique_common_refinement {a b m n : L}
     (hma : K.Le m a) (hmb : K.Le m b)
@@ -62,7 +62,7 @@ theorem meet_unique_minimal_repair {a b m : L}
     (hmGreatest : ∀ x, K.Le x a → K.Le x b → K.Le x m) :
     m = K.meet a b := by
   apply K.le_antisymm
-  · exact K.refines_meet hma hmb
-  · exact hmGreatest (K.meet a b) (K.update_refines a b) (K.meet_refines_right a b)
+  · exact refines_meet K hma hmb
+  · exact hmGreatest (K.meet a b) (K.update_refines a b) (meet_refines_right K a b)
 
 end MinimalRepair
