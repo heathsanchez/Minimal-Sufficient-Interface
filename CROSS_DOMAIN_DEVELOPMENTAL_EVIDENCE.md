@@ -74,9 +74,9 @@ while the matched cold, raw, sham and exact-ablation arms remain false.
 
 This is **capability/discovery compounding inside a supplied Lean proof language**. It does not establish new Lean syntax, tactic invention or new syntactic formability.
 
-## 4. ARC — strong within-episode development, unresolved cross-episode identity
+## 4. ARC — strong within-episode development and a falsified cross-episode policy hypothesis
 
-The ARC-AGI sequence provides a useful counterweight because it separates what does and does not transfer.
+The ARC-AGI sequence is useful precisely because it separates what does and does not transfer.
 
 Inside frozen ARC episodes, verified future collisions forced a cumulative heterogeneous observation basis. Later, a residual-history policy changed subsequent question selection: the learned history policy reached the exact protected future quotient on all four frozen tasks, including one task the memoryless residual policy could not close under the same eight-query budget.
 
@@ -94,13 +94,13 @@ q_{t+1}
 
 inside an episode, where `H_t` is retained verifier-returned residual history rather than a supplied semantic concept.
 
-Prospective cross-episode tests then exposed a real boundary rather than a clean positive result:
+Prospective source-distinct tests then falsified progressively stronger transfer hypotheses rather than yielding a clean positive result.
 
-- a global source query-shape prior did not dominate on source-distinct ARC tasks;
-- allowing the prior to override live target residuals was actively harmful;
-- making it defeasible recovered some performance, but RAW and SHAM controls reproduced the apparent gain, so the learned source prior still lacked causal identity.
+### Global inherited prior
 
-The resulting constraint is:
+A source query-shape prior estimated from four frozen episodes did not dominate on source-distinct targets. When inherited preference outranked current target residual evidence it was actively harmful.
+
+This forced
 
 \[
 \boxed{
@@ -110,9 +110,53 @@ The resulting constraint is:
 }
 \]
 
-A prior may break ties among futures still equivalent under current evidence; it may not override a distinction the current verifier has already forced.
+### Defeasible prior
 
-The ARC evidence therefore supports within-episode developmental policy formation, but broad source-distinct policy transfer should not yet be promoted as established.
+After moving inherited experience behind live residual support, WARM improved over COLD on 14 disjoint target carriers, but RAW and SHAM controls reproduced the apparent coverage gain and RAW was cheaper. The source prior therefore still lacked causal identity.
+
+### Residual-conditioned prior
+
+The final test moved the inherited object up one level: source episodes learned a mapping from the anonymous structure of the current separator set to the query-program shape selected by prior verified residual history. The target was fixed independently: `60c09cac`, the sole fresh evaluation carrier mechanically identified by the exhaustive transfer-boundary census before target outcomes were inspected.
+
+Under the same eight-query budget:
+
+| arm | exact target | queries |
+|---|---:|---:|
+| WARM residual-conditioned | yes | 7 |
+| COLD | yes | 6 |
+| RAW_HISTORY | yes | **5** |
+| SHAM | yes | 7 |
+| ANCESTOR_ABLATION | yes | 6 |
+
+So the tested residual-conditioned transfer rule also fails causal identity. WARM and SHAM have identical cost, and RAW is strictly cheaper.
+
+The resulting negative theorem-by-experiment is:
+
+\[
+\boxed{
+\text{within-episode developmental value}
+\not\Rightarrow
+\text{cross-episode transferable query-policy identity}.
+}
+\]
+
+This is not a failure of MSI refinement. It identifies the next boundary: the fixed V17 observation language itself was produced by a source-specific developmental lineage. The meaningful transfer object likely sits **above query ranking**, at the level that generates the observation language.
+
+The next ARC frontier is therefore
+
+\[
+\boxed{
+\rho
+\to
+\text{observation-language / meta-constructor generator}
+\to
+C_{t+1}
+\to
+\Pi_{t+1},
+}
+\]
+
+with source-distinct transfer and exact ablation. Continuing to tune preferences over the frozen V17 atoms would no longer be residual-licensed.
 
 ## What joins the domains
 
@@ -121,7 +165,7 @@ The domains do **not** retain the same object:
 - arithmetic retains a causal precedence relation and a minimal latent interface;
 - finite MSI can retain an anonymous query policy;
 - Lean retains verified reusable proof substrate;
-- ARC retains a cumulative observation basis and residual history, while the correct cross-task transferable abstraction remains unresolved.
+- ARC retains a cumulative observation basis and residual history, while tested source-specific query policies do not transfer causally.
 
 What transfers across domains is the developmental law:
 
@@ -157,7 +201,7 @@ with an essential qualification:
 }
 \]
 
-This is stronger and more falsifiable than asserting that one universal learned feature, query prior or representation should transfer unchanged.
+The Lean result shows this directly for reusable verified constructions. The ARC negatives show why this should not be weakened into the claim that any learned representation or policy is automatically transferable.
 
 ## Evidence hierarchy
 
@@ -166,7 +210,8 @@ The current promotion boundary is:
 1. **Finite mechanism:** recursive developmental causality — established.
 2. **Concrete computation:** verifier-forced structural and latent representation development in arithmetic — established.
 3. **External formal verifier:** source-distinct retained proof substrate causally enlarges the later verified proof frontier — established.
-4. **Natural visual reasoning:** residual history changes later within-episode development — established; source-distinct transferable policy identity — not yet established.
-5. **Open-ended generative self-development:** not established.
+4. **Natural visual reasoning:** residual history changes later within-episode development — established; the tested source-distinct query-policy transfer hypotheses — falsified.
+5. **Observation-language/meta-constructor transfer:** open.
+6. **Open-ended generative self-development:** not established.
 
-The remaining frontier is therefore not another proof that quotients refine. It is to discover, from raw natural residuals, which developmental object is itself stable enough to transfer without overriding current evidence.
+The remaining frontier is therefore not another proof that quotients refine and not another query-prior heuristic. It is to discover, from raw natural residuals, the developmental generator that determines which distinctions can be formed in the first place.
