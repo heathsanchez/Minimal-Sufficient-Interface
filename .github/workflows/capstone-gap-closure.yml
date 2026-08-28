@@ -36,10 +36,15 @@ jobs:
           lean -o lean/Kernel.olean lean/Kernel.lean
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/MinimalRepair.olean lean/MinimalRepair.lean
       - name: Unique minimal justified repair
         env:
           LEAN_PATH: lean
         run: lean lean/MinimalRepair.lean
+      - name: Residual-induced behavioural morphism class
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ResidualMorphismClass.lean
       - name: Least generated regime extension
         env:
           LEAN_PATH: lean
