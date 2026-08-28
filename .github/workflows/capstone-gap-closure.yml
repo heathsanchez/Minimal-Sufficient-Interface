@@ -1,0 +1,38 @@
+name: Capstone Gap Closure
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  capstone:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Residual-driven observation-language genesis
+        run: python -m unittest tests.test_observation_language_genesis -v
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build dependencies
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+      - name: Unique minimal justified repair
+        env:
+          LEAN_PATH: lean
+        run: lean lean/MinimalRepair.lean
+      - name: Least generated regime extension
+        env:
+          LEAN_PATH: lean
+        run: lean lean/GeneratedStage.lean
