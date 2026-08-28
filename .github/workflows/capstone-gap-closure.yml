@@ -27,6 +27,8 @@ jobs:
         run: python -m unittest tests.test_sparse_category_genesis -v
       - name: Latent object-count category genesis
         run: python -m unittest tests.test_object_count_genesis -v
+      - name: Final boss — task-only categorical genesis
+        run: python -m unittest tests.test_final_boss_task_only_category_genesis -v
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
