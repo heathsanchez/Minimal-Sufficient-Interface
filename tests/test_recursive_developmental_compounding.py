@@ -32,8 +32,8 @@ TARGET_QUERIES = {
 TARGET_ORDER = tuple(TARGET_QUERIES)
 
 # Downstream capability. It collapses each protected future class to a
-# representative. It is not quotient-admissible before the right target
-# distinction, but is admissible after the retained policy discovers t2.
+# representative. Under the matched one-query target interfaces it is
+# quotient-admissible only after the retained policy discovers t2.
 DOWNSTREAM_ACTION = (0, 1, 0, 1, 0, 1)
 
 
@@ -213,12 +213,11 @@ class RecursiveDevelopmentalCompounding(unittest.TestCase):
         self.assertFalse(sufficient(TARGET_LABELS, TARGET_QUERIES, ablated_chosen))
         self.assertTrue(sufficient(TARGET_LABELS, TARGET_QUERIES, warm_chosen))
 
-        # The later executable capability is present in the common raw language,
-        # but becomes quotient-admissible only in the WARM arm. This is a typed
-        # discovery/policy gain, not a claim of new syntactic formability.
-        self.assertFalse(
-            quotient_admissible(DOWNSTREAM_ACTION, TARGET_QUERIES, tuple())
-        )
+        # The later executable capability is present in the common raw language.
+        # After the matched one-query developmental episode it is admissible only
+        # on WARM's exact target interface. The zero-query indiscrete quotient is
+        # deliberately not used as a comparator: every function descends there
+        # trivially, which is not the developmental claim under test.
         self.assertFalse(
             quotient_admissible(DOWNSTREAM_ACTION, TARGET_QUERIES, cold_chosen)
         )
