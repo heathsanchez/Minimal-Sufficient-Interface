@@ -48,7 +48,11 @@ jobs:
       - name: Check Lean developmental category theorem
         env:
           LEAN_PATH: lean
-        run: lean lean/DevelopmentalCategory.lean
+        run: lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+      - name: Check least generated regime extension theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/GeneratedStage.lean
       - name: Check Lean arithmetic direction obstruction
         env:
           LEAN_PATH: lean
