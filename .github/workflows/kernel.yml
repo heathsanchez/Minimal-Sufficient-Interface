@@ -49,6 +49,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ArithmeticDirection.lean
+      - name: Check synthesized Lean proof operator
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ProofOperatorGenesis.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
