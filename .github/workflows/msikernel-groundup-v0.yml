@@ -1,0 +1,31 @@
+name: msikernel ground-up v0
+
+on:
+  push:
+    branches: [msikernel-groundup-v0]
+  workflow_dispatch:
+
+jobs:
+  msikernel:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ground-up MSI runtime tests
+        run: python -m unittest tests.test_msikernel_groundup -v
+      - name: Existing finite-kernel regression
+        run: python -m unittest tests.test_alphabet_kernel tests.test_semilattice_core tests.test_verified_interface_compilation -v
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Formal kernel still checks
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean lean/BehaviouralCongruence.lean
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean lean/DevelopmentalCategory.lean
