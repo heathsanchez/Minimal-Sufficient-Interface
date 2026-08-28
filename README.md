@@ -293,6 +293,31 @@ See [`VERIFIED_INTERFACE_COMPILATION.md`](VERIFIED_INTERFACE_COMPILATION.md),
 [`tests/test_verified_interface_compilation.py`](tests/test_verified_interface_compilation.py)
 and [`lean/AdderInterfaceCompilation.lean`](lean/AdderInterfaceCompilation.lean).
 
+## Blind recursive cross-grammar genesis
+
+The stronger confirmatory experiment removes the named half-adder interface and
+the single-grammar dependence. Three independently specified complete Boolean
+grammars search all 120 anonymous two-behaviour libraries against a hash-frozen
+training family. The sealed full-adder family is excluded before selection.
+
+All three grammars independently recover one coordinate-free interface orbit.
+On 96 hash-held-out behaviours it reduces verified description cost by
+**53.2%–62.5%**, while projection shams, raw history and exact ablation remain
+at the cold frontier. When the sealed arithmetic task is opened, WARM reaches
+cost **6** in every grammar; COLD and controls remain at **20/29**.
+
+The verified result is promoted three more times. An unchanged residual learner
+selects a unique two-block composition at widths 2, 4 and 8; each promotion
+crosses the next common two-call budget, and structural edge interventions are
+predicted exhaustively. Lean independently checks the frozen cross-grammar
+programs, all 131,072 eight-bit input/carry cases, and carry-edge deletion.
+
+See
+[`BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md`](BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md),
+[`tests/test_blind_recursive_cross_grammar_genesis.py`](tests/test_blind_recursive_cross_grammar_genesis.py)
+and
+[`lean/BlindRecursiveCrossGrammarGenesis.lean`](lean/BlindRecursiveCrossGrammarGenesis.lean).
+
 ## Selection above the kernel
 
 The kernel determines lawful refinement and exact stopping, but it does not determine the cheapest next separator. Immediate pair-split gain is cardinality-optimal on all 65,536 binary `4 × 4` worlds tested, but a `5 × 4` counterexample shows it is not a general theorem. Dynamic programming shows that optimal next-step value is residual-relative.
@@ -311,9 +336,10 @@ LEAN_PATH=lean lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviour
 LEAN_PATH=lean lean lean/DevelopmentalCategory.lean
 LEAN_PATH=lean lean lean/Falsifiers.lean
 lean lean/AdderInterfaceCompilation.lean
+lean lean/BlindRecursiveCrossGrammarGenesis.lean
 ```
 
-CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, monoid behavioural congruence and finite recovery, typed behavioural congruence, developmental continuation-category theorem, falsifiers, and the standalone verified-interface compilation certificate.
+CI runs the exhaustive Python suite, capability bridge, Lean kernel, completeness theorem, monoid behavioural congruence and finite recovery, typed behavioural congruence, developmental continuation-category theorem, falsifiers, the verified-interface compilation certificate, and the blind recursive cross-grammar causal gate.
 
 ## Scope
 
@@ -322,4 +348,3 @@ This repository deliberately isolates the foundation. It does **not** claim that
 The finite/theorem-level skeleton is now intentionally complete. The repo establishes a progression from verified distinctions to exact behavioural quotients, functorial quotient dynamics, endogenous capability/continuation discovery, counterexample-driven recovery of operational composition, and grammar-driven synthesis of a composition constructor.
 
 The remaining frontier is no longer another small finite kernel experiment. It is **open-ended generative development**: richer typed grammars, learned object/type formation, transfer across semantically source-distinct tasks, and natural theorem-proving, code-repair, or scientific-intervention spaces. Those layers should sit above the frozen MSI kernel rather than alter it unless a counterexample forces a change.
-

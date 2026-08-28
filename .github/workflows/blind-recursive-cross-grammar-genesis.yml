@@ -1,0 +1,36 @@
+name: Blind recursive cross-grammar genesis
+
+on:
+  push:
+    paths:
+      - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - 'lean/BlindRecursiveCrossGrammarGenesis.lean'
+      - 'BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md'
+      - '.github/workflows/blind-recursive-cross-grammar-genesis.yml'
+  pull_request:
+    paths:
+      - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - 'lean/BlindRecursiveCrossGrammarGenesis.lean'
+      - 'BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md'
+      - '.github/workflows/blind-recursive-cross-grammar-genesis.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  blind-causal-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Blind discovery, transfer, controls, interventions, compounding
+        run: python -m unittest tests.test_blind_recursive_cross_grammar_genesis -v
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Independent semantic and recursive certificate
+        run: lean lean/BlindRecursiveCrossGrammarGenesis.lean

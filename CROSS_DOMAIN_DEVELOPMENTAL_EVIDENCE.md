@@ -68,6 +68,33 @@ The `20 → 6` result is macro-relative description cost, not reduced fully
 expanded NAND complexity, and the protected arithmetic behaviours remain
 supplied.
 
+## 3b. Blind cross-grammar genesis and three-generation compounding
+
+The confirmatory extension no longer supplies the intermediate interface by
+identity. Three complete grammars with disjoint tokens and different primitive
+signatures search every pair of binary behaviours against a hash-frozen family
+of 160 three-input tasks. The later arithmetic family is sealed before the
+training split is formed.
+
+Each grammar independently recovers a representative of one coordinate-free
+interface orbit. Across the 96 held-out behaviours, retained-interface cost is
+reduced by 53.2%–62.5%; matched projection shams, raw history and exact ablation
+remain cold. Only WARM crosses the sealed full-adder budget 6 in all grammars.
+
+The resulting interface is then promoted through widths 2, 4 and 8. At every
+generation, residual elimination uniquely recovers the correct two-block
+wiring from 60 anonymous candidates, WARM uses two calls, and ancestor ablation
+requires at least four. Structural carry-edge edits are predicted rather than
+merely replayed. Lean independently certifies the frozen programs and the
+eight-bit census.
+
+See
+[`BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md`](BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md).
+
+This closes interface-identity, single-grammar, one-generation and
+observational-replay alternatives in the synthetic setting. It does not yet
+establish transfer between unrelated natural domains.
+
 ## 4. Formal theorem proving — source-distinct verified compounding
 
 A separate Lean/Vero experiment supplies the strongest current source-distinct external-verifier causal result.
@@ -238,11 +265,10 @@ The current promotion boundary is:
 
 1. **Finite mechanism:** recursive developmental causality — established.
 2. **Concrete computation:** verifier-forced structural and latent representation development in arithmetic — established.
-3. **Constructor-language development:** retained verified programs causally change a later bounded synthesis frontier and compound through a second promotion — established in a supplied finite grammar.
-4. **External formal verifier:** source-distinct retained proof substrate causally enlarges the later verified proof frontier — established.
+3. **Constructor-language development:** anonymous interface selection, coordinate-free recovery across three complete grammars, sealed held-out transfer, structural interventions and three further causal promotions — established in a finite synthetic setting.
+4. **External formal verifier:** source-distinct retained proof substrate causally enlarges the later verified proof frontier; Lean also independently certifies the blind cross-grammar frozen programs and recursive census — established.
 5. **Natural visual reasoning:** residual history changes later within-episode development — established; the tested source-distinct query-policy transfer hypotheses — falsified.
 6. **Observation-language/meta-constructor transfer:** open.
 7. **Open-ended generative self-development:** not established.
 
 The remaining frontier is therefore not another proof that quotients refine and not another query-prior heuristic. It is to discover, from raw natural residuals, the developmental generator that determines which distinctions can be formed in the first place.
-
