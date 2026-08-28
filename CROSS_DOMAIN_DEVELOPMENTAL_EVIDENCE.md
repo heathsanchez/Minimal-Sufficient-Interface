@@ -2,7 +2,7 @@
 
 The MSI kernel is intentionally domain-neutral. Its core claim is not that one particular representation, operator or policy should transfer everywhere. It is that verified futures determine which distinctions and constructions are justified, and that retained developmental products can change later reachable capability.
 
-The strongest evidence now spans four levels with different claim boundaries.
+The strongest evidence now spans five levels with different claim boundaries.
 
 ## 1. Controlled finite mechanism — recursive compounding
 
@@ -40,7 +40,35 @@ See [`ARITHMETIC_REPRESENTATION_GENESIS.md`](ARITHMETIC_REPRESENTATION_GENESIS.m
 
 This establishes domain-level **representation development**: verified failures alter both the dependency structure of composition and the latent state carried across the resulting interfaces.
 
-## 3. Formal theorem proving — source-distinct verified compounding
+## 3. Constructor-language development — verified interface compilation
+
+A standalone closed-world synthesis experiment starts from variables and NAND
+only. Protected truth-table rows arrive incrementally as verifier residuals.
+The minimum retained formula representatives for the two half-adder outputs are
+then promoted into the constructor language.
+
+Under formula-tree cost, the later full-adder task has the following matched
+frontier:
+
+| arm | minimum total cost |
+|---|---:|
+| COLD NAND grammar | 20 |
+| WARM retained interface | **6** |
+| SHAM projection constructors | 20 |
+| ANCESTOR_ABLATION | 20 |
+
+With budget 6, only WARM succeeds. A second promotion turns the verified full
+adder into recursive substrate; Python and Lean independently exhaust widths 4
+and 6.
+
+See [`VERIFIED_INTERFACE_COMPILATION.md`](VERIFIED_INTERFACE_COMPILATION.md).
+
+This establishes **constructor-language development under a resource bound**.
+The `20 → 6` result is macro-relative description cost, not reduced fully
+expanded NAND complexity, and the protected arithmetic behaviours remain
+supplied.
+
+## 4. Formal theorem proving — source-distinct verified compounding
 
 A separate Lean/Vero experiment supplies the strongest current source-distinct external-verifier causal result.
 
@@ -74,7 +102,7 @@ while the matched cold, raw, sham and exact-ablation arms remain false.
 
 This is **capability/discovery compounding inside a supplied Lean proof language**. It does not establish new Lean syntax, tactic invention or new syntactic formability.
 
-## 4. ARC — strong within-episode development and a falsified cross-episode policy hypothesis
+## 5. ARC — strong within-episode development and a falsified cross-episode policy hypothesis
 
 The ARC-AGI sequence is useful precisely because it separates what does and does not transfer.
 
@@ -164,6 +192,7 @@ The domains do **not** retain the same object:
 
 - arithmetic retains a causal precedence relation and a minimal latent interface;
 - finite MSI can retain an anonymous query policy;
+- verified interface compilation retains extensional programs as new constructor units;
 - Lean retains verified reusable proof substrate;
 - ARC retains a cumulative observation basis and residual history, while tested source-specific query policies do not transfer causally.
 
@@ -209,9 +238,11 @@ The current promotion boundary is:
 
 1. **Finite mechanism:** recursive developmental causality — established.
 2. **Concrete computation:** verifier-forced structural and latent representation development in arithmetic — established.
-3. **External formal verifier:** source-distinct retained proof substrate causally enlarges the later verified proof frontier — established.
-4. **Natural visual reasoning:** residual history changes later within-episode development — established; the tested source-distinct query-policy transfer hypotheses — falsified.
-5. **Observation-language/meta-constructor transfer:** open.
-6. **Open-ended generative self-development:** not established.
+3. **Constructor-language development:** retained verified programs causally change a later bounded synthesis frontier and compound through a second promotion — established in a supplied finite grammar.
+4. **External formal verifier:** source-distinct retained proof substrate causally enlarges the later verified proof frontier — established.
+5. **Natural visual reasoning:** residual history changes later within-episode development — established; the tested source-distinct query-policy transfer hypotheses — falsified.
+6. **Observation-language/meta-constructor transfer:** open.
+7. **Open-ended generative self-development:** not established.
 
 The remaining frontier is therefore not another proof that quotients refine and not another query-prior heuristic. It is to discover, from raw natural residuals, the developmental generator that determines which distinctions can be formed in the first place.
+
