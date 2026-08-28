@@ -1,0 +1,27 @@
+name: Recursive developmental compounding
+
+on:
+  push:
+    paths:
+      - 'tests/test_recursive_developmental_compounding.py'
+      - 'RECURSIVE_DEVELOPMENTAL_COMPOUNDING.md'
+      - '.github/workflows/recursive-compounding.yml'
+  pull_request:
+    paths:
+      - 'tests/test_recursive_developmental_compounding.py'
+      - 'RECURSIVE_DEVELOPMENTAL_COMPOUNDING.md'
+      - '.github/workflows/recursive-compounding.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  causal-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-distinct recursive developmental compounding
+        run: python -m unittest tests.test_recursive_developmental_compounding -v
