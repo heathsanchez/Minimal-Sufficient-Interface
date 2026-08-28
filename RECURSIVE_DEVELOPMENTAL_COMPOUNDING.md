@@ -162,4 +162,13 @@ The remaining external question is whether the same causal pattern survives when
 - constructor languages are richer and resource-bounded;
 - several developmental generations compound rather than one source-to-target transfer.
 
+The last item is now closed in a narrower, supplied finite constructor grammar:
+[`VERIFIED_INTERFACE_COMPILATION.md`](VERIFIED_INTERFACE_COMPILATION.md) promotes
+a verifier-selected half-adder interface, uses it to change the bounded
+full-adder frontier, promotes the full adder, and verifies recursive multi-bit
+composition. What remains open here is several-generation compounding across
+semantically source-distinct or natural tasks rather than repeated structure
+inside one generated program family.
+
 Those are transfer and scale questions above the frozen MSI kernel. They no longer constitute a missing logical link in the finite mechanism itself.
+
