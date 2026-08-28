@@ -1,5 +1,6 @@
 import itertools
 import unittest
+from collections import Counter, defaultdict
 
 
 def all_maps(n):
@@ -42,17 +43,19 @@ def sufficient(rows, features):
     return True
 
 
-def residual_pairs(rows, features):
-    buckets = {}
-    residuals = []
+def residual_pair_count(rows, features):
+    """Count conflicting row pairs in O(rows), without materialising all pairs."""
+    buckets = defaultdict(Counter)
     for row in rows:
-        key = feature_tuple(row, features)
-        bucket = buckets.setdefault(key, [])
-        for prev in bucket:
-            if prev[3] != row[3]:
-                residuals.append((prev, row))
-        bucket.append(row)
-    return tuple(residuals)
+        buckets[feature_tuple(row, features)][row[3]] += 1
+
+    total = 0
+    for counts in buckets.values():
+        seen = 0
+        for count in counts.values():
+            total += seen * count
+            seen += count
+    return total
 
 
 def generated_depth2_candidates():
@@ -112,8 +115,8 @@ class MultilevelSelfExpansion(unittest.TestCase):
         # over the existing interface.
         current = ((), (0,), (1,))
         self.assertFalse(sufficient(rows, current))
-        initial_residuals = residual_pairs(rows, current)
-        self.assertGreater(len(initial_residuals), 0)
+        initial_residuals = residual_pair_count(rows, current)
+        self.assertGreater(initial_residuals, 0)
 
         # Stage 1: only after that failure, blind executable probe generation is
         # allowed. Exactly one depth-2 observation repairs the information loss.
@@ -158,43 +161,56 @@ class MultilevelSelfExpansion(unittest.TestCase):
         self.assertIsNotNone(signature)
         table = synthesize_lookup(discovery_rows, signature)
 
-        heldout = [
-            row
-            for row in make_rows(maps, maps, n, verifier)
-            if not (row[0] in discovery_set and row[1] in discovery_set)
-        ]
-
+        # Stream the exhaustive held-out census once. This keeps exactly the same
+        # 259,840 rows while avoiding the previous quadratic residual-pair materialisation.
         transfer_failures = 0
-        for f, g, x, expected in heldout:
-            if predict(table, signature, f, g, x) != expected:
-                transfer_failures += 1
+        heldout_rows = 0
+        constructor_ablation_impossible = 0
+        residual_counts = defaultdict(Counter)
 
-        # Ablation A: remove the invented probe. No constructor over the complete
-        # old observable tuple can be exact, because residual collisions return.
-        probe_ablation_residuals = residual_pairs(heldout, current)
+        for f in maps:
+            for g in maps:
+                if f in discovery_set and g in discovery_set:
+                    continue
+                for x in range(n):
+                    expected = verifier(f, g, x)
+                    heldout_rows += 1
 
-        # Ablation B: keep the invented probe, but remove the invented value-
-        # producing constructor and permit only projection of one of its inputs.
-        constructor_ablation_impossible = sum(
-            row[3] not in feature_tuple(row, signature)
-            for row in heldout
-        )
+                    if predict(table, signature, f, g, x) != expected:
+                        transfer_failures += 1
+
+                    row = (f, g, x, expected)
+                    if expected not in feature_tuple(row, signature):
+                        constructor_ablation_impossible += 1
+
+                    old_key = feature_tuple(row, current)
+                    residual_counts[old_key][expected] += 1
+
+        probe_ablation_residuals = 0
+        for counts in residual_counts.values():
+            seen = 0
+            for count in counts.values():
+                probe_ablation_residuals += seen * count
+                seen += count
+
+        discovery_initial_residuals = residual_pair_count(discovery_rows, current)
 
         print(
             "multilevel self-expansion: "
             f"discovery_rows={len(discovery_rows)}; "
-            f"initial_residuals={len(residual_pairs(discovery_rows, current))}; "
+            f"initial_residuals={discovery_initial_residuals}; "
             f"invented_probe={learned_probe}; "
             f"inferred_signature={signature}; "
             f"table_entries={len(table)}; "
-            f"heldout_rows={len(heldout)}; "
+            f"heldout_rows={heldout_rows}; "
             f"transfer_failures={transfer_failures}; "
-            f"probe_ablation_residuals={len(probe_ablation_residuals)}; "
+            f"probe_ablation_residuals={probe_ablation_residuals}; "
             f"constructor_ablation_impossible={constructor_ablation_impossible}"
         )
 
+        self.assertEqual(heldout_rows, 259840)
         self.assertEqual(transfer_failures, 0)
-        self.assertGreater(len(probe_ablation_residuals), 0)
+        self.assertGreater(probe_ablation_residuals, 0)
         self.assertGreater(constructor_ablation_impossible, 0)
 
 
