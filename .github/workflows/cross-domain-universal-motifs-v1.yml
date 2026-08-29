@@ -1,0 +1,20 @@
+name: cross domain universal motifs v1
+
+on:
+  push:
+    branches: [cross-domain-universal-motifs-v1]
+    paths:
+      - 'tests/test_cross_domain_universal_motifs.py'
+      - '.github/workflows/cross-domain-universal-motifs-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run blind cross-domain motif gate
+        run: python tests/test_cross_domain_universal_motifs.py
