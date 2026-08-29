@@ -8,6 +8,7 @@ on:
       - 'formal/VerifiedConsequenceGenesis.lean'
       - 'formal/UnifiedDevelopmentalLaw.lean'
       - 'formal/BoundedDevelopmentalCapability.lean'
+      - 'formal/MultiCandidateDevelopmentalSearch.lean'
       - 'lean/*.lean'
       - '.github/workflows/verified-consequence-genesis-formal.yml'
   workflow_dispatch:
@@ -32,6 +33,7 @@ jobs:
           lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
           lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
           lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
+          lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
       - name: Check formal laws
         env:
           LEAN_PATH: lean:formal
@@ -75,3 +77,13 @@ jobs:
           echo "PROMOTION_CHANGES_BOUNDED_CONTROLLER_RESULT=PASS"
           echo "COLD_ABLATION_RETURNS_FAILURE=PASS"
           echo "VERIFIED_CONSEQUENCE_CHANGES_BOUNDED_CAPABILITY=PASS"
+      - name: Check multi-candidate developmental search
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/MultiCandidateDevelopmentalSearch.lean
+          echo "FROZEN_MULTICANDIDATE_SEARCH=PASS"
+          echo "MATCHED_TWO_QUERY_BUDGET=PASS"
+          echo "DECOY_REJECTED_BEFORE_DESCENDANT=PASS"
+          echo "PROMOTION_CHANGES_MULTICANDIDATE_RESULT=PASS"
+          echo "COLD_ANCESTOR_ABLATION_BLOCKS_SEARCH=PASS"
