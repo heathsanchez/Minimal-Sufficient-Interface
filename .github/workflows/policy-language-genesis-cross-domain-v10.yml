@@ -1,0 +1,27 @@
+name: policy language genesis cross domain v10
+
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/policy_language_genesis_cross_domain_v10.py'
+      - '.github/workflows/policy-language-genesis-cross-domain-v10.yml'
+      - 'experiments/natural_orbit_ultimate_genesis_v3_fast.py'
+      - 'experiments/lean_external_capability_synthesis.py'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run V10
+        run: python experiments/policy_language_genesis_cross_domain_v10.py
