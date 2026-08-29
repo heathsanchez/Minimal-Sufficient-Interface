@@ -33,7 +33,10 @@ theorem respectsFibres_factorsThrough_of_surjective
     (hq : Function.Surjective q)
     (h : RespectsFibres q c) : FactorsThrough q c := by
   classical
-  choose rep hrep using hq
+  let rep : R → X := fun r => Classical.choose (hq r)
+  have hrep : ∀ r : R, q (rep r) = r := by
+    intro r
+    exact Classical.choose_spec (hq r)
   refine ⟨fun r => c (rep r), ?_⟩
   intro x
   exact h (rep (q x)) x (hrep (q x))
