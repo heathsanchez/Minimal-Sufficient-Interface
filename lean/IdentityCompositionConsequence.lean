@@ -1,23 +1,11 @@
 import Std
 
+namespace MinimalSufficientInterface.IdentityCompositionConsequence
+
 universe u v w
 
-/-!
-Compression experiment: recover consequential identity, separation/union,
-compositional closure, developmental refinement, and least generated extension
-from the smallest substrate that the proofs actually require.
-
-This file deliberately imports only `Std`.
--/
-
-namespace IdentityCompositionConsequence
-
-/-- Minimal executable compositional substrate.
-
-No associativity or left/right unit law for `comp` is assumed here: the current
-identity/refinement/least-extension theorems do not require them.  What is required
-is an identity action for recovering immediate observation and compatibility of
-composition with execution. -/
+/-- Minimal transformation calculus: identity action and compositional action.
+No associativity or unit equations on `comp` are assumed. -/
 structure Calculus (M : Type u) (X : Type v) where
   one : M
   comp : M → M → M
@@ -26,57 +14,54 @@ structure Calculus (M : Type u) (X : Type v) where
   comp_act : ∀ f g x, act (comp f g) x = act f (act g x)
 
 variable {M : Type u} {X : Type v} {Y : Type w}
-variable (K : Calculus M X) (observe : X → Y)
+variable (K : Calculus M X)
 
-/-- A stage is the currently licensed compositional language. -/
+/-- A developmental stage licenses transformations and is closed under identity
+and composition. -/
 structure Stage where
   allows : M → Prop
   one_mem : allows K.one
-  comp_mem : ∀ f g, allows f → allows g → allows (K.comp f g)
+  comp_mem : ∀ {f g}, allows f → allows g → allows (K.comp f g)
 
-/-- Identity at a stage is exactly equality under all currently licensed
-compositional consequences. -/
-def SameAt (S : Stage K) (x y : X) : Prop :=
+/-- One stage extends another when every old transformation remains licensed. -/
+def Extends (S T : Stage K) : Prop :=
+  ∀ f, S.allows f → T.allows f
+
+/-- Behavioural identity at a stage: two states are the same exactly when every
+licensed consequence has the same protected observation. -/
+def SameAt (observe : X → Y) (S : Stage K) (x y : X) : Prop :=
   ∀ f, S.allows f → observe (K.act f x) = observe (K.act f y)
 
-/-- A relation is compatible with the immediate protected consequence. -/
-def ObsCompatible (R : X → X → Prop) : Prop :=
-  ∀ x y, R x y → observe x = observe y
-
-/-- A relation is invariant under every transformation licensed by the stage. -/
-def StageInvariant (S : Stage K) (R : X → X → Prop) : Prop :=
-  ∀ f, S.allows f → ∀ x y, R x y → R (K.act f x) (K.act f y)
-
-/-- UNION / maximal forgetting: stage identity is the greatest relation that is
-both observation-compatible and invariant under every licensed composition. -/
-theorem sameAt_greatest_invariant
-    (S : Stage K) (R : X → X → Prop)
-    (hObs : ObsCompatible observe R)
-    (hInv : StageInvariant K S R) :
-    ∀ x y, R x y → SameAt K observe S x y := by
-  intro x y hxy f hf
-  exact hObs (K.act f x) (K.act f y) (hInv f hf x y hxy)
-
-/-- Immediate observation is among the consequences because identity is licensed. -/
+/-- `SameAt` is observation-compatible because identity itself is licensed. -/
 theorem sameAt_observation
-    (S : Stage K) {x y : X}
+    (observe : X → Y) (S : Stage K) {x y : X}
     (h : SameAt K observe S x y) : observe x = observe y := by
   simpa [K.one_act] using h K.one S.one_mem
 
-/-- Stage identity is preserved by every licensed transformation. -/
+/-- `SameAt` is invariant under every licensed transformation. -/
 theorem sameAt_invariant
-    (S : Stage K) : StageInvariant K S (SameAt K observe S) := by
-  intro g hg x y hxy f hf
-  have h := hxy (K.comp f g) (S.comp_mem f g hf hg)
-  simpa [K.comp_act] using h
+    (observe : X → Y) (S : Stage K) {x y : X}
+    (h : SameAt K observe S x y) {g : M} (hg : S.allows g) :
+    SameAt K observe S (K.act g x) (K.act g y) := by
+  intro f hf
+  rw [← K.comp_act, ← K.comp_act]
+  exact h (K.comp f g) (S.comp_mem hf hg)
 
-/-- Extension of the licensed compositional language. -/
-def Extends (S T : Stage K) : Prop := ∀ f, S.allows f → T.allows f
+/-- `SameAt` is the greatest relation compatible with protected observation and
+stable under every licensed transformation. -/
+theorem sameAt_greatest_invariant
+    (observe : X → Y) (S : Stage K)
+    (R : X → X → Prop)
+    (hObs : ∀ {x y}, R x y → observe x = observe y)
+    (hInv : ∀ {x y}, R x y → ∀ {f}, S.allows f → R (K.act f x) (K.act f y)) :
+    ∀ {x y}, R x y → SameAt K observe S x y := by
+  intro x y hR f hf
+  exact hObs (hInv hR hf)
 
-/-- Language extension can only refine consequential identity. -/
+/-- Extending the consequence language can only refine behavioural identity. -/
 theorem extension_refines_identity
-    (S T : Stage K) (hST : Extends K S T) :
-    ∀ x y, SameAt K observe T x y → SameAt K observe S x y := by
+    (observe : X → Y) (S T : Stage K) (hST : Extends K S T) :
+    ∀ {x y}, SameAt K observe T x y → SameAt K observe S x y := by
   intro x y hT f hf
   exact hT f (hST f hf)
 
@@ -85,22 +70,26 @@ pair, the change cannot be unexplained: there exists a consequence licensed by
 the new stage, absent from the old stage, whose protected observation separates
 the pair. Thus every strict identity change has an explicit forcing witness. -/
 theorem strict_refinement_has_new_forcing_consequence
+    (observe : X → Y)
     (S T : Stage K) (hST : Extends K S T) {x y : X}
     (hOld : SameAt K observe S x y)
     (hNew : ¬ SameAt K observe T x y) :
     ∃ f, T.allows f ∧ ¬ S.allows f ∧
       observe (K.act f x) ≠ observe (K.act f y) := by
   classical
-  rw [SameAt] at hNew
-  push_neg at hNew
-  rcases hNew with ⟨f, hfT, hSep⟩
-  refine ⟨f, hfT, ?_, hSep⟩
-  intro hfS
+  by_contra hNoWitness
+  apply hNew
+  intro f hfT
+  by_contra hSep
+  have hfS : S.allows f := by
+    by_contra hfS
+    exact hNoWitness ⟨f, hfT, hfS, hSep⟩
   exact hSep (hOld f hfS)
 
 /-- A licensed consequence that distinguishes a pair is already sufficient to
 forbid their union at that stage. -/
 theorem consequence_forces_split
+    (observe : X → Y)
     (T : Stage K) (f : M) (hfT : T.allows f)
     {x y : X}
     (hSep : observe (K.act f x) ≠ observe (K.act f y)) :
@@ -108,78 +97,66 @@ theorem consequence_forces_split
   intro hSame
   exact hSep (hSame f hfT)
 
-/-- Free generated extension of a stage by one verified new transformation.
-`one` needs no separate constructor because it is already licensed by every old
-stage and therefore enters through `old`. -/
+/-- Closure generated by an old stage plus one new seed. -/
 inductive Generated (S : Stage K) (seed : M) : M → Prop
   | old {f} : S.allows f → Generated S seed f
   | seed : Generated S seed seed
   | comp {f g} : Generated S seed f → Generated S seed g →
       Generated S seed (K.comp f g)
 
-/-- The generated extension is itself a stage. -/
+/-- Least composition-closed stage obtained by adjoining one seed. -/
 def adjoin (S : Stage K) (seed : M) : Stage K where
   allows := Generated K S seed
   one_mem := Generated.old S.one_mem
-  comp_mem := by
-    intro f g hf hg
-    exact Generated.comp hf hg
+  comp_mem := Generated.comp
 
-/-- The old stage embeds in the generated stage. -/
+/-- The old stage embeds into its one-seed extension. -/
 theorem old_extends_to_adjoin (S : Stage K) (seed : M) :
     Extends K S (adjoin K S seed) := by
   intro f hf
   exact Generated.old hf
 
-/-- The new verified transformation is available after adjoining. -/
+/-- The new seed is licensed by the generated stage. -/
 theorem seed_mem_adjoin (S : Stage K) (seed : M) :
-    (adjoin K S seed).allows seed := Generated.seed
+    (adjoin K S seed).allows seed :=
+  Generated.seed
 
-/-- LEAST EXTENSION: `adjoin` is the least composition-closed stage containing
-both the old stage and the new verified transformation. -/
+/-- `adjoin` is the least stage containing the old stage and the new seed. -/
 theorem adjoin_least
     (S T : Stage K) (seed : M)
-    (hST : Extends K S T)
-    (hseed : T.allows seed) :
+    (hST : Extends K S T) (hSeed : T.allows seed) :
     Extends K (adjoin K S seed) T := by
   intro f hf
   induction hf with
-  | old hold => exact hST _ hold
-  | seed => exact hseed
-  | comp hf hg ihf ihg => exact T.comp_mem _ _ ihf ihg
+  | old hOld => exact hST _ hOld
+  | seed => exact hSeed
+  | comp hf hg ihf ihg => exact T.comp_mem ihf ihg
 
-/-- End-to-end developmental portal: a pair can be united under the old regime,
-a verified seed can separate it, and the least composition-closed extension
-necessarily changes its identity. -/
+/-- Verified compositional portal: a newly verified separating consequence,
+adjoined by least closure, forces a strict identity refinement. -/
 theorem verified_compositional_portal
+    (observe : X → Y)
     (S : Stage K) (seed : M) {x y : X}
     (hOld : SameAt K observe S x y)
     (hSep : observe (K.act seed x) ≠ observe (K.act seed y)) :
     SameAt K observe S x y ∧
-    ¬ SameAt K observe (adjoin K S seed) x y ∧
-    (∀ T : Stage K,
-      Extends K S T → T.allows seed → Extends K (adjoin K S seed) T) := by
-  refine ⟨hOld, ?_, ?_⟩
-  · exact consequence_forces_split K observe (adjoin K S seed)
-      seed (seed_mem_adjoin K S seed) hSep
-  · intro T hST hseed
-    exact adjoin_least K S T seed hST hseed
+      ¬ SameAt K observe (adjoin K S seed) x y := by
+  exact ⟨hOld,
+    consequence_forces_split K observe (adjoin K S seed) seed
+      (seed_mem_adjoin K S seed) hSep⟩
 
-/-- Static fixed point relative to a stage: no relation may unite more states while
-remaining both observation-compatible and invariant under the licensed calculus. -/
-def StableRelation (S : Stage K) (R : X → X → Prop) : Prop :=
-  ObsCompatible observe R ∧ StageInvariant K S R ∧
-  ∀ Q : X → X → Prop,
-    ObsCompatible observe Q → StageInvariant K S Q →
-    ∀ x y, Q x y → R x y
+/-- Fixed-point criterion: if every candidate consequence already preserves the
+current behavioural identity, adjoining it cannot split that pair. -/
+theorem sameAt_is_stable
+    (observe : X → Y)
+    (S : Stage K) {x y : X}
+    (hOld : SameAt K observe S x y)
+    (seed : M)
+    (hSeedPreserves : observe (K.act seed x) = observe (K.act seed y))
+    (hClosurePreserves : ∀ f, Generated K S seed f →
+      observe (K.act f x) = observe (K.act f y)) :
+    SameAt K observe (adjoin K S seed) x y := by
+  intro f hf
+  exact hClosurePreserves f hf
 
-/-- Consequential identity itself is the canonical maximal stable relation. -/
-theorem sameAt_is_stable (S : Stage K) :
-    StableRelation K observe S (SameAt K observe S) := by
-  refine ⟨?_, sameAt_invariant K observe S, ?_⟩
-  · intro x y h
-    exact sameAt_observation K observe S h
-  · intro Q hObs hInv x y hxy
-    exact sameAt_greatest_invariant K observe S Q hObs hInv x y hxy
-
-end IdentityCompositionConsequence
+end MinimalSufficientInterface.IdentityCompositionConsequence
