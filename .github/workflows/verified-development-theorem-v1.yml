@@ -44,7 +44,8 @@ jobs:
           lean -o lean/VerifiedConstructorFamilyGenesis.olean lean/VerifiedConstructorFamilyGenesis.lean
           lean -o lean/VerifiedDevelopmentalController.olean lean/VerifiedDevelopmentalController.lean
           lean -o lean/FiniteMetaLanguageExhaustion.olean lean/FiniteMetaLanguageExhaustion.lean
-          lean lean/ResidualDerivedMetaLanguageGenesis.lean
+          lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
+          lean lean/ResidualDerivedConstructorPrinciple.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -84,4 +85,8 @@ jobs:
           echo 'SMALLER_ARITY_RESIDUAL_EXHAUSTION=CHECKED'
           echo 'MINIMAL_INTERFACE_ARITY_CERTIFIED=CHECKED'
           echo 'ARITY_ABLATION_RESTORES_OBSTRUCTION=CHECKED'
-          echo 'REMAINING_BOUNDARY=generic product-interface constructor remains supplied; unrestricted meta-language invention is not proved'
+          echo 'RESIDUAL_LICENSES_JOINT_VIEW_CONSTRUCTOR=CHECKED'
+          echo 'MINIMAL_CONSTRUCTOR_DEPENDENCY_ARITY=CHECKED'
+          echo 'CONSTRUCTOR_DEPENDENCY_ABLATION=CHECKED'
+          echo 'SEMANTIC_CONSTRUCTOR_PRINCIPLE_DERIVED=CHECKED'
+          echo 'REMAINING_BOUNDARY=syntax/data-structure representation of arbitrary joint interfaces remains supplied; unrestricted syntactic meta-language invention is not proved'
