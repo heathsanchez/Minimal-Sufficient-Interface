@@ -52,12 +52,13 @@ jobs:
           lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
           lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
           lean lean/ConsequenceSeparationUnion.lean
+          lean lean/IdentityCompositionConsequence.lean
           lean lean/ArithmeticDirection.lean
           lean lean/AdderInterfaceCompilation.lean
           lean lean/BlindRecursiveCrossGrammarGenesis.lean
       - name: Record theorem boundary
         run: |
-          echo 'ALL_30_LEAN_FILES=CHECKED'
+          echo 'ALL_31_LEAN_FILES=CHECKED'
           echo 'MINIMAL_REPAIR_UNIVERSAL_PROPERTY=CHECKED'
           echo 'RESIDUAL_MORPHISM_CLASS=CHECKED'
           echo 'LOCAL_SILENCE_FALSIFIER=CHECKED'
@@ -118,5 +119,8 @@ jobs:
           echo 'SEPARATION_UNION_DUALITY=CHECKED'
           echo 'LEAST_CONSEQUENTIAL_CHANGE=CHECKED'
           echo 'STATIC_DEVELOPMENTAL_FIXED_POINT=CHECKED'
-          echo 'COMPRESSION_TEST=single independent kernel recovers union separation residual least-refinement and stop'
-          echo 'FINAL_BOUNDARY=fixed universal recursive computational substrate remains necessary; dynamic language expansion is not yet reduced to this static kernel'
+          echo 'IDENTITY_COMPOSITION_CONSEQUENCE_CALCULUS=CHECKED'
+          echo 'MINIMIZED_SUBSTRATE_NO_ASSOCIATIVITY_REQUIRED=CHECKED'
+          echo 'LEAST_COMPOSITIONAL_EXTENSION=CHECKED'
+          echo 'COMPRESSION_TEST=static separation-union plus dynamic composition-consequence calculus are independently derivable from Std-only kernels'
+          echo 'FINAL_BOUNDARY=resource-indexed reachability, observation genesis, and syntax generation remain to be compressed into the calculus'
