@@ -36,6 +36,7 @@ jobs:
           lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
           lean -o lean/ResidualRegimeBridge.olean lean/ResidualRegimeBridge.lean
           lean -o lean/FactorizationSufficiency.olean lean/FactorizationSufficiency.lean
+          lean -o lean/IdentityCompositionConsequence.olean lean/IdentityCompositionConsequence.lean
           lean -o lean/ResourceIndexedConsequence.olean lean/ResourceIndexedConsequence.lean
           lean -o lean/VerifiedDevelopment.olean lean/VerifiedDevelopment.lean
           lean -o lean/DevelopmentalFailureTaxonomy.olean lean/DevelopmentalFailureTaxonomy.lean
@@ -53,7 +54,6 @@ jobs:
           lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
           lean -o lean/FiniteResidualBasisGenesis.olean lean/FiniteResidualBasisGenesis.lean
           lean lean/ConsequenceSeparationUnion.lean
-          lean lean/IdentityCompositionConsequence.lean
           lean lean/ArithmeticDirection.lean
           lean lean/AdderInterfaceCompilation.lean
           lean lean/BlindRecursiveCrossGrammarGenesis.lean
