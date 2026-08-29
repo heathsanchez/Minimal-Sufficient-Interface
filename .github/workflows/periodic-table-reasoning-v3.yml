@@ -1,0 +1,20 @@
+name: periodic table reasoning v3
+
+on:
+  push:
+    branches: [periodic-table-reasoning-v3-free-representation]
+    paths:
+      - 'experiments/periodic_table_reasoning_v3_free_replacement.py'
+      - '.github/workflows/periodic-table-reasoning-v3.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run free-replacement cross-domain gate
+        run: python experiments/periodic_table_reasoning_v3_free_replacement.py
