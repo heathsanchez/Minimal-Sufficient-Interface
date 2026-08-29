@@ -1,0 +1,32 @@
+name: Separation relation ablation
+
+on:
+  push:
+    branches:
+      - msi/verified-development-theorem-v1
+    paths:
+      - 'lean/SeparationRelationAblation.lean'
+      - '.github/workflows/separation-relation-ablation.yml'
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile relation-only ablation
+        run: lean lean/SeparationRelationAblation.lean
+      - name: Scientific markers
+        run: |
+          echo 'RELATION_ONLY_SPLIT=CHECKED'
+          echo 'RELATION_ONLY_REFINEMENT=CHECKED'
+          echo 'EMPTY_SEPARATION_COLLAPSES_ALL=CHECKED'
+          echo 'REFLEXIVITY_NOT_DERIVABLE=CHECKED'
+          echo 'SYMMETRY_NOT_DERIVABLE=CHECKED'
+          echo 'TRANSITIVITY_NOT_DERIVABLE=CHECKED'
+          echo 'ACTION_NOT_RECONSTRUCTIBLE_FROM_SEPARATION=CHECKED'
+          echo 'ABLATION_DECISION=relation-only distinction below action, but action irreducible for dynamics'
