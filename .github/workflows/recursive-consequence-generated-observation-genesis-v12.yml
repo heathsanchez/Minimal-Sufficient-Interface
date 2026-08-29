@@ -1,0 +1,24 @@
+name: recursive consequence generated observation genesis v12
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/recursive_consequence_generated_observation_genesis_v12.py'
+      - '.github/workflows/recursive-consequence-generated-observation-genesis-v12.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run V12
+        run: python experiments/recursive_consequence_generated_observation_genesis_v12.py
