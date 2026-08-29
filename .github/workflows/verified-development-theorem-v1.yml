@@ -41,7 +41,8 @@ jobs:
           lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
           lean -o lean/VerifiedNewProbeGenesis.olean lean/VerifiedNewProbeGenesis.lean
           lean -o lean/VerifiedNodeTypeGenesis.olean lean/VerifiedNodeTypeGenesis.lean
-          lean lean/VerifiedConstructorFamilyGenesis.lean
+          lean -o lean/VerifiedConstructorFamilyGenesis.olean lean/VerifiedConstructorFamilyGenesis.lean
+          lean lean/VerifiedDevelopmentalController.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -50,6 +51,7 @@ jobs:
           echo 'RESOURCE_PHASE_HORIZON=CHECKED'
           echo 'FACTORIZATION_SUFFICIENCY=CHECKED'
           echo 'FAILURE_TAXONOMY=CHECKED'
+          echo 'OBSERVATION_AUTHORITY_REGIME=CHECKED'
           echo 'AMBIGUITY_NO_SEPARATOR=CHECKED'
           echo 'FINITE_PROTECTED_COMPLETENESS=CHECKED'
           echo 'OPAQUE_FAILURE_CLOSED_UNDER_FINITE_COVERED_PROTECTED_FAMILY=CHECKED'
@@ -69,4 +71,7 @@ jobs:
           echo 'CHEAPER_FAMILY_EXHAUSTION=CHECKED'
           echo 'LOWER_FAMILY_ABLATION_RESTORES_RESIDUAL=CHECKED'
           echo 'CONSEQUENCE_DEPENDENT_FAMILY_SELECTION=CHECKED'
-          echo 'REMAINING_BOUNDARY=constructor generation beyond the supplied ranked executable portfolio'
+          echo 'CERTIFIED_FIVE_WAY_CONTROLLER=CHECKED'
+          echo 'FINITE_COVERED_REGIME_STOPS_OR_SPLITS=CHECKED'
+          echo 'OPAQUE_INADEQUACY_FORCES_SPLIT_UNDER_FINITE_COVERAGE=CHECKED'
+          echo 'REMAINING_BOUNDARY=constructor generation beyond supplied meta-language and proof of meta-language adequacy'
