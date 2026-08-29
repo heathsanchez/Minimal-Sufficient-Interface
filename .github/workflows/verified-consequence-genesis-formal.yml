@@ -9,6 +9,7 @@ on:
       - 'formal/UnifiedDevelopmentalLaw.lean'
       - 'formal/BoundedDevelopmentalCapability.lean'
       - 'formal/MultiCandidateDevelopmentalSearch.lean'
+      - 'formal/GeneratedCandidateDevelopmentalSearch.lean'
       - 'lean/*.lean'
       - '.github/workflows/verified-consequence-genesis-formal.yml'
   workflow_dispatch:
@@ -34,6 +35,7 @@ jobs:
           lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
           lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
           lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
+          lean -o formal/MultiCandidateDevelopmentalSearch.olean formal/MultiCandidateDevelopmentalSearch.lean
       - name: Check formal laws
         env:
           LEAN_PATH: lean:formal
@@ -87,3 +89,14 @@ jobs:
           echo "DECOY_REJECTED_BEFORE_DESCENDANT=PASS"
           echo "PROMOTION_CHANGES_MULTICANDIDATE_RESULT=PASS"
           echo "COLD_ANCESTOR_ABLATION_BLOCKS_SEARCH=PASS"
+      - name: Check grammar-generated developmental search
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/GeneratedCandidateDevelopmentalSearch.lean
+          echo "GENERIC_DEPTH_ONE_GENERATOR=PASS"
+          echo "WINNING_DESCENDANT_NOT_SUPPLIED=PASS"
+          echo "PROMOTION_CHANGES_GENERATED_CANDIDATE_SET=PASS"
+          echo "MATCHED_FOUR_QUERY_BUDGET=PASS"
+          echo "GRAMMAR_GENERATION_CHANGES_BOUNDED_CAPABILITY=PASS"
+          echo "ANCESTOR_ABLATION_REMOVES_GENERATED_WINNER=PASS"
