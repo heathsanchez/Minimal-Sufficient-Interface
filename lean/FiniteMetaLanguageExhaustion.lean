@@ -57,8 +57,9 @@ theorem sufficient_generated_constructor_refutes_exhaustion
     (hs : FamilySufficient view target c) :
     ¬ MetaLanguageExhausted G view target := by
   intro hexh
-  exact (not_sufficient_iff_residual_rejects view target c).1
-    ((exhausted_family_has_no_sufficient_constructor G view target hexh) c hc) hs
+  have hnot : ¬ FamilySufficient view target c :=
+    exhausted_family_has_no_sufficient_constructor G view target hexh c hc
+  exact hnot hs
 
 /-- A one-step generated-family extension is verifier-licensed when the old generated
     family is exhausted and the new constructor is sufficient. The theorem does not
