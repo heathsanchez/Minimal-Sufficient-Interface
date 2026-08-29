@@ -129,16 +129,7 @@ theorem cotrans_is_independently_needed :
       (∃ x y z, Same S x y ∧ Same S y z ∧ ¬ Same S x z) := by
   let S : Separation (Fin 3) :=
     ⟨fun x y => (x = 0 ∧ y = 2) ∨ (x = 2 ∧ y = 0)⟩
-  refine ⟨S, ?_, ?_, 0, 1, 2, ?_, ?_, ?_⟩
-  · intro x
-    fin_cases x <;> simp [S]
-  · intro x y h
-    rcases h with h | h
-    · exact Or.inr ⟨h.2, h.1⟩
-    · exact Or.inl ⟨h.2, h.1⟩
-  · simp [Same, S]
-  · simp [Same, S]
-  · simp [Same, S]
+  exact ⟨S, by decide, by decide, 0, 1, 2, by decide, by decide, by decide⟩
 
 /-- Complete verified distinction: every unequal pair is separated. -/
 def neqSeparation (X : Type u) : Separation X := ⟨fun x y => x ≠ y⟩
@@ -185,13 +176,7 @@ def inducedSep (A : Action Bool Bool) : Separation Bool :=
 theorem same_separation_incompatible_actions :
     (∀ x y, (inducedSep a1).sep x y ↔ (inducedSep a2).sep x y) ∧
     a1.act true false ≠ a2.act true false := by
-  constructor
-  · intro x y
-    simp [inducedSep, a1, a2]
-    constructor <;> intro h
-    · exact ⟨true, h⟩
-    · exact ⟨false, h⟩
-  · decide
+  decide
 
 /-- Static identity does not make arbitrary future action identity-respecting. -/
 def twoClassSeparation : LawfulSeparation (Fin 3) where
@@ -211,9 +196,9 @@ def twoClassSeparation : LawfulSeparation (Fin 3) where
     rcases hxz with hxz | hxz
     · by_cases hy : y = 2
       · right; exact Or.inl ⟨hy, hxz.2⟩
-      · left; exact Or.inr ⟨hxz.1 ▸ by decide, hy⟩
+      · left; exact Or.inl ⟨hxz.1, hy⟩
     · by_cases hy : y = 2
-      · left; exact Or.inl ⟨hy, hxz.1⟩
+      · left; exact Or.inr ⟨hxz.1, hy⟩
       · right; exact Or.inr ⟨hy, hxz.2⟩
 
 def badDynamic : Action Bool (Fin 3) :=
