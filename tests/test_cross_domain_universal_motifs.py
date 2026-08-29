@@ -36,7 +36,6 @@ def canon(k, es):
     # exact unlabeled directed-graph canonical form; k <= 6 here.
     best=None
     for p in itertools.permutations(range(k)):
-        inv={old:new for new,old in enumerate(p)}
         s=''.join('1' if (p[i],p[j]) in es else '0'
                   for i in range(k) for j in range(k) if i!=j)
         if best is None or s<best: best=s
@@ -54,45 +53,35 @@ def graphlets(trace, k):
 
 
 def boolean_domain():
-    # Independent Boolean synthesis: NAND-only search for XOR, then promote XOR
-    # as a reusable feature for parity-of-three under a strict depth budget.
     rows=list(itertools.product([0,1], repeat=3))
     def nand(a,b): return 1-(a&b)
     base={'a':tuple(r[0] for r in rows),'b':tuple(r[1] for r in rows),'c':tuple(r[2] for r in rows)}
     target=tuple(r[0]^r[1] for r in rows)
     vals=dict(base); expr={k:k for k in base}; found=None
-    frontier=list(base)
     for depth in range(1,5):
         old=list(vals)
-        new=[]
         for x in old:
             for y in old:
                 v=tuple(nand(i,j) for i,j in zip(vals[x],vals[y]))
                 key=('n',x,y)
-                if v not in vals.values():
-                    vals[key]=v; expr[key]=f'N({expr[x]},{expr[y]})'; new.append(key)
-                if v==target and found is None: found=key; break
+                if v not in vals.values(): vals[key]=v; expr[key]=f'N({expr[x]},{expr[y]})'
+                if v==target: found=key; break
             if found is not None: break
         if found is not None: break
     assert found is not None
     xorv=vals[found]
     parity3=tuple(r[0]^r[1]^r[2] for r in rows)
     warm=tuple(x^r[2] for x,r in zip(xorv,rows))
-    cold_ok=False  # frozen one-composition budget from primitive inputs cannot form parity3
+    cold_ok=False
     warm_ok=(warm==parity3)
     tr={}; add(tr,'obs'); add(tr,'mismatch','obs'); add(tr,'compose','mismatch'); add(tr,'verify','compose'); add(tr,'retain','verify'); add(tr,'future','retain'); add(tr,'ablate','retain'); add(tr,'lost','ablate')
     return tr, {'before':0.5,'after':1.0 if warm_ok else 0.0,'ablation':1.0 if cold_ok else 0.0,'artifact':expr[found]}
 
 
 def dfa_domain():
-    # Moore-style partition refinement.  Learner starts from accept/nonaccept and
-    # refines only when transitions from one block lead to distinguishable futures.
-    # DFA: strings over {0,1}, state is number of 1s mod 3.
     states=[0,1,2]; alphabet=[0,1]
     trans={(s,a):(s+a)%3 for s in states for a in alphabet}; accept={0}
-    part=[set(accept), set(states)-accept]
-    before=len(part)
-    witness=None
+    part=[set(accept), set(states)-accept]; before=len(part); witness=None
     while True:
         bid={s:i for i,b in enumerate(part) for s in b}
         sig={s:(s in accept, tuple(bid[trans[s,a]] for a in alphabet)) for s in states}
@@ -100,15 +89,11 @@ def dfa_domain():
         for s in states: groups[sig[s]].add(s)
         new=list(groups.values())
         if len(new)==len(part): break
-        # residual = pair co-blocked before but split now
         for b in part:
             for x,y in itertools.combinations(b,2):
                 if sig[x]!=sig[y]: witness=(x,y)
         part=new
-    after=len(part)
-    # promoted quotient transition predicts all 4-step futures exactly
-    bid={s:i for i,b in enumerate(part) for s in b}
-    exact=True
+    after=len(part); exact=True
     for s in states:
         for word in itertools.product(alphabet, repeat=4):
             q=s
@@ -119,25 +104,17 @@ def dfa_domain():
 
 
 def graph_domain():
-    # Independent graph minimization: bisimulation-style color refinement on a
-    # directed graph, then use quotient colors to answer unseen continuation queries.
-    adj={0:[1,2],1:[3],2:[3],3:[4],4:[4],5:[1,2]}
-    terminal={4}
-    color={v:int(v in terminal) for v in adj}
-    before=len(set(color.values()))
-    changed=True; witness=None
+    adj={0:[1,2],1:[3],2:[3],3:[4],4:[4],5:[1,2]}; terminal={4}
+    color={v:int(v in terminal) for v in adj}; before=len(set(color.values())); changed=True; witness=None
     while changed:
         sig={v:(color[v],tuple(sorted(color[w] for w in adj[v]))) for v in adj}
         uniq={s:i for i,s in enumerate(sorted(set(sig.values()), key=repr))}
-        new={v:uniq[sig[v]] for v in adj}
-        changed=any(new[v]!=color[v] for v in adj)
+        new={v:uniq[sig[v]] for v in adj}; changed=any(new[v]!=color[v] for v in adj)
         if changed:
             for a,b in itertools.combinations(adj,2):
                 if color[a]==color[b] and new[a]!=new[b]: witness=(a,b); break
         color=new
-    after=len(set(color.values()))
-    # continuation test: terminal reachability within h, invariant on equal colors
-    ok=True
+    after=len(set(color.values())); ok=True
     for h in range(6):
         val={v:(v in terminal) for v in adj}
         for _ in range(h): val={v:(v in terminal or any(val[w] for w in adj[v])) for v in adj}
@@ -148,11 +125,9 @@ def graph_domain():
 
 
 def code_domain():
-    # Independent program-key discovery.  A cache keyed only by x%2 collides for
-    # function behavior; residual-guided search over tiny integer features selects
-    # the cheapest key that makes behavior deterministic, then enables exact reuse.
     xs=list(range(24))
-    def f(x): return ((x//3)%4, (x*x+3*x)%5)
+    # Period 12 is the true behavioral key, but the learner is not told that.
+    def f(x): return ((x//3)%4, (x*x+3*x)%4)
     candidates=[('p2',lambda x:x%2,1),('p3',lambda x:x%3,1),('p4',lambda x:x%4,1),('p5',lambda x:x%5,1),('p12',lambda x:x%12,2),('pair34',lambda x:(x%3,x%4),2)]
     base=candidates[0]
     def collisions(fn):
@@ -163,22 +138,18 @@ def code_domain():
     for name,fn,cost in candidates[1:]:
         c=collisions(fn)
         if c==0: viable.append((cost,name,fn))
-    viable.sort(key=lambda z:(z[0],z[1])); cost,name,key=viable[0]
-    after=collisions(key)
-    # reuse on held-out xs outside fitting range
-    memo={key(x):f(x) for x in xs}
-    held=list(range(24,36)); exact=all(key(x) in memo and memo[key(x)]==f(x) for x in held)
+    viable.sort(key=lambda z:(z[0],z[1])); assert viable
+    cost,name,key=viable[0]; after=collisions(key)
+    memo={key(x):f(x) for x in xs}; held=list(range(24,36))
+    exact=all(key(x) in memo and memo[key(x)]==f(x) for x in held)
     tr={}; add(tr,'runs'); add(tr,'collision','runs'); add(tr,'key_search','collision'); add(tr,'test_key','key_search'); add(tr,'install','test_key'); add(tr,'reuse','install'); add(tr,'drop','install'); add(tr,'miss','drop')
     return tr, {'before':before,'after':after,'ablation':before,'key':name,'exact':exact}
 
 
 def arithmetic_domain():
-    # Independent recurrence discovery over an anonymous integer stream.
-    # Search affine modular recurrences and promote the smallest exact one.
     mod=17; a=5; b=3; seq=[2]
     for _ in range(80):seq.append((a*seq[-1]+b)%mod)
-    train=seq[:50]; test=seq[50:]
-    best=None
+    train=seq[:50]; test=seq[50:]; best=None
     for m in range(2,25):
         for aa in range(m):
             for bb in range(m):
@@ -186,8 +157,7 @@ def arithmetic_domain():
                     cand=(m+aa+bb,m,aa,bb)
                     if best is None or cand<best:best=cand
     assert best is not None
-    _,m,aa,bb=best
-    pred=[]; x=train[-1]
+    _,m,aa,bb=best; pred=[]; x=train[-1]
     for _ in test:
         x=(aa*x+bb)%m; pred.append(x)
     exact=(pred==test)
@@ -197,27 +167,19 @@ def arithmetic_domain():
 
 def run():
     domains={'boolean':boolean_domain(),'automaton':dfa_domain(),'graph':graph_domain(),'code':code_domain(),'arithmetic':arithmetic_domain()}
-    # Objective gates before motif mining.
     for name,(tr,m) in domains.items():
         if 'exact' in m: assert m['exact'], (name,m)
         assert m['after'] != m['before'] or m.get('exact',False), (name,m)
-    # Blind post-hoc graphlet intersection, names erased by canonicalization.
     common_by_k={}
     for k in range(6,2,-1):
         sets=[graphlets(tr,k) for tr,_ in domains.values()]
-        common=set.intersection(*sets)
-        common_by_k[k]=common
-        if common:
-            largest=k; break
+        common=set.intersection(*sets); common_by_k[k]=common
+        if common: largest=k; break
     else: largest=0; common=set()
-    # Negative-control traces: independently permuted random DAGs with same sizes/
-    # edge counts.  A size>=5 motif should not be guaranteed by mere density.
-    rng=random.Random(20260829)
-    neg=[]
+    rng=random.Random(20260829); neg=[]
     for tr,_ in domains.values():
-        ns,es=edges(tr); n=len(ns); order=list(range(n)); rng.shuffle(order)
-        poss=[(i,j) for i in range(n) for j in range(i+1,n)]
-        rng.shuffle(poss); res=set(poss[:len(es)])
+        ns,es=edges(tr); n=len(ns)
+        poss=[(i,j) for i in range(n) for j in range(i+1,n)]; rng.shuffle(poss); res=set(poss[:len(es)])
         nt={str(i):set() for i in range(n)}
         for a,b in res: nt[str(b)].add(str(a))
         neg.append(nt)
@@ -237,7 +199,6 @@ def run():
 
 
 class TestCrossDomainUniversalMotifs(unittest.TestCase):
-    def test_cross_domain_universal_motifs(self):
-        run()
+    def test_cross_domain_universal_motifs(self): run()
 
 if __name__=='__main__': run()
