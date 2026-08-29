@@ -1,0 +1,23 @@
+name: cumulative cross domain 100x v4
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/cumulative_cross_domain_100x_v4.py'
+      - '.github/workflows/cumulative-cross-domain-100x-v4.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run cumulative 100x gate
+        run: python experiments/cumulative_cross_domain_100x_v4.py
