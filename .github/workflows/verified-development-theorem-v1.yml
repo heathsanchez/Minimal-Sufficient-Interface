@@ -32,11 +32,15 @@ jobs:
           lean -o lean/ResidualRegimeBridge.olean lean/ResidualRegimeBridge.lean
           lean -o lean/FactorizationSufficiency.olean lean/FactorizationSufficiency.lean
           lean -o lean/ResourceIndexedConsequence.olean lean/ResourceIndexedConsequence.lean
-          lean lean/VerifiedDevelopment.lean
+          lean -o lean/VerifiedDevelopment.olean lean/VerifiedDevelopment.lean
+          lean lean/DevelopmentalFailureTaxonomy.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
-          echo 'TWO_GENERATION_SHAPE=CHECKED'
+          echo 'STRICT_PROMOTION_EXPRESSIBILITY=CHECKED'
+          echo 'ANCESTRAL_COMPOUNDING=CHECKED'
           echo 'RESOURCE_PHASE_HORIZON=CHECKED'
           echo 'FACTORIZATION_SUFFICIENCY=CHECKED'
-          echo 'REMAINING_BOUNDARY=Failure(B)->exists c,Residual(B,c)'
+          echo 'FAILURE_TAXONOMY=CHECKED'
+          echo 'AMBIGUITY_NO_SEPARATOR=CHECKED'
+          echo 'REMAINING_BOUNDARY=opaque failure does not classify itself; certificate/completeness required'
