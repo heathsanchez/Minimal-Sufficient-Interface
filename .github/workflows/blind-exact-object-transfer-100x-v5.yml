@@ -1,0 +1,22 @@
+name: blind exact object transfer 100x v5
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/blind_exact_object_transfer_100x_v5.py'
+      - '.github/workflows/blind-exact-object-transfer-100x-v5.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run blind exact-object transfer gate
+        run: python experiments/blind_exact_object_transfer_100x_v5.py
