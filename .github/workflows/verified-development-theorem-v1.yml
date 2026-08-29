@@ -45,7 +45,8 @@ jobs:
           lean -o lean/VerifiedDevelopmentalController.olean lean/VerifiedDevelopmentalController.lean
           lean -o lean/FiniteMetaLanguageExhaustion.olean lean/FiniteMetaLanguageExhaustion.lean
           lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
-          lean lean/ResidualDerivedConstructorPrinciple.lean
+          lean -o lean/ResidualDerivedConstructorPrinciple.olean lean/ResidualDerivedConstructorPrinciple.lean
+          lean lean/ResidualCompiledSyntaxGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -89,4 +90,9 @@ jobs:
           echo 'MINIMAL_CONSTRUCTOR_DEPENDENCY_ARITY=CHECKED'
           echo 'CONSTRUCTOR_DEPENDENCY_ABLATION=CHECKED'
           echo 'SEMANTIC_CONSTRUCTOR_PRINCIPLE_DERIVED=CHECKED'
-          echo 'REMAINING_BOUNDARY=syntax/data-structure representation of arbitrary joint interfaces remains supplied; unrestricted syntactic meta-language invention is not proved'
+          echo 'RESIDUAL_COMPILED_RECURSIVE_SYNTAX=CHECKED'
+          echo 'COMPILED_SYNTAX_SEMANTICS_EXACT=CHECKED'
+          echo 'COMPILED_SYNTAX_ESCAPES_EXHAUSTED_FAMILY=CHECKED'
+          echo 'STRICT_SYNTAX_GENESIS_WITHOUT_ARITY_MENU=CHECKED'
+          echo 'SYNTAX_ABLATION_RESTORES_VERIFIED_RESIDUAL=CHECKED'
+          echo 'FINAL_BOUNDARY=fixed universal recursive substrate remains necessary; ex-nihilo invention outside every possible metalanguage is not an executable requirement'
