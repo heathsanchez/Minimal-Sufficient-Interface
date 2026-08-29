@@ -3,24 +3,25 @@ import Std
 universe u v w
 
 /-!
-Compression experiment: can consequential identity, separation/union, compositional
-closure, developmental refinement, and least generated extension be recovered from
-one small calculus rather than treated as separate laws?
+Compression experiment: recover consequential identity, separation/union,
+compositional closure, developmental refinement, and least generated extension
+from the smallest substrate that the proofs actually require.
 
 This file deliberately imports only `Std`.
 -/
 
 namespace IdentityCompositionConsequence
 
-/-- Minimal compositional substrate: a monoid of executable transformations acting
-on states. -/
+/-- Minimal executable compositional substrate.
+
+No associativity or left/right unit law for `comp` is assumed here: the current
+identity/refinement/least-extension theorems do not require them.  What is required
+is an identity action for recovering immediate observation and compatibility of
+composition with execution. -/
 structure Calculus (M : Type u) (X : Type v) where
   one : M
   comp : M → M → M
   act : M → X → X
-  one_comp : ∀ f, comp one f = f
-  comp_one : ∀ f, comp f one = f
-  comp_assoc : ∀ f g h, comp (comp f g) h = comp f (comp g h)
   one_act : ∀ x, act one x = x
   comp_act : ∀ f g x, act (comp f g) x = act f (act g x)
 
@@ -69,10 +70,10 @@ theorem sameAt_invariant
   have h := hxy (K.comp f g) (S.comp_mem f g hf hg)
   simpa [K.comp_act] using h
 
-/-- Extension of the licensed compositional language can only refine identity. -/
+/-- Extension of the licensed compositional language. -/
 def Extends (S T : Stage K) : Prop := ∀ f, S.allows f → T.allows f
 
-/-- SEPARATION law under language growth. -/
+/-- Language extension can only refine consequential identity. -/
 theorem extension_refines_identity
     (S T : Stage K) (hST : Extends K S T) :
     ∀ x y, SameAt K observe T x y → SameAt K observe S x y := by
@@ -80,8 +81,7 @@ theorem extension_refines_identity
   exact hT f (hST f hf)
 
 /-- A licensed consequence that distinguishes a pair is already sufficient to
-forbid their union at that stage. No separate extension or prior-identity premise
-is needed. -/
+forbid their union at that stage. -/
 theorem consequence_forces_split
     (T : Stage K) (f : M) (hfT : T.allows f)
     {x y : X}
@@ -90,18 +90,19 @@ theorem consequence_forces_split
   intro hSame
   exact hSep (hSame f hfT)
 
-/-- Free generated extension of a stage by one verified new transformation. -/
+/-- Free generated extension of a stage by one verified new transformation.
+`one` needs no separate constructor because it is already licensed by every old
+stage and therefore enters through `old`. -/
 inductive Generated (S : Stage K) (seed : M) : M → Prop
   | old {f} : S.allows f → Generated S seed f
   | seed : Generated S seed seed
-  | one : Generated S seed K.one
   | comp {f g} : Generated S seed f → Generated S seed g →
       Generated S seed (K.comp f g)
 
 /-- The generated extension is itself a stage. -/
 def adjoin (S : Stage K) (seed : M) : Stage K where
   allows := Generated K S seed
-  one_mem := Generated.one
+  one_mem := Generated.old S.one_mem
   comp_mem := by
     intro f g hf hg
     exact Generated.comp hf hg
@@ -116,7 +117,7 @@ theorem old_extends_to_adjoin (S : Stage K) (seed : M) :
 theorem seed_mem_adjoin (S : Stage K) (seed : M) :
     (adjoin K S seed).allows seed := Generated.seed
 
-/-- LEAST EXTENSION law: `adjoin` is the least composition-closed stage containing
+/-- LEAST EXTENSION: `adjoin` is the least composition-closed stage containing
 both the old stage and the new verified transformation. -/
 theorem adjoin_least
     (S T : Stage K) (seed : M)
@@ -127,12 +128,11 @@ theorem adjoin_least
   induction hf with
   | old hold => exact hST _ hold
   | seed => exact hseed
-  | one => exact T.one_mem
   | comp hf hg ihf ihg => exact T.comp_mem _ _ ihf ihg
 
-/-- End-to-end developmental portal: a pair can be united under the old
-compositional regime, a verified seed can separate it, and the least lawful
-composition-closed extension necessarily changes its identity. -/
+/-- End-to-end developmental portal: a pair can be united under the old regime,
+a verified seed can separate it, and the least composition-closed extension
+necessarily changes its identity. -/
 theorem verified_compositional_portal
     (S : Stage K) (seed : M) {x y : X}
     (hOld : SameAt K observe S x y)
