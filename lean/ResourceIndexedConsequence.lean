@@ -50,7 +50,7 @@ theorem conservative_promotion_can_change_bounded_frontier
     ∃ B, ¬ ReachableAt L B c ∧ ReachableAt L' B c := by
   exact cheaper_creates_phase_horizon L L' c h
 
-open IdentityCompositionConsequence
+open MinimalSufficientInterface.IdentityCompositionConsequence
 
 variable {M : Type u} {X : Type v}
 
