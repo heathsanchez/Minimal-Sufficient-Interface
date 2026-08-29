@@ -24,8 +24,8 @@ jobs:
       - name: Check bottom-up foundation gate
         run: |
           cd lean
-          lean -o SeparationRelationAblation.olean SeparationRelationAblation.lean
           lean -o IdentityCompositionConsequence.olean IdentityCompositionConsequence.lean
+          lean -o SeparationRelationAblation.olean SeparationRelationAblation.lean
           lean -o ResourceIndexedConsequence.olean ResourceIndexedConsequence.lean
           lean BottomUpCalculusDerivation.lean
       - name: Scientific markers
