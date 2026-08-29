@@ -1,0 +1,19 @@
+name: adversarial 100x v4 audit
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/adversarial_100x_v4_audit.py'
+      - '.github/workflows/adversarial-100x-v4-audit.yml'
+  workflow_dispatch:
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Attack bridge identification
+        run: python experiments/adversarial_100x_v4_audit.py
