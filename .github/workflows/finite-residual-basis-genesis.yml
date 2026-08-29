@@ -22,9 +22,16 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Compile finite residual basis genesis
-        working-directory: lean
+        env:
+          LEAN_PATH: lean
         run: |
-          lean FiniteResidualBasisGenesis.lean
+          set -euxo pipefail
+          lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
+          lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
+          lean -o lean/FactorizationSufficiency.olean lean/FactorizationSufficiency.lean
+          lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
+          lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
+          lean lean/FiniteResidualBasisGenesis.lean
           echo 'FINITE_RESIDUAL_COVERAGE=CHECKED'
           echo 'MINIMAL_BASIS_CONSTRUCTED_NOT_SUPPLIED=CHECKED'
           echo 'RESIDUAL_DETERMINED_ARITY_CONSTRUCTED=CHECKED'
