@@ -1,0 +1,20 @@
+name: periodic table reasoning v2
+
+on:
+  push:
+    branches: [periodic-table-reasoning-v1]
+    paths:
+      - 'experiments/periodic_table_reasoning_v2_representation_genesis.py'
+      - '.github/workflows/periodic-table-reasoning-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run representation-genesis cross-domain gate
+        run: python experiments/periodic_table_reasoning_v2_representation_genesis.py
