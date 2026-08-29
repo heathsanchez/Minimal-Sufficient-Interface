@@ -1,5 +1,6 @@
 import Std
 import ResidualDerivedMetaLanguageGenesis
+import VerifiedConsequenceToCompiledSyntax
 
 universe u v w z
 
@@ -7,6 +8,8 @@ namespace FiniteResidualBasisGenesis
 
 open ResidualInterfaceGenesis
 open ResidualDerivedMetaLanguageGenesis
+open FactorizationSufficiency
+open VerifiedConsequenceToCompiledSyntax
 
 variable {X : Type u} {Probe : Type v} {V : Type w} {Y : Type z}
 
@@ -92,5 +95,43 @@ theorem finite_residuals_generate_residual_determined_arity
         BasisSufficient observe target B' → B.length ≤ B'.length := by
   rcases finite_residuals_construct_minimal_basis observe target hsep with ⟨B, hB⟩
   exact ⟨B, residuals_certify_minimal_interface_arity observe target B hB⟩
+
+/-- Finite protected residual coverage therefore generates a reachable executable
+    representation through which the protected consequence factors.  The basis is
+    existentially constructed from residual coverage; it is not supplied. -/
+theorem finite_residuals_generate_factorizing_representation
+    [Fintype Probe] [DecidableEq Probe]
+    (observe : Probe → X → V)
+    (target : X → Y)
+    (hsep : ∀ x y : X, target x ≠ target y →
+      ∃ p : Probe, observe p x ≠ observe p y) :
+    ∃ B : List Probe,
+      ResidualDeterminesArity observe target B ∧
+      FactorsThrough (compiledRepresentation observe B) target := by
+  rcases finite_residuals_construct_minimal_basis observe target hsep with ⟨B, hB⟩
+  exact ⟨B, hB, residuals_generate_factorizing_representation observe target B hB⟩
+
+/-- End-to-end finite developmental bridge with no basis argument.  A concrete
+    verified collapse/disagreement refutes the old representation; global finite
+    residual coverage then constructs a minimum sufficient basis and a generated
+    reachable representation that restores factorization. -/
+theorem verified_failure_to_endogenous_generated_factorization
+    [Fintype Probe] [DecidableEq Probe]
+    {R : Type v}
+    (q : X → R)
+    (observe : Probe → X → V)
+    (target : X → Y)
+    {x y : X}
+    (hcollapse : q x = q y)
+    (hxy : target x ≠ target y)
+    (hsep : ∀ a b : X, target a ≠ target b →
+      ∃ p : Probe, observe p a ≠ observe p b) :
+    (¬ FactorsThrough q target) ∧
+      ∃ B : List Probe,
+        ResidualDeterminesArity observe target B ∧
+        FactorsThrough (compiledRepresentation observe B) target := by
+  constructor
+  · exact separator_certifies_nonfactorization q target hcollapse hxy
+  · exact finite_residuals_generate_factorizing_representation observe target hsep
 
 end FiniteResidualBasisGenesis
