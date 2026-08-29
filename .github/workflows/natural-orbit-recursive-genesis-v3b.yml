@@ -1,0 +1,22 @@
+name: natural orbit recursive genesis v3b
+
+on:
+  push:
+    branches: [natural-orbit-genesis-v1]
+    paths:
+      - 'experiments/natural_orbit_recursive_genesis_v3b.py'
+      - '.github/workflows/natural-orbit-recursive-genesis-v3b.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run deciding recursive physics gate
+        working-directory: experiments
+        run: python natural_orbit_recursive_genesis_v3b.py
