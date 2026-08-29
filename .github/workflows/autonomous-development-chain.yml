@@ -1,0 +1,28 @@
+name: Autonomous development chain
+
+on:
+  push:
+    paths:
+      - 'tests/test_autonomous_development_chain.py'
+      - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - '.github/workflows/autonomous-development-chain.yml'
+  pull_request:
+    paths:
+      - 'tests/test_autonomous_development_chain.py'
+      - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - '.github/workflows/autonomous-development-chain.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  developmental-causal-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: MERGE SPLIT EXTEND MERGE frontier-collapse gates
+        run: python -m unittest tests.test_autonomous_development_chain -v
