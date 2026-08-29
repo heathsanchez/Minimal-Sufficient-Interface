@@ -50,7 +50,7 @@ strictly too coarse for a newly protected consequence. -/
 theorem separator_refutes_identification
     {X : Type u} {Y : Type v}
     (C : (X → Y) → Prop) (c : X → Y) {x y : X}
-    (hold : ConseqEq C x y) (hsep : c x ≠ c y) :
+    (_hold : ConseqEq C x y) (hsep : c x ≠ c y) :
     ¬ ConseqEq (fun d => C d ∨ d = c) x y := by
   intro h
   exact hsep (h c (Or.inr rfl))
@@ -72,6 +72,113 @@ theorem golden_refinement
     cases hd with
     | inl hCd => exact hC d hCd
     | inr hdc => simpa [hdc] using hc
+
+/-- A consequence factors through a representation `q` when it can be computed
+from the representation alone. -/
+def FactorsThrough {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) : Prop :=
+  ∃ cbar : R → Y, ∀ x : X, c x = cbar (q x)
+
+/-- Any factorized consequence is constant on every fiber of the representation. -/
+theorem factorsThrough_implies_fiber_constancy
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) :
+    FactorsThrough q c → ∀ x y : X, q x = q y → c x = c y := by
+  rintro ⟨cbar, hfactor⟩ x y hq
+  calc
+    c x = cbar (q x) := hfactor x
+    _ = cbar (q y) := by rw [hq]
+    _ = c y := (hfactor y).symm
+
+/-- A single consequential separator inside a fiber certifies non-factorization. -/
+theorem separator_implies_nonfactorization
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) {x y : X}
+    (hcollapse : q x = q y) (hsep : c x ≠ c y) :
+    ¬ FactorsThrough q c := by
+  intro hf
+  exact hsep (factorsThrough_implies_fiber_constancy q c hf x y hcollapse)
+
+/-- Converse factorization theorem on the actually represented states.
+
+If every fiber of `q` is consequence-constant and every representation state
+has a chosen preimage, then the consequence factors through `q`.
+The explicit section assumption isolates the only choice/surjectivity content. -/
+theorem fiber_constancy_implies_factorsThrough_of_section
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y)
+    (s : R → X) (hs : ∀ r : R, q (s r) = r)
+    (hconst : ∀ x y : X, q x = q y → c x = c y) :
+    FactorsThrough q c := by
+  refine ⟨fun r => c (s r), ?_⟩
+  intro x
+  exact hconst x (s (q x)) (hs (q x)).symm
+
+/-- Exact factorization criterion when a section of the representation is available. -/
+theorem factorsThrough_iff_fiber_constancy_of_section
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y)
+    (s : R → X) (hs : ∀ r : R, q (s r) = r) :
+    FactorsThrough q c ↔
+      ∀ x y : X, q x = q y → c x = c y := by
+  constructor
+  · exact factorsThrough_implies_fiber_constancy q c
+  · exact fiber_constancy_implies_factorsThrough_of_section q c s hs
+
+/-- Canonical consequential refinement: retain the old representation and add
+exactly the newly required consequence as one extra coordinate. -/
+def RefineWith {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) : X → R × Y :=
+  fun x => (q x, c x)
+
+/-- The newly protected consequence factors through the canonical refinement. -/
+theorem consequence_factors_through_refinement
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) :
+    FactorsThrough (RefineWith q c) c := by
+  refine ⟨Prod.snd, ?_⟩
+  intro x
+  rfl
+
+/-- The canonical refinement never forgets distinctions already present in q. -/
+theorem refinement_preserves_old_representation
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) :
+    ∀ x y : X, RefineWith q c x = RefineWith q c y → q x = q y := by
+  intro x y h
+  exact congrArg Prod.fst h
+
+/-- The canonical refinement separates any previously collapsed pair whose
+new consequence differs. -/
+theorem refinement_separates_witness
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) {x y : X}
+    (_hcollapse : q x = q y) (hsep : c x ≠ c y) :
+    RefineWith q c x ≠ RefineWith q c y := by
+  intro h
+  exact hsep (congrArg Prod.snd h)
+
+/-- Central developmental theorem.
+
+A verified separator proves that the new consequence cannot factor through the
+current representation. The canonical one-coordinate refinement preserves the
+old representation, strictly separates the witness pair, and restores
+factorization of the failed consequence. -/
+theorem factorization_failure_forces_and_refinement_restores
+    {X : Type u} {Y : Type v} {R : Type w}
+    (q : X → R) (c : X → Y) {x y : X}
+    (hcollapse : q x = q y) (hsep : c x ≠ c y) :
+    (¬ FactorsThrough q c) ∧
+    FactorsThrough (RefineWith q c) c ∧
+    (∀ a b : X, RefineWith q c a = RefineWith q c b → q a = q b) ∧
+    RefineWith q c x ≠ RefineWith q c y := by
+  constructor
+  · exact separator_implies_nonfactorization q c hcollapse hsep
+  constructor
+  · exact consequence_factors_through_refinement q c
+  constructor
+  · exact refinement_preserves_old_representation q c
+  · exact refinement_separates_witness q c hcollapse hsep
 
 /-- A minimal language model for recursive promotion. `L a` says atom `a` is
 currently available. -/
@@ -144,5 +251,10 @@ end VerifiedConsequenceGenesis
 #check VerifiedConsequenceGenesis.consequential_identity_is_coarsest
 #check VerifiedConsequenceGenesis.separator_refutes_identification
 #check VerifiedConsequenceGenesis.golden_refinement
+#check VerifiedConsequenceGenesis.factorsThrough_implies_fiber_constancy
+#check VerifiedConsequenceGenesis.separator_implies_nonfactorization
+#check VerifiedConsequenceGenesis.factorsThrough_iff_fiber_constancy_of_section
+#check VerifiedConsequenceGenesis.consequence_factors_through_refinement
+#check VerifiedConsequenceGenesis.factorization_failure_forces_and_refinement_restores
 #check VerifiedConsequenceGenesis.strict_promotion_changes_expressible_frontier
 #check VerifiedConsequenceGenesis.verified_promotion_has_ancestral_necessity
