@@ -39,7 +39,7 @@ theorem compiledView_eq_implies_jointView
       simp at hp
       rcases hp with rfl | hp
       · exact h.1
-      · exact ih h.2 p hp
+      · exact h.2 p hp
 
 /-- Residual-derived sufficiency therefore makes the protected consequence
     constant on every fibre of the generated executable representation. -/
