@@ -1,0 +1,19 @@
+name: periodic table reasoning v1
+
+on:
+  push:
+    branches:
+      - periodic-table-reasoning-v1
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run ontology-poor cross-domain motif gate
+        run: python experiments/periodic_table_reasoning_v1.py
