@@ -1,0 +1,19 @@
+name: meta operator recursive genesis v4
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/meta_operator_recursive_genesis_v4.py'
+      - '.github/workflows/meta-operator-recursive-genesis-v4.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run operator-to-operator recursive genesis gate
+        run: python experiments/meta_operator_recursive_genesis_v4.py
