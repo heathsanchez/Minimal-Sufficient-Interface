@@ -22,7 +22,12 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Check bottom-up foundation gate
-        run: lean lean/BottomUpCalculusDerivation.lean
+        run: |
+          cd lean
+          lean -o SeparationRelationAblation.olean SeparationRelationAblation.lean
+          lean -o IdentityCompositionConsequence.olean IdentityCompositionConsequence.lean
+          lean -o ResourceIndexedConsequence.olean ResourceIndexedConsequence.lean
+          lean BottomUpCalculusDerivation.lean
       - name: Scientific markers
         run: |
           echo 'LAWFUL_SEPARATION_DERIVES_EQUIVALENCE=CHECKED'
