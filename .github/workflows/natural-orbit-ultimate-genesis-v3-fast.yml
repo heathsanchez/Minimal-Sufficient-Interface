@@ -1,0 +1,21 @@
+name: natural orbit ultimate genesis v3 fast
+
+on:
+  push:
+    branches: [natural-orbit-ultimate-genesis-v3]
+    paths:
+      - 'experiments/natural_orbit_ultimate_genesis_v3_fast.py'
+      - '.github/workflows/natural-orbit-ultimate-genesis-v3-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run residual-guided raw-position ultimate gate
+        run: python experiments/natural_orbit_ultimate_genesis_v3_fast.py
