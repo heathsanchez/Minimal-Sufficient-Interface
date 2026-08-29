@@ -6,6 +6,8 @@ on:
       - settlement-frozen-controller-final-boss
     paths:
       - 'formal/VerifiedConsequenceGenesis.lean'
+      - 'formal/UnifiedDevelopmentalLaw.lean'
+      - 'lean/*.lean'
       - '.github/workflows/verified-consequence-genesis-formal.yml'
   workflow_dispatch:
 
@@ -18,7 +20,19 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build unified theorem dependencies
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean -o lean/MinimalRepair.olean lean/MinimalRepair.lean
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
+          lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
       - name: Check formal laws
+        env:
+          LEAN_PATH: lean:formal
         run: |
           lean formal/VerifiedConsequenceGenesis.lean
           echo "CONSEQUENTIAL_IDENTITY_COARSEST=PASS"
@@ -36,3 +50,14 @@ jobs:
           echo "STRICT_PROMOTION_FRONTIER_CHANGE=PASS"
           echo "ANCESTRAL_NECESSITY_THEOREM=PASS"
           echo "VERIFIED_CONSEQUENCE_GENESIS_FORMAL=PASS"
+      - name: Check unified developmental law
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/UnifiedDevelopmentalLaw.lean
+          echo "FACTORIZATION_REPAIR_EQUALS_MEET_REFINEMENT=PASS"
+          echo "FACTORIZATION_REPAIR_INHERITS_MINIMAL_MEET_PROPERTY=PASS"
+          echo "STAGE_EQUIVALENCE_COLLAPSES_QUOTIENT_REPRESENTATION=PASS"
+          echo "SAME_SEPARATOR_DRIVES_FACTORIZATION_AND_STAGE_REPAIR=PASS"
+          echo "LEAST_GENERATED_STAGE_EXTENSION=PASS"
+          echo "UNIFIED_DEVELOPMENTAL_LAW=PASS"
