@@ -1,13 +1,14 @@
 import Std
+import IdentityCompositionConsequence
 
 namespace MinimalSufficientInterface.SeparationRelationAblation
 
-universe u
+universe u v
 
 /-!
 One-shot primitive foundation tournament.
 
-This file deliberately pushes below the previous action/composition calculus in one pass:
+This file pushes below the previous action/composition calculus in one pass:
 
   raw separation
     -> exact laws needed for identity
@@ -15,6 +16,7 @@ This file deliberately pushes below the previous action/composition calculus in 
     -> action as independent dynamic structure
     -> action invariance as an extra law
     -> compositional closure as an extra law
+    -> reconstruction of the existing identity/composition/consequence calculus
 
 Every claimed dependency is paired with a finite countermodel when the assumption is removed.
 -/
@@ -165,7 +167,7 @@ theorem no_distinction_does_not_mean_no_states :
     Nonempty Bool ∧ (∀ x y : Bool, Same (emptySeparation Bool) x y) := by
   exact ⟨⟨false⟩, fun x y => empty_separation_collapses_all x y⟩
 
-structure Action (M : Type u) (X : Type u) where
+structure Action (M : Type u) (X : Type v) where
   act : M → X → X
 
 def a1 : Action Bool Bool := ⟨fun m x => if m then x else !x⟩
@@ -179,15 +181,7 @@ theorem same_separation_incompatible_actions :
     a1.act true false ≠ a2.act true false := by
   constructor
   · intro x y
-    constructor
-    · rintro ⟨m, hm⟩
-      refine ⟨!m, ?_⟩
-      cases m <;> simp [a1, a2] at hm ⊢
-      exact hm
-    · rintro ⟨m, hm⟩
-      refine ⟨!m, ?_⟩
-      cases m <;> simp [a1, a2] at hm ⊢
-      exact hm
+    cases x <;> cases y <;> simp [inducedSep, a1, a2]
   · simp [a1, a2]
 
 def twoClassSeparation : LawfulSeparation (Fin 3) where
@@ -222,10 +216,10 @@ theorem lawful_static_identity_does_not_force_dynamic_invariance :
   · simp [Same, twoClassSeparation]
   · simp [Same, twoClassSeparation, badDynamic]
 
-def RespectsSame {M X : Type u} (S : Separation X) (A : Action M X) : Prop :=
+def RespectsSame {M : Type u} {X : Type v} (S : Separation X) (A : Action M X) : Prop :=
   ∀ m x y, Same S x y → Same S (A.act m x) (A.act m y)
 
-def HasComposition {M X : Type u} (A : Action M X) : Prop :=
+def HasComposition {M : Type u} {X : Type v} (A : Action M X) : Prop :=
   ∃ comp : M → M → M, ∀ f g x, A.act (comp f g) x = A.act f (A.act g x)
 
 def rotate3 : Fin 3 → Fin 3
@@ -243,6 +237,56 @@ theorem action_does_not_imply_compositional_closure : ¬ HasComposition nonClose
   have h1 := hcomp true true 1
   cases hc : comp true true <;> simp [nonClosedAction, rotate3, hc] at h0 h1
 
+/-- First lawful dynamic layer: action is supplied, but it must preserve the identity
+induced by lawful separation. This is not derivable from separation alone. -/
+structure LawfulDynamic (M : Type u) (X : Type v) (S : LawfulSeparation X)
+    extends Action M X where
+  respects : RespectsSame S.toSeparation toAction
+
+/-- Second dynamic layer: identity action and exact sequential composition are supplied.
+No associativity or unit equations on `comp` are assumed. -/
+structure ClosedDynamic (M : Type u) (X : Type v) (S : LawfulSeparation X)
+    extends LawfulDynamic M X S where
+  one : M
+  comp : M → M → M
+  one_act : ∀ x, act one x = x
+  comp_act : ∀ f g x, act (comp f g) x = act f (act g x)
+
+/-- Once lawful dynamics and compositional closure are present, the previous
+identity/composition/consequence calculus is recovered exactly, with no extra
+associativity or unit axioms. -/
+def ClosedDynamic.toCalculus {M : Type u} {X : Type v} {S : LawfulSeparation X}
+    (D : ClosedDynamic M X S) :
+    IdentityCompositionConsequence.Calculus M X where
+  one := D.one
+  comp := D.comp
+  act := D.act
+  one_act := D.one_act
+  comp_act := D.comp_act
+
+/-- Reconstruction is semantic, not merely structural: the recovered calculus has
+exactly the same action as the bottom-layer dynamic system. -/
+theorem reconstructed_action_is_original
+    {M : Type u} {X : Type v} {S : LawfulSeparation X}
+    (D : ClosedDynamic M X S) (m : M) (x : X) :
+    D.toCalculus.act m x = D.act m x := rfl
+
+/-- The bottom-up dependency boundary is exact in the tested finite witnesses:
+separation alone does not determine dynamics, and action alone does not determine
+compositional closure; but adding those two independently necessary layers
+reconstructs the existing calculus. -/
+theorem bottom_up_reconstruction_boundary :
+    (∃ (A B : Action Bool Bool),
+      (∀ x y, (inducedSep A).sep x y ↔ (inducedSep B).sep x y) ∧
+      A.act true false ≠ B.act true false) ∧
+    (∃ (A : Action Bool (Fin 3)), ¬ HasComposition A) := by
+  exact ⟨⟨a1, a2, same_separation_incompatible_actions.1,
+      same_separation_incompatible_actions.2⟩,
+    ⟨nonClosedAction, action_does_not_imply_compositional_closure⟩⟩
+
+/-- Full one-shot dependency result. The first component certifies lawful identity;
+the second certifies that lawful static identity does not force dynamic invariance;
+the third certifies that action does not force closure. -/
 theorem primitive_foundation_dependency_chain :
     (∀ x : Bool, Same (lawfulNeqSeparation Bool).toSeparation x x) ∧
     (∃ (S : LawfulSeparation (Fin 3)) (A : Action Bool (Fin 3)) (x y : Fin 3),
