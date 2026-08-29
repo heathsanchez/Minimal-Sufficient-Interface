@@ -25,6 +25,8 @@ jobs:
           LEAN_PATH: lean
         run: |
           set -euxo pipefail
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean -o lean/Completeness.olean lean/Completeness.lean
           lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
@@ -33,7 +35,8 @@ jobs:
           lean -o lean/FactorizationSufficiency.olean lean/FactorizationSufficiency.lean
           lean -o lean/ResourceIndexedConsequence.olean lean/ResourceIndexedConsequence.lean
           lean -o lean/VerifiedDevelopment.olean lean/VerifiedDevelopment.lean
-          lean lean/DevelopmentalFailureTaxonomy.lean
+          lean -o lean/DevelopmentalFailureTaxonomy.olean lean/DevelopmentalFailureTaxonomy.lean
+          lean lean/FiniteProtectedCompleteness.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -43,4 +46,6 @@ jobs:
           echo 'FACTORIZATION_SUFFICIENCY=CHECKED'
           echo 'FAILURE_TAXONOMY=CHECKED'
           echo 'AMBIGUITY_NO_SEPARATOR=CHECKED'
-          echo 'REMAINING_BOUNDARY=opaque failure does not classify itself; certificate/completeness required'
+          echo 'FINITE_PROTECTED_COMPLETENESS=CHECKED'
+          echo 'OPAQUE_FAILURE_CLOSED_UNDER_FINITE_COVERED_PROTECTED_FAMILY=CHECKED'
+          echo 'REMAINING_BOUNDARY=open-ended generation outside supplied protected/meta-language'
