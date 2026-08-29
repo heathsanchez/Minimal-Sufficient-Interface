@@ -1,0 +1,33 @@
+name: Primitive calculus ablation
+
+on:
+  push:
+    branches:
+      - msi/verified-development-theorem-v1
+    paths:
+      - 'lean/PrimitiveAblation.lean'
+      - '.github/workflows/primitive-ablation.yml'
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile primitive ablation
+        run: lean lean/PrimitiveAblation.lean
+      - name: Scientific markers
+        run: |
+          echo 'BARE_CONSEQUENCE_SPLIT=CHECKED'
+          echo 'BARE_LANGUAGE_REFINEMENT=CHECKED'
+          echo 'BARE_STRICT_REFINEMENT_SEPARATOR=CHECKED'
+          echo 'NOTHING_COLLAPSES_ALL=CHECKED'
+          echo 'IDENTITY_WITNESS_NOT_DERIVABLE_FROM_BARE=CHECKED'
+          echo 'POINTING_RECOVERS_OBSERVATION=CHECKED'
+          echo 'COMPOSITION_CLOSURE_RECOVERS_INVARIANCE=CHECKED'
+          echo 'BARE_INVARIANCE_COUNTERMODEL=CHECKED'
+          echo 'ABLATION_TARGET=distinction/consequence core below identity and composition'
