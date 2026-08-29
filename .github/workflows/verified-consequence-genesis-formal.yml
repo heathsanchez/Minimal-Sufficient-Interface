@@ -1,0 +1,29 @@
+name: verified consequence genesis formal
+
+on:
+  push:
+    branches:
+      - settlement-frozen-controller-final-boss
+    paths:
+      - 'formal/VerifiedConsequenceGenesis.lean'
+      - '.github/workflows/verified-consequence-genesis-formal.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check formal laws
+        run: |
+          lean formal/VerifiedConsequenceGenesis.lean
+          echo "CONSEQUENTIAL_IDENTITY_COARSEST=PASS"
+          echo "GOLDEN_REFINEMENT=PASS"
+          echo "SEPARATOR_CERTIFICATE=PASS"
+          echo "STRICT_PROMOTION_FRONTIER_CHANGE=PASS"
+          echo "ANCESTRAL_NECESSITY_THEOREM=PASS"
+          echo "VERIFIED_CONSEQUENCE_GENESIS_FORMAL=PASS"
