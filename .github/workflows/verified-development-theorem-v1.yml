@@ -37,7 +37,8 @@ jobs:
           lean -o lean/VerifiedDevelopment.olean lean/VerifiedDevelopment.lean
           lean -o lean/DevelopmentalFailureTaxonomy.olean lean/DevelopmentalFailureTaxonomy.lean
           lean -o lean/FiniteProtectedCompleteness.olean lean/FiniteProtectedCompleteness.lean
-          lean lean/VerifiedLanguageExtension.lean
+          lean -o lean/VerifiedLanguageExtension.olean lean/VerifiedLanguageExtension.lean
+          lean lean/ResidualInterfaceGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -51,4 +52,7 @@ jobs:
           echo 'OPAQUE_FAILURE_CLOSED_UNDER_FINITE_COVERED_PROTECTED_FAMILY=CHECKED'
           echo 'VERIFIED_LANGUAGE_EXTENSION=CHECKED'
           echo 'LEAST_ONE_SEED_STAGE_EXTENSION=CHECKED'
-          echo 'REMAINING_BOUNDARY=endogenous discovery of which new constructor/meta-language to admit'
+          echo 'RESIDUAL_INTERFACE_SUFFICIENCY_IFF_HITTING=CHECKED'
+          echo 'UNOBSERVABLE_RESIDUAL_BLOCKS_EVERY_AVAILABLE_BASIS=CHECKED'
+          echo 'MINIMAL_RESIDUAL_HITTING_INTERFACE=CHECKED'
+          echo 'REMAINING_BOUNDARY=constructor synthesis when residual is outside current primitive observation authority'
