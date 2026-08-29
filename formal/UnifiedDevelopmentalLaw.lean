@@ -179,9 +179,56 @@ theorem verified_separator_forces_least_developmental_step
   · exact generated_separator_forces_minimal_split
       C A Obs observe S seed hold hsep
 
+/-- Full verifier-governed developmental cycle.
+
+The separator is not merely used to repair representation and enlarge the
+composition-closed stage. The *same seed morphism* is promoted as a new atom
+of the next structural language. If it was genuinely absent before promotion,
+a descendant `op(seed)` is structurally expressible after the developmental
+step and impossible under exact ancestor ablation.
+
+Thus one theorem spans:
+verified consequence → factorization failure → canonical meet repair → least
+stage extension → promotion → strict descendant-frontier change.
+
+The final reachability claim here is structural expressibility, not a claim
+about bounded search efficiency. -/
+theorem verified_consequence_forces_recursive_promotion_cycle
+    (C : SmallCategory)
+    (A : Action C)
+    (Obs : C.Obj → Type z)
+    (observe : ∀ X, A.State X → Obs X)
+    (S : Stage C)
+    {X Y : C.Obj} {x y : A.State X}
+    (seed : C.Hom X Y)
+    (L : Lang (C.Hom X Y))
+    (hold : BehEqAt C A Obs observe S X x y)
+    (hsep : observe Y (A.map seed x) ≠ observe Y (A.map seed y))
+    (hmissing : ¬ L seed) :
+    let q := stageRepresentation C A Obs observe S X
+    let c := seedConsequence C A Obs observe seed
+    let O2 : Expr (C.Hom X Y) := .op (.atom seed)
+    ((¬ FactorsThrough q c) ∧
+      FactorsThrough (RefineWith q c) c ∧
+      (RefinedEqRel q c =
+        (relationMeetKernel (A.State X)).meet (EqRel q) (ConsequenceKernel c)) ∧
+      Extends C S (adjoinStage C S seed) ∧
+      (∀ T : Stage C, Extends C S T → T.allow seed →
+        Extends C (adjoinStage C S seed) T) ∧
+      (BehEqAt C A Obs observe S X x y ∧
+        ¬ BehEqAt C A Obs observe (adjoinStage C S seed) X x y)) ∧
+    Expressible (Promote L seed) O2 ∧
+    ¬ Expressible L O2 := by
+  dsimp
+  constructor
+  · exact verified_separator_forces_least_developmental_step
+      C A Obs observe S seed hold hsep
+  · exact verified_promotion_has_ancestral_necessity L seed hmissing
+
 end UnifiedDevelopmentalLaw
 
 #check UnifiedDevelopmentalLaw.canonical_refinement_eq_meet
 #check UnifiedDevelopmentalLaw.canonical_factorization_repair_is_minimal_meet
 #check UnifiedDevelopmentalLaw.stage_equivalence_collapses_representation
 #check UnifiedDevelopmentalLaw.verified_separator_forces_least_developmental_step
+#check UnifiedDevelopmentalLaw.verified_consequence_forces_recursive_promotion_cycle
