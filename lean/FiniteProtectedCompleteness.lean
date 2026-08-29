@@ -26,13 +26,15 @@ theorem globalResidual_yields_member_residual
     ∃ c, c ∈ T ∧ IndividualResidual P B c := by
   rcases h with ⟨x, y, hB, hnotT⟩
   have hex : ∃ c, c ∈ T ∧ P x c ≠ P y c := by
-    by_contra hnone
+    apply Classical.byContradiction
+    intro hnone
     apply hnotT
     intro c hc
-    by_contra hneq
+    apply Classical.byContradiction
+    intro hneq
     exact hnone ⟨c, hc, hneq⟩
   rcases hex with ⟨c, hc, hneq⟩
-  exact ⟨c, hc, x, y, hB, hneq⟩
+  exact ⟨c, hc, ⟨x, y, hB, hneq⟩⟩
 
 /-- Under protected-family coverage, extensional inadequacy cannot remain an
     opaque failure: it yields a concrete member residual from the protected
