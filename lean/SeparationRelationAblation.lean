@@ -30,10 +30,8 @@ theorem separation_forces_split
 /-- If identity changes from same to split, the relation itself contains the separator. -/
 theorem strict_change_is_separation
     (S T : Separation X) {x y : X}
-    (hOld : Same S x y) (hNew : ¬ Same T x y) : T.sep x y := by
-  classical
-  by_contra h
-  exact hNew h
+    (_hOld : Same S x y) (hNew : ¬ Same T x y) : T.sep x y := by
+  simpa [Same] using hNew
 
 /-- Empty separation is the operational NOTHING case: all states collapse. -/
 def emptySeparation (X : Type u) : Separation X := ⟨fun _ _ => False⟩
@@ -61,7 +59,7 @@ theorem transitivity_not_derivable :
     ∃ (S : Separation (Fin 3)) (x y z : Fin 3),
       Same S x y ∧ Same S y z ∧ ¬ Same S x z := by
   let S : Separation (Fin 3) := ⟨fun x y => x = 0 ∧ y = 2⟩
-  refine ⟨S, 0, 1, 2, ?_, ?_, ?_⟩ <;> simp [Same, S]
+  exact ⟨S, 0, 1, 2, by simp [Same, S], by simp [Same, S], by simp [Same, S]⟩
 
 /-- Two incompatible action semantics can induce exactly the same verified separation
 relation. Hence a separation relation cannot reconstruct action semantics. -/
