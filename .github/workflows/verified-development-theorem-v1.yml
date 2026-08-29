@@ -46,7 +46,8 @@ jobs:
           lean -o lean/FiniteMetaLanguageExhaustion.olean lean/FiniteMetaLanguageExhaustion.lean
           lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
           lean -o lean/ResidualDerivedConstructorPrinciple.olean lean/ResidualDerivedConstructorPrinciple.lean
-          lean lean/ResidualCompiledSyntaxGenesis.lean
+          lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
+          lean lean/VerifiedConsequenceToCompiledSyntax.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -95,4 +96,8 @@ jobs:
           echo 'COMPILED_SYNTAX_ESCAPES_EXHAUSTED_FAMILY=CHECKED'
           echo 'STRICT_SYNTAX_GENESIS_WITHOUT_ARITY_MENU=CHECKED'
           echo 'SYNTAX_ABLATION_RESTORES_VERIFIED_RESIDUAL=CHECKED'
-          echo 'FINAL_BOUNDARY=fixed universal recursive substrate remains necessary; ex-nihilo invention outside every possible metalanguage is not an executable requirement'
+          echo 'VERIFIED_SEPARATOR_CERTIFIES_NONFACTORIZATION=CHECKED'
+          echo 'RESIDUALS_GENERATE_EXECUTABLE_REPRESENTATION=CHECKED'
+          echo 'GENERATED_REPRESENTATION_FACTORIZATION=CHECKED'
+          echo 'FAILURE_TO_GENERATED_FACTORIZATION=CHECKED'
+          echo 'FINAL_BOUNDARY=fixed universal recursive computational substrate remains necessary; no arity menu, target syntax, finite constructor family, or novelty assumption is supplied'
