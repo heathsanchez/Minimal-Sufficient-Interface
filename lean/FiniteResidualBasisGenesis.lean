@@ -12,6 +12,7 @@ open FactorizationSufficiency
 open VerifiedConsequenceToCompiledSyntax
 
 variable {X : Type u} {Probe : Type v} {V : Type w} {Y : Type z}
+variable [Fintype Probe] [DecidableEq Probe]
 
 /-- There exists a sufficient interface of exact arity `n`. -/
 def SufficientArity
@@ -26,7 +27,6 @@ def SufficientArity
 theorem finite_universe_is_sufficient
     (observe : Probe → X → V)
     (target : X → Y)
-    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     BasisSufficient observe target (Finset.univ.toList) := by
@@ -58,7 +58,6 @@ theorem not_sufficient_has_residual
 theorem finite_residuals_construct_minimal_basis
     (observe : Probe → X → V)
     (target : X → Y)
-    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe, ResidualDeterminesArity observe target B := by
@@ -86,7 +85,6 @@ theorem finite_residuals_construct_minimal_basis
 theorem finite_residuals_generate_residual_determined_arity
     (observe : Probe → X → V)
     (target : X → Y)
-    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe,
@@ -102,7 +100,6 @@ theorem finite_residuals_generate_residual_determined_arity
 theorem finite_residuals_generate_factorizing_representation
     (observe : Probe → X → V)
     (target : X → Y)
-    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe,
@@ -120,7 +117,6 @@ theorem verified_failure_to_endogenous_generated_factorization
     (q : X → R)
     (observe : Probe → X → V)
     (target : X → Y)
-    [Fintype Probe] [DecidableEq Probe]
     {x y : X}
     (hcollapse : q x = q y)
     (hxy : target x ≠ target y)
