@@ -79,17 +79,16 @@ theorem extension_refines_identity
   intro x y hT f hf
   exact hT f (hST f hf)
 
-/-- A newly licensed morphism that distinguishes a previously united pair forces
-strict separation at the extended stage. -/
-theorem new_consequence_forces_split
-    (S T : Stage K) (hST : Extends K S T)
-    (f : M) (hfT : T.allows f)
+/-- A licensed consequence that distinguishes a pair is already sufficient to
+forbid their union at that stage. No separate extension or prior-identity premise
+is needed. -/
+theorem consequence_forces_split
+    (T : Stage K) (f : M) (hfT : T.allows f)
     {x y : X}
-    (hOld : SameAt K observe S x y)
     (hSep : observe (K.act f x) ≠ observe (K.act f y)) :
     ¬ SameAt K observe T x y := by
-  intro hNew
-  exact hSep (hNew f hfT)
+  intro hSame
+  exact hSep (hSame f hfT)
 
 /-- Free generated extension of a stage by one verified new transformation. -/
 inductive Generated (S : Stage K) (seed : M) : M → Prop
@@ -143,8 +142,8 @@ theorem verified_compositional_portal
     (∀ T : Stage K,
       Extends K S T → T.allows seed → Extends K (adjoin K S seed) T) := by
   refine ⟨hOld, ?_, ?_⟩
-  · exact new_consequence_forces_split K observe S (adjoin K S seed)
-      (old_extends_to_adjoin K S seed) seed (seed_mem_adjoin K S seed) hOld hSep
+  · exact consequence_forces_split K observe (adjoin K S seed)
+      seed (seed_mem_adjoin K S seed) hSep
   · intro T hST hseed
     exact adjoin_least K S T seed hST hseed
 
