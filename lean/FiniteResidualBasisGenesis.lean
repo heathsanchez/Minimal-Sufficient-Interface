@@ -24,9 +24,9 @@ def SufficientArity
 /-- In a finite probe universe, if every protected target disagreement is exposed
     by some available probe, then the complete probe list is sufficient. -/
 theorem finite_universe_is_sufficient
-    [Fintype Probe] [DecidableEq Probe]
     (observe : Probe → X → V)
     (target : X → Y)
+    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     BasisSufficient observe target (Finset.univ.toList) := by
@@ -56,9 +56,9 @@ theorem not_sufficient_has_residual
     No basis is supplied as input: well-ordering selects the least arity at which
     a sufficient interface exists, and a witness basis at that arity is extracted. -/
 theorem finite_residuals_construct_minimal_basis
-    [Fintype Probe] [DecidableEq Probe]
     (observe : Probe → X → V)
     (target : X → Y)
+    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe, ResidualDeterminesArity observe target B := by
@@ -84,9 +84,9 @@ theorem finite_residuals_construct_minimal_basis
 /-- Hence the finite residual family constructs, rather than receives, a basis
     satisfying the existing residual-derived arity contract. -/
 theorem finite_residuals_generate_residual_determined_arity
-    [Fintype Probe] [DecidableEq Probe]
     (observe : Probe → X → V)
     (target : X → Y)
+    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe,
@@ -100,9 +100,9 @@ theorem finite_residuals_generate_residual_determined_arity
     representation through which the protected consequence factors.  The basis is
     existentially constructed from residual coverage; it is not supplied. -/
 theorem finite_residuals_generate_factorizing_representation
-    [Fintype Probe] [DecidableEq Probe]
     (observe : Probe → X → V)
     (target : X → Y)
+    [Fintype Probe] [DecidableEq Probe]
     (hsep : ∀ x y : X, target x ≠ target y →
       ∃ p : Probe, observe p x ≠ observe p y) :
     ∃ B : List Probe,
@@ -116,11 +116,11 @@ theorem finite_residuals_generate_factorizing_representation
     residual coverage then constructs a minimum sufficient basis and a generated
     reachable representation that restores factorization. -/
 theorem verified_failure_to_endogenous_generated_factorization
-    [Fintype Probe] [DecidableEq Probe]
     {R : Type v}
     (q : X → R)
     (observe : Probe → X → V)
     (target : X → Y)
+    [Fintype Probe] [DecidableEq Probe]
     {x y : X}
     (hcollapse : q x = q y)
     (hxy : target x ≠ target y)
