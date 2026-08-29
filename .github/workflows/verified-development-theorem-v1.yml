@@ -36,7 +36,8 @@ jobs:
           lean -o lean/ResourceIndexedConsequence.olean lean/ResourceIndexedConsequence.lean
           lean -o lean/VerifiedDevelopment.olean lean/VerifiedDevelopment.lean
           lean -o lean/DevelopmentalFailureTaxonomy.olean lean/DevelopmentalFailureTaxonomy.lean
-          lean lean/FiniteProtectedCompleteness.lean
+          lean -o lean/FiniteProtectedCompleteness.olean lean/FiniteProtectedCompleteness.lean
+          lean lean/VerifiedLanguageExtension.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -48,4 +49,6 @@ jobs:
           echo 'AMBIGUITY_NO_SEPARATOR=CHECKED'
           echo 'FINITE_PROTECTED_COMPLETENESS=CHECKED'
           echo 'OPAQUE_FAILURE_CLOSED_UNDER_FINITE_COVERED_PROTECTED_FAMILY=CHECKED'
-          echo 'REMAINING_BOUNDARY=open-ended generation outside supplied protected/meta-language'
+          echo 'VERIFIED_LANGUAGE_EXTENSION=CHECKED'
+          echo 'LEAST_ONE_SEED_STAGE_EXTENSION=CHECKED'
+          echo 'REMAINING_BOUNDARY=endogenous discovery of which new constructor/meta-language to admit'
