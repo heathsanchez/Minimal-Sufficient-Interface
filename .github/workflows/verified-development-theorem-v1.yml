@@ -38,7 +38,8 @@ jobs:
           lean -o lean/DevelopmentalFailureTaxonomy.olean lean/DevelopmentalFailureTaxonomy.lean
           lean -o lean/FiniteProtectedCompleteness.olean lean/FiniteProtectedCompleteness.lean
           lean -o lean/VerifiedLanguageExtension.olean lean/VerifiedLanguageExtension.lean
-          lean lean/ResidualInterfaceGenesis.lean
+          lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
+          lean lean/VerifiedNewProbeGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -55,4 +56,7 @@ jobs:
           echo 'RESIDUAL_INTERFACE_SUFFICIENCY_IFF_HITTING=CHECKED'
           echo 'UNOBSERVABLE_RESIDUAL_BLOCKS_EVERY_AVAILABLE_BASIS=CHECKED'
           echo 'MINIMAL_RESIDUAL_HITTING_INTERFACE=CHECKED'
-          echo 'REMAINING_BOUNDARY=constructor synthesis when residual is outside current primitive observation authority'
+          echo 'VERIFIED_NEW_PROBE_GENESIS=CHECKED'
+          echo 'DERIVED_PROBE_FORCED_IN_ONE_PROBE_REPAIR=CHECKED'
+          echo 'PROBE_ABLATION_RESTORES_OBSTRUCTION=CHECKED'
+          echo 'REMAINING_BOUNDARY=endogenous synthesis/completeness of candidate meta-language beyond supplied generated probe family'
