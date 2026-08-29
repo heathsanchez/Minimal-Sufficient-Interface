@@ -40,7 +40,8 @@ jobs:
           lean -o lean/VerifiedLanguageExtension.olean lean/VerifiedLanguageExtension.lean
           lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
           lean -o lean/VerifiedNewProbeGenesis.olean lean/VerifiedNewProbeGenesis.lean
-          lean lean/VerifiedNodeTypeGenesis.lean
+          lean -o lean/VerifiedNodeTypeGenesis.olean lean/VerifiedNodeTypeGenesis.lean
+          lean lean/VerifiedConstructorFamilyGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -64,4 +65,8 @@ jobs:
           echo 'VERIFIED_NEW_NODE_TYPE_GENESIS=CHECKED'
           echo 'NODE_ABLATION_RESTORES_OLD_IMPOSSIBILITY=CHECKED'
           echo 'RESIDUAL_SELECTED_INPUTS_LICENSE_LOCAL_VALUE_NODE=CHECKED'
-          echo 'REMAINING_BOUNDARY=endogenous generation of constructor families beyond a supplied executable meta-language'
+          echo 'RESIDUAL_SELECTED_CONSTRUCTOR_FAMILY=CHECKED'
+          echo 'CHEAPER_FAMILY_EXHAUSTION=CHECKED'
+          echo 'LOWER_FAMILY_ABLATION_RESTORES_RESIDUAL=CHECKED'
+          echo 'CONSEQUENCE_DEPENDENT_FAMILY_SELECTION=CHECKED'
+          echo 'REMAINING_BOUNDARY=constructor generation beyond the supplied ranked executable portfolio'
