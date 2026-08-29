@@ -47,7 +47,8 @@ jobs:
           lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
           lean -o lean/ResidualDerivedConstructorPrinciple.olean lean/ResidualDerivedConstructorPrinciple.lean
           lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
-          lean lean/VerifiedConsequenceToCompiledSyntax.lean
+          lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
+          lean lean/ConsequenceSeparationUnion.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -100,4 +101,9 @@ jobs:
           echo 'RESIDUALS_GENERATE_EXECUTABLE_REPRESENTATION=CHECKED'
           echo 'GENERATED_REPRESENTATION_FACTORIZATION=CHECKED'
           echo 'FAILURE_TO_GENERATED_FACTORIZATION=CHECKED'
-          echo 'FINAL_BOUNDARY=fixed universal recursive computational substrate remains necessary; no arity menu, target syntax, finite constructor family, or novelty assumption is supplied'
+          echo 'CONSEQUENCE_DISTINCTION_DUALITY=CHECKED'
+          echo 'SEPARATION_UNION_DUALITY=CHECKED'
+          echo 'LEAST_CONSEQUENTIAL_CHANGE=CHECKED'
+          echo 'STATIC_DEVELOPMENTAL_FIXED_POINT=CHECKED'
+          echo 'COMPRESSION_TEST=single independent kernel recovers union separation residual least-refinement and stop'
+          echo 'FINAL_BOUNDARY=fixed universal recursive computational substrate remains necessary; dynamic language expansion is not yet reduced to this static kernel'
