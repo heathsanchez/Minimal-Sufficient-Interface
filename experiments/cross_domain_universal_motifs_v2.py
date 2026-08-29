@@ -1,6 +1,7 @@
 import ast
 import itertools
 import random
+from functools import lru_cache
 from pathlib import Path
 from collections import defaultdict
 
@@ -36,7 +37,6 @@ def statement_graph(path):
         last={}
         for s in body:
             si=idx[id(s)]
-            # def-use is computed before identifiers are erased; identifiers never enter motifs.
             for name in names_load(s):
                 if name in last: edges.add((last[name],si))
             for name in names_store(s): last[name]=si
@@ -54,7 +54,9 @@ def statement_graph(path):
     return len(live), {(remap[a],remap[b]) for a,b in edges if a in live and b in live}
 
 
-def canon(k, es):
+@lru_cache(maxsize=None)
+def canon_cached(k, edge_tuple):
+    es=set(edge_tuple)
     best=None
     for p in itertools.permutations(range(k)):
         s=''.join('1' if (p[i],p[j]) in es else '0' for i in range(k) for j in range(k) if i!=j)
@@ -62,11 +64,14 @@ def canon(k, es):
     return best
 
 
+def canon(k, es):
+    return canon_cached(k, tuple(sorted(es)))
+
+
 def graphlets(n, es, k, cap=12000):
     und=[set() for _ in range(n)]
     for a,b in es: und[a].add(b);und[b].add(a)
     subsets=set()
-    # Deterministic connected-set expansion; capped before canonicalization.
     for root in range(n):
         stack=[frozenset((root,))]
         seen={stack[0]}
