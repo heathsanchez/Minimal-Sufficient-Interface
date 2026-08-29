@@ -39,7 +39,8 @@ jobs:
           lean -o lean/FiniteProtectedCompleteness.olean lean/FiniteProtectedCompleteness.lean
           lean -o lean/VerifiedLanguageExtension.olean lean/VerifiedLanguageExtension.lean
           lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
-          lean lean/VerifiedNewProbeGenesis.lean
+          lean -o lean/VerifiedNewProbeGenesis.olean lean/VerifiedNewProbeGenesis.lean
+          lean lean/VerifiedNodeTypeGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -59,4 +60,8 @@ jobs:
           echo 'VERIFIED_NEW_PROBE_GENESIS=CHECKED'
           echo 'DERIVED_PROBE_FORCED_IN_ONE_PROBE_REPAIR=CHECKED'
           echo 'PROBE_ABLATION_RESTORES_OBSTRUCTION=CHECKED'
-          echo 'REMAINING_BOUNDARY=endogenous synthesis/completeness of candidate meta-language beyond supplied generated probe family'
+          echo 'DEPTH_INDEPENDENT_SELECTOR_CLOSURE_OBSTRUCTION=CHECKED'
+          echo 'VERIFIED_NEW_NODE_TYPE_GENESIS=CHECKED'
+          echo 'NODE_ABLATION_RESTORES_OLD_IMPOSSIBILITY=CHECKED'
+          echo 'RESIDUAL_SELECTED_INPUTS_LICENSE_LOCAL_VALUE_NODE=CHECKED'
+          echo 'REMAINING_BOUNDARY=endogenous generation of constructor families beyond a supplied executable meta-language'
