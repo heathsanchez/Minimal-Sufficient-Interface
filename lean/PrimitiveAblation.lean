@@ -169,4 +169,6 @@ theorem primitive_dependency_summary
     SameAt K observe S x y :=
   bare_extension_refines K observe S T hST hT
 
+-- CI retrigger marker: primitive ablation gate v1.
+
 end MinimalSufficientInterface.PrimitiveAblation
