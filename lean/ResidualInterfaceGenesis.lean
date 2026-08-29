@@ -6,10 +6,10 @@ namespace ResidualInterfaceGenesis
 
 variable {X : Type u} {Probe : Type v} {V : Type w} {Y : Type z}
 
-/-- Primitive observation supplied by the current measurement language. -/
+-- Primitive observation supplied by the current measurement language.
 variable (observe : Probe → X → V)
 
-/-- Protected consequence whose verified disagreements generate residuals. -/
+-- Protected consequence whose verified disagreements generate residuals.
 variable (target : X → Y)
 
 /-- A basis is sufficient exactly when equality on all selected probes forces
@@ -33,14 +33,17 @@ theorem sufficient_iff_hits_all_residuals (B : List Probe) :
     BasisSufficient observe target B ↔ HitsAllResiduals observe target B := by
   constructor
   · intro hs x y hxy
-    by_contra hnone
+    apply Classical.byContradiction
+    intro hnone
     apply hxy
     apply hs x y
     intro p hp
-    by_contra hneq
+    apply Classical.byContradiction
+    intro hneq
     exact hnone ⟨p, hp, hneq⟩
   · intro hh x y hobs
-    by_contra htarget
+    apply Classical.byContradiction
+    intro htarget
     rcases hh x y htarget with ⟨p, hp, hneq⟩
     exact hneq (hobs p hp)
 
