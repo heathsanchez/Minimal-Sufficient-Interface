@@ -30,3 +30,4 @@ jobs:
           echo 'TRANSITIVITY_NOT_DERIVABLE=CHECKED'
           echo 'ACTION_NOT_RECONSTRUCTIBLE_FROM_SEPARATION=CHECKED'
           echo 'ABLATION_DECISION=relation-only distinction below action, but action irreducible for dynamics'
+          echo 'TRIGGER_VERSION=2'
