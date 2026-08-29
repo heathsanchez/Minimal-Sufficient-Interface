@@ -43,7 +43,8 @@ jobs:
           lean -o lean/VerifiedNodeTypeGenesis.olean lean/VerifiedNodeTypeGenesis.lean
           lean -o lean/VerifiedConstructorFamilyGenesis.olean lean/VerifiedConstructorFamilyGenesis.lean
           lean -o lean/VerifiedDevelopmentalController.olean lean/VerifiedDevelopmentalController.lean
-          lean lean/FiniteMetaLanguageExhaustion.lean
+          lean -o lean/FiniteMetaLanguageExhaustion.olean lean/FiniteMetaLanguageExhaustion.lean
+          lean lean/ResidualDerivedMetaLanguageGenesis.lean
       - name: Record theorem boundary
         run: |
           echo 'STATIC_ONE_STEP=CHECKED'
@@ -79,4 +80,8 @@ jobs:
           echo 'GENERATED_CANDIDATE_IMPOSSIBILITY_AFTER_EXHAUSTION=CHECKED'
           echo 'LICENSED_BEYOND_META_LANGUAGE_GAIN=CHECKED'
           echo 'META_LANGUAGE_ABLATION_RESTORES_EXHAUSTION=CHECKED'
-          echo 'REMAINING_BOUNDARY=endogenous invention of a new meta-language beyond all supplied finite generators'
+          echo 'RESIDUAL_DERIVED_INTERFACE_ARITY=CHECKED'
+          echo 'SMALLER_ARITY_RESIDUAL_EXHAUSTION=CHECKED'
+          echo 'MINIMAL_INTERFACE_ARITY_CERTIFIED=CHECKED'
+          echo 'ARITY_ABLATION_RESTORES_OBSTRUCTION=CHECKED'
+          echo 'REMAINING_BOUNDARY=generic product-interface constructor remains supplied; unrestricted meta-language invention is not proved'
