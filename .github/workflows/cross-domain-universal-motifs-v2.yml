@@ -1,0 +1,26 @@
+name: cross domain universal motifs v2
+
+on:
+  push:
+    branches: [cross-domain-universal-motifs-v2]
+    paths:
+      - 'experiments/cross_domain_universal_motifs_v2.py'
+      - '.github/workflows/cross-domain-universal-motifs-v2.yml'
+      - 'experiments/natural_orbit_recursive_genesis_v3b.py'
+      - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - 'tests/test_final_boss_task_only_category_genesis.py'
+      - 'tests/test_final_leap_cross_lens_rank2_world.py'
+      - 'experiments/lean_external_capability_synthesis.py'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run sealed leave-one-out motif gate
+        run: python experiments/cross_domain_universal_motifs_v2.py
