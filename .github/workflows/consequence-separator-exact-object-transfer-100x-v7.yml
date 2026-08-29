@@ -1,0 +1,22 @@
+name: consequence separator exact object transfer 100x v7
+on:
+  workflow_dispatch:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/consequence_separator_exact_object_transfer_100x_v7.py'
+      - '.github/workflows/consequence-separator-exact-object-transfer-100x-v7.yml'
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide V7
+        run: python experiments/consequence_separator_exact_object_transfer_100x_v7.py
