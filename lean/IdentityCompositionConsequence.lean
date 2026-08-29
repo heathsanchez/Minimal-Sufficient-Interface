@@ -77,14 +77,12 @@ theorem strict_refinement_has_new_forcing_consequence
     ∃ f, T.allows f ∧ ¬ S.allows f ∧
       observe (K.act f x) ≠ observe (K.act f y) := by
   classical
-  by_contra hNoWitness
-  apply hNew
-  intro f hfT
-  by_contra hSep
-  have hfS : S.allows f := by
-    by_contra hfS
-    exact hNoWitness ⟨f, hfT, hfS, hSep⟩
-  exact hSep (hOld f hfS)
+  exact Classical.byContradiction (fun hNoWitness =>
+    hNew (fun f hfT =>
+      Classical.byContradiction (fun hSep =>
+        hNoWitness ⟨f, hfT,
+          (fun hfS => hSep (hOld f hfS)),
+          hSep⟩)))
 
 /-- A licensed consequence that distinguishes a pair is already sufficient to
 forbid their union at that stage. -/
