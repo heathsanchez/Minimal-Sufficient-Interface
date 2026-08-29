@@ -38,7 +38,7 @@ def arity : InterfaceSyntax Probe → Nat
   induction B with
   | nil => rfl
   | cons p ps ih =>
-      simp [compile, arity, ih]
+      simp [compile, arity, ih, Nat.add_comm]
 
 /-- Extensional semantics of generated interface syntax: two states have the
     same generated joint view exactly when every represented probe agrees. -/
