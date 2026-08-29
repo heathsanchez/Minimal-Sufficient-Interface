@@ -39,8 +39,6 @@ def fit(ast,pairs):
  return solve3(G,h)
 
 def pred(ast,beta,u):
- # Candidate consequence prediction must not inspect unknown y inside feature.
- # Solve implicit y=a*u+b+c*f(u,y) by fixed point from affine seed. This is B-only.
  y=beta[0]*u+beta[1]
  for _ in range(64):
   yn=beta[0]*u+beta[1]+beta[2]*v5.scalar(ast,u,y)
@@ -59,7 +57,7 @@ def loo(ast,pairs):
   e+=(q-y)**2
  return e
 
-def scores(pairs):return sorted((loo(a),i,a) for i,a in enumerate(ASTS))
+def scores(pairs):return sorted((loo(a,pairs),i,a) for i,a in enumerate(ASTS))
 
 def acquire_B():
  pairs=[(-3,-5),(-1,-1),(0,1),(2,5),(5,11)]
@@ -69,7 +67,6 @@ def acquire_B():
   finite=[z for z in ss if math.isfinite(z[0])]
   assert finite
   best=finite[0][0]
-  # Evidence-equivalent contenders at strict numerical tolerance.
   eq=[z for z in finite if abs(z[0]-best)<=1e-9]
   if len(eq)==1 and (len(finite)==1 or finite[0][0] < finite[1][0]-1e-9):
    psi=eq[0][2];print('B_UNIQUE_PSI',psi,'AFTER',step,'SEPARATORS')
@@ -96,7 +93,6 @@ def acquire_B():
 
 def main():
  v5.lean_gate();psi=acquire_B()
- # C is first touched here, after exact B object is frozen.
  cold,_=v5.fit_C(('U',));warm,beta=v5.fit_C(psi)
  print('C_COLD_RATIO',cold)
  print('C_EXACT_B_SELECTED_AST_RATIO',warm,'beta',beta)
