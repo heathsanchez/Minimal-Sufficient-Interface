@@ -1,0 +1,19 @@
+name: meta operator genesis v3
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/meta_operator_genesis_v3.py'
+      - '.github/workflows/meta-operator-genesis-v3.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run synthesized discovery-operator genesis gate
+        run: python experiments/meta_operator_genesis_v3.py
