@@ -1,0 +1,20 @@
+name: resource indexed consequence v1
+
+on:
+  push:
+    branches: [resource-indexed-consequence-v1]
+    paths:
+      - 'experiments/resource_indexed_consequence_v1.py'
+      - '.github/workflows/resource-indexed-consequence-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run resource-indexed consequence test
+        run: python experiments/resource_indexed_consequence_v1.py
