@@ -47,11 +47,12 @@ theorem node_ablation_restores_old_impossibility
     (hobs : SelectorClosureObstruction exposed target) :
     ∀ f : X → V, SelectorOnly exposed f → ∃ x, f x ≠ target x := by
   intro f hf
-  by_contra hall
-  apply selector_closure_obstruction_blocks_all_selector_search exposed target hobs f hf
-  intro x
-  by_contra hne
-  exact hall ⟨x, hne⟩
+  rcases hobs with ⟨x, hout⟩
+  refine ⟨x, ?_⟩
+  intro heq
+  have hmem := hf x
+  rw [heq] at hmem
+  exact hout hmem
 
 /-- Residual-inferred basis sufficiency supplies the observational side of the new-node
 construction: every verified target disagreement is exposed by at least one retained
