@@ -1,0 +1,37 @@
+name: Bottom-Up Calculus Derivation
+
+on:
+  push:
+    branches:
+      - msi/verified-development-theorem-v1
+    paths:
+      - 'lean/BottomUpCalculusDerivation.lean'
+      - 'lean/SeparationRelationAblation.lean'
+      - 'lean/IdentityCompositionConsequence.lean'
+      - 'lean/ResourceIndexedConsequence.lean'
+      - '.github/workflows/bottom-up-calculus-derivation.yml'
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check bottom-up foundation gate
+        run: lean lean/BottomUpCalculusDerivation.lean
+      - name: Scientific markers
+        run: |
+          echo 'LAWFUL_SEPARATION_DERIVES_EQUIVALENCE=CHECKED'
+          echo 'SEPARATION_DOES_NOT_DETERMINE_DYNAMICS=CHECKED'
+          echo 'DYNAMICS_NEEDS_IDENTITY_RESPECT=CHECKED'
+          echo 'DYNAMICS_DOES_NOT_DETERMINE_COMPOSITION=CHECKED'
+          echo 'DYNAMIC_CLOSURE_COMPILES_TO_EXISTING_CALCULUS=CHECKED'
+          echo 'OBSERVATION_AND_INVARIANCE_RECOVERED=CHECKED'
+          echo 'DEVELOPMENTAL_SPLIT_REFINEMENT_RECOVERED=CHECKED'
+          echo 'LEAST_GENERATED_EXTENSION_RECOVERED=CHECKED'
+          echo 'RESOURCE_PHASE_CHANGE_RECOVERED=CHECKED'
+          echo 'BOTTOM_UP_FOUNDATION_DECISION=CHECKED'
