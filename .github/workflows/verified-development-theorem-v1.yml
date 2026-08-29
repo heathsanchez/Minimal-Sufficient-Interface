@@ -51,6 +51,7 @@ jobs:
           lean -o lean/ResidualDerivedConstructorPrinciple.olean lean/ResidualDerivedConstructorPrinciple.lean
           lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
           lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
+          lean -o lean/FiniteResidualBasisGenesis.olean lean/FiniteResidualBasisGenesis.lean
           lean lean/ConsequenceSeparationUnion.lean
           lean lean/IdentityCompositionConsequence.lean
           lean lean/ArithmeticDirection.lean
@@ -58,7 +59,7 @@ jobs:
           lean lean/BlindRecursiveCrossGrammarGenesis.lean
       - name: Record theorem boundary
         run: |
-          echo 'ALL_31_LEAN_FILES=CHECKED'
+          echo 'ALL_32_LEAN_FILES=CHECKED'
           echo 'MINIMAL_REPAIR_UNIVERSAL_PROPERTY=CHECKED'
           echo 'RESIDUAL_MORPHISM_CLASS=CHECKED'
           echo 'LOCAL_SILENCE_FALSIFIER=CHECKED'
@@ -115,6 +116,10 @@ jobs:
           echo 'RESIDUALS_GENERATE_EXECUTABLE_REPRESENTATION=CHECKED'
           echo 'GENERATED_REPRESENTATION_FACTORIZATION=CHECKED'
           echo 'FAILURE_TO_GENERATED_FACTORIZATION=CHECKED'
+          echo 'FINITE_RESIDUAL_COVERAGE=CHECKED'
+          echo 'MINIMAL_BASIS_CONSTRUCTED_NOT_SUPPLIED=CHECKED'
+          echo 'ENDOGENOUS_GENERATED_FACTORIZATION=CHECKED'
+          echo 'OLD_COLLAPSE_TO_GENERATED_REPAIR_WITHOUT_BASIS_ARGUMENT=CHECKED'
           echo 'CONSEQUENCE_DISTINCTION_DUALITY=CHECKED'
           echo 'SEPARATION_UNION_DUALITY=CHECKED'
           echo 'LEAST_CONSEQUENTIAL_CHANGE=CHECKED'
@@ -122,5 +127,5 @@ jobs:
           echo 'IDENTITY_COMPOSITION_CONSEQUENCE_CALCULUS=CHECKED'
           echo 'MINIMIZED_SUBSTRATE_NO_ASSOCIATIVITY_REQUIRED=CHECKED'
           echo 'LEAST_COMPOSITIONAL_EXTENSION=CHECKED'
-          echo 'COMPRESSION_TEST=static separation-union plus dynamic composition-consequence calculus are independently derivable from Std-only kernels'
-          echo 'FINAL_BOUNDARY=resource-indexed reachability, observation genesis, and syntax generation remain to be compressed into the calculus'
+          echo 'COMPRESSION_TEST=finite residual coverage now constructs a minimum sufficient basis and generated factorizing representation without a supplied basis'
+          echo 'FINAL_BOUNDARY=finite exhaustive probe universe and separator coverage remain assumed; primitive-probe genesis beyond the current universe and full resource compression remain open'
