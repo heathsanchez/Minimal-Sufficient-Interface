@@ -28,6 +28,7 @@ jobs:
           set -euxo pipefail
           lean -o lean/ResidualInterfaceGenesis.olean lean/ResidualInterfaceGenesis.lean
           lean -o lean/ResidualDerivedMetaLanguageGenesis.olean lean/ResidualDerivedMetaLanguageGenesis.lean
+          lean -o lean/VerifiedNodeTypeGenesis.olean lean/VerifiedNodeTypeGenesis.lean
           lean -o lean/ResidualDerivedConstructorPrinciple.olean lean/ResidualDerivedConstructorPrinciple.lean
           lean -o lean/FactorizationSufficiency.olean lean/FactorizationSufficiency.lean
           lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
