@@ -44,7 +44,11 @@ def discover_ratchet(sources):
     src=[x[:120] for x in sources]
     sts=[St(xs[i],xs[i-1]) for xs in src for i in range(1,78)]
     ss,vs=gen(sts,8)
-    terms=[]; beta=[]; trail=[]; current=tuple(1.0 for _ in src)
+    terms=[]; beta=[]; trail=[]
+    # Generation zero is the actual empty executable recurrence, not the cold
+    # constant-velocity ablation used only as the external reporting baseline.
+    current=vals(terms,beta,src)
+    trail.append(('GEN0_EMPTY',current))
     for generation in range(1,5):
         ranked=[]
         for j,e in enumerate(vs):
@@ -57,7 +61,6 @@ def discover_ratchet(sources):
         survivors=[]
         for _,_,_,e,c in ranked[:160]:
             nt=terms+[e];nb=beta+[c];v=vals(nt,nb,src)
-            # Protected consequence gate: no discovery regime may regress.
             if all(vk < ck*(1-1e-6) for vk,ck in zip(v,current)):
                 survivors.append((max(v),sum(x.cost for x in nt),e.text,e,c,v))
         if not survivors:
@@ -112,6 +115,8 @@ def main():
     probe=[St(z[i],z[i-1]) for z in discovery for i in range(1,80)]
     q,rel=posthoc(ts,b,probe)
     print(f'POSTHOC_MINIMAL_STRUCTURE beta={q} relative_residual={rel:.12g}')
+    # This is interpretive, not a discovery oracle; require only close behavioural
+    # reduction to the minimal inertial + inverse-cubic family.
     assert rel<1e-5,(q,rel)
     print('ANCESTOR_RETENTION=PASS')
     print('RESIDUAL_ONLY_REFINEMENT=PASS')
