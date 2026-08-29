@@ -1,0 +1,19 @@
+name: cross domain discovery inheritance 100x v1
+on:
+  push:
+    branches: [settlement-frozen-controller-final-boss]
+    paths:
+      - 'experiments/cross_domain_discovery_inheritance_100x_v1.py'
+      - '.github/workflows/cross-domain-discovery-inheritance-100x-v1.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run 100x cross-domain inheritance precursor
+        run: python experiments/cross_domain_discovery_inheritance_100x_v1.py
