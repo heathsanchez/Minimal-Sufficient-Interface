@@ -1,6 +1,6 @@
 namespace VerifiedConsequenceGenesis
 
-universe u v w
+universe u v w z
 
 /-- A family of protected consequences. `C c` means consequence `c` is protected. -/
 def ConseqEq {X : Type u} {Y : Type v}
@@ -158,6 +158,59 @@ theorem refinement_separates_witness
   intro h
   exact hsep (congrArg Prod.snd h)
 
+/-- Universal property of the canonical repair.
+
+A representation `r` contains enough information to recover the canonical
+repair `(q,c)` iff both the old representation `q` and the new consequence `c`
+individually factor through `r`.  This is the exact product/factorization law
+behind minimal sufficient consequential refinement. -/
+theorem canonical_refinement_universal
+    {X : Type u} {Y : Type v} {R : Type w} {S : Type z}
+    (q : X → R) (c : X → Y) (r : X → S) :
+    FactorsThrough r (RefineWith q c) ↔
+      FactorsThrough r q ∧ FactorsThrough r c := by
+  constructor
+  · rintro ⟨h, hh⟩
+    constructor
+    · refine ⟨fun s => (h s).1, ?_⟩
+      intro x
+      exact congrArg Prod.fst (hh x)
+    · refine ⟨fun s => (h s).2, ?_⟩
+      intro x
+      exact congrArg Prod.snd (hh x)
+  · rintro ⟨⟨qbar, hq⟩, ⟨cbar, hc⟩⟩
+    refine ⟨fun s => (qbar s, cbar s), ?_⟩
+    intro x
+    apply Prod.ext
+    · exact hq x
+    · exact hc x
+
+/-- Least-sufficient repair theorem.
+
+Every alternative representation `r` that preserves/reconstructs the old
+representation `q` and also makes the new consequence `c` available must be
+at least as informative as the canonical repair `(q,c)`: the canonical repair
+itself factors through `r`.  Thus no additional distinction beyond what is
+needed to recover `q` and `c` is forced by this repair obligation. -/
+theorem canonical_refinement_is_least_sufficient
+    {X : Type u} {Y : Type v} {R : Type w} {S : Type z}
+    (q : X → R) (c : X → Y) (r : X → S)
+    (hq : FactorsThrough r q) (hc : FactorsThrough r c) :
+    FactorsThrough r (RefineWith q c) := by
+  exact (canonical_refinement_universal q c r).2 ⟨hq, hc⟩
+
+/-- Minimal-repair consequence at the level of identifications.
+Any sufficient alternative `r` can only identify pairs already identified by
+the canonical repair. -/
+theorem sufficient_repair_refines_canonical
+    {X : Type u} {Y : Type v} {R : Type w} {S : Type z}
+    (q : X → R) (c : X → Y) (r : X → S)
+    (hq : FactorsThrough r q) (hc : FactorsThrough r c) :
+    ∀ x y : X, r x = r y → RefineWith q c x = RefineWith q c y := by
+  intro x y hr
+  have hpair := canonical_refinement_is_least_sufficient q c r hq hc
+  exact factorsThrough_implies_fiber_constancy r (RefineWith q c) hpair x y hr
+
 /-- Central developmental theorem.
 
 A verified separator proves that the new consequence cannot factor through the
@@ -255,6 +308,9 @@ end VerifiedConsequenceGenesis
 #check VerifiedConsequenceGenesis.separator_implies_nonfactorization
 #check VerifiedConsequenceGenesis.factorsThrough_iff_fiber_constancy_of_section
 #check VerifiedConsequenceGenesis.consequence_factors_through_refinement
+#check VerifiedConsequenceGenesis.canonical_refinement_universal
+#check VerifiedConsequenceGenesis.canonical_refinement_is_least_sufficient
+#check VerifiedConsequenceGenesis.sufficient_repair_refines_canonical
 #check VerifiedConsequenceGenesis.factorization_failure_forces_and_refinement_restores
 #check VerifiedConsequenceGenesis.strict_promotion_changes_expressible_frontier
 #check VerifiedConsequenceGenesis.verified_promotion_has_ancestral_necessity
