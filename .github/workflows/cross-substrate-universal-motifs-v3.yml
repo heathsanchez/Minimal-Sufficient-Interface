@@ -1,0 +1,19 @@
+name: cross substrate universal motifs v3
+
+on:
+  push:
+    branches: [cross-substrate-universal-motifs-v3]
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen cross-substrate gate
+        run: python experiments/cross_substrate_universal_motifs_v3.py
