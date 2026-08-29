@@ -33,6 +33,14 @@ def ProtectedSeparator {Test : Type u} {Cand : Type v} {Out : Type w}
     (eval : Test → Cand → Out) (C : List Test) (a b : Cand) : Prop :=
   ∃ t ∈ C, eval t a ≠ eval t b
 
+/-- A measurement/observation obstruction: a protected distinction exists, but
+    every currently authorized probe identifies the two states. -/
+def ObservationObstruction {X : Type u} {Probe : Type v} {V : Type w} {Y : Type z}
+    (observe : Probe → X → V) (target : X → Y)
+    (Available : List Probe) (x y : X) : Prop :=
+  target x ≠ target y ∧
+  ∀ p, p ∈ Available → observe p x = observe p y
+
 /-- Consequence-equivalent alternatives admit no separator from the currently
     protected consequence family. This is the formal WAIT/version-space case. -/
 theorem equivalent_has_no_protected_separator
@@ -53,6 +61,18 @@ theorem new_consequence_resolves_ambiguity
     ¬ ConsequenceEquivalent eval (t :: C) a b := by
   intro h
   exact hsep (h t (by simp))
+
+/-- A newly licensed probe that separates an observation obstruction removes
+    that obstruction for the enlarged observation authority. -/
+theorem observation_obstruction_resolved_by_new_probe
+    {X : Type u} {Probe : Type v} {V : Type w} {Y : Type z}
+    (observe : Probe → X → V) (target : X → Y)
+    (Available : List Probe) (q : Probe) (x y : X)
+    (hobs : ObservationObstruction observe target Available x y)
+    (hq : observe q x ≠ observe q y) :
+    ¬ ObservationObstruction observe target (q :: Available) x y := by
+  intro hnew
+  exact hq (hnew.2 q (by simp))
 
 /-- Exact closure evidence plus a strict promotion witness certifies the EXTEND
     move: the target is absent in the cold generated language and present after
@@ -76,7 +96,7 @@ theorem resource_obstruction_resolved_by_reorganization
     ¬ ReachableAt L B c ∧ ReachableAt L' B c := by
   exact crosses_budget_becomes_reachable L L' B c hcold hwarm
 
-/-- The four evidence classes used by the developmental controller. The type
+/-- Certified evidence classes used by the developmental controller. The type
     does not assert that every opaque failure belongs to one class; a verifier
     or completeness theorem must provide a certificate. -/
 inductive EvidenceClass where
@@ -84,6 +104,7 @@ inductive EvidenceClass where
   | closure
   | resource
   | ambiguity
+  | observation
   deriving DecidableEq, Repr
 
 /-- The controller move associated with each certified evidence class. -/
@@ -92,6 +113,7 @@ inductive DevelopmentMove where
   | extend
   | promote
   | wait
+  | observe
   deriving DecidableEq, Repr
 
 /-- Evidence-to-move routing is deterministic once the evidence class itself is
@@ -101,10 +123,12 @@ def route : EvidenceClass → DevelopmentMove
   | .closure => .extend
   | .resource => .promote
   | .ambiguity => .wait
+  | .observation => .observe
 
 theorem route_separator : route .separator = .split := rfl
 theorem route_closure : route .closure = .extend := rfl
 theorem route_resource : route .resource = .promote := rfl
 theorem route_ambiguity : route .ambiguity = .wait := rfl
+theorem route_observation : route .observation = .observe := rfl
 
 end DevelopmentalFailureTaxonomy
