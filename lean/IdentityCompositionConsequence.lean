@@ -80,6 +80,24 @@ theorem extension_refines_identity
   intro x y hT f hf
   exact hT f (hST f hf)
 
+/-- Converse forcing law. If an extension genuinely changes the identity of a
+pair, the change cannot be unexplained: there exists a consequence licensed by
+the new stage, absent from the old stage, whose protected observation separates
+the pair. Thus every strict identity change has an explicit forcing witness. -/
+theorem strict_refinement_has_new_forcing_consequence
+    (S T : Stage K) (hST : Extends K S T) {x y : X}
+    (hOld : SameAt K observe S x y)
+    (hNew : ¬ SameAt K observe T x y) :
+    ∃ f, T.allows f ∧ ¬ S.allows f ∧
+      observe (K.act f x) ≠ observe (K.act f y) := by
+  classical
+  rw [SameAt] at hNew
+  push_neg at hNew
+  rcases hNew with ⟨f, hfT, hSep⟩
+  refine ⟨f, hfT, ?_, hSep⟩
+  intro hfS
+  exact hSep (hOld f hfS)
+
 /-- A licensed consequence that distinguishes a pair is already sufficient to
 forbid their union at that stage. -/
 theorem consequence_forces_split
