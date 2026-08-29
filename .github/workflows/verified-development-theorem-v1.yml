@@ -20,13 +20,16 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Compile theorem dependency chain
+      - name: Compile complete Lean law corpus
         env:
           LEAN_PATH: lean
         run: |
           set -euxo pipefail
           lean -o lean/Kernel.olean lean/Kernel.lean
+          lean -o lean/MinimalRepair.olean lean/MinimalRepair.lean
+          lean -o lean/ResidualMorphismClass.olean lean/ResidualMorphismClass.lean
           lean -o lean/Completeness.olean lean/Completeness.lean
+          lean lean/Falsifiers.lean
           lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
@@ -49,8 +52,18 @@ jobs:
           lean -o lean/ResidualCompiledSyntaxGenesis.olean lean/ResidualCompiledSyntaxGenesis.lean
           lean -o lean/VerifiedConsequenceToCompiledSyntax.olean lean/VerifiedConsequenceToCompiledSyntax.lean
           lean lean/ConsequenceSeparationUnion.lean
+          lean lean/ArithmeticDirection.lean
+          lean lean/AdderInterfaceCompilation.lean
+          lean lean/BlindRecursiveCrossGrammarGenesis.lean
       - name: Record theorem boundary
         run: |
+          echo 'ALL_30_LEAN_FILES=CHECKED'
+          echo 'MINIMAL_REPAIR_UNIVERSAL_PROPERTY=CHECKED'
+          echo 'RESIDUAL_MORPHISM_CLASS=CHECKED'
+          echo 'LOCAL_SILENCE_FALSIFIER=CHECKED'
+          echo 'ARITHMETIC_DIRECTION_OBSTRUCTION=CHECKED'
+          echo 'ADDER_INTERFACE_COMPILATION=CHECKED'
+          echo 'BLIND_CROSS_GRAMMAR_LEAN_CERTIFICATE=CHECKED'
           echo 'STATIC_ONE_STEP=CHECKED'
           echo 'STRICT_PROMOTION_EXPRESSIBILITY=CHECKED'
           echo 'ANCESTRAL_COMPOUNDING=CHECKED'
