@@ -1,6 +1,6 @@
 import Std
 
-universe u v w
+universe u v w z
 
 namespace FactorizationSufficiency
 
@@ -52,12 +52,12 @@ theorem factorsThrough_iff_respectsFibres
 
 /-- A representation is sufficient for a family of protected consequences
     exactly when every member factors through it. -/
-def SufficientFor {I : Type*} (q : X → R) (C : I → X → Y) : Prop :=
+def SufficientFor {I : Type z} (q : X → R) (C : I → X → Y) : Prop :=
   ∀ i, FactorsThrough q (C i)
 
 /-- Under surjectivity, family sufficiency is exactly simultaneous fibre
     respect. -/
-theorem sufficientFor_iff_all_respect {I : Type*}
+theorem sufficientFor_iff_all_respect {I : Type z}
     (q : X → R) (C : I → X → Y)
     (hq : Function.Surjective q) :
     SufficientFor q C ↔ ∀ i, RespectsFibres q (C i) := by
