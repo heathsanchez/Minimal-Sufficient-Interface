@@ -104,14 +104,14 @@ theorem canUnion_iff_not_mustSeparate
   · intro h ⟨i, hne⟩
     exact hne (h i)
   · intro h i
-    by_contra hne
-    exact h ⟨i, hne⟩
+    exact Classical.byContradiction (fun hne => h ⟨i, hne⟩)
 
 /-- A protected separator forbids union. -/
 theorem separator_forces_split
     (C : I → X → Y) {x y : X} (h : MustSeparate C x y) :
     ¬ CanUnion C x y := by
-  exact (canUnion_iff_not_mustSeparate C x y).mp |>.elim h
+  intro hUnion
+  exact ((canUnion_iff_not_mustSeparate C x y).mp hUnion) h
 
 /-- Refinement by one consequence never creates a new identification. -/
 theorem refineWith_subrel (E : X → X → Prop) (c : X → Y) :
