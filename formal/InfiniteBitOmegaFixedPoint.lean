@@ -61,9 +61,10 @@ theorem develop_finite_step (k : Nat) :
     · exact Nat.lt_succ_iff.mpr (reachable_finite_le hreach)
   · intro hi
     have hik : i ≤ k := Nat.lt_succ_iff.mp hi
-    rcases Nat.lt_or_eq_of_le hik with hiklt | rfl
+    rcases Nat.lt_or_eq_of_le hik with hiklt | hikeq
     · exact Or.inl hiklt
-    · exact Or.inr ⟨(fun j hj => hj), finite_verified_residual k⟩
+    · subst i
+      exact Or.inr ⟨(fun j hj => hj), finite_verified_residual k⟩
 
 theorem no_finite_developmental_fixed_point (k : Nat) :
     develop (finiteLanguage k) ≠ finiteLanguage k := by
