@@ -108,7 +108,6 @@ theorem iterate_eq_finiteLanguage (n : Nat) :
   | zero => rfl
   | succ n ih =>
       rw [iterate, ih, develop_finite_step]
-      rfl
 
 /-- Pointwise supremum of all finite iterates. -/
 def finiteIterateSup : Language :=
