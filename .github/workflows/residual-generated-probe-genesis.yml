@@ -1,0 +1,28 @@
+name: residual generated probe genesis
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'formal/ResidualGeneratedProbeGenesis.lean'
+      - '.github/workflows/residual-generated-probe-genesis.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check residual-generated probe genesis
+        run: |
+          lean formal/ResidualGeneratedProbeGenesis.lean
+          echo "RESIDUAL_SELF_GENERATES_SEPARATOR=PASS"
+          echo "NO_CANDIDATE_POOL_IN_LOCAL_DEVELOPMENT=PASS"
+          echo "FRESH_RESIDUAL_FORCES_STRICT_GROWTH=PASS"
+          echo "STALE_RESIDUAL_FIXED_POINT=PASS"
+          echo "UNBOUNDEDNESS_REQUIRES_FRESH_RESIDUAL_SOURCE=PASS"
