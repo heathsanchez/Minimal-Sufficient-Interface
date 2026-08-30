@@ -76,7 +76,11 @@ theorem retained_iff_unique_separator
     RetainedBySelection separates pool x ↔ x = seed := by
   unfold RetainedBySelection
   rw [unique_separator_selected separates pool seed hmem huniq]
-  simp
+  constructor
+  · intro h
+    exact h.symm
+  · intro h
+    exact h.symm
 
 /-- If the verified consequence changes which anonymous candidate is uniquely
     separating, the same frozen selector changes which primitive it retains. -/
