@@ -1,0 +1,22 @@
+name: autonomous consequence selection fixed point v13
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - structure-under-consequence-autonomous-v13
+    paths:
+      - 'experiments/autonomous_consequence_selection_fixed_point_v13.py'
+      - '.github/workflows/autonomous-consequence-selection-fixed-point-v13.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V13 autonomous consequence selection gate
+        run: python experiments/autonomous_consequence_selection_fixed_point_v13.py
