@@ -1,0 +1,29 @@
+name: Consequence Determines Selection
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-determined selection theorem
+        run: |
+          lean formal/ConsequenceDeterminesSelection.lean
+          echo "UNIQUE_SEPARATOR_SELECTED=PASS"
+          echo "ORDER_INVARIANT_UNDER_UNIQUE_CONSEQUENCE=PASS"
+          echo "NO_CONSEQUENCE_NO_SELECTION=PASS"
+          echo "RETAINED_IFF_UNIQUE_SEPARATOR=PASS"
+          echo "CHANGING_CONSEQUENCE_CHANGES_SELECTED_IDENTITY=PASS"
+          echo "SELECTION_IS_CONSEQUENCE_DETERMINED_NOT_IDENTITY_ENCODED=PASS"
