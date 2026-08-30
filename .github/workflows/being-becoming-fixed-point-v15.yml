@@ -1,0 +1,19 @@
+name: being becoming fixed point v15
+on:
+  push:
+    branches: [being-becoming-fixed-point-v15]
+    paths:
+      - 'experiments/being_becoming_fixed_point_v15.py'
+      - 'experiments/recursive_selected_consequence_language_fixed_point_v14.py'
+      - '.github/workflows/being-becoming-fixed-point-v15.yml'
+  workflow_dispatch:
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V15 being/becoming fixed-point gate
+        run: python experiments/being_becoming_fixed_point_v15.py
