@@ -10,6 +10,7 @@ on:
       - 'formal/BoundedDevelopmentalCapability.lean'
       - 'formal/MultiCandidateDevelopmentalSearch.lean'
       - 'formal/GeneratedCandidateDevelopmentalSearch.lean'
+      - 'formal/ConsequenceSelectedDevelopmentalDiscovery.lean'
       - 'lean/*.lean'
       - '.github/workflows/verified-consequence-genesis-formal.yml'
   workflow_dispatch:
@@ -36,6 +37,7 @@ jobs:
           lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
           lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
           lean -o formal/MultiCandidateDevelopmentalSearch.olean formal/MultiCandidateDevelopmentalSearch.lean
+          lean -o formal/GeneratedCandidateDevelopmentalSearch.olean formal/GeneratedCandidateDevelopmentalSearch.lean
       - name: Check formal laws
         env:
           LEAN_PATH: lean:formal
@@ -100,3 +102,16 @@ jobs:
           echo "MATCHED_FOUR_QUERY_BUDGET=PASS"
           echo "GRAMMAR_GENERATION_CHANGES_BOUNDED_CAPABILITY=PASS"
           echo "ANCESTOR_ABLATION_REMOVES_GENERATED_WINNER=PASS"
+      - name: Check consequence-selected developmental discovery
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/ConsequenceSelectedDevelopmentalDiscovery.lean
+          echo "ANONYMOUS_PRIMITIVE_POOL=PASS"
+          echo "SEPARATOR_SELECTED_FROM_ACTUAL_CONSEQUENCE=PASS"
+          echo "NO_WINNING_PRIMITIVE_IDENTITY_SUPPLIED=PASS"
+          echo "SELECTED_PRIMITIVE_PROMOTED=PASS"
+          echo "GENERIC_GRAMMAR_GENERATES_WINNER=PASS"
+          echo "FIXED_BUDGET_VERIFIER_DISCOVERS_WINNER=PASS"
+          echo "EXACT_COLD_ABLATION_FAILS=PASS"
+          echo "FULL_CONSEQUENCE_SELECTED_DEVELOPMENTAL_DISCOVERY=PASS"
