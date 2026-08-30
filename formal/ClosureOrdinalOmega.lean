@@ -83,7 +83,8 @@ theorem iterate_eq_stagePrefix : ∀ n : Nat, iterate n = stagePrefix n
 theorem no_finite_iterate_is_fixed (n : Nat) :
     develop (iterate n) ≠ iterate n := by
   rw [iterate_eq_stagePrefix, develop_stagePrefix]
-  exact stagePrefix_strict n
+  intro h
+  exact stagePrefix_strict n h.symm
 
 /-- The omega state is fixed by development. -/
 theorem omega_is_fixed : develop omegaState = omegaState := by
