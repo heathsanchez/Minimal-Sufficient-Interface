@@ -1,0 +1,19 @@
+name: same operator different mathematics fixed point v16
+
+on:
+  push:
+    branches:
+      - same-operator-different-mathematics-v16
+  workflow_dispatch:
+
+jobs:
+  v16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run V16
+        run: python experiments/same_operator_different_mathematics_fixed_point_v16.py
