@@ -1,0 +1,32 @@
+name: V16 Lean omega-limit
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'experiments/V16LeanProbe.lean'
+      - 'experiments/V16OmegaLimit.lean'
+      - '.github/workflows/v16-lean-omega-limit.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean 4.33.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.33.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.0
+      - name: Probe V16 bit arithmetic
+        if: hashFiles('experiments/V16LeanProbe.lean') != ''
+        run: lean experiments/V16LeanProbe.lean
+      - name: Prove V16 omega limit
+        if: hashFiles('experiments/V16OmegaLimit.lean') != ''
+        run: |
+          lean experiments/V16OmegaLimit.lean
+          echo 'V16_LEAN_OMEGA_LIMIT_GATE {"classification":"LEAN_VERIFIED_UNIVERSAL_FINITE_STAGE_RESIDUAL_AND_OMEGA_LIMIT_IDENTITY_FIXED_POINT"}'
