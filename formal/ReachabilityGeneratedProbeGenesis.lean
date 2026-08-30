@@ -7,16 +7,15 @@ The previous residual-genesis gate generated a Boolean/Prop probe by testing
 whether the observed state was definitionally equal to a distinguished endpoint.
 This file removes that state-equality constructor.
 
-Only a raw directed generator family `G : Ω → Ω → Type` is assumed.  Its free
+Only a raw directed generator family `G : Ω → Ω → Type` is assumed. Its free
 finite continuation type `Path G x y` is generated from reflexivity and raw
-one-step generators.  A residual is now an *operational obstruction*: from one
-endpoint there is no continuation to a target.  The residual itself generates
+one-step generators. A residual is now an operational obstruction: from one
+endpoint there is no continuation to a target. The residual itself generates
 its measurement by asking for continuation evidence to that target.
 
-Thus the generated observation is Type-valued path evidence, not an equality
-predicate.  A complementary no-go theorem shows the remaining boundary:
-if the substrate is mutually reachable, every target-reachability probe is
-inhabited everywhere and this equality-free constructor cannot separate states.
+The observation remains Type-valued path evidence. Only the externally checked
+separation statements use propositional truncation via `Nonempty`; no equality
+predicate on states appears in the probe constructor.
 -/
 
 universe u v
@@ -33,8 +32,8 @@ def ReachProbe {Ω : Type u} (G : Ω → Ω → Type v) (target : Ω) :
     Ω → Type (max u v) :=
   fun z => Path G z target
 
-/-- Equality-free operational residual.  Its information is a verified absence
-    of a continuation from `blocked` to `target`. -/
+/-- Equality-free operational residual: verified absence of a continuation from
+    `blocked` to `target`. -/
 structure ReachabilityResidual {Ω : Type u} (G : Ω → Ω → Type v) where
   blocked : Ω
   target : Ω
@@ -51,18 +50,23 @@ def generatedProbe_target
     generatedProbe r r.target :=
   Path.refl r.target
 
-/-- The verified reachability obstruction makes the same generated probe empty
-    at the blocked endpoint. -/
+/-- The verified obstruction empties the same probe at the blocked endpoint. -/
 def generatedProbe_blocked_empty
     {Ω : Type u} {G : Ω → Ω → Type v} (r : ReachabilityResidual G) :
     generatedProbe r r.blocked → Empty :=
   r.obstruction
 
-/-- Exact equality-free separation certificate. -/
+/-- Propositional certificate that the Type-valued generated probe separates
+    the residual endpoints. -/
 theorem residual_generates_typed_separator
     {Ω : Type u} {G : Ω → Ω → Type v} (r : ReachabilityResidual G) :
-    (generatedProbe r r.blocked → Empty) × generatedProbe r r.target := by
-  exact ⟨generatedProbe_blocked_empty r, generatedProbe_target r⟩
+    (¬ Nonempty (generatedProbe r r.blocked)) ∧
+      Nonempty (generatedProbe r r.target) := by
+  constructor
+  · intro h
+    rcases h with ⟨p⟩
+    exact (r.obstruction p).elim
+  · exact ⟨generatedProbe_target r⟩
 
 /-- A raw generator itself creates a nontrivial continuation without equality. -/
 def rawGeneratorCreatesPath
@@ -74,37 +78,39 @@ def rawGeneratorCreatesPath
 def MutuallyReachable {Ω : Type u} (G : Ω → Ω → Type v) : Prop :=
   ∀ x y : Ω, Nonempty (Path G x y)
 
-/-- Under mutual reachability, every target-reachability probe is inhabited at
-    every state.  Hence this bedrock constructor has no separating power there. -/
+/-- Under mutual reachability every target-reachability probe is inhabited at
+    every state, so this bedrock constructor has no separating power there. -/
 theorem reachProbe_inhabited_everywhere_of_mutual
     {Ω : Type u} {G : Ω → Ω → Type v}
     (hmut : MutuallyReachable G) (target z : Ω) :
     Nonempty (ReachProbe G target z) :=
   hmut z target
 
-/-- No equality-free reachability residual can exist in a mutually reachable
-    substrate: the obstruction would contradict the available path witness. -/
+/-- No equality-free reachability residual can coexist with mutual reachability. -/
 theorem no_reachability_residual_of_mutual
     {Ω : Type u} {G : Ω → Ω → Type v}
     (hmut : MutuallyReachable G) :
-    ReachabilityResidual G → Empty := by
-  intro r
-  rcases hmut r.blocked r.target with ⟨p⟩
-  exact r.obstruction p
+    ¬ Nonempty (ReachabilityResidual G) := by
+  intro hr
+  rcases hr with ⟨r⟩
+  have hp : Nonempty (Path G r.blocked r.target) := hmut r.blocked r.target
+  rcases hp with ⟨p⟩
+  exact (r.obstruction p).elim
 
-/-- Minimal boundary certificate: raw directed structure is sufficient to
-    generate a typed separator exactly when the verified residual exposes an
-    asymmetric continuation obstruction; fully mutually reachable structure
-    rules out this constructor entirely. -/
+/-- Minimal boundary certificate: raw directed structure suffices to generate a
+    typed separator when the verified residual exposes an asymmetric
+    continuation obstruction; such a residual itself certifies that the
+    substrate is not mutually reachable. -/
 theorem equality_free_probe_genesis_certificate
     {Ω : Type u} {G : Ω → Ω → Type v}
     (r : ReachabilityResidual G) :
-    ((generatedProbe r r.blocked → Empty) × generatedProbe r r.target) ∧
+    ((¬ Nonempty (generatedProbe r r.blocked)) ∧
+      Nonempty (generatedProbe r r.target)) ∧
     ¬ MutuallyReachable G := by
   constructor
   · exact residual_generates_typed_separator r
   · intro hmut
-    exact no_reachability_residual_of_mutual hmut r
+    exact no_reachability_residual_of_mutual hmut ⟨r⟩
 
 end ReachabilityGeneratedProbeGenesis
 
