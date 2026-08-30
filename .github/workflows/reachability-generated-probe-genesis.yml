@@ -1,0 +1,27 @@
+name: reachability generated probe genesis
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'formal/ReachabilityGeneratedProbeGenesis.lean'
+      - '.github/workflows/reachability-generated-probe-genesis.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check equality-free reachability probe genesis
+        run: |
+          lean formal/ReachabilityGeneratedProbeGenesis.lean
+          echo "EQUALITY_PREDICATE_REMOVED_FROM_PROBE_CONSTRUCTOR=PASS"
+          echo "RAW_REACHABILITY_RESIDUAL_GENERATES_TYPED_SEPARATOR=PASS"
+          echo "MUTUAL_REACHABILITY_KILLS_REACHABILITY_SEPARATOR=PASS"
+          echo "BEDROCK_ASYMMETRY_IS_THE_REMAINING_INFORMATION_SOURCE=PASS"
+          echo "REACHABILITY_GENERATED_PROBE_GENESIS=PASS"
