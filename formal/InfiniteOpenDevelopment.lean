@@ -71,7 +71,7 @@ theorem omega_limit_identity (x y : Nat) :
 theorem eventual_separation {x y : Nat} (hxy : x ≠ y) :
     ∃ k, consequence k x ∧ ¬ consequence k y := by
   refine ⟨x, rfl, ?_⟩
-  simpa [consequence] using hxy
+  simpa [consequence] using (fun hyx : y = x => hxy hyx.symm)
 
 end InfiniteOpenDevelopment
 
