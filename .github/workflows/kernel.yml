@@ -61,6 +61,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/FiniteSearchCompletenessBoundary.lean
+      - name: Check failure-generated consequence genesis
+        env:
+          LEAN_PATH: lean
+        run: lean lean/FailureGeneratedConsequenceGenesis.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
