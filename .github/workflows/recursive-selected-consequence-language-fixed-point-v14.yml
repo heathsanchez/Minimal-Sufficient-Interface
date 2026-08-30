@@ -1,0 +1,22 @@
+name: recursive selected consequence language fixed point v14
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - structure-under-consequence-autonomous-v13
+    paths:
+      - 'experiments/recursive_selected_consequence_language_fixed_point_v14.py'
+      - '.github/workflows/recursive-selected-consequence-language-fixed-point-v14.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V14 coupled recursion gate
+        run: python experiments/recursive_selected_consequence_language_fixed_point_v14.py
