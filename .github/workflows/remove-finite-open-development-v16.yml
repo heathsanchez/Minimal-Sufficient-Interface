@@ -1,0 +1,18 @@
+name: remove finite open development v16
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V16 infinite-domain gate
+        run: python experiments/remove_finite_open_development_v16.py
