@@ -1,0 +1,23 @@
+name: self recognizing closure v16
+
+on:
+  push:
+    branches:
+      - self-recognizing-closure-v16
+    paths:
+      - 'experiments/self_recognizing_closure_v16.py'
+      - 'experiments/being_becoming_fixed_point_v15.py'
+      - 'experiments/recursive_selected_consequence_language_fixed_point_v14.py'
+      - '.github/workflows/self-recognizing-closure-v16.yml'
+  workflow_dispatch:
+
+jobs:
+  self-recognizing-closure-v16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run self-recognizing closure V16
+        run: |
+          cd experiments
+          python3 self_recognizing_closure_v16.py
