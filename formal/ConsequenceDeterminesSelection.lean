@@ -78,9 +78,11 @@ theorem retained_iff_unique_separator
   rw [unique_separator_selected separates pool seed hmem huniq]
   constructor
   · intro h
-    exact h.symm
+    have hs : seed = x := by simpa using h
+    exact hs.symm
   · intro h
-    exact h.symm
+    subst x
+    rfl
 
 /-- If the verified consequence changes which anonymous candidate is uniquely
     separating, the same frozen selector changes which primitive it retains. -/
