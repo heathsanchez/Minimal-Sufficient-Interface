@@ -41,6 +41,15 @@ theorem finite_verified_residual (k : Nat) :
   intro j hj
   exact (residual_at_every_finite_stage k).1 j hj
 
+/-- If every lower index needed to reach `i` is already in the finite prefix
+    below `k`, then `i` cannot lie strictly above `k`. -/
+theorem reachable_finite_le {k i : Nat}
+    (hreach : reachable (finiteLanguage k) i) : i ≤ k := by
+  apply Nat.le_of_not_gt
+  intro hki
+  have hkk : finiteLanguage k k := hreach k hki
+  exact (Nat.lt_irrefl k) hkk
+
 theorem develop_finite_step (k : Nat) :
     develop (finiteLanguage k) = finiteLanguage (k + 1) := by
   funext i
@@ -48,19 +57,13 @@ theorem develop_finite_step (k : Nat) :
   constructor
   · intro h
     rcases h with hi | ⟨hreach, _⟩
-    · omega
-    · have hik : i ≤ k := by
-        by_contra hnot
-        have hki : k < i := Nat.lt_of_not_ge hnot
-        have hkk : k < k := hreach k hki
-        exact (Nat.lt_irrefl k) hkk
-      omega
+    · exact Nat.lt_succ_of_lt hi
+    · exact Nat.lt_succ_iff.mpr (reachable_finite_le hreach)
   · intro hi
-    by_cases hik : i < k
-    · exact Or.inl hik
-    · have hikEq : i = k := by omega
-      subst i
-      exact Or.inr ⟨(fun j hj => hj), finite_verified_residual k⟩
+    have hik : i ≤ k := Nat.lt_succ_iff.mp hi
+    rcases Nat.lt_or_eq_of_le hik with hiklt | rfl
+    · exact Or.inl hiklt
+    · exact Or.inr ⟨(fun j hj => hj), finite_verified_residual k⟩
 
 theorem no_finite_developmental_fixed_point (k : Nat) :
     develop (finiteLanguage k) ≠ finiteLanguage k := by
@@ -94,6 +97,7 @@ theorem canonical_closure_at_omega :
 end InfiniteBitOmegaFixedPoint
 
 #check InfiniteBitOmegaFixedPoint.finite_verified_residual
+#check InfiniteBitOmegaFixedPoint.reachable_finite_le
 #check InfiniteBitOmegaFixedPoint.develop_finite_step
 #check InfiniteBitOmegaFixedPoint.no_finite_developmental_fixed_point
 #check InfiniteBitOmegaFixedPoint.omega_is_limit_of_finite_chain
