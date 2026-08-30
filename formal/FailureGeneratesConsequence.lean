@@ -1,30 +1,60 @@
-import ConsequenceDeterminesSelection
+import Std
 
 namespace FailureGeneratesConsequence
 
 universe u
 
-/-- A consequence/observation is not supplied as a named ontology item: it is
-    simply a Boolean test on the current world. -/
 abbrev Probe (Ω : Type u) := Ω → Bool
 
-/-- The only developmental input is a verifier-certified failed distinction. -/
 structure Failure (Ω : Type u) where
   left : Ω
   right : Ω
   distinct : left ≠ right
 
-/-- The failure itself induces the criterion by which a probe is consequential:
-    it must distinguish the two states that the current interface collapsed. -/
+/-- Consequentiality is generated from the verifier-certified failure itself:
+    a probe matters exactly when it distinguishes the failed pair. -/
 def generatedCriterion {Ω : Type u} (r : Failure Ω) (p : Probe Ω) : Bool :=
   decide (p r.left ≠ p r.right)
 
-/-- A generic constructor turns the failed distinction into a new observation.
-    No external consequence predicate or candidate identity is an argument. -/
+/-- Generic residual-to-observation constructor.  No consequence language,
+    primitive identity, or candidate index is supplied. -/
 def generatedProbe {Ω : Type u} [DecidableEq Ω] (r : Failure Ω) : Probe Ω :=
   fun z => decide (z = r.right)
 
-/-- The generated observation really distinguishes the failed pair. -/
+def selectByConsequence {α : Type} (separates : α → Bool) : List α → Option α
+  | [] => none
+  | x :: xs =>
+      if separates x = true then some x else selectByConsequence separates xs
+
+def UniqueSeparator {α : Type} (separates : α → Bool) (seed : α) : Prop :=
+  separates seed = true ∧ ∀ x, separates x = true → x = seed
+
+theorem unique_separator_selected
+    {α : Type} (separates : α → Bool) (pool : List α) (seed : α)
+    (hmem : seed ∈ pool) (huniq : UniqueSeparator separates seed) :
+    selectByConsequence separates pool = some seed := by
+  induction pool with
+  | nil => simp at hmem
+  | cons a rest ih =>
+      simp only [selectByConsequence]
+      by_cases ha : separates a = true
+      · have haseed : a = seed := huniq.2 a ha
+        subst a
+        simp [huniq.1]
+      · have hmemrest : seed ∈ rest := by
+          rcases List.mem_cons.mp hmem with haseed | hrest
+          · subst a
+            exact False.elim (ha huniq.1)
+          · exact hrest
+        simp [ha, ih hmemrest]
+
+theorem no_consequence_no_selection
+    {α : Type} (pool : List α) :
+    selectByConsequence (fun _ : α => false) pool = none := by
+  induction pool with
+  | nil => rfl
+  | cons a rest ih => simp [selectByConsequence, ih]
+
 theorem generatedProbe_separates
     {Ω : Type u} [DecidableEq Ω] (r : Failure Ω) :
     generatedProbe r r.left = false ∧ generatedProbe r r.right = true := by
@@ -32,73 +62,49 @@ theorem generatedProbe_separates
   · simp [generatedProbe, r.distinct]
   · simp [generatedProbe]
 
-/-- Hence the consequence criterion generated from the same failure certifies
-    the newly generated probe. -/
 theorem generatedCriterion_certifies_generatedProbe
     {Ω : Type u} [DecidableEq Ω] (r : Failure Ω) :
     generatedCriterion r (generatedProbe r) = true := by
   simp [generatedCriterion, generatedProbe, r.distinct]
 
-/-- Selection now receives no externally supplied consequence predicate.
-    Conditional only on uniqueness inside an arbitrary anonymous pool, the
-    verifier-derived criterion determines the selected identity. -/
+/-- No externally supplied consequence predicate occurs in the theorem
+    signature.  The selector's criterion is computed solely from `r`. -/
 theorem failure_generated_criterion_selects_unique
     {Ω : Type u} (r : Failure Ω)
     (pool : List (Probe Ω)) (seed : Probe Ω)
     (hmem : seed ∈ pool)
-    (huniq : ConsequenceDeterminesSelection.UniqueSeparator
-      (generatedCriterion r) seed) :
-    ConsequenceDeterminesSelection.selectByConsequence
-      (generatedCriterion r) pool = some seed := by
-  exact ConsequenceDeterminesSelection.unique_separator_selected
-    (generatedCriterion r) pool seed hmem huniq
+    (huniq : UniqueSeparator (generatedCriterion r) seed) :
+    selectByConsequence (generatedCriterion r) pool = some seed := by
+  exact unique_separator_selected (generatedCriterion r) pool seed hmem huniq
 
-/-- Candidate ordering is irrelevant: the residual-generated consequence,
-    rather than pool position, fixes the answer. -/
 theorem failure_generated_selection_order_invariant
     {Ω : Type u} (r : Failure Ω)
     (seed : Probe Ω) (pool₁ pool₂ : List (Probe Ω))
-    (huniq : ConsequenceDeterminesSelection.UniqueSeparator
-      (generatedCriterion r) seed)
+    (huniq : UniqueSeparator (generatedCriterion r) seed)
     (hmem₁ : seed ∈ pool₁) (hmem₂ : seed ∈ pool₂) :
-    ConsequenceDeterminesSelection.selectByConsequence
-        (generatedCriterion r) pool₁ =
-      ConsequenceDeterminesSelection.selectByConsequence
-        (generatedCriterion r) pool₂ := by
-  exact ConsequenceDeterminesSelection.order_invariant_under_unique_consequence
-    (generatedCriterion r) seed pool₁ pool₂ huniq hmem₁ hmem₂
+    selectByConsequence (generatedCriterion r) pool₁ =
+      selectByConsequence (generatedCriterion r) pool₂ := by
+  rw [failure_generated_criterion_selects_unique r pool₁ seed hmem₁ huniq]
+  rw [failure_generated_criterion_selects_unique r pool₂ seed hmem₂ huniq]
 
-/-- Exact consequence ablation: erase the information carried by failure and
-    the unchanged selector has no basis for retaining anything. -/
 theorem erase_failure_consequence_erases_selection
     {Ω : Type u} (pool : List (Probe Ω)) :
-    ConsequenceDeterminesSelection.selectByConsequence
-      (fun _ : Probe Ω => false) pool = none := by
-  exact ConsequenceDeterminesSelection.no_consequence_no_selection pool
+    selectByConsequence (fun _ : Probe Ω => false) pool = none := by
+  exact no_consequence_no_selection pool
 
-/-- Changing only the verified failure can change which anonymous primitive is
-    selected by the same frozen rule. -/
 theorem changing_failure_changes_selected_identity
     {Ω : Type u} (r₁ r₂ : Failure Ω)
     (pool : List (Probe Ω)) (a b : Probe Ω)
     (hma : a ∈ pool) (hmb : b ∈ pool)
-    (hA : ConsequenceDeterminesSelection.UniqueSeparator
-      (generatedCriterion r₁) a)
-    (hB : ConsequenceDeterminesSelection.UniqueSeparator
-      (generatedCriterion r₂) b) :
-    ConsequenceDeterminesSelection.selectByConsequence
-        (generatedCriterion r₁) pool = some a ∧
-      ConsequenceDeterminesSelection.selectByConsequence
-        (generatedCriterion r₂) pool = some b := by
-  constructor
-  · exact failure_generated_criterion_selects_unique r₁ pool a hma hA
-  · exact failure_generated_criterion_selects_unique r₂ pool b hmb hB
+    (hA : UniqueSeparator (generatedCriterion r₁) a)
+    (hB : UniqueSeparator (generatedCriterion r₂) b) :
+    selectByConsequence (generatedCriterion r₁) pool = some a ∧
+      selectByConsequence (generatedCriterion r₂) pool = some b := by
+  exact ⟨failure_generated_criterion_selects_unique r₁ pool a hma hA,
+    failure_generated_criterion_selects_unique r₂ pool b hmb hB⟩
 
-/-- The decisive end-to-end certificate.  Starting from a failed distinction
-    alone, the process constructs a new probe, constructs the criterion that
-    judges probes from that same failure, verifies the generated probe against
-    that criterion, and shows that erasing failure-consequence information
-    destroys selection. -/
+/-- End-to-end local certificate: failure alone generates both a separating
+    observation and the criterion that certifies that observation. -/
 theorem failure_generates_consequence_certificate
     {Ω : Type u} [DecidableEq Ω] (r : Failure Ω) :
     (generatedProbe r r.left = false ∧ generatedProbe r r.right = true) ∧
