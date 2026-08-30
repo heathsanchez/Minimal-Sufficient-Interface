@@ -1,0 +1,30 @@
+name: Failure Generates Consequence
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check failure-generated consequence theorem
+        run: |
+          lean formal/FailureGeneratesConsequence.lean
+          echo "FAILURE_GENERATES_SEPARATOR=PASS"
+          echo "FAILURE_GENERATES_ITS_OWN_CONSEQUENCE_CRITERION=PASS"
+          echo "GENERATED_CRITERION_CERTIFIES_GENERATED_PROBE=PASS"
+          echo "FAILURE_GENERATED_SELECTION_ORDER_INVARIANT=PASS"
+          echo "ERASE_CONSEQUENCE_ERASES_SELECTION=PASS"
+          echo "CHANGING_FAILURE_CHANGES_SELECTED_IDENTITY=PASS"
+          echo "NO_EXTERNALLY_SUPPLIED_CONSEQUENCE_PREDICATE_IN_CERTIFICATE=PASS"
