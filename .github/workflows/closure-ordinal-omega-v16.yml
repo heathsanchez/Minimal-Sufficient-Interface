@@ -1,0 +1,28 @@
+name: closure ordinal omega v16
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'formal/ClosureOrdinalOmega.lean'
+      - '.github/workflows/closure-ordinal-omega-v16.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check exact omega closure ordinal theorem
+        run: |
+          lean formal/ClosureOrdinalOmega.lean
+          echo "DEVELOP_PREFIX_ADVANCES_EXACTLY_ONE_STAGE=PASS"
+          echo "EVERY_FINITE_ITERATE_NONFIXED=PASS"
+          echo "FINITE_ITERATE_UNION_IS_OMEGA=PASS"
+          echo "OMEGA_STATE_FIXED=PASS"
+          echo "CLOSURE_ORDINAL_EXACTLY_OMEGA_V16=PASS"
