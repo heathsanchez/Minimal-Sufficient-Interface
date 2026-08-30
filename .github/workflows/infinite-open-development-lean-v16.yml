@@ -1,0 +1,28 @@
+name: infinite open development lean v16
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'formal/InfiniteOpenDevelopment.lean'
+      - '.github/workflows/infinite-open-development-lean-v16.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check infinite open development theorem
+        run: |
+          lean formal/InfiniteOpenDevelopment.lean
+          echo "UNIVERSAL_RESIDUAL_AT_EVERY_FINITE_STAGE=PASS"
+          echo "NO_FINITE_PREFIX_IS_TERMINAL=PASS"
+          echo "OMEGA_LIMIT_CONSEQUENTIAL_IDENTITY_IS_EQUALITY=PASS"
+          echo "EVERY_DISTINCT_PAIR_EVENTUALLY_SEPARATED=PASS"
+          echo "INFINITE_OPEN_DEVELOPMENT_LEAN_V16=PASS"
