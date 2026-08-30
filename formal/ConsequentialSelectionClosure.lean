@@ -54,7 +54,8 @@ theorem no_selection_iff_all_silent
   | cons h rest ih =>
       by_cases hsep : observe Y (A.map h x) ≠ observe Y (A.map h y)
       · simp [selectFirstSeparator, hsep]
-      · have heq : observe Y (A.map h x) = observe Y (A.map h y) := not_ne_iff.mp hsep
+      · have heq : observe Y (A.map h x) = observe Y (A.map h y) := by
+          exact Classical.byContradiction (fun hne => hsep hne)
         simp [selectFirstSeparator, hsep, heq, ih]
 
 /-- Positive generic controller law: whenever consequential evidence selects a
