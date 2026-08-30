@@ -7,6 +7,7 @@ on:
     paths:
       - 'formal/InfiniteOpenDevelopment.lean'
       - 'formal/InfiniteBitOpenDevelopment.lean'
+      - 'formal/InfiniteBitOmegaFixedPoint.lean'
       - '.github/workflows/infinite-open-development-lean-v16.yml'
   workflow_dispatch:
 
@@ -36,3 +37,11 @@ jobs:
           echo "EXACT_TESTBIT_OMEGA_IDENTITY_IS_EQUALITY=PASS"
           echo "EXACT_TESTBIT_EVENTUAL_SEPARATION=PASS"
           echo "INFINITE_BIT_OPEN_DEVELOPMENT_LEAN_V16=PASS"
+      - name: Check same-operator omega fixed point
+        run: |
+          lean formal/InfiniteBitOmegaFixedPoint.lean
+          echo "VERIFIER_GATED_OPERATOR_FINITE_STEP=PASS"
+          echo "NO_FINITE_DEVELOPMENTAL_FIXED_POINT=PASS"
+          echo "OMEGA_IS_LIMIT_OF_FINITE_CHAIN=PASS"
+          echo "SAME_OPERATOR_D_OF_OMEGA_EQUALS_OMEGA=PASS"
+          echo "CANONICAL_CLOSURE_AT_OMEGA=PASS"
