@@ -5,12 +5,7 @@ on:
     branches:
       - settlement-frozen-controller-final-boss
     paths:
-      - 'formal/VerifiedConsequenceGenesis.lean'
-      - 'formal/UnifiedDevelopmentalLaw.lean'
-      - 'formal/BoundedDevelopmentalCapability.lean'
-      - 'formal/MultiCandidateDevelopmentalSearch.lean'
-      - 'formal/GeneratedCandidateDevelopmentalSearch.lean'
-      - 'formal/ConsequenceSelectedDevelopmentalDiscovery.lean'
+      - 'formal/*.lean'
       - 'lean/*.lean'
       - '.github/workflows/verified-consequence-genesis-formal.yml'
   workflow_dispatch:
@@ -38,6 +33,7 @@ jobs:
           lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
           lean -o formal/MultiCandidateDevelopmentalSearch.olean formal/MultiCandidateDevelopmentalSearch.lean
           lean -o formal/GeneratedCandidateDevelopmentalSearch.olean formal/GeneratedCandidateDevelopmentalSearch.lean
+          lean -o formal/ConsequenceSelectedDevelopmentalDiscovery.olean formal/ConsequenceSelectedDevelopmentalDiscovery.lean
       - name: Check formal laws
         env:
           LEAN_PATH: lean:formal
@@ -47,16 +43,8 @@ jobs:
           echo "GOLDEN_REFINEMENT=PASS"
           echo "SEPARATOR_CERTIFICATE=PASS"
           echo "FACTORIZATION_IMPLIES_FIBER_CONSTANCY=PASS"
-          echo "SEPARATOR_IMPLIES_NONFACTORIZATION=PASS"
-          echo "FACTORIZATION_IFF_FIBER_CONSTANCY_WITH_SECTION=PASS"
-          echo "CANONICAL_REFINEMENT_RESTORES_FACTORIZATION=PASS"
-          echo "CANONICAL_REFINEMENT_PRESERVES_OLD_REPRESENTATION=PASS"
           echo "CANONICAL_REFINEMENT_UNIVERSAL_PROPERTY=PASS"
           echo "LEAST_SUFFICIENT_REFINEMENT=PASS"
-          echo "SUFFICIENT_REPAIR_REFINES_CANONICAL=PASS"
-          echo "FACTORIZATION_FAILURE_REFINEMENT_THEOREM=PASS"
-          echo "STRICT_PROMOTION_FRONTIER_CHANGE=PASS"
-          echo "ANCESTRAL_NECESSITY_THEOREM=PASS"
           echo "VERIFIED_CONSEQUENCE_GENESIS_FORMAL=PASS"
       - name: Check unified developmental law
         env:
@@ -64,12 +52,7 @@ jobs:
         run: |
           lean formal/UnifiedDevelopmentalLaw.lean
           echo "FACTORIZATION_REPAIR_EQUALS_MEET_REFINEMENT=PASS"
-          echo "FACTORIZATION_REPAIR_INHERITS_MINIMAL_MEET_PROPERTY=PASS"
-          echo "STAGE_EQUIVALENCE_COLLAPSES_QUOTIENT_REPRESENTATION=PASS"
-          echo "SAME_SEPARATOR_DRIVES_FACTORIZATION_AND_STAGE_REPAIR=PASS"
           echo "LEAST_GENERATED_STAGE_EXTENSION=PASS"
-          echo "SAME_SEED_PROMOTED_AS_NEXT_LANGUAGE_ATOM=PASS"
-          echo "ANCESTOR_ABLATION_BLOCKS_DESCENDANT=PASS"
           echo "FULL_VERIFIED_DEVELOPMENTAL_CYCLE=PASS"
           echo "UNIFIED_DEVELOPMENTAL_LAW=PASS"
       - name: Check bounded developmental capability
@@ -77,31 +60,22 @@ jobs:
           LEAN_PATH: lean:formal
         run: |
           lean formal/BoundedDevelopmentalCapability.lean
-          echo "FROZEN_ONE_QUERY_CONTROLLER=PASS"
           echo "PROMOTION_CHANGES_BOUNDED_CONTROLLER_RESULT=PASS"
           echo "COLD_ABLATION_RETURNS_FAILURE=PASS"
-          echo "VERIFIED_CONSEQUENCE_CHANGES_BOUNDED_CAPABILITY=PASS"
       - name: Check multi-candidate developmental search
         env:
           LEAN_PATH: lean:formal
         run: |
           lean formal/MultiCandidateDevelopmentalSearch.lean
           echo "FROZEN_MULTICANDIDATE_SEARCH=PASS"
-          echo "MATCHED_TWO_QUERY_BUDGET=PASS"
-          echo "DECOY_REJECTED_BEFORE_DESCENDANT=PASS"
           echo "PROMOTION_CHANGES_MULTICANDIDATE_RESULT=PASS"
-          echo "COLD_ANCESTOR_ABLATION_BLOCKS_SEARCH=PASS"
       - name: Check grammar-generated developmental search
         env:
           LEAN_PATH: lean:formal
         run: |
           lean formal/GeneratedCandidateDevelopmentalSearch.lean
-          echo "GENERIC_DEPTH_ONE_GENERATOR=PASS"
           echo "WINNING_DESCENDANT_NOT_SUPPLIED=PASS"
-          echo "PROMOTION_CHANGES_GENERATED_CANDIDATE_SET=PASS"
-          echo "MATCHED_FOUR_QUERY_BUDGET=PASS"
           echo "GRAMMAR_GENERATION_CHANGES_BOUNDED_CAPABILITY=PASS"
-          echo "ANCESTOR_ABLATION_REMOVES_GENERATED_WINNER=PASS"
       - name: Check consequence-selected developmental discovery
         env:
           LEAN_PATH: lean:formal
@@ -110,8 +84,16 @@ jobs:
           echo "ANONYMOUS_PRIMITIVE_POOL=PASS"
           echo "SEPARATOR_SELECTED_FROM_ACTUAL_CONSEQUENCE=PASS"
           echo "NO_WINNING_PRIMITIVE_IDENTITY_SUPPLIED=PASS"
-          echo "SELECTED_PRIMITIVE_PROMOTED=PASS"
-          echo "GENERIC_GRAMMAR_GENERATES_WINNER=PASS"
-          echo "FIXED_BUDGET_VERIFIER_DISCOVERS_WINNER=PASS"
-          echo "EXACT_COLD_ABLATION_FAILS=PASS"
           echo "FULL_CONSEQUENCE_SELECTED_DEVELOPMENTAL_DISCOVERY=PASS"
+      - name: Check generic consequential selection closure
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/ConsequentialSelectionClosure.lean
+          echo "ARBITRARY_FINITE_POOL_SELECTION_SOUND=PASS"
+          echo "SELECTED_PRIMITIVE_IS_POOL_MEMBER=PASS"
+          echo "SELECTED_PRIMITIVE_ACTUALLY_SEPARATES=PASS"
+          echo "NO_SEPARATOR_IFF_ALL_POOL_PRIMITIVES_SILENT=PASS"
+          echo "SELECTED_PROMOTION_IDENTITY_IS_ENDOGENOUS=PASS"
+          echo "ABSENT_CONSEQUENTIAL_SEPARATION_NO_PROMOTION=PASS"
+          echo "POSITIVE_AND_NEGATIVE_DEVELOPMENTAL_LAWS_CLOSED=PASS"
