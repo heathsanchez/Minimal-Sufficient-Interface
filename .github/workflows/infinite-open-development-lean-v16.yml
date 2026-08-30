@@ -6,6 +6,7 @@ on:
       - remove-finite-open-development-v16
     paths:
       - 'formal/InfiniteOpenDevelopment.lean'
+      - 'formal/InfiniteBitOpenDevelopment.lean'
       - '.github/workflows/infinite-open-development-lean-v16.yml'
   workflow_dispatch:
 
@@ -26,3 +27,12 @@ jobs:
           echo "OMEGA_LIMIT_CONSEQUENTIAL_IDENTITY_IS_EQUALITY=PASS"
           echo "EVERY_DISTINCT_PAIR_EVENTUALLY_SEPARATED=PASS"
           echo "INFINITE_OPEN_DEVELOPMENT_LEAN_V16=PASS"
+      - name: Check exact Nat.testBit bridge
+        run: |
+          lean formal/InfiniteBitOpenDevelopment.lean
+          echo "PYTHON_BIT_ARITHMETIC_BRIDGE=PASS"
+          echo "EXACT_TESTBIT_RESIDUAL_AT_EVERY_FINITE_STAGE=PASS"
+          echo "EXACT_TESTBIT_NO_FINITE_PREFIX_TERMINAL=PASS"
+          echo "EXACT_TESTBIT_OMEGA_IDENTITY_IS_EQUALITY=PASS"
+          echo "EXACT_TESTBIT_EVENTUAL_SEPARATION=PASS"
+          echo "INFINITE_BIT_OPEN_DEVELOPMENT_LEAN_V16=PASS"
