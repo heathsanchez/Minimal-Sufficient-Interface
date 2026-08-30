@@ -95,6 +95,68 @@ theorem canonical_closure_at_omega :
     omega_is_limit_of_finite_chain,
     develop_omega_fixed⟩
 
+/-- The actual finite Kleene iteration of the developmental operator,
+    starting from the empty retained language. -/
+def iterate : Nat → Language
+  | 0 => finiteLanguage 0
+  | n + 1 => develop (iterate n)
+
+/-- The n-th actual iterate is exactly the prefix retaining bits below n. -/
+theorem iterate_eq_finiteLanguage (n : Nat) :
+    iterate n = finiteLanguage n := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+      rw [iterate, ih, develop_finite_step]
+      rfl
+
+/-- Pointwise supremum of all finite iterates. -/
+def finiteIterateSup : Language :=
+  fun j => ∃ n, iterate n j
+
+/-- The supremum of the finite developmental chain is exactly the omega state. -/
+theorem finite_iterate_sup_eq_omega :
+    finiteIterateSup = omegaLanguage := by
+  funext j
+  apply propext
+  constructor
+  · intro _
+    trivial
+  · intro _
+    refine ⟨j + 1, ?_⟩
+    rw [iterate_eq_finiteLanguage]
+    simp [finiteLanguage]
+
+/-- Fixed-point predicate for the same developmental operator. -/
+def IsFixed (C : Language) : Prop :=
+  develop C = C
+
+/-- No finite iterate is a fixed point. -/
+theorem no_finite_iterate_is_fixed (n : Nat) :
+    ¬ IsFixed (iterate n) := by
+  rw [IsFixed, iterate_eq_finiteLanguage]
+  exact no_finite_developmental_fixed_point n
+
+/-- The supremum of all finite iterates is a fixed point. -/
+theorem finite_iterate_sup_is_fixed :
+    IsFixed finiteIterateSup := by
+  rw [IsFixed, finite_iterate_sup_eq_omega]
+  exact develop_omega_fixed
+
+/-- Exact closure-at-omega criterion for this developmental system:
+    every finite iterate is non-fixed, their supremum is the omega state,
+    and that omega state is fixed by the very same operator. -/
+def ClosureOrdinalExactlyOmega : Prop :=
+  (∀ n, ¬ IsFixed (iterate n)) ∧
+  finiteIterateSup = omegaLanguage ∧
+  IsFixed finiteIterateSup
+
+/-- The developmental closure ordinal of this explicit chain/operator is omega. -/
+theorem closure_ordinal_exactly_omega : ClosureOrdinalExactlyOmega := by
+  exact ⟨no_finite_iterate_is_fixed,
+    finite_iterate_sup_eq_omega,
+    finite_iterate_sup_is_fixed⟩
+
 end InfiniteBitOmegaFixedPoint
 
 #check InfiniteBitOmegaFixedPoint.finite_verified_residual
@@ -104,3 +166,8 @@ end InfiniteBitOmegaFixedPoint
 #check InfiniteBitOmegaFixedPoint.omega_is_limit_of_finite_chain
 #check InfiniteBitOmegaFixedPoint.develop_omega_fixed
 #check InfiniteBitOmegaFixedPoint.canonical_closure_at_omega
+#check InfiniteBitOmegaFixedPoint.iterate_eq_finiteLanguage
+#check InfiniteBitOmegaFixedPoint.finite_iterate_sup_eq_omega
+#check InfiniteBitOmegaFixedPoint.no_finite_iterate_is_fixed
+#check InfiniteBitOmegaFixedPoint.finite_iterate_sup_is_fixed
+#check InfiniteBitOmegaFixedPoint.closure_ordinal_exactly_omega
