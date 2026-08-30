@@ -57,6 +57,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ArithmeticDirection.lean
+      - name: Check finite search completeness boundary
+        env:
+          LEAN_PATH: lean
+        run: lean lean/FiniteSearchCompletenessBoundary.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
