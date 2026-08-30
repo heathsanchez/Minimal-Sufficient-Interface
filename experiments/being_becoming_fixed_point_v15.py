@@ -14,7 +14,9 @@ currently reachable consequence language L.  Define ONE frozen operator D:
 The test asks whether repeated D reaches S* such that D(S*)=S*, whether the quotient
 of S* equals the exhaustive closure oracle, and whether perturbing S* by deleting an
 essential retained distinction makes the SAME D resume development and restore S*'s
-observable quotient.  Controls remove promotion or residual updating.
+observable quotient. Controls are matched-budget ablations: they are not required to
+converge, because failure of residual updating can itself produce endless redundant
+language growth.
 
 This is a bounded mathematical test of the phrase 'what it is is stable under how it
 becomes'; it is not a universal metaphysical claim.
@@ -49,8 +51,6 @@ def D(world, state, promote=True, score_partition=None):
         return state, ('FIXED', 0, len(current), None)
     candidates.sort(key=lambda r: (-r[0], r[1], r[2]))
     gain, _, _, chosen = candidates[0]
-    # Crucial fixed-point criterion: no future consequence currently reachable can
-    # distinguish a pair that the retained quotient still aliases.
     if gain == 0:
         return state, ('FIXED', 0, len(current), chosen['name'])
 
@@ -73,55 +73,66 @@ def D(world, state, promote=True, score_partition=None):
     return ns, ('STEP', gain, len(current), chosen['name'], ok, tuple(new_names))
 
 
-def iterate(world, state, promote=True, static_score=False, max_steps=12):
+def iterate_to_fixed(world, state, promote=True, max_steps=12):
     trace = []
-    r0 = canonical_partition([])
     for _ in range(max_steps):
-        ns, ev = D(world, state, promote=promote,
-                   score_partition=r0 if static_score else None)
+        ns, ev = D(world, state, promote=promote)
         trace.append(ev)
         if ns is state:
             return state, tuple(trace)
         state = ns
-    raise AssertionError('development did not terminate within bound')
+    raise AssertionError('development did not terminate within fixed-point bound')
+
+
+def run_steps(world, state, steps, promote=True, static_score=False):
+    """Matched-budget control: run exactly up to `steps`, without assuming convergence."""
+    trace = []
+    r0 = canonical_partition([])
+    for _ in range(steps):
+        ns, ev = D(world, state, promote=promote,
+                   score_partition=r0 if static_score else None)
+        trace.append(ev)
+        if ns is state:
+            break
+        state = ns
+    return state, tuple(trace)
 
 
 def remove_one_essential(state):
-    # Delete the last retained distinction and all language descendants whose AST
-    # contains that exact retained AST.  This creates a genuine loss of being rather
-    # than merely deleting a redundant syntax spelling.
+    # Remove an essential retained distinction, but keep the consequence language
+    # itself intact. This models loss of retained structure/memory, not destruction
+    # of the external possibility of re-observing the missing distinction.
     assert state['retained']
-    victim = state['retained'][-1]
-    vast = victim['ast']
     kept_retained = state['retained'][:-1]
-
-    def contains(ast, needle):
-        if ast == needle:
-            return True
-        return len(ast) > 1 and contains(ast[1], needle)
-
-    available = [c for c in state['available'] if not contains(c['ast'], vast)]
-    # Re-open queries: after a structural lesion, previously considered candidates
-    # may become informative again.  This is the same D on a changed state.
-    return {'retained': list(kept_retained), 'available': available, 'queried': set()}
+    return {
+        'retained': list(kept_retained),
+        'available': list(state['available']),
+        'queried': set(),
+    }
 
 
 def main():
     for world in WORLDS:
         target, oracle_min, _, _, _ = oracle(world)
+        assert oracle_min > 0
+
         s0 = initial_state(world)
-        star, trace = iterate(world, s0)
+        star, trace = iterate_to_fixed(world, s0)
         qstar = quotient(star)
         star2, ev = D(world, star)
         idempotent = star2 is star and ev[0] == 'FIXED'
 
         lesion = remove_one_essential(star)
         qlesion = quotient(lesion)
-        repaired, repair_trace = iterate(world, lesion)
+        repaired, repair_trace = iterate_to_fixed(world, lesion)
         qrepair = quotient(repaired)
 
-        no_prom, no_prom_trace = iterate(world, initial_state(world), promote=False)
-        static, static_trace = iterate(world, initial_state(world), static_score=True)
+        # Controls get the same oracle-minimal verifier-query budget as the successful
+        # developmental trajectory. They need not terminate naturally.
+        no_prom, no_prom_trace = run_steps(
+            world, initial_state(world), oracle_min, promote=False)
+        static, static_trace = run_steps(
+            world, initial_state(world), oracle_min, static_score=True)
 
         print('V15_WORLD', world['name'])
         print('V15_TRACE', trace)
@@ -139,6 +150,7 @@ def main():
         assert qrepair == target
         assert len(quotient(no_prom)) < len(target)
         assert len(quotient(static)) < len(target)
+        assert repair_trace[0][0] == 'STEP'
 
     print('SAME_OPERATOR_GENERATES_AND_RECOGNIZES_FIXED_POINT=PASS')
     print('FIXED_POINT_EQUALS_EXHAUSTIVE_CONSEQUENCE_QUOTIENT=PASS')
