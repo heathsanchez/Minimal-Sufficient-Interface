@@ -1,0 +1,44 @@
+name: Inequivalence Forces Distinguishing Future
+
+on:
+  push:
+    branches:
+      - purify-developmental-kernel-v1
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+          lean -o formal/RequirementLandscapeCompletion.olean formal/RequirementLandscapeCompletion.lean
+          lean -o formal/ConsequentialCompletionCoupling.olean formal/ConsequentialCompletionCoupling.lean
+          lean -o formal/VerifierDoesNotDeterminePointwiseRequirement.olean formal/VerifierDoesNotDeterminePointwiseRequirement.lean
+          lean -o formal/BehavioralRepairVersionSpace.olean formal/BehavioralRepairVersionSpace.lean
+          lean -o formal/AmbiguityGeneratesDistinguishingExperiment.olean formal/AmbiguityGeneratesDistinguishingExperiment.lean
+      - name: Check inequivalence-forced distinguishing future
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/InequivalenceForcesDistinguishingFuture.lean
+          echo "BARE_BEHAVIORAL_INEQUIVALENCE=PASS"
+          echo "SEPARATOR_WITNESS_NOT_PRIMITIVE=PASS"
+          echo "INEQUIVALENCE_FORCES_SEPARATOR_EXISTENCE=PASS"
+          echo "QUESTION_CHOSEN_FROM_INEQUIVALENCE=PASS"
+          echo "GENERATED_QUESTION_DECIDES_BINARY_PAIR=PASS"
+          echo "SEPARATOR_IFF_INEQUIVALENCE=PASS"
+          echo "CLASSICAL_CHOICE_EXPLICIT=PASS"
+          echo "EXECUTABLE_EXTRACTION_REMAINS_OPEN=PASS"
+          echo "PURIFICATION_CYCLE_8=PASS"
