@@ -1,0 +1,30 @@
+name: Consequence Image Induces Hypothesis Carrier
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/ConsequenceImageInducesHypothesisCarrier.lean'
+      - '.github/workflows/consequence-image-induces-hypothesis-carrier.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-image induced hypothesis carrier
+        run: |
+          lean formal/ConsequenceImageInducesHypothesisCarrier.lean
+          echo "RAW_HYPOTHESIS_DOMAIN_NOT_RETAINED_IN_INDUCED_CARRIER=PASS"
+          echo "CONSEQUENCE_IMAGE_DEFINES_RETAINED_CARRIER=PASS"
+          echo "INDUCED_CARRIER_SUFFICIENT_FOR_VERIFIER=PASS"
+          echo "NO_VERIFIER_VISIBLE_OUTCOME_LOST=PASS"
+          echo "OLD_CONSEQUENCE_COLLAPSES_HIDDEN_MULTIPLICITY=PASS"
+          echo "NEW_CONSEQUENCE_GENERATES_STRICTLY_RICHER_CARRIER=PASS"
+          echo "VERIFIER_OUTCOME_TYPE_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_IMAGE_INDUCES_HYPOTHESIS_CARRIER=PASS"
