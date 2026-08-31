@@ -1,24 +1,27 @@
 import Std
 
+universe u
+
 namespace ConsequenceDeterminesSelection
 
 /-- A frozen selector with no distinguished candidate identity.  It inspects
     candidates only through the externally supplied consequence predicate and
     returns the first verified separator. -/
-def selectByConsequence {α : Type} (separates : α → Bool) : List α → Option α
+def selectByConsequence {α : Type u} (separates : α → Bool) : List α → Option α
   | [] => none
   | x :: xs =>
       if separates x = true then some x else selectByConsequence separates xs
 
 /-- Exactly one candidate has the verified separating consequence. -/
-def UniqueSeparator {α : Type} (separates : α → Bool) (seed : α) : Prop :=
+def UniqueSeparator {α : Type u} (separates : α → Bool) (seed : α) : Prop :=
   separates seed = true ∧ ∀ x, separates x = true → x = seed
 
 /-- If a pool contains the unique verified separator, the frozen selector
-    recovers it.  The theorem is polymorphic in the candidate type and in the
-    identity of the separator: no candidate name is privileged by the rule. -/
+    recovers it.  The theorem is universe-polymorphic in the candidate type and
+    in the identity of the separator: no candidate name is privileged by the
+    rule. -/
 theorem unique_separator_selected
-    {α : Type} (separates : α → Bool) (pool : List α) (seed : α)
+    {α : Type u} (separates : α → Bool) (pool : List α) (seed : α)
     (hmem : seed ∈ pool)
     (huniq : UniqueSeparator separates seed) :
     selectByConsequence separates pool = some seed := by
@@ -42,7 +45,7 @@ theorem unique_separator_selected
     unique separator.  This is stronger than invariance under a particular
     permutation: *any* two pool orders containing the separator agree. -/
 theorem order_invariant_under_unique_consequence
-    {α : Type} (separates : α → Bool) (seed : α)
+    {α : Type u} (separates : α → Bool) (seed : α)
     (pool₁ pool₂ : List α)
     (huniq : UniqueSeparator separates seed)
     (hmem₁ : seed ∈ pool₁) (hmem₂ : seed ∈ pool₂) :
@@ -54,7 +57,7 @@ theorem order_invariant_under_unique_consequence
 /-- If verified consequence is ablated entirely, the same frozen selector
     selects nothing. -/
 theorem no_consequence_no_selection
-    {α : Type} (pool : List α) :
+    {α : Type u} (pool : List α) :
     selectByConsequence (fun _ : α => false) pool = none := by
   induction pool with
   | nil => rfl
@@ -63,14 +66,14 @@ theorem no_consequence_no_selection
 
 /-- The retained primitive is exactly the output of consequence-based
     selection; there is no separate identity parameter in this definition. -/
-def RetainedBySelection {α : Type}
+def RetainedBySelection {α : Type u}
     (separates : α → Bool) (pool : List α) (x : α) : Prop :=
   selectByConsequence separates pool = some x
 
 /-- Under a unique verified consequence, the retained primitive is exactly the
     unique separator. -/
 theorem retained_iff_unique_separator
-    {α : Type} (separates : α → Bool) (pool : List α) (seed x : α)
+    {α : Type u} (separates : α → Bool) (pool : List α) (seed x : α)
     (hmem : seed ∈ pool)
     (huniq : UniqueSeparator separates seed) :
     RetainedBySelection separates pool x ↔ x = seed := by
@@ -87,7 +90,7 @@ theorem retained_iff_unique_separator
 /-- If the verified consequence changes which anonymous candidate is uniquely
     separating, the same frozen selector changes which primitive it retains. -/
 theorem changing_consequence_changes_selected_identity
-    {α : Type} (pool : List α) (a b : α)
+    {α : Type u} (pool : List α) (a b : α)
     (sepA sepB : α → Bool)
     (hma : a ∈ pool) (hmb : b ∈ pool)
     (hA : UniqueSeparator sepA a)
@@ -98,14 +101,15 @@ theorem changing_consequence_changes_selected_identity
     unique_separator_selected sepB pool b hmb hB⟩
 
 /-- Exact formal criterion used here for "identity blind": for every candidate
-    type, every consequence predicate, every possible candidate identity and
-    every pool containing the unique separator, selection follows consequence;
-    if consequence is removed, selection disappears. -/
+    type in a fixed arbitrary universe, every consequence predicate, every
+    possible candidate identity and every pool containing the unique separator,
+    selection follows consequence; if consequence is removed, selection
+    disappears. -/
 def IdentityBlindConsequenceCriterion : Prop :=
-  (∀ (α : Type) (separates : α → Bool) (pool : List α) (seed : α),
+  (∀ (α : Type u) (separates : α → Bool) (pool : List α) (seed : α),
       seed ∈ pool → UniqueSeparator separates seed →
         selectByConsequence separates pool = some seed) ∧
-  (∀ (α : Type) (pool : List α),
+  (∀ (α : Type u) (pool : List α),
       selectByConsequence (fun _ : α => false) pool = none)
 
 /-- The frozen selector satisfies the identity-blind consequence criterion. -/
