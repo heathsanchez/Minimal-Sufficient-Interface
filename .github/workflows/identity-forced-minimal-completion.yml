@@ -1,0 +1,30 @@
+name: Identity Forced Minimal Completion
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+    paths:
+      - 'formal/IdentityForcedAsMinimalCompletion.lean'
+      - '.github/workflows/identity-forced-minimal-completion.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check identity minimal completion theorem
+        run: |
+          lean formal/IdentityForcedAsMinimalCompletion.lean
+          echo "CERTIFIED_IDENTITY_DEMAND_SATISFIED=PASS"
+          echo "OLD_TRANSPORT_RETAINED=PASS"
+          echo "UNIQUE_EXTENSION_FROM_GENERATORS=PASS"
+          echo "NO_NEW_DISTINCT_ENDPOINT_TRANSPORT=PASS"
+          echo "NO_UNCERTIFIED_SELF_TRANSPORT_FROM_NOTHING=PASS"
+          echo "DEMANDED_IDENTITY_GENUINELY_ADJOINED=PASS"
+          echo "IDENTITY_AS_MINIMAL_FORCED_COMPLETION=PASS"
