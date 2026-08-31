@@ -22,7 +22,7 @@ def RepairReachable {I F : Type}
   fun f => ∃ i, R i ∧ futureOf i = f
 
 /-- Consequential/behavioural equivalence of repairs: they induce exactly the
-    same reachable future set.  Literal capability identities may differ. -/
+    same reachable future set. Literal capability identities may differ. -/
 def RepairEquivalent {I F : Type}
     (futureOf : I → F) (R₁ R₂ : Repair I) : Prop :=
   ∀ f, RepairReachable futureOf R₁ f ↔ RepairReachable futureOf R₂ f
@@ -55,8 +55,6 @@ namespace EquivalentWitness
 inductive Idx where | left | right
 inductive Fut where | goal
 
-instance : DecidableEq Idx := by infer_instance
-
 def V : RepairVerifier Idx where
   accepts := fun R => R .left ∨ R .right
 
@@ -77,19 +75,25 @@ theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
   · intro S hS hsub i hi
+    have hSleft : S .left := by
+      rcases hS with hleft | hright
+      · exact hleft
+      · exact (hsub .right hright).elim
     cases i with
-    | left =>
-      exact hsub .left (by exact trivial)
+    | left => exact hSleft
     | right => exact hi.elim
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
   · intro S hS hsub i hi
+    have hSright : S .right := by
+      rcases hS with hleft | hright
+      · exact (hsub .left hleft).elim
+      · exact hright
     cases i with
     | left => exact hi.elim
-    | right =>
-      exact hsub .right (by exact trivial)
+    | right => exact hSright
 
 /-- The two minimal repairs are syntactically incomparable. -/
 theorem syntactically_distinct :
@@ -105,72 +109,28 @@ theorem syntactically_distinct :
 theorem behaviorally_equivalent :
     RepairEquivalent futureOf leftRepair rightRepair := by
   intro f
+  cases f
   constructor
-  · rintro ⟨i, hi, hif⟩
-    cases i with
-    | left => exact ⟨.right, trivial, hif⟩
-    | right => exact hi.elim
-  · rintro ⟨i, hi, hif⟩
-    cases i with
-    | left => exact hi.elim
-    | right => exact ⟨.left, trivial, hif⟩
+  · intro _
+    exact ⟨.right, trivial, rfl⟩
+  · intro _
+    exact ⟨.left, trivial, rfl⟩
 
-/-- This version space is consequentially confluent even though syntax is not
-    unique. -/
+/-- Every minimal accepted repair exposes the sole future, so the whole version
+    space collapses to one behavioural class. -/
 theorem consequentially_confluent :
     ConsequentiallyConfluent V futureOf := by
   intro R₁ R₂ h₁ h₂ f
-  have classify : ∀ R, MinimalAccepted V R →
-      (RepairLE R leftRepair ∧ RepairLE leftRepair R) ∨
-      (RepairLE R rightRepair ∧ RepairLE rightRepair R) := by
-    intro R hR
-    rcases hR.1 with hl | hr
-    · left
-      constructor
-      · intro i hi
-        cases i with
-        | left => trivial
-        | right =>
-          have hLR : RepairLE leftRepair R := fun j hj => by
-            cases j with
-            | left => exact hl
-            | right => exact hj.elim
-          have hEq := hR.2 leftRepair left_accepted hLR
-          exact (hEq .right hi).elim
-      · intro i hi
-        cases i with
-        | left => exact hl
-        | right => exact hi.elim
-    · right
-      constructor
-      · intro i hi
-        cases i with
-        | left =>
-          have hRR : RepairLE rightRepair R := fun j hj => by
-            cases j with
-            | left => exact hj.elim
-            | right => exact hr
-          have hEq := hR.2 rightRepair right_accepted hRR
-          exact (hEq .left hi).elim
-        | right => trivial
-      · intro i hi
-        cases i with
-        | left => exact hi.elim
-        | right => exact hr
-  rcases classify R₁ h₁ with h1L | h1R <;>
-  rcases classify R₂ h₂ with h2L | h2R
-  · constructor <;> rintro ⟨i, hi, hif⟩ <;>
-      exact ⟨i, (if h : R₂ i then h else by
-        exfalso
-        have := h2L.2 i (h1L.1 i hi)
-        exact h this), hif⟩
-  · exact behaviorally_equivalent f
-  · exact (behaviorally_equivalent f).symm
-  · constructor <;> rintro ⟨i, hi, hif⟩ <;>
-      exact ⟨i, (if h : R₂ i then h else by
-        exfalso
-        have := h2R.2 i (h1R.1 i hi)
-        exact h this), hif⟩
+  cases f
+  constructor
+  · intro _
+    rcases h₂.1 with hleft | hright
+    · exact ⟨.left, hleft, rfl⟩
+    · exact ⟨.right, hright, rfl⟩
+  · intro _
+    rcases h₁.1 with hleft | hright
+    · exact ⟨.left, hleft, rfl⟩
+    · exact ⟨.right, hright, rfl⟩
 
 end EquivalentWitness
 
@@ -204,17 +164,25 @@ theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
   · intro S hS hsub i hi
+    have hSleft : S .left := by
+      rcases hS with hleft | hright
+      · exact hleft
+      · exact (hsub .right hright).elim
     cases i with
-    | left => exact hsub .left trivial
+    | left => exact hSleft
     | right => exact hi.elim
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
   · intro S hS hsub i hi
+    have hSright : S .right := by
+      rcases hS with hleft | hright
+      · exact (hsub .left hleft).elim
+      · exact hright
     cases i with
     | left => exact hi.elim
-    | right => exact hsub .right trivial
+    | right => exact hSright
 
 /-- Alpha is reachable under the left repair. -/
 theorem alpha_left : RepairReachable futureOf leftRepair .alpha :=
@@ -244,7 +212,7 @@ theorem verifier_not_consequentially_confluent :
 end DivergentWitness
 
 /-- Cycle-6 conclusion: the correct purified object after verifier failure is a
-    version space of minimal accepted repairs.  Quotienting by future behaviour
+    version space of minimal accepted repairs. Quotienting by future behaviour
     can recover a unique class only when consequential confluence holds; that
     confluence is not implied by verifier acceptance alone. -/
 theorem version_space_quotient_is_the_correct_boundary :
@@ -272,6 +240,7 @@ theorem version_space_quotient_is_the_correct_boundary :
 #check ConsequentiallyConfluent
 #check minimal_repairs_unique_up_to_consequence
 #check EquivalentWitness.behaviorally_equivalent
+#check EquivalentWitness.consequentially_confluent
 #check DivergentWitness.not_behaviorally_equivalent
 #check DivergentWitness.verifier_not_consequentially_confluent
 #check version_space_quotient_is_the_correct_boundary
