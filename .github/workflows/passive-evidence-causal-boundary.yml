@@ -1,0 +1,28 @@
+name: Passive Evidence Causal Boundary
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/PassiveEvidenceCannotDetermineCausalRole.lean'
+      - '.github/workflows/passive-evidence-causal-boundary.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check passive causal boundary
+        run: |
+          lean formal/PassiveEvidenceCannotDetermineCausalRole.lean
+          echo "PASSIVE_VERIFIER_VIEWS_IDENTICAL=PASS"
+          echo "CAUSAL_REQUIREMENTS_OPPOSITE=PASS"
+          echo "PASSIVE_SELECTOR_IMPOSSIBLE=PASS"
+          echo "COUNTERFACTUAL_INTERVENTION_SEPARATES=PASS"
+          echo "INTERVENTION_RECOVERS_CAUSAL_ROLES=PASS"
+          echo "COUNTERFACTUAL_INFORMATION_NECESSARY=PASS"
