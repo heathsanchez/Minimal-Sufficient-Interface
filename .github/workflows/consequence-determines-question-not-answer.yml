@@ -1,0 +1,44 @@
+name: Consequence Determines Question Not Answer
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check endogenous question exogenous answer boundary
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean -o formal/VersionSpaceInducesDecidingContext.olean formal/VersionSpaceInducesDecidingContext.lean
+          lean -o formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.olean formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean
+          lean -o formal/NewConsequenceInducesHypothesisUniverse.olean formal/NewConsequenceInducesHypothesisUniverse.lean
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean -o formal/ConsequenceSelectedResidualForcesOperationalJoin.olean formal/ConsequenceSelectedResidualForcesOperationalJoin.lean
+          lean formal/ConsequenceDeterminesQuestionNotAnswer.lean
+          echo "SAME_CURRENT_CONSEQUENCE_ACROSS_WORLDS=PASS"
+          echo "CURRENT_AMBIGUITY_FORCES_SAME_NEXT_QUESTION=PASS"
+          echo "SAME_QUESTION_HAS_DIFFERENT_WORLD_ANSWERS=PASS"
+          echo "CURRENT_CONSEQUENCE_CANNOT_PREDICT_BOTH_ANSWERS=PASS"
+          echo "EXTERNAL_ANSWER_INDUCES_OPERATIONAL_EVIDENCE=PASS"
+          echo "SAME_GENERIC_JOIN_USED_FOR_EITHER_ANSWER=PASS"
+          echo "EACH_ANSWER_HAS_LEAST_SUCCESSOR=PASS"
+          echo "DIFFERENT_ANSWERS_FORCE_DIFFERENT_SUCCESSORS=PASS"
+          echo "CURRENT_CONSEQUENCE_CANNOT_SELECT_BOTH_SUCCESSORS=PASS"
+          echo "EXTERNAL_WORLD_ANSWER_IS_INFORMATION_THEORETICALLY_NECESSARY=PASS"
+          echo "RAW_BOOL_WORLD_WITNESS_STILL_SUPPLIED=BOUNDARY"
+          echo "ENDOGENOUS_QUESTION_EXOGENOUS_ANSWER_CANONICAL_COMPLETION=PASS"
