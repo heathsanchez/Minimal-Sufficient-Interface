@@ -94,8 +94,12 @@ theorem least_repair_has_no_unrelated_behavior
     ∀ p : C → Bool,
       Realized R.eval p ↔ Realized V p ∨ p = target := by
   intro p
-  rw [any_least_repair_behaviorally_equals_free V target R hRleast p,
-      realized_after_extension_iff V target p]
+  calc
+    Realized R.eval p ↔ Realized (freeRepair V target).eval p :=
+      any_least_repair_behaviorally_equals_free V target R hRleast p
+    _ ↔ Realized V p ∨ p = target := by
+      change Realized (extendVerifier V target) p ↔ Realized V p ∨ p = target
+      exact realized_after_extension_iff V target p
 
 /-- Main result: under the natural operational preorder, the free candidate
     extension is the least repair satisfying only preservation and target
