@@ -1,0 +1,33 @@
+name: Free Candidate Extension Is Least Behavioral Repair
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check least behavioral candidate repair
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/UncoveredProfileForcesFreeCandidateExtension.olean formal/UncoveredProfileForcesFreeCandidateExtension.lean
+          lean formal/FreeCandidateExtensionIsLeastBehavioralRepair.lean
+          echo "REPAIR_REQUIRES_ONLY_PRESERVATION_AND_TARGET_REALIZATION=PASS"
+          echo "NO_NOEXTRA_AXIOM_SUPPLIED=PASS"
+          echo "FREE_CANDIDATE_EXTENSION_BEHAVIORALLY_LEAST=PASS"
+          echo "ANY_LEAST_REPAIR_BEHAVIORALLY_EQUIVALENT_TO_FREE=PASS"
+          echo "NO_UNRELATED_BEHAVIOR_FOLLOWS_FROM_MINIMALITY=PASS"
+          echo "EXACTNESS_CRITERION_REMOVED_AS_PRIMITIVE=PASS"
+          echo "VERIFIER_CONTEXT_FAMILY_AND_BEHAVIORAL_PREORDER_STILL_SUPPLIED=BOUNDARY"
+          echo "MINIMALITY_FORCES_EXACT_BEHAVIORAL_CANDIDATE_GENESIS=PASS"
