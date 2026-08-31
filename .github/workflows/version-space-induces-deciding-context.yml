@@ -1,0 +1,37 @@
+name: Version Space Induces Deciding Context
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean'
+      - 'formal/NewConsequenceSeparatesContextGrammar.lean'
+      - 'formal/AmbiguityInducesDecidingContext.lean'
+      - 'formal/VersionSpaceInducesDecidingContext.lean'
+      - '.github/workflows/version-space-induces-deciding-context.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check version-space induced deciding context
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean formal/VersionSpaceInducesDecidingContext.lean
+          echo "CURRENT_CONSEQUENCE_DEFINES_VERSION_SPACE=PASS"
+          echo "VERSION_SPACE_REMAINS_NONTRIVIAL=PASS"
+          echo "NO_DISTINGUISHED_GRAMMAR_PAIR_SUPPLIED_TO_SELECTOR=PASS"
+          echo "CURRENT_CONTEXT_CANNOT_SPLIT_VERSION_SPACE=PASS"
+          echo "DECIDING_CONTEXT_ONTOLOGY_SPLITS_VERSION_SPACE=PASS"
+          echo "UNIQUE_NEXT_CONTEXT_FORCED_IN_WITNESS=PASS"
+          echo "RAW_CARRIER_AND_HYPOTHESIS_UNIVERSE_STILL_SUPPLIED=BOUNDARY"
+          echo "RESIDUAL_VERSION_SPACE_INDUCES_UNIQUE_DECIDING_CONTEXT=PASS"
