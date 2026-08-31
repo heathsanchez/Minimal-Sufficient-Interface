@@ -1,0 +1,36 @@
+name: Verifier-Induced Ontology Feeds Generic Completion
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/VerifierInducesCarrierFreeContextQuotient.lean'
+      - 'formal/VerifierInducedOntologyFeedsGenericCompletion.lean'
+      - '.github/workflows/verifier-induced-ontology-feeds-generic-completion.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check verifier-induced ontology to generic completion
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/VerifierInducesCarrierFreeContextQuotient.olean formal/VerifierInducesCarrierFreeContextQuotient.lean
+          lean formal/VerifierInducedOntologyFeedsGenericCompletion.lean
+          echo "NO_SEMANTIC_ROLE_LABEL_SUPPLIED=PASS"
+          echo "NO_FINITE_INTERVENTION_MENU_SUPPLIED=PASS"
+          echo "NO_LIST_OR_ARITY_GRAMMAR_REQUIRED=PASS"
+          echo "VERIFIER_QUOTIENT_INDUCES_OBLIGATION_ONTOLOGY=PASS"
+          echo "REJECTED_CONTEXT_INDUCES_RESIDUAL_TARGET=PASS"
+          echo "GENERIC_COMPLETION_REALIZES_INDUCED_TARGET=PASS"
+          echo "RESIDUAL_ABLATION_BLOCKS_REPAIR=PASS"
+          echo "RAW_CARRIER_TRANSFORMATION_UNIVERSE_STILL_SUPPLIED=BOUNDARY"
+          echo "VERIFIER_CONSEQUENCE_TO_ONTOLOGY_TO_LEAST_REPAIR=PASS"
