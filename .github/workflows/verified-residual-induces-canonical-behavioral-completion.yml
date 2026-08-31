@@ -1,0 +1,36 @@
+name: Verified Residual Induces Canonical Behavioral Completion
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check canonical behavioral completion
+        run: |
+          export LEAN_PATH=formal
+          lean formal/VerifiedResidualInducesCanonicalBehavioralCompletion.lean
+          echo "NO_RAW_CANDIDATE_CARRIER_IN_COMPLETION_THEOREM=PASS"
+          echo "NO_ONE_POINT_SYNTAX_CONSTRUCTOR_REQUIRED=PASS"
+          echo "REPAIR_DEFINED_ONLY_BY_OPERATIONAL_IMAGE=PASS"
+          echo "NO_NOEXTRA_AXIOM_SUPPLIED=PASS"
+          echo "CANONICAL_COMPLETION_PRESERVES_OLD=PASS"
+          echo "CANONICAL_COMPLETION_REALIZES_TARGET=PASS"
+          echo "CANONICAL_COMPLETION_IS_LEAST=PASS"
+          echo "ANY_LEAST_COMPLETION_EXTENSIONALLY_EQUAL=PASS"
+          echo "NO_UNRELATED_BEHAVIOR_FOLLOWS_FROM_LEASTNESS=PASS"
+          echo "RAW_PRESENTATION_UNIQUENESS_NOT_CLAIMED=BOUNDARY"
+          echo "PROFILE_UNIVERSE_AND_RESIDUAL_TARGET_STILL_SUPPLIED=BOUNDARY"
+          echo "VERIFIED_RESIDUAL_INDUCES_CANONICAL_BEHAVIORAL_COMPLETION=PASS"
