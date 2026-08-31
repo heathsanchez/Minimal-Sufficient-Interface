@@ -7,10 +7,9 @@ open BehavioralRepairVersionSpace
 open AmbiguityGeneratesDistinguishingExperiment
 open InequivalenceForcesDistinguishingFuture
 
-/-- A certified finite future interface exposes a finite question basis and a
-    Boolean reachability procedure whose answers are proved faithful to the
-    semantic `RepairReachable` relation. The executable search below depends on
-    this interface, not on classical choice. -/
+/-- A certified finite future interface supplies a finite complete question basis
+    and a Boolean predictor proved faithful to semantic reachability. The search
+    algorithm below is executable once this interface is supplied. -/
 structure CertifiedFiniteFutureInterface (I F : Type)
     (futureOf : I → F) where
   questions : List F
@@ -19,21 +18,19 @@ structure CertifiedFiniteFutureInterface (I F : Type)
   faithful : ∀ (R : Repair I) (f : F),
     predict R f = true ↔ RepairReachable futureOf R f
 
-/-- Executable first-difference search. -/
+/-- Deterministic first-difference scan. -/
 def firstDifference {F : Type}
     (left right : F → Bool) : List F → Option F
   | [] => none
   | f :: fs =>
       if left f = right f then firstDifference left right fs else some f
 
-/-- Every returned question is genuinely prediction-separating. -/
 theorem firstDifference_sound
     {F : Type} (left right : F → Bool) (qs : List F) (f : F)
     (h : firstDifference left right qs = some f) :
     f ∈ qs ∧ left f ≠ right f := by
   induction qs with
-  | nil =>
-      simp [firstDifference] at h
+  | nil => simp [firstDifference] at h
   | cons a as ih =>
       by_cases heq : left a = right a
       · simp [firstDifference, heq] at h
@@ -43,8 +40,6 @@ theorem firstDifference_sound
         subst f
         exact ⟨List.mem_cons_self, heq⟩
 
-/-- If the finite list contains any disagreement, the executable search returns
-    one. -/
 theorem firstDifference_complete
     {F : Type} (left right : F → Bool) (qs : List F)
     (h : ∃ f, f ∈ qs ∧ left f ≠ right f) :
@@ -65,17 +60,12 @@ theorem firstDifference_complete
         exact ⟨f, by simp [firstDifference, heq, hf]⟩
       · exact ⟨a, by simp [firstDifference, heq]⟩
 
-/-- The actual executable experiment generator. No proof of inequivalence and no
-    separator witness is an argument to this program. -/
 def firstDistinguishingFuture
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
     (R₁ R₂ : Repair I) : Option F :=
   firstDifference (B.predict R₁) (B.predict R₂) B.questions
 
-/-- Semantic inequivalence guarantees a Boolean disagreement somewhere in every
-    complete faithful finite interface. Classical reasoning is used only in this
-    correctness proof; it is absent from `firstDistinguishingFuture`. -/
 theorem inequivalence_implies_finite_prediction_difference
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
@@ -107,8 +97,6 @@ theorem inequivalence_implies_finite_prediction_difference
         exact hp₂
       exact ⟨f, B.covers f, hdiff⟩
 
-/-- Therefore executable search cannot return `none` on behaviorally distinct
-    repairs. -/
 theorem executable_search_finds_separator
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
@@ -124,16 +112,12 @@ theorem executable_search_finds_separator
       (B.predict R₁) (B.predict R₂) B.questions f hfind
   exact ⟨f, hfind, hs.2⟩
 
-/-- Two unequal Boolean predictions are complementary, so any external Boolean
-    outcome keeps exactly one candidate. -/
 theorem unequal_predictions_exactly_one_matches
     {a b outcome : Bool} (hneq : a ≠ b) :
     (a = outcome ∧ b ≠ outcome) ∨
     (b = outcome ∧ a ≠ outcome) := by
   cases a <;> cases b <;> cases outcome <;> simp_all
 
-/-- A future returned by the executable search is therefore a deciding
-    experiment for the binary version space. -/
 theorem executable_question_decides_pair
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
@@ -150,46 +134,52 @@ namespace Witness
 
 open BehavioralRepairVersionSpace.DivergentWitness
 
-/-- A concrete finite certified interface for the cycle-6 divergent pair. -/
-def basis : CertifiedFiniteFutureInterface Idx Fut futureOf where
-  questions := [.alpha, .beta]
-  covers := by
-    intro f
+/-- The logical repair representation is Prop-valued. Constructing a Boolean
+    predictor for every arbitrary Prop-valued repair therefore requires a
+    decidability choice in this concrete witness. This is intentionally marked
+    noncomputable; the generic `firstDistinguishingFuture` itself remains a
+    deterministic executable scan once an executable predictor is supplied. -/
+noncomputable def basis : CertifiedFiniteFutureInterface Idx Fut futureOf := by
+  classical
+  refine {
+    questions := [.alpha, .beta]
+    covers := ?_
+    predict := fun R f =>
+      match f with
+      | .alpha => if R .left then true else false
+      | .beta => if R .right then true else false
+    faithful := ?_
+  }
+  · intro f
     cases f <;> simp
-  predict := fun R f =>
-    match f with
-    | .alpha => decide (R .left)
-    | .beta => decide (R .right)
-  faithful := by
-    intro R f
+  · intro R f
     cases f with
     | alpha =>
         constructor
         · intro h
-          have hleft : R .left := by
-            simpa using h
-          exact ⟨.left, hleft, rfl⟩
+          by_cases hr : R .left
+          · exact ⟨.left, hr, rfl⟩
+          · simp [hr] at h
         · rintro ⟨i, hi, hif⟩
           cases i with
-          | left => simpa using hi
+          | left => simp [hi]
           | right => cases hif
     | beta =>
         constructor
         · intro h
-          have hright : R .right := by
-            simpa using h
-          exact ⟨.right, hright, rfl⟩
+          by_cases hr : R .right
+          · exact ⟨.right, hr, rfl⟩
+          · simp [hr] at h
         · rintro ⟨i, hi, hif⟩
           cases i with
           | left => cases hif
-          | right => simpa using hi
+          | right => simp [hi]
 
-/-- In the witness, the actual executable search returns alpha directly. -/
 theorem computes_alpha :
     firstDistinguishingFuture basis leftRepair rightRepair = some .alpha := by
-  rfl
+  classical
+  simp [firstDistinguishingFuture, basis, firstDifference, leftRepair, rightRepair]
 
-/-- The computed question decides the pair for every external outcome. -/
 theorem computed_question_always_decides (outcome : Bool) :
     (basis.predict leftRepair .alpha = outcome ∧
       basis.predict rightRepair .alpha ≠ outcome) ∨
@@ -199,10 +189,6 @@ theorem computed_question_always_decides (outcome : Bool) :
 
 end Witness
 
-/-- Cycle-9 conclusion: under an explicit finite, complete, verifier-certified
-    future interface, behavioral inequivalence is converted to a deciding
-    experiment by an executable recursive search. `Classical.choice` is no
-    longer part of the experiment generator. -/
 theorem finite_verified_ambiguity_has_executable_decider :
     ∀ {I F : Type} {futureOf : I → F}
       (B : CertifiedFiniteFutureInterface I F futureOf)
