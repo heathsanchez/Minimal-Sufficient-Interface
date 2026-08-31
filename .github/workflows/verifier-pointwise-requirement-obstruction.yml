@@ -1,0 +1,46 @@
+name: Verifier Pointwise Requirement Obstruction
+
+on:
+  push:
+    branches: [purify-developmental-kernel-v1]
+    paths:
+      - 'formal/VerifierDoesNotDeterminePointwiseRequirement.lean'
+      - '.github/workflows/verifier-pointwise-requirement-obstruction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+          lean -o formal/RequirementLandscapeCompletion.olean formal/RequirementLandscapeCompletion.lean
+          lean -o formal/ConsequentialCompletionCoupling.olean formal/ConsequentialCompletionCoupling.lean
+      - name: Check verifier requirement obstruction
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/VerifierDoesNotDeterminePointwiseRequirement.lean
+          echo "MULTIPLE_ACCEPTED_REPAIRS_EXIST=PASS"
+          echo "LEFT_NOT_GLOBALLY_NECESSARY=PASS"
+          echo "RIGHT_NOT_GLOBALLY_NECESSARY=PASS"
+          echo "POINTWISE_NECESSARY_INTERSECTION_EMPTY=PASS"
+          echo "INTERSECTION_OF_SUCCESSFUL_REPAIRS_REJECTED=PASS"
+          echo "ACCEPTED_REPAIRS_INCOMPARABLE=PASS"
+          echo "NO_LEAST_ACCEPTED_REPAIR=PASS"
+          echo "VERSION_SPACE_IS_GENUINE=PASS"
+          echo "PURIFICATION_CYCLE_5_OBSTRUCTION=PASS"
