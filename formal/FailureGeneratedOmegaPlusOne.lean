@@ -185,10 +185,10 @@ theorem omega_not_fixed : develop omegaStage ≠ omegaStage := by
   intro h
   have hp := congrArg (fun C => C.generated (fun z => z = (0, false))) h
   have hnew := omega_generates_every_singleton (0, false)
+  change (develop omegaStage).generated (fun z => z = (0, false)) at hnew
   have : ¬ omegaStage.generated (fun z => z = (0, false)) := by
     simp [omegaStage]
-  rw [hp] at hnew
-  exact this hnew
+  exact this (hp.mp hnew)
 
 theorem omegaPlusOne_agrees_implies_eq {x y : World}
     (h : agrees omegaPlusOneStage x y) : x = y := by
