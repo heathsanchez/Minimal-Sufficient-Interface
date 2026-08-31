@@ -20,12 +20,12 @@ inductive Path : X → X → Type where
 def consequenceFromTarget (target : X) : X → Type :=
   fun z => Path z target
 
-/- A failure object contains endpoints plus a verifier-produced impossibility
-   proof. It does not contain a predicate/probe identifier. -/
+/- A failure object contains endpoints plus a verifier-produced negative fact.
+   It does not contain a predicate/probe identifier. -/
 structure VerifiedFailure where
   blocked : X
   target : X
-  impossible : Path blocked target → Empty
+  impossible : ¬ Nonempty (Path blocked target)
 
 /- Consequence genesis: the same frozen rule turns the failure's target into a
    new typed observation. -/
@@ -35,16 +35,11 @@ def generateConsequence (r : VerifiedFailure) : X → Type :=
 def generatedTarget (r : VerifiedFailure) : generateConsequence r r.target :=
   Path.refl r.target
 
-def generatedBlockedEmpty (r : VerifiedFailure) :
-    generateConsequence r r.blocked → Empty :=
-  r.impossible
-
 theorem failure_generates_separator (r : VerifiedFailure) :
     (¬ Nonempty (generateConsequence r r.blocked)) ∧
       Nonempty (generateConsequence r r.target) := by
   constructor
-  · intro h
-    exact h.elim (fun p => generatedBlockedEmpty r p)
+  · exact r.impossible
   · exact ⟨generatedTarget r⟩
 
 /- Every generated path is monotone in the concrete directed world. -/
@@ -61,17 +56,19 @@ def fail20 : VerifiedFailure where
   blocked := 2
   target := 0
   impossible := by
-    intro p
-    have h := path_monotone p
-    omega
+    intro h
+    exact h.elim (fun p => by
+      have hp : (2 : Nat) ≤ 0 := path_monotone p
+      omega)
 
 def fail21 : VerifiedFailure where
   blocked := 2
   target := 1
   impossible := by
-    intro p
-    have h := path_monotone p
-    omega
+    intro h
+    exact h.elim (fun p => by
+      have hp : (2 : Nat) ≤ 1 := path_monotone p
+      omega)
 
 /- World sensitivity: the very same frozen generator yields different
    observational behaviour when the verified failure changes. At state 1,
@@ -80,16 +77,16 @@ def fail21 : VerifiedFailure where
 theorem same_generator_different_failures_generate_different_behaviour :
     Nonempty (generateConsequence fail21 1) ∧
     (¬ Nonempty (generateConsequence fail20 1)) := by
+  change Nonempty (Path 1 1) ∧ ¬ Nonempty (Path 1 0)
   constructor
   · exact ⟨Path.refl 1⟩
   · intro h
     exact h.elim (fun p => by
-      have hp := path_monotone p
+      have hp : (1 : Nat) ≤ 0 := path_monotone p
       omega)
 
 /- Ablation: endpoints alone, without the verifier's failure certificate, do
-   not license a negative conclusion. The raw pair type contains no proof of
-   non-reachability. -/
+   not license a negative conclusion. -/
 structure UnverifiedFailure where
   blocked : X
   target : X
@@ -101,27 +98,27 @@ def eraseVerification (r : VerifiedFailure) : UnverifiedFailure :=
 def path02 : Path 0 2 :=
   Path.step G.e01 (Path.step G.e12 (Path.refl 2))
 
-theorem unverified_failure_cannot_mean_nonreachability :
-    ¬ (∀ r : UnverifiedFailure, Path r.blocked r.target → Empty) := by
+theorem verification_erasure_does_not_license_universal_nonreachability :
+    ¬ (∀ r : UnverifiedFailure, ¬ Nonempty (Path r.blocked r.target)) := by
   intro h
-  exact h ⟨0, 2⟩ path02
+  exact h ⟨0, 2⟩ ⟨path02⟩
 
 /- Capstone: verified failure itself supplies enough information for the frozen
    generic continuation rule to create a separating consequence, while the
-   same negative inference is unsound after verification is erased. -/
+   same universal negative inference is unsound after verification is erased. -/
 theorem failure_generated_consequence_genesis_certificate :
     ((¬ Nonempty (generateConsequence fail20 fail20.blocked)) ∧
       Nonempty (generateConsequence fail20 fail20.target)) ∧
     (Nonempty (generateConsequence fail21 1) ∧
       ¬ Nonempty (generateConsequence fail20 1)) ∧
-    (¬ (∀ r : UnverifiedFailure, Path r.blocked r.target → Empty)) := by
+    (¬ (∀ r : UnverifiedFailure, ¬ Nonempty (Path r.blocked r.target))) := by
   exact ⟨failure_generates_separator fail20,
     same_generator_different_failures_generate_different_behaviour,
-    unverified_failure_cannot_mean_nonreachability⟩
+    verification_erasure_does_not_license_universal_nonreachability⟩
 
 #check failure_generates_separator
 #check same_generator_different_failures_generate_different_behaviour
-#check unverified_failure_cannot_mean_nonreachability
+#check verification_erasure_does_not_license_universal_nonreachability
 #check failure_generated_consequence_genesis_certificate
 
 end FailureGeneratedConsequenceGenesis
