@@ -49,6 +49,23 @@ theorem prediction_equal_of_equivalent
     contradiction
   · rfl
 
+/-- If two predictors agree on every member of a finite question list, the
+    executable first-difference scan returns no witness. -/
+theorem firstDifference_none_of_agreement
+    {F : Type} (left right : F → Bool) :
+    ∀ qs : List F,
+      (∀ f, f ∈ qs → left f = right f) →
+      firstDifference left right qs = none := by
+  intro qs hagree
+  induction qs with
+  | nil => rfl
+  | cons a rest ih =>
+      have ha : left a = right a := hagree a List.mem_cons_self
+      simp [firstDifference, ha]
+      apply ih
+      intro f hf
+      exact hagree f (List.mem_cons_of_mem a hf)
+
 /-- On a complete faithful finite interface, search returns `none` exactly when
     the two repairs are consequentially equivalent. -/
 theorem no_distinguishing_future_iff_equivalent
@@ -59,13 +76,14 @@ theorem no_distinguishing_future_iff_equivalent
       RepairEquivalent futureOf R₁ R₂ := by
   constructor
   · intro hnone
-    by_contra hneq
-    rcases executable_search_finds_separator B hneq with ⟨f, hfind, _⟩
-    rw [hnone] at hfind
-    contradiction
+    by_cases heq : RepairEquivalent futureOf R₁ R₂
+    · exact heq
+    · rcases executable_search_finds_separator B heq with ⟨f, hfind, _⟩
+      rw [hnone] at hfind
+      contradiction
   · intro heq
     unfold firstDistinguishingFuture
-    rw [firstDifference_none_iff_agree_on_tests]
+    apply firstDifference_none_of_agreement
     intro f _
     exact prediction_equal_of_equivalent B heq f
 
@@ -97,6 +115,33 @@ theorem firstSeparatorAgainst_none_iff
             exact hs hp
           simp [firstSeparatorAgainst, hfd, hneq]
 
+/-- Any successful one-against-rest scan returns a genuine executable
+    disagreement with the fixed candidate. -/
+theorem firstSeparatorAgainst_sound
+    {I F C : Type} {futureOf : I → F}
+    (B : CertifiedFiniteFutureInterface I F futureOf)
+    (repairOf : C → Repair I) (c : C) :
+    ∀ {cs : List C} {d : C} {f : F},
+      firstSeparatorAgainst B repairOf c cs = some (d, f) →
+      B.predict (repairOf c) f ≠ B.predict (repairOf d) f := by
+  intro cs
+  induction cs with
+  | nil =>
+      intro d f h
+      simp [firstSeparatorAgainst] at h
+  | cons a rest ih =>
+      intro d f h
+      cases hfd : firstDistinguishingFuture B (repairOf c) (repairOf a) with
+      | none =>
+          simp [firstSeparatorAgainst, hfd] at h
+          exact ih h
+      | some g =>
+          simp [firstSeparatorAgainst, hfd] at h
+          cases h
+          exact (firstDifference_sound
+            (B.predict (repairOf c)) (B.predict (repairOf a))
+            B.questions g hfd).2
+
 /-- Pairwise consequential confluence of a finite candidate list. -/
 def PairwiseEquivalent
     {I F C : Type} {futureOf : I → F}
@@ -114,7 +159,7 @@ theorem firstVersionSeparator_none_iff_pairwise
     (repairOf : C → Repair I) :
     ∀ cs : List C,
       firstVersionSeparator B repairOf cs = none ↔
-      PairwiseEquivalent repairOf cs := by
+      PairwiseEquivalent (futureOf := futureOf) repairOf cs := by
   intro cs
   induction cs with
   | nil => simp [firstVersionSeparator, PairwiseEquivalent]
@@ -156,21 +201,7 @@ theorem firstVersionSeparator_sound
           rcases df with ⟨b, g⟩
           simp [firstVersionSeparator, hs] at h
           cases h
-          have hpair : firstDistinguishingFuture B (repairOf a) (repairOf b) = some g := by
-            -- `firstSeparatorAgainst` can only return this pair after finding its separator.
-            induction rest with
-            | nil => simp [firstSeparatorAgainst] at hs
-            | cons x xs ihrest =>
-                cases hx : firstDistinguishingFuture B (repairOf a) (repairOf x) with
-                | none =>
-                    simp [firstSeparatorAgainst, hx] at hs
-                    exact ihrest hs
-                | some q =>
-                    simp [firstSeparatorAgainst, hx] at hs
-                    cases hs
-                    exact hx
-          exact (firstDifference_sound
-            (B.predict (repairOf a)) (B.predict (repairOf b)) B.questions g hpair).2
+          exact firstSeparatorAgainst_sound B repairOf a hs
 
 namespace Witness
 
@@ -188,7 +219,8 @@ def candidates : List Candidate := [.left, .right]
 theorem self_scan_finds_alpha :
     firstVersionSeparator basis repairOf candidates =
       some (.left, .right, Fut.alpha) := by
-  rfl
+  simp [candidates, firstVersionSeparator, firstSeparatorAgainst, repairOf,
+    FiniteExecutableDistinguishingFuture.Witness.computes_alpha]
 
 end Witness
 
@@ -199,13 +231,15 @@ theorem finite_version_space_self_diagnoses
     {I F C : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
     (repairOf : C → Repair I) (cs : List C) :
-    (firstVersionSeparator B repairOf cs = none ↔ PairwiseEquivalent repairOf cs) := by
+    (firstVersionSeparator B repairOf cs = none ↔
+      PairwiseEquivalent (futureOf := futureOf) repairOf cs) := by
   exact firstVersionSeparator_none_iff_pairwise B repairOf cs
 
 #check firstSeparatorAgainst
 #check firstVersionSeparator
 #check no_distinguishing_future_iff_equivalent
 #check firstSeparatorAgainst_none_iff
+#check firstSeparatorAgainst_sound
 #check firstVersionSeparator_none_iff_pairwise
 #check firstVersionSeparator_sound
 #check Witness.self_scan_finds_alpha
