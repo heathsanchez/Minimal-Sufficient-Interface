@@ -1,0 +1,40 @@
+name: Consequence Selects Evidence Induced Role
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/ConsequenceSelectsEvidenceInducedRole.lean'
+      - 'formal/OrderedEvidenceInducesRoles.lean'
+      - '.github/workflows/consequence-selects-evidence-induced-role.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-selected evidence-induced residual
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesVariableArityLanguage.olean formal/ConsequenceCompilesVariableArityLanguage.lean
+          lean -o formal/VerifierEvidenceInducesObligationSignature.olean formal/VerifierEvidenceInducesObligationSignature.lean
+          lean -o formal/PermutationBlindEvidenceRoleBoundary.olean formal/PermutationBlindEvidenceRoleBoundary.lean
+          lean -o formal/OrderedEvidenceInducesRoles.olean formal/OrderedEvidenceInducesRoles.lean
+          lean formal/ConsequenceSelectsEvidenceInducedRole.lean
+          echo "ROLE_ONTOLOGY_INDUCED_FROM_EVIDENCE=PASS"
+          echo "TARGET_ROLE_NOT_SUPPLIED_TO_RESIDUAL=PASS"
+          echo "UNIQUE_CONSEQUENCE_SELECTS_TARGET=PASS"
+          echo "SELECTED_TARGET_BECOMES_CERTIFIED_RESIDUAL=PASS"
+          echo "GENERIC_COMPLETION_REPAIRS_SELECTED_ROLE=PASS"
+          echo "CONSEQUENCE_ERASURE_BLOCKS_TARGET_SELECTION=PASS"
+          echo "CONSEQUENCE_SELECTS_EVIDENCE_INDUCED_RESIDUAL=PASS"
