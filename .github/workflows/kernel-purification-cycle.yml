@@ -14,6 +14,7 @@ on:
       - 'formal/KernelPurificationCycle8.lean'
       - 'formal/KernelPurificationCycle9.lean'
       - 'formal/KernelPurificationCycle10.lean'
+      - 'formal/KernelPurificationCycle11.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -37,6 +38,7 @@ jobs:
           lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
           lean -o formal/ResidualGeneratedProbeGenesis.olean formal/ResidualGeneratedProbeGenesis.lean
           lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
+          lean -o formal/ReachabilityGeneratesConsequence.olean formal/ReachabilityGeneratesConsequence.lean
           lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
           lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
           lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
@@ -46,6 +48,7 @@ jobs:
           lean -o formal/KernelPurificationCycle7.olean formal/KernelPurificationCycle7.lean
           lean -o formal/KernelPurificationCycle8.olean formal/KernelPurificationCycle8.lean
           lean -o formal/KernelPurificationCycle9.olean formal/KernelPurificationCycle9.lean
+          lean -o formal/KernelPurificationCycle10.olean formal/KernelPurificationCycle10.lean
       - name: Run cycles 1 through 8
         env: {LEAN_PATH: formal}
         run: |
@@ -89,3 +92,13 @@ jobs:
           echo "FAILED_PAIR_SELECTION_ELIMINATED=PASS"
           echo "FULL_LANGUAGE_EXTENSION_IS_FREE=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_10=PASS"
+      - name: Run eleventh kernel purification cycle
+        env: {LEAN_PATH: formal}
+        run: |
+          lean formal/KernelPurificationCycle11.lean
+          echo "INTERACTION_FAILURE_GENERATES_REQUIRED_CONSEQUENCE=PASS"
+          echo "SUPPLIED_REQUIRED_CONSEQUENCE_ELIMINATED=PASS"
+          echo "FAILURE_GENERATED_CONSEQUENCE_FORCES_NONFACTORIZATION=PASS"
+          echo "FAILURE_GENERATES_FULL_RESIDUAL_LANGUAGE=PASS"
+          echo "REVERSE_TRANSPORT_ABLATION_BLOCKS_GENERATED_SEPARATION=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_11=PASS"
