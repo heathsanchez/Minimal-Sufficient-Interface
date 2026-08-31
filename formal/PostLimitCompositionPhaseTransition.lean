@@ -9,7 +9,7 @@ open FailureForcesCompositionCompletion
 
 /-- Same Nat state carrier as the exact omega theorem, now equipped with an
     identity transport at every state and two consecutive nonidentity
-    transports.  The endpoint composite 0 -> 2 is deliberately absent. -/
+    transports.  Their endpoint composite is deliberately absent. -/
 inductive IdentityChainHom : Nat → Nat → Type where
   | id (n : Nat) : IdentityChainHom n n
   | e01 : IdentityChainHom 0 1
@@ -19,34 +19,48 @@ def identityChainTransport : RawDirectedSubstrate where
   Obj := Nat
   Hom := IdentityChainHom
 
+/-- Concrete chain objects, explicitly typed through the substrate carrier so
+    later statements do not rely on numeral typeclass inference through a
+    structure projection. -/
+abbrev chain0 : identityChainTransport.Obj := (0 : Nat)
+abbrev chain1 : identityChainTransport.Obj := (1 : Nat)
+abbrev chain2 : identityChainTransport.Obj := (2 : Nat)
+
 /-- Reflexive transport is already present everywhere before the new phase. -/
 theorem identity_transport_present_everywhere :
     ∀ n : Nat, Nonempty (identityChainTransport.Hom n n) := by
   intro n
   exact ⟨IdentityChainHom.id n⟩
 
-/-- The two-step path exists before repair. -/
-theorem composable_inputs_present :
-    Nonempty (identityChainTransport.Hom 0 1) ∧
-    Nonempty (identityChainTransport.Hom 1 2) := by
-  exact ⟨⟨IdentityChainHom.e01⟩, ⟨IdentityChainHom.e12⟩⟩
-
-/-- But its composite endpoint transport is not representable yet. -/
-theorem composite_02_absent :
-    ¬ Nonempty (identityChainTransport.Hom 0 2) := by
-  intro h
-  rcases h with ⟨h⟩
-  cases h
-
 /-- Verifier-certified compositional residual on a carrier that already has
-    identities. -/
+    identities: both legs exist, while their endpoint transport does not. -/
 def failedChainComposition : FailedComposition identityChainTransport where
-  source := 0
-  middle := 1
-  target := 2
+  source := chain0
+  middle := chain1
+  target := chain2
   first := IdentityChainHom.e01
   second := IdentityChainHom.e12
-  unrealized := composite_02_absent
+  unrealized := by
+    intro h
+    rcases h with ⟨h⟩
+    cases h
+
+/-- The two-step path exists before repair. -/
+theorem composable_inputs_present :
+    Nonempty
+      (identityChainTransport.Hom
+        failedChainComposition.source failedChainComposition.middle) ∧
+    Nonempty
+      (identityChainTransport.Hom
+        failedChainComposition.middle failedChainComposition.target) := by
+  exact ⟨⟨failedChainComposition.first⟩, ⟨failedChainComposition.second⟩⟩
+
+/-- But its composite endpoint transport is not representable yet. -/
+theorem composite_endpoint_absent :
+    ¬ Nonempty
+      (identityChainTransport.Hom
+        failedChainComposition.source failedChainComposition.target) :=
+  failedChainComposition.unrealized
 
 /-- At exact extensional omega, point separation and all identities can already
     hold while a strictly new compositional consequence is still forced by
@@ -58,13 +72,17 @@ theorem exact_identity_and_reflexivity_do_not_imply_composition_terminal :
       (ExtensionalFailure natBitObserve
         InfiniteBitOmegaFixedPoint.omegaLanguage)) ∧
     (∀ n : Nat, Nonempty (identityChainTransport.Hom n n)) ∧
-    ((¬ Nonempty (identityChainTransport.Hom 0 2)) ∧
+    ((¬ Nonempty
+        (identityChainTransport.Hom
+          failedChainComposition.source failedChainComposition.target)) ∧
       Nonempty
         ((completeTransport identityChainTransport
-          (generatedCompositeDemand failedChainComposition)).Hom 0 2)) ∧
+          (generatedCompositeDemand failedChainComposition)).Hom
+            failedChainComposition.source failedChainComposition.target)) ∧
     (¬ Nonempty
       ((completeTransport identityChainTransport
-        (erasedDemand identityChainTransport)).Hom 0 2)) := by
+        (erasedDemand identityChainTransport)).Hom
+          failedChainComposition.source failedChainComposition.target)) := by
   refine ⟨exact_nat_omega_is_pointSeparating,
     exact_nat_omega_has_no_extensional_failure,
     identity_transport_present_everywhere, ?_, ?_⟩
@@ -85,10 +103,12 @@ theorem point_separation_survives_composition_genesis :
   exact_nat_omega_is_pointSeparating
 
 /-- The failure-generated repair is local: for any absent endpoint pair other
-    than 0 -> 2, no new transport is manufactured. -/
+    than the failed composite endpoints, no new transport is manufactured. -/
 theorem composition_repair_is_local
-    {x y : Nat}
-    (hunrelated : x ≠ 0 ∨ y ≠ 2)
+    {x y : identityChainTransport.Obj}
+    (hunrelated :
+      x ≠ failedChainComposition.source ∨
+      y ≠ failedChainComposition.target)
     (holdNone : ¬ Nonempty (identityChainTransport.Hom x y)) :
     ¬ Nonempty
       ((completeTransport identityChainTransport
@@ -105,25 +125,33 @@ theorem post_limit_composition_phase_transition :
       (ExtensionalFailure natBitObserve
         InfiniteBitOmegaFixedPoint.omegaLanguage)) ∧
     (∀ n : Nat, Nonempty (identityChainTransport.Hom n n)) ∧
-    (Nonempty (identityChainTransport.Hom 0 1) ∧
-      Nonempty (identityChainTransport.Hom 1 2)) ∧
-    (¬ Nonempty (identityChainTransport.Hom 0 2)) ∧
+    (Nonempty
+        (identityChainTransport.Hom
+          failedChainComposition.source failedChainComposition.middle) ∧
+      Nonempty
+        (identityChainTransport.Hom
+          failedChainComposition.middle failedChainComposition.target)) ∧
+    (¬ Nonempty
+      (identityChainTransport.Hom
+        failedChainComposition.source failedChainComposition.target)) ∧
     Nonempty
       ((completeTransport identityChainTransport
-        (generatedCompositeDemand failedChainComposition)).Hom 0 2) ∧
+        (generatedCompositeDemand failedChainComposition)).Hom
+          failedChainComposition.source failedChainComposition.target) ∧
     (¬ Nonempty
       ((completeTransport identityChainTransport
-        (erasedDemand identityChainTransport)).Hom 0 2)) := by
+        (erasedDemand identityChainTransport)).Hom
+          failedChainComposition.source failedChainComposition.target)) := by
   exact ⟨exact_nat_omega_has_no_extensional_failure,
     identity_transport_present_everywhere,
     composable_inputs_present,
-    composite_02_absent,
+    composite_endpoint_absent,
     failure_forces_composite failedChainComposition,
     erasing_failure_signal_erases_composite failedChainComposition⟩
 
 #check identity_transport_present_everywhere
 #check composable_inputs_present
-#check composite_02_absent
+#check composite_endpoint_absent
 #check exact_identity_and_reflexivity_do_not_imply_composition_terminal
 #check composition_completion_preserves_state_carrier
 #check point_separation_survives_composition_genesis
