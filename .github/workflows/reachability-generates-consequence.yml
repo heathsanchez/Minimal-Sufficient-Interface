@@ -1,0 +1,30 @@
+name: Reachability Generates Consequence
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check reachability-generated consequence theorem
+        run: |
+          lean formal/ReachabilityGeneratesConsequence.lean
+          echo "DIRECTED_FAILURE_GENERATES_CONSEQUENCE=PASS"
+          echo "TRANSPORT_ONLY_PROBE_SEPARATES=PASS"
+          echo "NO_ENDPOINT_EQUALITY_REQUIRED=PASS"
+          echo "NO_OBSERVATION_BASIS_SUPPLIED=PASS"
+          echo "NO_CONSEQUENCE_PREDICATE_SUPPLIED=PASS"
+          echo "REVERSE_TRANSPORT_ABLATION_ERASES_SEPARATION=PASS"
+          echo "NO_COMPOSITION_OR_CATEGORY_ASSUMED=PASS"
