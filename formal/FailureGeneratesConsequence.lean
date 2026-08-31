@@ -2,7 +2,7 @@ import Std
 
 namespace FailureGeneratesConsequence
 
-universe u
+universe u v
 
 abbrev Probe (Ω : Type u) := Ω → Bool
 
@@ -16,21 +16,21 @@ structure Failure (Ω : Type u) where
 def generatedCriterion {Ω : Type u} (r : Failure Ω) (p : Probe Ω) : Bool :=
   decide (p r.left ≠ p r.right)
 
-/-- Generic residual-to-observation constructor.  No consequence language,
+/-- Generic residual-to-observation constructor. No consequence language,
     primitive identity, or candidate index is supplied. -/
 def generatedProbe {Ω : Type u} [DecidableEq Ω] (r : Failure Ω) : Probe Ω :=
   fun z => decide (z = r.right)
 
-def selectByConsequence {α : Type} (separates : α → Bool) : List α → Option α
+def selectByConsequence {α : Type v} (separates : α → Bool) : List α → Option α
   | [] => none
   | x :: xs =>
       if separates x = true then some x else selectByConsequence separates xs
 
-def UniqueSeparator {α : Type} (separates : α → Bool) (seed : α) : Prop :=
+def UniqueSeparator {α : Type v} (separates : α → Bool) (seed : α) : Prop :=
   separates seed = true ∧ ∀ x, separates x = true → x = seed
 
 theorem unique_separator_selected
-    {α : Type} (separates : α → Bool) (pool : List α) (seed : α)
+    {α : Type v} (separates : α → Bool) (pool : List α) (seed : α)
     (hmem : seed ∈ pool) (huniq : UniqueSeparator separates seed) :
     selectByConsequence separates pool = some seed := by
   induction pool with
@@ -49,7 +49,7 @@ theorem unique_separator_selected
         simp [ha, ih hmemrest]
 
 theorem no_consequence_no_selection
-    {α : Type} (pool : List α) :
+    {α : Type v} (pool : List α) :
     selectByConsequence (fun _ : α => false) pool = none := by
   induction pool with
   | nil => rfl
@@ -68,7 +68,7 @@ theorem generatedCriterion_certifies_generatedProbe
   simp [generatedCriterion, generatedProbe, r.distinct]
 
 /-- No externally supplied consequence predicate occurs in the theorem
-    signature.  The selector's criterion is computed solely from `r`. -/
+    signature. The selector's criterion is computed solely from `r`. -/
 theorem failure_generated_criterion_selects_unique
     {Ω : Type u} (r : Failure Ω)
     (pool : List (Probe Ω)) (seed : Probe Ω)
