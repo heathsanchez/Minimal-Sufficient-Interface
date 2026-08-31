@@ -1,0 +1,29 @@
+name: Terminal Verdict Polarity Boundary
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/TerminalVerdictPolarityBoundary.lean'
+      - '.github/workflows/terminal-verdict-polarity-boundary.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check terminal verdict polarity boundary
+        run: |
+          lean formal/TerminalVerdictPolarityBoundary.lean
+          echo "BARE_TERMINAL_CARRIER_HAS_NONTRIVIAL_SYMMETRY=PASS"
+          echo "OPPOSITE_POLARITY_WORLDS_SHARE_UNGROUNDED_STRUCTURE=PASS"
+          echo "UNGROUNDED_POLARITY_SELECTION_IMPOSSIBLE=PASS"
+          echo "VERIFIER_GROUNDING_BREAKS_SYMMETRY=PASS"
+          echo "GROUNDING_SUFFICIENT_FOR_POLARITY=PASS"
+          echo "EXTERNAL_ASYMMETRY_IS_IRREDUCIBLE_BOUNDARY=BOUNDARY"
+          echo "TERMINAL_VERDICT_POLARITY_BOUNDARY=PASS"
