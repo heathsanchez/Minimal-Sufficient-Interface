@@ -1,0 +1,54 @@
+name: Finite Autonomous Version Space Descent
+
+on:
+  push:
+    branches:
+      - purify-developmental-kernel-v1
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject incomplete proofs
+        run: |
+          if grep -nE '(^|[^A-Za-z])(sorry|admit)([^A-Za-z]|$)' formal/FiniteAutonomousVersionSpaceDescent.lean; then
+            echo "INCOMPLETE_PROOF_FOUND"
+            exit 1
+          fi
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+          lean -o formal/RequirementLandscapeCompletion.olean formal/RequirementLandscapeCompletion.lean
+          lean -o formal/ConsequentialCompletionCoupling.olean formal/ConsequentialCompletionCoupling.lean
+          lean -o formal/VerifierDoesNotDeterminePointwiseRequirement.olean formal/VerifierDoesNotDeterminePointwiseRequirement.lean
+          lean -o formal/BehavioralRepairVersionSpace.olean formal/BehavioralRepairVersionSpace.lean
+          lean -o formal/AmbiguityGeneratesDistinguishingExperiment.olean formal/AmbiguityGeneratesDistinguishingExperiment.lean
+          lean -o formal/InequivalenceForcesDistinguishingFuture.olean formal/InequivalenceForcesDistinguishingFuture.lean
+          lean -o formal/FiniteExecutableDistinguishingFuture.olean formal/FiniteExecutableDistinguishingFuture.lean
+          lean -o formal/VerifiedVersionSpaceContraction.olean formal/VerifiedVersionSpaceContraction.lean
+          lean -o formal/ExecutablePairSelectionFromFiniteVersionSpace.olean formal/ExecutablePairSelectionFromFiniteVersionSpace.lean
+      - name: Check finite autonomous descent
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/FiniteAutonomousVersionSpaceDescent.lean
+          echo "EXECUTABLE_VERSION_FILTER=PASS"
+          echo "FILTER_NEVER_INVENTS_REPAIRS=PASS"
+          echo "VERIFIED_OUTCOME_ELIMINATES_CANDIDATE=PASS"
+          echo "SELF_SELECTED_EXPERIMENT_STRICTLY_DECREASES_LENGTH=PASS"
+          echo "AUTONOMOUS_STEP_WELL_FOUNDED_MEASURE=PASS"
+          echo "TERMINAL_SCAN_CERTIFIES_CONSEQUENTIAL_CONFLUENCE=PASS"
+          echo "NO_INFINITE_NONTERMINAL_FINITE_RUN=PASS"
+          echo "NO_SORRY_OR_ADMIT=PASS"
+          echo "PURIFICATION_CYCLE_12=PASS"
