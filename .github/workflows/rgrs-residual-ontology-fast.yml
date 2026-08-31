@@ -1,0 +1,39 @@
+name: RGRS Residual Ontology Fast
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/OrderedEvidenceInducesRoles.lean'
+      - 'formal/ConsequenceSelectsEvidenceInducedRole.lean'
+      - 'formal/VerifierDeletionSelectsEvidenceRole.lean'
+      - '.github/workflows/rgrs-residual-ontology-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify residual ontology chain
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesVariableArityLanguage.olean formal/ConsequenceCompilesVariableArityLanguage.lean
+          lean -o formal/VerifierEvidenceInducesObligationSignature.olean formal/VerifierEvidenceInducesObligationSignature.lean
+          lean -o formal/PermutationBlindEvidenceRoleBoundary.olean formal/PermutationBlindEvidenceRoleBoundary.lean
+          lean -o formal/OrderedEvidenceInducesRoles.olean formal/OrderedEvidenceInducesRoles.lean
+          echo "ORDERED_EVIDENCE_ROLE_GENESIS=PASS"
+          lean -o formal/ConsequenceSelectsEvidenceInducedRole.olean formal/ConsequenceSelectsEvidenceInducedRole.lean
+          echo "CONSEQUENCE_SELECTED_ROLE_RESIDUAL=PASS"
+          lean formal/VerifierDeletionSelectsEvidenceRole.lean
+          echo "VERIFIER_DELETION_CAUSALITY_SELECTS_RESIDUAL=PASS"
+          echo "RESIDUAL_ONTOLOGY_CHAIN=PASS"
