@@ -8,36 +8,29 @@ open VerifierDoesNotDeterminePointwiseRequirement
 def RepairLE {I : Type} (R₁ R₂ : Repair I) : Prop :=
   ∀ i, R₁ i → R₂ i
 
-/-- An accepted repair is minimal when no strictly smaller accepted repair
-    exists. -/
+/-- An accepted repair is minimal when no strictly smaller accepted repair exists. -/
 def MinimalAccepted {I : Type}
     (V : RepairVerifier I) (R : Repair I) : Prop :=
   V.accepts R ∧
   ∀ S, V.accepts S → RepairLE S R → RepairLE R S
 
-/-- A repair exposes a future exactly when it contains some capability mapped to
-    that future. -/
+/-- A repair exposes a future exactly when it contains some capability mapped to that future. -/
 def RepairReachable {I F : Type}
     (futureOf : I → F) (R : Repair I) : F → Prop :=
   fun f => ∃ i, R i ∧ futureOf i = f
 
-/-- Consequential/behavioural equivalence of repairs: they induce exactly the
-    same reachable future set. Literal capability identities may differ. -/
+/-- Consequential equivalence of repairs: exactly the same future set is reachable. -/
 def RepairEquivalent {I F : Type}
     (futureOf : I → F) (R₁ R₂ : Repair I) : Prop :=
   ∀ f, RepairReachable futureOf R₁ f ↔ RepairReachable futureOf R₂ f
 
-/-- Consequential confluence is the exact extra condition needed to recover one
-    behavioural developmental outcome from a syntactically nonunique minimal
-    repair version space. -/
+/-- Consequential confluence means all minimal accepted repairs lie in one behavioural class. -/
 def ConsequentiallyConfluent {I F : Type}
     (V : RepairVerifier I) (futureOf : I → F) : Prop :=
   ∀ R₁ R₂,
     MinimalAccepted V R₁ → MinimalAccepted V R₂ →
     RepairEquivalent futureOf R₁ R₂
 
-/-- Under consequential confluence, all minimal accepted repairs determine one
-    behavioural repair class. -/
 theorem minimal_repairs_unique_up_to_consequence
     {I F : Type}
     (V : RepairVerifier I) (futureOf : I → F)
@@ -48,8 +41,6 @@ theorem minimal_repairs_unique_up_to_consequence
     RepairEquivalent futureOf R₁ R₂ := by
   exact hconf R₁ R₂ h₁ h₂
 
-/- Witness A: syntactically distinct minimal repairs can collapse to a single
-   consequential class when both capabilities realize the same future. -/
 namespace EquivalentWitness
 
 inductive Idx where | left | right
@@ -75,37 +66,41 @@ theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
   · intro S hS hsub i hi
-    have hSleft : S .left := by
-      rcases hS with hleft | hright
-      · exact hleft
-      · exact (hsub .right hright).elim
     cases i with
-    | left => exact hSleft
-    | right => exact hi.elim
+    | left =>
+        rcases hS with hleft | hright
+        · exact hleft
+        · have hf : False := hsub .right hright
+          exact hf.elim
+    | right =>
+        have hf : False := hi
+        exact hf.elim
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
   · intro S hS hsub i hi
-    have hSright : S .right := by
-      rcases hS with hleft | hright
-      · exact (hsub .left hleft).elim
-      · exact hright
     cases i with
-    | left => exact hi.elim
-    | right => exact hSright
+    | left =>
+        have hf : False := hi
+        exact hf.elim
+    | right =>
+        rcases hS with hleft | hright
+        · have hf : False := hsub .left hleft
+          exact hf.elim
+        · exact hright
 
-/-- The two minimal repairs are syntactically incomparable. -/
 theorem syntactically_distinct :
     (¬ RepairLE leftRepair rightRepair) ∧
     (¬ RepairLE rightRepair leftRepair) := by
   constructor
   · intro h
-    exact h .left trivial
+    have hf : False := h .left trivial
+    exact hf
   · intro h
-    exact h .right trivial
+    have hf : False := h .right trivial
+    exact hf
 
-/-- But they expose exactly the same future. -/
 theorem behaviorally_equivalent :
     RepairEquivalent futureOf leftRepair rightRepair := by
   intro f
@@ -116,8 +111,6 @@ theorem behaviorally_equivalent :
   · intro _
     exact ⟨.left, trivial, rfl⟩
 
-/-- Every minimal accepted repair exposes the sole future, so the whole version
-    space collapses to one behavioural class. -/
 theorem consequentially_confluent :
     ConsequentiallyConfluent V futureOf := by
   intro R₁ R₂ h₁ h₂ f
@@ -134,13 +127,10 @@ theorem consequentially_confluent :
 
 end EquivalentWitness
 
-/- Witness B: verifier acceptance alone does NOT guarantee consequential
-   confluence. Two minimal accepted repairs may expose genuinely different
-   futures. -/
 namespace DivergentWitness
 
 inductive Idx where | left | right
-inductive Fut where | alpha | beta deriving DecidableEq
+inductive Fut where | alpha | beta
 
 def V : RepairVerifier Idx where
   accepts := fun R => R .left ∨ R .right
@@ -164,57 +154,58 @@ theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
   · intro S hS hsub i hi
-    have hSleft : S .left := by
-      rcases hS with hleft | hright
-      · exact hleft
-      · exact (hsub .right hright).elim
     cases i with
-    | left => exact hSleft
-    | right => exact hi.elim
+    | left =>
+        rcases hS with hleft | hright
+        · exact hleft
+        · have hf : False := hsub .right hright
+          exact hf.elim
+    | right =>
+        have hf : False := hi
+        exact hf.elim
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
   · intro S hS hsub i hi
-    have hSright : S .right := by
-      rcases hS with hleft | hright
-      · exact (hsub .left hleft).elim
-      · exact hright
     cases i with
-    | left => exact hi.elim
-    | right => exact hSright
+    | left =>
+        have hf : False := hi
+        exact hf.elim
+    | right =>
+        rcases hS with hleft | hright
+        · have hf : False := hsub .left hleft
+          exact hf.elim
+        · exact hright
 
-/-- Alpha is reachable under the left repair. -/
 theorem alpha_left : RepairReachable futureOf leftRepair .alpha :=
   ⟨.left, trivial, rfl⟩
 
-/-- Alpha is not reachable under the right repair. -/
 theorem alpha_not_right : ¬ RepairReachable futureOf rightRepair .alpha := by
   rintro ⟨i, hi, hif⟩
   cases i with
-  | left => exact hi
-  | right => cases hif
+  | left =>
+      have hf : False := hi
+      exact hf
+  | right =>
+      cases hif
 
-/-- Therefore the two minimal accepted repairs are not behaviourally
-    equivalent. -/
 theorem not_behaviorally_equivalent :
     ¬ RepairEquivalent futureOf leftRepair rightRepair := by
   intro h
   exact alpha_not_right ((h .alpha).1 alpha_left)
 
-/-- Generic verifier success therefore does not determine even one behavioural
-    next state. -/
 theorem verifier_not_consequentially_confluent :
     ¬ ConsequentiallyConfluent V futureOf := by
   intro h
-  exact not_behaviorally_equivalent (h leftRepair rightRepair left_minimal right_minimal)
+  exact not_behaviorally_equivalent
+    (h leftRepair rightRepair left_minimal right_minimal)
 
 end DivergentWitness
 
-/-- Cycle-6 conclusion: the correct purified object after verifier failure is a
-    version space of minimal accepted repairs. Quotienting by future behaviour
-    can recover a unique class only when consequential confluence holds; that
-    confluence is not implied by verifier acceptance alone. -/
+/-- Cycle 6: the generic post-verifier object is a minimal-repair version space.
+    Syntactic nonuniqueness may collapse under future behaviour, but verifier
+    acceptance alone need not make the quotient confluent. -/
 theorem version_space_quotient_is_the_correct_boundary :
     (∃ (I F : Type) (V : RepairVerifier I) (futureOf : I → F)
         (R₁ R₂ : Repair I),
