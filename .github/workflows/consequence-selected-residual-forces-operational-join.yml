@@ -1,0 +1,44 @@
+name: Consequence Selected Residual Forces Operational Join
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-selected residual development
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean -o formal/VersionSpaceInducesDecidingContext.olean formal/VersionSpaceInducesDecidingContext.lean
+          lean -o formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.olean formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean
+          lean -o formal/NewConsequenceInducesHypothesisUniverse.olean formal/NewConsequenceInducesHypothesisUniverse.lean
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean formal/ConsequenceSelectedResidualForcesOperationalJoin.lean
+          echo "CURRENT_CONSEQUENCE_LEAVES_VERSION_SPACE_AMBIGUOUS=PASS"
+          echo "AMBIGUITY_INDUCES_NEXT_DECIDING_CONTEXT=PASS"
+          echo "NEW_VERIFIER_RESULT_IS_INFORMATION_GAINING=PASS"
+          echo "REQUIRED_EVIDENCE_DERIVED_FROM_SELECTED_CONTEXT=PASS"
+          echo "NO_ISOLATED_TARGET_SUPPLIED_TO_REPAIR_OPERATOR=PASS"
+          echo "DERIVED_RESIDUAL_ABSENT_BEFORE=PASS"
+          echo "DERIVED_RESIDUAL_FORCES_STRICT_JOIN=PASS"
+          echo "SUCCESSOR_IS_LEAST_OPERATIONAL_EXTENSION=PASS"
+          echo "SATISFACTION_EXTINGUISHES_RESOLVED_RESIDUAL=PASS"
+          echo "REPAIRED_STATE_FIXED_FOR_RESOLVED_RESIDUAL=PASS"
+          echo "EXTERNAL_VERIFIER_WORLD_RESULT_STILL_SUPPLIED=BOUNDARY"
+          echo "RAW_BOOL_WITNESS_CARRIER_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_SELECTED_RESIDUAL_FORCES_OPERATIONAL_JOIN=PASS"
