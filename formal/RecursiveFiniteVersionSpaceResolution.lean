@@ -54,9 +54,9 @@ theorem filterRepairs_length_lt_of_rejected
         simp [filterRepairs, hrejected]
         exact Nat.lt_succ_of_le (filterRepairs_length_le B truth f tail)
       · by_cases hA : B.predict A f = truth f
-        · simp [filterRepairs, hA]
+        · simp only [filterRepairs, hA, if_pos, List.length_cons, Nat.succ_lt_succ_iff]
           exact ih htail
-        · simp [filterRepairs, hA]
+        · simp only [filterRepairs, hA, if_neg, List.length_cons]
           exact Nat.lt_succ_of_le (filterRepairs_length_le B truth f tail)
 
 /-- Every ambiguity returned by the autonomous scan has at least one live
@@ -111,14 +111,17 @@ theorem resolveFuel_reaches_confluence
       intro rs hlen
       cases hscan : firstUnresolvedPair B rs with
       | none =>
-          simp [resolveFuel, hscan]
+          unfold resolveFuel
+          rw [hscan]
       | some triple =>
           rcases triple with ⟨R₁, R₂, f⟩
           have hlt : (filterRepairs B truth f rs).length < rs.length :=
             scan_step_strictly_decreases B truth hscan
           have hle : (filterRepairs B truth f rs).length ≤ n := by
             exact Nat.le_of_lt_succ (Nat.lt_of_lt_of_le hlt hlen)
-          simpa [resolveFuel, hscan] using ih (filterRepairs B truth f rs) hle
+          unfold resolveFuel
+          rw [hscan]
+          exact ih (filterRepairs B truth f rs) hle
 
 /-- The canonical finite resolver uses exactly the initial candidate count as
     fuel; no externally chosen iteration bound is required. -/
@@ -186,7 +189,13 @@ theorem singleton_scan :
 /-- The concrete two-repair ambiguity resolves to the verifier-consistent class. -/
 theorem recursive_resolution_keeps_left :
     resolve basis truth [leftRepair, rightRepair] = [leftRepair] := by
-  simp [resolve, resolveFuel, initial_scan, alpha_filter, singleton_scan]
+  unfold resolve
+  simp only [List.length_cons, List.length_nil]
+  unfold resolveFuel
+  rw [initial_scan]
+  rw [alpha_filter]
+  unfold resolveFuel
+  rw [singleton_scan]
 
 end Witness
 
