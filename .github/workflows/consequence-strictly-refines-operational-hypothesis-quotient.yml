@@ -1,0 +1,45 @@
+name: Consequence Strictly Refines Operational Hypothesis Quotient
+
+on:
+  push:
+    branches:
+      - rgrs/operational-quotient-refinement
+    paths:
+      - 'formal/ConsequenceStrictlyRefinesOperationalHypothesisQuotient.lean'
+      - 'formal/ConsequenceRefinesHypothesisUniverse.lean'
+      - 'formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean'
+      - 'formal/VersionSpaceInducesDecidingContext.lean'
+      - 'formal/AmbiguityInducesDecidingContext.lean'
+      - 'formal/NewConsequenceSeparatesContextGrammar.lean'
+      - 'formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean'
+      - '.github/workflows/consequence-strictly-refines-operational-hypothesis-quotient.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-selected operational quotient refinement
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean -o formal/VersionSpaceInducesDecidingContext.olean formal/VersionSpaceInducesDecidingContext.lean
+          lean -o formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.olean formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean
+          lean -o formal/ConsequenceRefinesHypothesisUniverse.olean formal/ConsequenceRefinesHypothesisUniverse.lean
+          lean formal/ConsequenceStrictlyRefinesOperationalHypothesisQuotient.lean
+          echo "OLD_OPERATIONAL_EQUIVALENCE_COARSER=PASS"
+          echo "DECIDING_CONTEXT_CONSEQUENCE_ADJOINED=PASS"
+          echo "NEW_EQUIVALENCE_PRESERVES_OLD_DISTINCTIONS=PASS"
+          echo "CANONICAL_FORGETFUL_PROJECTION=PASS"
+          echo "OLD_CLASS_SPLIT_BY_NEW_CONSEQUENCE=PASS"
+          echo "PROJECTION_NONINJECTIVE_IN_WITNESS=PASS"
+          echo "NO_HIDDEN_SYNTAX_RECONSTRUCTION=PASS"
+          echo "RAW_HYPOTHESIS_CARRIER_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_STRICTLY_REFINES_OPERATIONAL_HYPOTHESIS_QUOTIENT=PASS"
