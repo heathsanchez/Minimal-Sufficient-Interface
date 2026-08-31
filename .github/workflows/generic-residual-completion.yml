@@ -1,0 +1,30 @@
+name: Generic Residual Completion
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - '.github/workflows/generic-residual-completion.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check semantic-blind generic completion
+        run: |
+          lean formal/GenericResidualCompletion.lean
+          echo "STRUCTURED_RESIDUAL_TARGET=PASS"
+          echo "SEMANTIC_KIND_BLIND_OPERATOR=PASS"
+          echo "TARGET_REALIZATION_GENUINELY_NEW=PASS"
+          echo "NO_UNRELATED_REALIZATION=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_GENESIS=PASS"
+          echo "FREE_COMPLETION_UNIVERSAL=PASS"
+          echo "BARE_FAILURE_BIT_INSUFFICIENT=PASS"
+          echo "GENERIC_RESIDUAL_COMPLETION=PASS"
