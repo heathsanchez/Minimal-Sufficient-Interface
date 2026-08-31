@@ -42,11 +42,19 @@ def Necessary (V : List Bool → Bool) (p : PairRole) : Prop :=
 
 theorem verifierA_requires_p0 :
     Necessary verifierA .p0 ∧ ¬ Necessary verifierA .p1 := by
-  decide
+  constructor
+  · rfl
+  · intro h
+    change verifierA [false] = false at h
+    simp [verifierA] at h
 
 theorem verifierB_requires_p1 :
     Necessary verifierB .p1 ∧ ¬ Necessary verifierB .p0 := by
-  decide
+  constructor
+  · rfl
+  · intro h
+    change verifierB [true] = false at h
+    simp [verifierB] at h
 
 /-- Both worlds expose the same entire passive input available to a selector:
     the same trace and the same verifier verdict. -/
