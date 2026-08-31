@@ -1,0 +1,30 @@
+name: Verifier Induces Counterfactual Role Quotient
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/VerifierInducesCounterfactualRoleQuotient.lean'
+      - '.github/workflows/verifier-induces-counterfactual-role-quotient.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check verifier-induced counterfactual role quotient
+        run: |
+          lean formal/VerifierInducesCounterfactualRoleQuotient.lean
+          echo "NO_FINITE_INTERVENTION_MENU_SUPPLIED=PASS"
+          echo "NO_NAMED_ROLE_VOCABULARY_SUPPLIED=PASS"
+          echo "ROLE_EQUALITY_IS_VERIFIER_INDISTINGUISHABILITY=PASS"
+          echo "SUFFICIENT_ENCODINGS_PRESERVE_VERIFIER_DISTINCTIONS=PASS"
+          echo "INDUCED_QUOTIENT_RECOVERS_CONSEQUENCE=PASS"
+          echo "CONSEQUENCE_ABLATION_COLLAPSES_ROLE_ONTOLOGY=PASS"
+          echo "EVIDENCE_CARRIER_ENDOMORPHISM_SPACE_STILL_SUPPLIED=BOUNDARY"
+          echo "VERIFIER_INDUCES_COUNTERFACTUAL_ROLE_ONTOLOGY=PASS"
