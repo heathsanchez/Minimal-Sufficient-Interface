@@ -35,7 +35,8 @@ theorem no_extensional_failure_implies_pointSeparating
     (hno : ¬ Nonempty (ExtensionalFailure observe C)) :
     PointSeparating observe C := by
   intro x y hagree
-  by_contra hxy
+  apply Classical.byContradiction
+  intro hxy
   exact hno ⟨{
     left := x
     right := y
