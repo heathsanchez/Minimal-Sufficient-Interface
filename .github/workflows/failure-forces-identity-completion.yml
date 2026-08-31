@@ -1,0 +1,28 @@
+name: Failure Forces Identity Completion
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check failure-forces-identity theorem
+        run: |
+          lean formal/FailureForcesIdentityCompletion.lean
+          echo "FAILURE_GENERATES_DEMAND=PASS"
+          echo "MISSING_SELF_TRANSPORT_EXPOSED=PASS"
+          echo "FAILURE_FORCES_NEW_SELF_TRANSPORT=PASS"
+          echo "NO_UNRELATED_TRANSPORT_ADDED=PASS"
+          echo "NO_OTHER_SELF_TRANSPORT_ADDED=PASS"
+          echo "FAILURE_SIGNAL_ABLATION_BLOCKS_IDENTITY_GENESIS=PASS"
+          echo "FAILURE_GENERATED_FREE_LIFT_UNIQUE=PASS"
+          echo "VERIFIED_FAILURE_FORCES_IDENTITY_AS_MINIMAL_COMPLETION=PASS"
