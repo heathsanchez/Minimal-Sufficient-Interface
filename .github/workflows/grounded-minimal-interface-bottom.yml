@@ -1,0 +1,36 @@
+name: Grounded Minimal Interface Bottom
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/GroundedMinimalInterfaceBottom.lean'
+      - 'formal/MinimalBipartiteConsequenceInterface.lean'
+      - 'formal/TerminalVerdictPolarityBoundary.lean'
+      - '.github/workflows/grounded-minimal-interface-bottom.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check grounded minimal interface bottom
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/MinimalBipartiteConsequenceInterface.olean formal/MinimalBipartiteConsequenceInterface.lean
+          lean -o formal/TerminalVerdictPolarityBoundary.olean formal/TerminalVerdictPolarityBoundary.lean
+          lean formal/GroundedMinimalInterfaceBottom.lean
+          echo "FULL_CONSEQUENCE_TABLE_HELD_FIXED=PASS"
+          echo "GENERATED_ROW_INTERFACE_HELD_FIXED=PASS"
+          echo "GENERATED_COLUMN_INTERFACE_HELD_FIXED=PASS"
+          echo "OPPOSITE_SEMANTIC_ORIENTATION_REMAINS=PASS"
+          echo "FULL_TABLE_CANNOT_SELF_ORIENT=PASS"
+          echo "GROUNDING_RECOVERS_ORIENTATION=PASS"
+          echo "CONSEQUENCE_GENERATES_INTERFACE_ABOVE_GROUNDING=PASS"
+          echo "EXTERNAL_ASYMMETRIC_GROUNDING_IS_IRREDUCIBLE_SEED=BOUNDARY"
+          echo "GROUNDED_MINIMAL_INTERFACE_BOTTOM=PASS"
