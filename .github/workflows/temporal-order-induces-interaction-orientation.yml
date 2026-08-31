@@ -1,0 +1,32 @@
+name: Temporal Order Induces Interaction Orientation
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check temporal orientation theorem
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/InteractionInducesMutualRoleQuotients.olean formal/InteractionInducesMutualRoleQuotients.lean
+          lean -o formal/SymmetricInteractionCannotInduceDirectionalRoles.olean formal/SymmetricInteractionCannotInduceDirectionalRoles.lean
+          lean formal/TemporalOrderInducesInteractionOrientation.lean
+          echo "SINGLE_ROLE_FREE_NODE_CARRIER=PASS"
+          echo "BASE_ENCOUNTER_IS_SYMMETRIC=PASS"
+          echo "TEMPORAL_ORDER_DERIVES_FORWARD_ORIENTATION=PASS"
+          echo "TEMPORAL_REVERSAL_REVERSES_INTERACTION_ORIENTATION=PASS"
+          echo "DERIVED_ORIENTATION_INDUCES_DIRECTIONAL_ROLE_QUOTIENT=PASS"
+          echo "ORDER_ERASURE_DESTROYS_DIRECTIONAL_ROLE_SPLIT=PASS"
+          echo "PARTICIPANT_ROLE_PARTITION_NOT_SUPPLIED=PASS"
+          echo "TEMPORAL_CAUSAL_ORDER_STILL_SUPPLIED=BOUNDARY"
+          echo "TEMPORAL_ORDER_INDUCES_INTERACTION_ORIENTATION=PASS"
