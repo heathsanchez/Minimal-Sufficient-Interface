@@ -18,11 +18,18 @@ structure GlobalSupportMismatch (I : Type u) where
     not passed to the repair kernel as an external choice. -/
 theorem global_mismatch_localizes {I : Type u} (g : GlobalSupportMismatch I) :
     ∃ i : I, g.current i ≠ g.required i := by
-  by_contra hnone
-  apply g.mismatch
-  funext i
-  by_contra hi
-  exact hnone ⟨i, hi⟩
+  classical
+  by_cases h : ∃ i : I, g.current i ≠ g.required i
+  · exact h
+  · have hall : ∀ i : I, g.current i = g.required i := by
+      intro i
+      by_cases hi : g.current i = g.required i
+      · exact hi
+      · exact False.elim (h ⟨i, hi⟩)
+    exfalso
+    apply g.mismatch
+    funext i
+    exact hall i
 
 /-- Compile a localized profile disagreement into the Cycle-5 support defect.
     This carries no semantic failure-mode label. -/
