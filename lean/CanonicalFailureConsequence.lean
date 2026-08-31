@@ -72,7 +72,7 @@ theorem target_witness_is_necessary_for_universal_generation (target : Ω) :
     ¬ Nonempty ((Path G target target) →
       (emptyClosedObservation G).carrier target) := by
   intro h
-  exact h.elim (fun f => f (Path.refl target))
+  exact h.elim (fun f => PEmpty.elim (f (Path.refl target)))
 
 theorem canonical_failure_consequence_certificate
     (r : VerifiedFailure G) :
