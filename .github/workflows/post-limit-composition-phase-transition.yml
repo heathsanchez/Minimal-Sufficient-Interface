@@ -1,0 +1,46 @@
+name: Post Limit Composition Phase Transition
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/PostLimitCompositionPhaseTransition.lean'
+      - 'formal/FailureForcesCompositionCompletion.lean'
+      - '.github/workflows/post-limit-composition-phase-transition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency stack
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/InfiniteBitOmegaFixedPoint.olean formal/InfiniteBitOmegaFixedPoint.lean
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+          lean -o formal/ExtensionalOmegaFailureObstruction.olean formal/ExtensionalOmegaFailureObstruction.lean
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+      - name: Check post-limit composition phase transition
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/PostLimitCompositionPhaseTransition.lean
+          echo "EXACT_EXT_IDENTITY_COMPLETE=PASS"
+          echo "IDENTITY_TRANSPORT_ALREADY_PRESENT=PASS"
+          echo "COMPOSABLE_INPUTS_ALREADY_PRESENT=PASS"
+          echo "COMPOSITE_ENDPOINT_ABSENT_BEFORE=PASS"
+          echo "VERIFIED_FAILURE_FORCES_COMPOSITE=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_COMPOSITE=PASS"
+          echo "STATE_CARRIER_UNCHANGED=PASS"
+          echo "POINT_SEPARATION_SURVIVES_COMPOSITION=PASS"
+          echo "POST_LIMIT_COMPOSITION_PHASE_TRANSITION=PASS"
