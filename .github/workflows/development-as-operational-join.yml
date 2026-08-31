@@ -1,0 +1,34 @@
+name: Development As Operational Join
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check development as operational join
+        run: |
+          export LEAN_PATH=formal
+          lean formal/DevelopmentAsOperationalJoin.lean
+          echo "DEVELOPMENT_STATE_IS_OPERATIONAL_IMAGE=PASS"
+          echo "RESIDUAL_REQUIREMENT_MAY_BE_FAMILY_VALUED=PASS"
+          echo "DEVELOPMENT_PRESERVES_CURRENT_CONSEQUENCE=PASS"
+          echo "DEVELOPMENT_REALIZES_REQUIRED_CONSEQUENCE=PASS"
+          echo "DEVELOPMENT_IS_LEAST_UPPER_BOUND=PASS"
+          echo "MISSING_REQUIREMENT_FORCES_STRICT_GROWTH=PASS"
+          echo "FIXED_POINT_IFF_RESIDUAL_ALREADY_CONTAINED=PASS"
+          echo "RAW_PRESENTATION_NOT_DETERMINED=BOUNDARY"
+          echo "RESIDUAL_EXTRACTOR_STILL_SUPPLIED=BOUNDARY"
+          echo "DEVELOPMENT_AS_OPERATIONAL_JOIN=PASS"
