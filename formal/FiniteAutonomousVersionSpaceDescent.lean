@@ -37,11 +37,11 @@ theorem mem_filterRepairs_implies_mem
           RecursiveFiniteVersionSpaceResolution.filterRepairs, hA, if_pos,
           List.mem_cons] at h
         rcases h with hRA | htail
-        · exact Or.inl hRA
-        · exact Or.inr (ih htail)
+        · exact List.mem_cons.mpr (Or.inl hRA)
+        · exact List.mem_cons.mpr (Or.inr (ih htail))
       · simp only [filterRepairs,
-          RecursiveFiniteVersionSpaceResolution.filterRepairs, hA, if_neg] at h
-        exact Or.inr (ih h)
+          RecursiveFiniteVersionSpaceResolution.filterRepairs, hA] at h
+        exact List.mem_cons.mpr (Or.inr (ih h))
 
 /-- If one listed repair disagrees with the verified outcome, filtering strictly
     shortens the finite version space. This is the well-founded measure. -/
