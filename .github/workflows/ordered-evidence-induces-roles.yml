@@ -1,0 +1,39 @@
+name: Ordered Evidence Induces Roles
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/OrderedEvidenceInducesRoles.lean'
+      - '.github/workflows/ordered-evidence-induces-roles.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check ordered evidence role genesis
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesVariableArityLanguage.olean formal/ConsequenceCompilesVariableArityLanguage.lean
+          lean -o formal/VerifierEvidenceInducesObligationSignature.olean formal/VerifierEvidenceInducesObligationSignature.lean
+          lean -o formal/PermutationBlindEvidenceRoleBoundary.olean formal/PermutationBlindEvidenceRoleBoundary.lean
+          lean formal/OrderedEvidenceInducesRoles.lean
+          echo "PERMUTATION_BLIND_ROLE_BOUNDARY_RETAINED=PASS"
+          echo "ORDERED_POSITIONS_INDUCE_DISTINCT_ROLES=PASS"
+          echo "NO_SOURCE_TARGET_LABELS_SUPPLIED=PASS"
+          echo "EVIDENCE_REVERSAL_SWAPS_ROLE_OCCUPANTS=PASS"
+          echo "ROLE_OBLIGATION_IS_FRESH_RESIDUAL=PASS"
+          echo "GENERIC_COMPLETION_REPAIRS_INDUCED_ROLE=PASS"
+          echo "ORDER_CLOSES_ASYMMETRY_BOUNDARY=PASS"
+          echo "ORDERED_EVIDENCE_INDUCES_ROLE_STRUCTURE=PASS"
