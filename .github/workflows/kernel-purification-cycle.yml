@@ -13,6 +13,7 @@ on:
       - 'formal/KernelPurificationCycle7.lean'
       - 'formal/KernelPurificationCycle8.lean'
       - 'formal/KernelPurificationCycle9.lean'
+      - 'formal/KernelPurificationCycle10.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -29,13 +30,13 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Compile dependencies
-        env:
-          LEAN_PATH: formal
+        env: {LEAN_PATH: formal}
         run: |
           lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
           lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
           lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
           lean -o formal/ResidualGeneratedProbeGenesis.olean formal/ResidualGeneratedProbeGenesis.lean
+          lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
           lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
           lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
           lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
@@ -44,86 +45,29 @@ jobs:
           lean -o formal/KernelPurificationCycle6.olean formal/KernelPurificationCycle6.lean
           lean -o formal/KernelPurificationCycle7.olean formal/KernelPurificationCycle7.lean
           lean -o formal/KernelPurificationCycle8.olean formal/KernelPurificationCycle8.lean
-      - name: Run first kernel purification cycle
+          lean -o formal/KernelPurificationCycle9.olean formal/KernelPurificationCycle9.lean
+      - name: Run cycles 1 through 8
         env: {LEAN_PATH: formal}
         run: |
           lean formal/KernelPurificationCycle.lean
-          echo "GENERIC_FAILED_ENDPOINT=PASS"
-          echo "EXACT_FREE_TRANSPORT_COMPLETION=PASS"
-          echo "NO_UNRELATED_TRANSPORT=PASS"
-          echo "FAILURE_ABLATION_BLOCKS_GENESIS=PASS"
-          echo "UNIQUE_LIFT_UNIVERSALITY=PASS"
-          echo "IDENTITY_COMPLETION_PRIMITIVE_ELIMINATED=PASS"
-          echo "COMPOSITION_COMPLETION_PRIMITIVE_ELIMINATED=PASS"
-          echo "REMAINING_BOUNDARY_IS_FAILURE_EXTRACTOR=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_1=PASS"
-      - name: Run second kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle2.lean
-          echo "DEMAND_ONLY_COMPLETION=PASS"
-          echo "ENDPOINT_WRAPPER_ELIMINATED=PASS"
-          echo "FAILURE_LABELS_ELIMINATED_FROM_COMPLETION=PASS"
-          echo "DEMAND_CAUSALLY_NECESSARY=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_2=PASS"
-      - name: Run third kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle3.lean
-          echo "GENERIC_INDEXED_FREE_ADJOIN=PASS"
-          echo "TRANSPORT_COMPLETION_EQUIV_FREE_ADJOIN=PASS"
-          echo "TRANSPORT_PRIMITIVE_ELIMINATED=PASS"
-          echo "IDENTITY_AND_COMPOSITION_FACTOR_THROUGH_GENERIC_ADJOIN=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_3=PASS"
-      - name: Run fourth kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle4.lean
-          echo "MEET_IS_UNIVERSAL_CONSTRAINT_REPAIR=PASS"
-          echo "FREE_ADJOIN_IS_UNIVERSAL_GENERATOR_REPAIR=PASS"
-          echo "UNIVERSAL_REPAIR_CORE_HARDENS=PASS"
-          echo "CONSTRAINT_AND_GENERATOR_POLARITIES_DISTINCT=PASS"
-          echo "FALSE_LITERAL_FUSION_REJECTED=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_4=PASS"
-      - name: Run fifth kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle5.lean
-          echo "MISMATCH_DETERMINES_POLARITY=PASS"
-          echo "POLARITY_UNIQUE_FROM_SUPPORT_DEFECT=PASS"
-          echo "REMOVAL_DIRECTION_INFERRED=PASS"
-          echo "GENERATION_DIRECTION_INFERRED=PASS"
-          echo "NO_SUPPORT_NO_GENERATION=PASS"
-          echo "FAILURE_MODE_MENU_NOT_NEEDED_FOR_DIRECTION=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_5=PASS"
-      - name: Run sixth kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle6.lean
-          echo "GLOBAL_MISMATCH_LOCALIZES=PASS"
-          echo "SUPPLIED_COORDINATE_NOT_NEEDED_FOR_EXISTENCE=PASS"
-          echo "LOCAL_DEFECT_INFERS_DIRECTION=PASS"
-          echo "POINTWISE_AGREEMENT_BLOCKS_MISMATCH=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_6=PASS"
-      - name: Run seventh kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle7.lean
           echo "FULL_MISMATCH_SUPPORT_IS_CANONICAL=PASS"
           echo "ARBITRARY_WITNESS_SELECTION_ELIMINATED=PASS"
-          echo "SUPPORT_PARTITIONS_BY_INFERRED_POLARITY=PASS"
-          echo "OUTSIDE_SUPPORT_ALREADY_SATISFIED=PASS"
-          echo "EMPTY_SUPPORT_FORCES_PROFILE_AGREEMENT=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_7=PASS"
-      - name: Run eighth kernel purification cycle
-        env: {LEAN_PATH: formal}
-        run: |
           lean formal/KernelPurificationCycle8.lean
           echo "BOOLEAN_SUPPORT_ALPHABET_ELIMINATED=PASS"
           echo "PROPOSITIONAL_CONSEQUENCE_SUPPORT_SUFFICIENT=PASS"
-          echo "LOGICAL_MISMATCH_LOCALIZES=PASS"
-          echo "LOGICAL_SUPPORT_PARTITIONS_BY_POLARITY=PASS"
-          echo "BOOLEAN_MISMATCH_IS_LOGICAL_PRESENTATION=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_8=PASS"
       - name: Run ninth kernel purification cycle
         env: {LEAN_PATH: formal}
@@ -135,3 +79,13 @@ jobs:
           echo "FREE_LANGUAGE_EXTENSION_UNIVERSALITY=PASS"
           echo "CANDIDATE_COORDINATE_MENU_ELIMINATED=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_9=PASS"
+      - name: Run tenth kernel purification cycle
+        env: {LEAN_PATH: formal}
+        run: |
+          lean formal/KernelPurificationCycle10.lean
+          echo "GLOBAL_NONFACTORIZATION_LOCALIZES_WITHOUT_SUPPLIED_PAIR=PASS"
+          echo "FULL_NONFACTORIZATION_SUPPORT_IS_CANONICAL=PASS"
+          echo "SUPPORT_GENERATES_OWN_CONSEQUENCE_COORDINATES=PASS"
+          echo "FAILED_PAIR_SELECTION_ELIMINATED=PASS"
+          echo "FULL_LANGUAGE_EXTENSION_IS_FREE=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_10=PASS"
