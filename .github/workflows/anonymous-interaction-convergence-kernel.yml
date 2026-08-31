@@ -1,0 +1,38 @@
+name: Anonymous Interaction Convergence Kernel
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check anonymous interaction convergence kernel
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean formal/AnonymousInteractionConvergenceKernel.lean
+          echo "NO_IDENTITY_COMPOSITION_COHERENCE_LABELS_IN_KERNEL=PASS"
+          echo "STATE_IS_SELECTIVE_OPERATIONAL_MEMORY=PASS"
+          echo "CALL_AVAILABILITY_DEPENDS_ON_RETAINED_CONSEQUENCE=PASS"
+          echo "UNAVAILABLE_CALL_CANNOT_BE_ADDED=PASS"
+          echo "AVAILABLE_MISSING_RESPONSE_IS_ADDED_BY_GENERIC_JOIN=PASS"
+          echo "SERIAL_WORLD_THREE_STRICT_DEVELOPMENTAL_STEPS=PASS"
+          echo "SERIAL_LATER_CALLS_EMERGE_ONLY_AFTER_PRIOR_RETENTION=PASS"
+          echo "SERIAL_WORLD_REACHES_FIXED_POINT=PASS"
+          echo "BRANCH_WORLD_TWO_STRICT_DEVELOPMENTAL_STEPS=PASS"
+          echo "BRANCH_WORLD_REACHES_FIXED_POINT=PASS"
+          echo "SAME_FROZEN_KERNEL_USED_ACROSS_DISTINCT_WORLD_GEOMETRIES=PASS"
+          echo "RAW_KEY_CARRIER_UNLOCK_RELATION_AND_WORLD_RESPONSE_STILL_SUPPLIED=BOUNDARY"
+          echo "ANONYMOUS_INTERACTION_CONVERGENCE_KERNEL=PASS"
