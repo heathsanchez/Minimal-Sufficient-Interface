@@ -15,6 +15,7 @@ on:
       - 'formal/KernelPurificationCycle9.lean'
       - 'formal/KernelPurificationCycle10.lean'
       - 'formal/KernelPurificationCycle11.lean'
+      - 'formal/KernelPurificationCycle12.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -49,6 +50,7 @@ jobs:
           lean -o formal/KernelPurificationCycle8.olean formal/KernelPurificationCycle8.lean
           lean -o formal/KernelPurificationCycle9.olean formal/KernelPurificationCycle9.lean
           lean -o formal/KernelPurificationCycle10.olean formal/KernelPurificationCycle10.lean
+          lean -o formal/KernelPurificationCycle11.olean formal/KernelPurificationCycle11.lean
       - name: Run cycles 1 through 8
         env: {LEAN_PATH: formal}
         run: |
@@ -102,3 +104,13 @@ jobs:
           echo "FAILURE_GENERATES_FULL_RESIDUAL_LANGUAGE=PASS"
           echo "REVERSE_TRANSPORT_ABLATION_BLOCKS_GENERATED_SEPARATION=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_11=PASS"
+      - name: Run twelfth kernel purification cycle
+        env: {LEAN_PATH: formal}
+        run: |
+          lean formal/KernelPurificationCycle12.lean
+          echo "FAILURE_GENERATES_CONSEQUENCE_AND_REPAIR=PASS"
+          echo "LEAST_REFINEMENT_RESTORES_FACTORIZATION=PASS"
+          echo "OLD_REPRESENTATION_AND_LANGUAGE_PRESERVED=PASS"
+          echo "TRIGGERING_OBLIGATION_CLOSED_AFTER_REPAIR=PASS"
+          echo "ONE_FULL_DEVELOPMENTAL_TURN=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_12=PASS"
