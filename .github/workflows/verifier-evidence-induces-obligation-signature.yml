@@ -4,6 +4,12 @@ on:
   push:
     branches: [remove-finite-open-development-v16]
     paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/ResidualGeneratesNextObligation.lean'
+      - 'formal/ConsequenceDeterminesSelection.lean'
+      - 'formal/ConsequenceSelectsObligationGenerator.lean'
+      - 'formal/ConsequenceCompilesObligationGenerator.lean'
+      - 'formal/ConsequenceCompilesVariableArityLanguage.lean'
       - 'formal/VerifierEvidenceInducesObligationSignature.lean'
       - '.github/workflows/verifier-evidence-induces-obligation-signature.yml'
   workflow_dispatch:
