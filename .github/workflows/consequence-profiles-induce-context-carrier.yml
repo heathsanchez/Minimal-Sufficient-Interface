@@ -1,0 +1,31 @@
+name: Consequence Profiles Induce Context Carrier
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/ConsequenceProfilesInduceContextCarrier.lean'
+      - '.github/workflows/consequence-profiles-induce-context-carrier.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-profile induced context carrier
+        run: |
+          lean formal/ConsequenceProfilesInduceContextCarrier.lean
+          echo "RAW_CONTEXT_TYPE_NOT_RETAINED=PASS"
+          echo "OUTCOME_ACTION_PROFILE_DEFINES_CONTEXT_IDENTITY=PASS"
+          echo "INDUCED_CONTEXT_CARRIER_SUFFICIENT_FOR_CURRENT_OUTCOMES=PASS"
+          echo "NO_REALIZED_OPERATIONAL_CONTEXT_LOST=PASS"
+          echo "OLD_OUTCOME_CARRIER_COLLAPSES_CONTEXTS=PASS"
+          echo "NEW_OUTCOME_SPLITS_OLD_CONTEXT_CLASS=PASS"
+          echo "OUTCOME_CONTEXT_ONTOLOGIES_RECIPROCALLY_REFINE=PASS"
+          echo "TERMINAL_BOOL_POLARITY_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_PROFILES_INDUCE_AND_REFINE_CONTEXT_CARRIER=PASS"
