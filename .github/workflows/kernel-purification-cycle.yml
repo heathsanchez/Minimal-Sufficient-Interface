@@ -11,6 +11,7 @@ on:
       - 'formal/KernelPurificationCycle5.lean'
       - 'formal/KernelPurificationCycle6.lean'
       - 'formal/KernelPurificationCycle7.lean'
+      - 'formal/KernelPurificationCycle8.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -39,6 +40,7 @@ jobs:
           lean -o formal/KernelPurificationCycle4.olean formal/KernelPurificationCycle4.lean
           lean -o formal/KernelPurificationCycle5.olean formal/KernelPurificationCycle5.lean
           lean -o formal/KernelPurificationCycle6.olean formal/KernelPurificationCycle6.lean
+          lean -o formal/KernelPurificationCycle7.olean formal/KernelPurificationCycle7.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -117,3 +119,14 @@ jobs:
           echo "OUTSIDE_SUPPORT_ALREADY_SATISFIED=PASS"
           echo "EMPTY_SUPPORT_FORCES_PROFILE_AGREEMENT=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_7=PASS"
+      - name: Run eighth kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle8.lean
+          echo "BOOLEAN_SUPPORT_ALPHABET_ELIMINATED=PASS"
+          echo "PROPOSITIONAL_CONSEQUENCE_SUPPORT_SUFFICIENT=PASS"
+          echo "LOGICAL_MISMATCH_LOCALIZES=PASS"
+          echo "LOGICAL_SUPPORT_PARTITIONS_BY_POLARITY=PASS"
+          echo "BOOLEAN_MISMATCH_IS_LOGICAL_PRESENTATION=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_8=PASS"
