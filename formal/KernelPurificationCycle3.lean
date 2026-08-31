@@ -7,71 +7,71 @@ open FailureForcesCompositionCompletion
 open KernelPurificationCycle
 open KernelPurificationCycle2
 
-universe u v w
+universe u v z
 
 /-- Purified constructive kernel: an indexed family of retained structure plus
-    an indexed family of consequence-forced generators.  No transport, identity,
-    composition, endpoint, or failure vocabulary occurs here. -/
+    an indexed proposition of consequence-forced generators.  No transport,
+    identity, composition, endpoint, or failure vocabulary occurs here. -/
 inductive FreeAdjoin {I : Type u}
-    (Old : I → Type v) (Gen : I → Type w) : I → Type (max v w) where
+    (Old : I → Type v) (Gen : I → Prop) : I → Type v where
   | old {i : I} : Old i → FreeAdjoin Old Gen i
   | forced {i : I} : Gen i → FreeAdjoin Old Gen i
 
 /-- Every retained inhabitant survives generic free adjunction. -/
-def freeRetain {I : Type u} {Old : I → Type v} {Gen : I → Type w}
+def freeRetain {I : Type u} {Old : I → Type v} {Gen : I → Prop}
     {i : I} : Old i → FreeAdjoin Old Gen i :=
   FreeAdjoin.old
 
 /-- Every certified generator is realized by generic free adjunction. -/
-def freeGenerate {I : Type u} {Old : I → Type v} {Gen : I → Type w}
+def freeGenerate {I : Type u} {Old : I → Type v} {Gen : I → Prop}
     {i : I} : Gen i → FreeAdjoin Old Gen i :=
   FreeAdjoin.forced
 
 /-- Universal eliminator: interpreting old structure and forced generators is
     sufficient to interpret the completed family. -/
 def freeLift {I : Type u}
-    {Old : I → Type v} {Gen : I → Type w}
-    (H : I → Type*)
-    (oldMap : ∀ {i}, Old i → H i)
-    (genMap : ∀ {i}, Gen i → H i) :
-    ∀ {i}, FreeAdjoin Old Gen i → H i
+    {Old : I → Type v} {Gen : I → Prop}
+    (H : I → Type z)
+    (oldMap : ∀ {i : I}, Old i → H i)
+    (genMap : ∀ {i : I}, Gen i → H i) :
+    ∀ {i : I}, FreeAdjoin Old Gen i → H i
   | _, .old h => oldMap h
   | _, .forced g => genMap g
 
 theorem freeLift_old {I : Type u}
-    {Old : I → Type v} {Gen : I → Type w}
-    (H : I → Type*)
-    (oldMap : ∀ {i}, Old i → H i)
-    (genMap : ∀ {i}, Gen i → H i)
+    {Old : I → Type v} {Gen : I → Prop}
+    (H : I → Type z)
+    (oldMap : ∀ {i : I}, Old i → H i)
+    (genMap : ∀ {i : I}, Gen i → H i)
     {i : I} (h : Old i) :
     freeLift H oldMap genMap (FreeAdjoin.old h) = oldMap h := rfl
 
 theorem freeLift_forced {I : Type u}
-    {Old : I → Type v} {Gen : I → Type w}
-    (H : I → Type*)
-    (oldMap : ∀ {i}, Old i → H i)
-    (genMap : ∀ {i}, Gen i → H i)
+    {Old : I → Type v} {Gen : I → Prop}
+    (H : I → Type z)
+    (oldMap : ∀ {i : I}, Old i → H i)
+    (genMap : ∀ {i : I}, Gen i → H i)
     {i : I} (g : Gen i) :
     freeLift H oldMap genMap (FreeAdjoin.forced g) = genMap g := rfl
 
 /-- Pointwise uniqueness of the generic extension once its action on retained
     structure and new generators is fixed. -/
 theorem freeLift_unique {I : Type u}
-    {Old : I → Type v} {Gen : I → Type w}
-    (H : I → Type*)
-    (oldMap : ∀ {i}, Old i → H i)
-    (genMap : ∀ {i}, Gen i → H i)
-    (f : ∀ {i}, FreeAdjoin Old Gen i → H i)
-    (hold : ∀ {i} (h : Old i), f (FreeAdjoin.old h) = oldMap h)
-    (hgen : ∀ {i} (g : Gen i), f (FreeAdjoin.forced g) = genMap g) :
-    ∀ {i} (z : FreeAdjoin Old Gen i),
-      f z = freeLift H oldMap genMap z := by
-  intro i z
-  cases z with
+    {Old : I → Type v} {Gen : I → Prop}
+    (H : I → Type z)
+    (oldMap : ∀ {i : I}, Old i → H i)
+    (genMap : ∀ {i : I}, Gen i → H i)
+    (f : ∀ {i : I}, FreeAdjoin Old Gen i → H i)
+    (hold : ∀ {i : I} (h : Old i), f (FreeAdjoin.old h) = oldMap h)
+    (hgen : ∀ {i : I} (g : Gen i), f (FreeAdjoin.forced g) = genMap g) :
+    ∀ {i : I} (q : FreeAdjoin Old Gen i),
+      f q = freeLift H oldMap genMap q := by
+  intro i q
+  cases q with
   | old h => exact hold h
   | forced g => exact hgen g
 
-/-- Transport-indexed data is only one instance of the generic indexed family. -/
+/-- Transport-indexed data is only one interpretation of the generic family. -/
 def TransportIndex (S : RawDirectedSubstrate) := S.Obj × S.Obj
 
 def oldTransportFamily (S : RawDirectedSubstrate) : TransportIndex S → Type :=
@@ -79,7 +79,7 @@ def oldTransportFamily (S : RawDirectedSubstrate) : TransportIndex S → Type :=
 
 def demandedGeneratorFamily
     (S : RawDirectedSubstrate) (D : CertifiedTransportDemand S) :
-    TransportIndex S → Type :=
+    TransportIndex S → Prop :=
   fun p => D.demanded p.1 p.2
 
 /-- Existing transport completion compiles into the purified free-adjoin kernel. -/
@@ -113,17 +113,17 @@ theorem free_transport_roundtrip
     transportToFree (freeToTransport h) = h := by
   cases h <;> rfl
 
-/-- Explicit equivalence: the transport completion used by cycles 1-2 contains
-    no additional constructive principle beyond generic indexed free adjunction. -/
+/-- Explicit equivalence: transport completion contains no additional
+    constructive principle beyond generic indexed free adjunction. -/
 def transportCompletionEquivFreeAdjoin
     {S : RawDirectedSubstrate} {D : CertifiedTransportDemand S}
     {x y : S.Obj} :
     CompletedTransportHom S D x y ≃
-      FreeAdjoin (oldTransportFamily S) (demandedGeneratorFamily S D) (x, y) where
-  toFun := transportToFree
-  invFun := freeToTransport
-  left_inv := transport_free_roundtrip
-  right_inv := free_transport_roundtrip
+      FreeAdjoin (oldTransportFamily S) (demandedGeneratorFamily S D) (x, y) :=
+  { toFun := transportToFree
+    invFun := freeToTransport
+    left_inv := transport_free_roundtrip
+    right_inv := free_transport_roundtrip }
 
 /-- A demanded transport is generated by the generic kernel, with transport
     appearing only in the indexing interpretation. -/
