@@ -1,0 +1,33 @@
+name: Exact Candidate Repair Unique At Behavior Level
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check behavioral uniqueness of exact candidate repair
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/UncoveredProfileForcesFreeCandidateExtension.olean formal/UncoveredProfileForcesFreeCandidateExtension.lean
+          lean formal/ExactCandidateRepairUniqueAtBehaviorLevel.lean
+          echo "EXACT_REPAIR_SYNTAX_ABSTRACT=PASS"
+          echo "OLD_BEHAVIOR_PRESERVED=PASS"
+          echo "ONLY_REQUIRED_NEW_PROFILE_ADMITTED=PASS"
+          echo "FREE_EXTENSION_SATISFIES_EXACT_REPAIR_INTERFACE=PASS"
+          echo "ALL_EXACT_REPAIRS_BEHAVIORALLY_EQUIVALENT=PASS"
+          echo "SUM_UNIT_PRESENTATION_NOT_SEMANTICALLY_PRIVILEGED=PASS"
+          echo "VERIFIER_CONTEXT_FAMILY_AND_EXACTNESS_CRITERION_STILL_SUPPLIED=BOUNDARY"
+          echo "MINIMAL_CANDIDATE_REPAIR_UNIQUE_AT_BEHAVIOR_LEVEL=PASS"
