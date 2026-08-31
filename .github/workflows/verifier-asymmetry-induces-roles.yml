@@ -1,0 +1,32 @@
+name: Verifier Asymmetry Induces Roles
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/VerifierAsymmetryInducesRoles.lean'
+      - 'formal/PermutationBlindEvidenceRoleBoundary.lean'
+      - '.github/workflows/verifier-asymmetry-induces-roles.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check verifier asymmetry role genesis
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/PermutationBlindEvidenceRoleBoundary.olean formal/PermutationBlindEvidenceRoleBoundary.lean
+          lean formal/VerifierAsymmetryInducesRoles.lean
+          echo "SWAP_BLIND_ROLE_GENESIS_IMPOSSIBLE=PASS"
+          echo "ONE_BIT_VERIFIER_ASYMMETRY_PRESENT=PASS"
+          echo "ASYMMETRY_INDUCES_OPPOSITE_ROLES=PASS"
+          echo "ASYMMETRY_ERASURE_RESTORES_SWAP_INVARIANCE=PASS"
+          echo "ERASURE_BLOCKS_ALL_OPPOSITE_ROLE_SELECTION=PASS"
+          echo "MINIMAL_DIRECTIONAL_INFORMATION_BOUNDARY=PASS"
+          echo "VERIFIER_ASYMMETRY_INDUCES_ROLES=PASS"
