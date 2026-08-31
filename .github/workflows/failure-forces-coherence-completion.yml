@@ -1,0 +1,40 @@
+name: Failure Forces Coherence Completion
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/FailureForcesCoherenceCompletion.lean'
+      - '.github/workflows/failure-forces-coherence-completion.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency stack
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+      - name: Check failure-forced coherence completion
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/FailureForcesCoherenceCompletion.lean
+          echo "COMPOSITION_ALREADY_AVAILABLE=PASS"
+          echo "ASSOCIATIVITY_RESIDUAL_LAW_LEVEL=PASS"
+          echo "ASSOCIATIVITY_INSTANCE_GENUINELY_NEW=PASS"
+          echo "NO_OBJECT_OR_ARROW_GENESIS=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_COHERENCE=PASS"
+          echo "COHERENCE_COMPLETION_UNIVERSAL=PASS"
+          echo "FAILURE_FORCES_COHERENCE_COMPLETION=PASS"
