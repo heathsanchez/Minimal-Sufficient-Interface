@@ -154,19 +154,39 @@ namespace Witness
 open BehavioralRepairVersionSpace.DivergentWitness
 open FiniteExecutableDistinguishingFuture.Witness
 
-/-- The concrete two-repair ambiguity resolves to the verifier-consistent class. -/
+/-- The concrete verifier truth prefers the left repair on the generated alpha
+    experiment. -/
 def truth : Fut → Bool
   | .alpha => true
   | .beta => false
 
-theorem recursive_resolution_keeps_left :
-    resolve basis truth [leftRepair, rightRepair] = [leftRepair] := by
+/-- The autonomous whole-version-space scan selects the divergent pair and its
+    executable alpha discriminator; no pair or question is supplied here. -/
+theorem initial_scan :
+    firstUnresolvedPair basis [leftRepair, rightRepair] =
+      some (leftRepair, rightRepair, .alpha) := by
+  simp [firstUnresolvedPair, firstAgainst,
+    FiniteExecutableDistinguishingFuture.Witness.computes_alpha]
+
+/-- Verifier truth on the generated alpha question removes exactly the
+    inconsistent right repair. -/
+theorem alpha_filter :
+    filterRepairs basis truth .alpha [leftRepair, rightRepair] = [leftRepair] := by
   classical
-  simp [resolve, resolveFuel, firstUnresolvedPair, firstAgainst,
-    FiniteExecutableDistinguishingFuture.Witness.computes_alpha,
-    filterRepairs, truth,
+  simp [filterRepairs, truth,
     FiniteExecutableDistinguishingFuture.Witness.basis,
     leftRepair, rightRepair]
+
+/-- Once only the surviving class remains, autonomous diagnosis reports no
+    unresolved pair. -/
+theorem singleton_scan :
+    firstUnresolvedPair basis [leftRepair] = none := by
+  simp [firstUnresolvedPair, firstAgainst]
+
+/-- The concrete two-repair ambiguity resolves to the verifier-consistent class. -/
+theorem recursive_resolution_keeps_left :
+    resolve basis truth [leftRepair, rightRepair] = [leftRepair] := by
+  simp [resolve, resolveFuel, initial_scan, alpha_filter, singleton_scan]
 
 end Witness
 
@@ -179,6 +199,9 @@ end Witness
 #check resolve
 #check recursive_finite_resolution_terminates_at_confluence
 #check recursive_survivors_are_consequentially_equivalent
+#check Witness.initial_scan
+#check Witness.alpha_filter
+#check Witness.singleton_scan
 #check Witness.recursive_resolution_keeps_left
 
 end RecursiveFiniteVersionSpaceResolution
