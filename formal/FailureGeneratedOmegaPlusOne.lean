@@ -102,42 +102,28 @@ theorem finite_not_complete (n : Nat) :
 
 theorem develop_finite_step (n : Nat) :
     develop (finiteStage n) = finiteStage (n + 1) := by
-  cases n with
-  | zero =>
-      apply Stage.ext
-      · funext k
-        apply propext
-        constructor
-        · intro h
-          rcases h with h | ⟨hr, _⟩
-          · exact False.elim h
-          · have hk : k ≤ 0 := reachable_finite_le hr
-            simpa using hk
-        · intro hk
-          have : k = 0 := Nat.eq_zero_of_le_zero (Nat.lt_one_iff.mp hk)
-          subst k
-          exact Or.inr ⟨fun j hj => False.elim (Nat.not_lt_zero j hj),
-            finite_coordinate_residual 0⟩
-      · funext p
-        apply propext
-        simp [develop, finiteStage, finite_not_complete]
-  | succ n =>
-      apply Stage.ext
-      · funext k
-        apply propext
-        constructor
-        · intro h
-          rcases h with hk | ⟨hr, _⟩
-          · exact Nat.lt_succ_of_lt hk
-          · exact Nat.lt_succ_iff.mpr (reachable_finite_le hr)
-        · intro hk
-          have hle : k ≤ n + 1 := Nat.lt_succ_iff.mp hk
-          rcases Nat.lt_or_eq_of_le hle with hlt | rfl
-          · exact Or.inl hlt
-          · exact Or.inr ⟨fun j hj => hj, finite_coordinate_residual (n + 1)⟩
-      · funext p
-        apply propext
-        simp [develop, finiteStage, finite_not_complete]
+  apply Stage.ext
+  · funext k
+    apply propext
+    constructor
+    · intro h
+      rcases h with hk | ⟨hr, _⟩
+      · exact Nat.lt_succ_of_lt hk
+      · exact Nat.lt_succ_iff.mpr (reachable_finite_le hr)
+    · intro hk
+      have hle : k ≤ n := Nat.lt_succ_iff.mp hk
+      rcases Nat.lt_or_eq_of_le hle with hlt | rfl
+      · exact Or.inl hlt
+      · exact Or.inr ⟨fun j hj => hj, finite_coordinate_residual n⟩
+  · funext p
+    apply propext
+    constructor
+    · intro h
+      rcases h with hold | ⟨hcomplete, _⟩
+      · exact hold
+      · exact False.elim (finite_not_complete n hcomplete)
+    · intro h
+      exact False.elim h
 
 def iterate : Nat → Stage
   | 0 => finiteStage 0
@@ -201,7 +187,8 @@ theorem omega_not_fixed : develop omegaStage ≠ omegaStage := by
   have hnew := omega_generates_every_singleton (0, false)
   have : ¬ omegaStage.generated (fun z => z = (0, false)) := by
     simp [omegaStage]
-  exact this (hp ▸ hnew)
+  rw [hp] at hnew
+  exact this hnew
 
 theorem omegaPlusOne_agrees_implies_eq {x y : World}
     (h : agrees omegaPlusOneStage x y) : x = y := by
