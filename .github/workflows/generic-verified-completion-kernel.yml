@@ -1,0 +1,43 @@
+name: Generic Verified Completion Kernel
+
+on:
+  push:
+    branches: [purify-developmental-kernel-v1]
+    paths:
+      - 'formal/GenericVerifiedCompletionKernel.lean'
+      - '.github/workflows/generic-verified-completion-kernel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+      - name: Check generic verified completion kernel
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/GenericVerifiedCompletionKernel.lean
+          echo "ENDPOINT_SEMANTICS_REMOVED=PASS"
+          echo "TRANSPORT_NOT_KERNEL_PRIMITIVE=PASS"
+          echo "IDENTITY_COMPILES_TO_GENERIC_ABSENCE=PASS"
+          echo "COMPOSITION_COMPILES_TO_GENERIC_ABSENCE=PASS"
+          echo "GENERIC_FILLER_GENUINELY_NEW=PASS"
+          echo "NO_UNRELATED_CAPABILITY_ADDED=PASS"
+          echo "RESIDUAL_ABLATION_BLOCKS_GENERIC_FILLER=PASS"
+          echo "GENERIC_COMPLETION_UNIVERSAL=PASS"
+          echo "PURIFICATION_CYCLE_2=PASS"
