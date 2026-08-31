@@ -36,6 +36,7 @@ def residualOfRejectedContext {X : Type u}
       simpa [hfail] using quotient_recovers_verifier_consequence V observed f
     change ExistingRealize V observed (roleOf V observed f) at w
     simp [ExistingRealize, hv] at w
+    exact nomatch w
 
 /-- The residual target is literally the quotient class induced by the failing
     verifier consequence. -/
@@ -75,13 +76,13 @@ theorem distinct_verifier_effects_induce_distinct_targets {X : Type u}
   rw [hf, hg] at heq
   contradiction
 
-/-- Concrete end-to-end witness. `flip` is rejected by the raw verifier, its
-    quotient class becomes the residual target, and the generic completion
-    freely realizes exactly that target. -/
+/-- Concrete end-to-end witness. The carrier-free `flip` context is rejected by
+    the raw verifier, its quotient class becomes the residual target, and the
+    generic completion freely realizes exactly that target. -/
 theorem verifier_consequence_to_ontology_to_least_repair :
     let V := witnessVerifier
     let x := witnessObserved
-    let f := flip
+    let f := VerifierInducesCarrierFreeContextQuotient.flip
     let r := residualOfRejectedContext V x f (by decide)
     r.target = roleOf V x f ∧
     (¬ Nonempty ((inducedCapabilityState V x).Realize r.target)) ∧
@@ -92,9 +93,10 @@ theorem verifier_consequence_to_ontology_to_least_repair :
       ((complete (inducedCapabilityState V x)
         (erasedDemand (inducedCapabilityState V x))).Realize r.target)) := by
   dsimp
-  let r := residualOfRejectedContext witnessVerifier witnessObserved flip (by decide)
+  let f := VerifierInducesCarrierFreeContextQuotient.flip
+  let r := residualOfRejectedContext witnessVerifier witnessObserved f (by decide)
   have hcore := rejected_context_forces_least_generic_completion
-    witnessVerifier witnessObserved flip (by decide)
+    witnessVerifier witnessObserved f (by decide)
   exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2⟩
 
 #check target_is_verifier_induced_role
