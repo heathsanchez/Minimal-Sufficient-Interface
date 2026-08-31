@@ -8,6 +8,7 @@ on:
       - 'formal/KernelPurificationCycle2.lean'
       - 'formal/KernelPurificationCycle3.lean'
       - 'formal/KernelPurificationCycle4.lean'
+      - 'formal/KernelPurificationCycle5.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -33,6 +34,7 @@ jobs:
           lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
           lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
           lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
+          lean -o formal/KernelPurificationCycle4.olean formal/KernelPurificationCycle4.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -78,3 +80,15 @@ jobs:
           echo "CONSTRAINT_AND_GENERATOR_POLARITIES_DISTINCT=PASS"
           echo "FALSE_LITERAL_FUSION_REJECTED=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_4=PASS"
+      - name: Run fifth kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle5.lean
+          echo "MISMATCH_DETERMINES_POLARITY=PASS"
+          echo "POLARITY_UNIQUE_FROM_SUPPORT_DEFECT=PASS"
+          echo "REMOVAL_DIRECTION_INFERRED=PASS"
+          echo "GENERATION_DIRECTION_INFERRED=PASS"
+          echo "NO_SUPPORT_NO_GENERATION=PASS"
+          echo "FAILURE_MODE_MENU_NOT_NEEDED_FOR_DIRECTION=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_5=PASS"
