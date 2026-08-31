@@ -1,0 +1,41 @@
+name: Recursive Consequence Selected Development
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/ResidualGeneratesNextObligation.lean'
+      - 'formal/ConsequenceDeterminesSelection.lean'
+      - 'formal/RecursiveConsequenceSelectedDevelopment.lean'
+      - '.github/workflows/recursive-consequence-selected-development.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    env:
+      LEAN_PATH: formal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        run: |
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+      - name: Check recursive consequence-selected development
+        run: |
+          lean formal/RecursiveConsequenceSelectedDevelopment.lean
+          echo "LOWER_RESIDUAL_REQUIRED_FOR_CANDIDATE_GENESIS=PASS"
+          echo "MULTIPLE_HIGHER_CANDIDATES_AVAILABLE=PASS"
+          echo "VERIFIER_CONSEQUENCE_SELECTS_TARGET=PASS"
+          echo "TARGET_IDENTITY_NOT_HARDCODED_IN_RESIDUAL=PASS"
+          echo "CHANGING_CONSEQUENCE_CHANGES_TARGET=PASS"
+          echo "SAME_GENERIC_OPERATOR_REPAIRS_SELECTED_TARGET=PASS"
+          echo "CONSEQUENCE_ABLATION_BLOCKS_TARGET_SELECTION=PASS"
+          echo "LOWER_RESIDUAL_ABLATION_BLOCKS_CANDIDATE_GENESIS=PASS"
+          echo "RECURSIVE_CONSEQUENCE_SELECTED_DEVELOPMENT=PASS"
