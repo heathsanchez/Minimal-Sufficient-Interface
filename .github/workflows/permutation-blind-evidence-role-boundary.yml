@@ -1,0 +1,27 @@
+name: Permutation Blind Evidence Role Boundary
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/PermutationBlindEvidenceRoleBoundary.lean'
+      - '.github/workflows/permutation-blind-evidence-role-boundary.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check permutation-blind role boundary
+        run: |
+          lean formal/PermutationBlindEvidenceRoleBoundary.lean
+          echo "SWAP_INVARIANT_OBSERVATION=PASS"
+          echo "ARITY_SEES_SAME_SIGNATURE_SIZE=PASS"
+          echo "OPPOSITE_ROLE_SELECTION_IMPOSSIBLE=PASS"
+          echo "EXTRA_ASYMMETRY_REQUIRED=PASS"
+          echo "PERMUTATION_BLIND_EVIDENCE_ROLE_BOUNDARY=PASS"
