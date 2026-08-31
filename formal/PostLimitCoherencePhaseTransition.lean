@@ -13,7 +13,7 @@ inductive AtomicChainHom : Nat → Nat → Type where
   | e12 : AtomicChainHom 1 2
   | e23 : AtomicChainHom 2 3
 
-/-- There is no atomic 0→3 transport.  Thus a threefold-composite coherence
+/-- There is no atomic 0→3 transport. Thus a threefold-composite coherence
     residual cannot even be formed in the pre-composition language. -/
 theorem no_three_step_endpoint_before_composition :
     ¬ Nonempty (AtomicChainHom 0 3) := by
@@ -22,7 +22,7 @@ theorem no_three_step_endpoint_before_composition :
   cases h
 
 /-- Composition closes the arrow language under binary composition while
-    retaining the same Nat object carrier.  Parenthesized composites remain
+    retaining the same Nat object carrier. Parenthesized composites remain
     syntactically visible so coherence has not been assumed in advance. -/
 inductive CompositionalChainHom : Nat → Nat → Type where
   | id (n : Nat) : CompositionalChainHom n n
@@ -43,20 +43,27 @@ def compositionalStage : RawCompositionalSubstrate where
   comp := CompositionalChainHom.comp
   Law := fun _ _ => False
 
-def f01 : compositionalStage.Hom 0 1 := CompositionalChainHom.e01
-def f12 : compositionalStage.Hom 1 2 := CompositionalChainHom.e12
-def f23 : compositionalStage.Hom 2 3 := CompositionalChainHom.e23
+/-- Explicit endpoint constants prevent numeral elaboration from having to look
+    through the abstract `Obj` projection. -/
+def chain0 : compositionalStage.Obj := (0 : Nat)
+def chain1 : compositionalStage.Obj := (1 : Nat)
+def chain2 : compositionalStage.Obj := (2 : Nat)
+def chain3 : compositionalStage.Obj := (3 : Nat)
 
-def leftTriple : compositionalStage.Hom 0 3 :=
+def f01 : compositionalStage.Hom chain0 chain1 := CompositionalChainHom.e01
+def f12 : compositionalStage.Hom chain1 chain2 := CompositionalChainHom.e12
+def f23 : compositionalStage.Hom chain2 chain3 := CompositionalChainHom.e23
+
+def leftTriple : compositionalStage.Hom chain0 chain3 :=
   compositionalStage.comp (compositionalStage.comp f01 f12) f23
 
-def rightTriple : compositionalStage.Hom 0 3 :=
+def rightTriple : compositionalStage.Hom chain0 chain3 :=
   compositionalStage.comp f01 (compositionalStage.comp f12 f23)
 
 /-- Composition creates both continuations needed for the next residual. -/
 theorem both_bracketed_composites_exist :
-    Nonempty (compositionalStage.Hom 0 3) ∧
-    Nonempty (compositionalStage.Hom 0 3) := by
+    Nonempty (compositionalStage.Hom chain0 chain3) ∧
+    Nonempty (compositionalStage.Hom chain0 chain3) := by
   exact ⟨⟨leftTriple⟩, ⟨rightTriple⟩⟩
 
 /-- The two bracketings are genuinely distinct syntax before any coherence law
@@ -69,10 +76,10 @@ theorem bracketings_are_distinct_before_coherence :
 /-- The newly expressible verifier-certified residual: all constituent arrows
     and both bracketed composites exist, but their associativity law does not. -/
 def chainAssociativityFailure : FailedAssociativity compositionalStage where
-  a := 0
-  b := 1
-  c := 2
-  d := 3
+  a := chain0
+  b := chain1
+  c := chain2
+  d := chain3
   f := f01
   g := f12
   h := f23
@@ -137,7 +144,7 @@ theorem point_separation_survives_coherence_genesis :
     object or arrow. -/
 theorem new_structure_exposes_new_necessity :
     (¬ Nonempty (AtomicChainHom 0 3)) ∧
-    Nonempty (compositionalStage.Hom 0 3) ∧
+    Nonempty (compositionalStage.Hom chain0 chain3) ∧
     (¬ compositionalStage.Law leftTriple rightTriple) ∧
     (completeLaws compositionalStage
       (generatedAssociativityDemand chainAssociativityFailure)).Law
@@ -170,7 +177,7 @@ theorem post_limit_coherence_phase_transition :
         ExtensionalOmegaFailureObstruction.natBitObserve
         InfiniteBitOmegaFixedPoint.omegaLanguage)) ∧
     (¬ Nonempty (AtomicChainHom 0 3)) ∧
-    Nonempty (compositionalStage.Hom 0 3) ∧
+    Nonempty (compositionalStage.Hom chain0 chain3) ∧
     (¬ compositionalStage.Law leftTriple rightTriple) ∧
     (completeLaws compositionalStage
       (generatedAssociativityDemand chainAssociativityFailure)).Law
