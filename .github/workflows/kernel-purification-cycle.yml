@@ -9,6 +9,7 @@ on:
       - 'formal/KernelPurificationCycle3.lean'
       - 'formal/KernelPurificationCycle4.lean'
       - 'formal/KernelPurificationCycle5.lean'
+      - 'formal/KernelPurificationCycle6.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -35,6 +36,7 @@ jobs:
           lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
           lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
           lean -o formal/KernelPurificationCycle4.olean formal/KernelPurificationCycle4.lean
+          lean -o formal/KernelPurificationCycle5.olean formal/KernelPurificationCycle5.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -92,3 +94,14 @@ jobs:
           echo "NO_SUPPORT_NO_GENERATION=PASS"
           echo "FAILURE_MODE_MENU_NOT_NEEDED_FOR_DIRECTION=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_5=PASS"
+      - name: Run sixth kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle6.lean
+          echo "GLOBAL_MISMATCH_LOCALIZES=PASS"
+          echo "SUPPLIED_COORDINATE_NOT_NEEDED_FOR_EXISTENCE=PASS"
+          echo "LOCAL_DEFECT_INFERS_DIRECTION=PASS"
+          echo "POINTWISE_AGREEMENT_BLOCKS_MISMATCH=PASS"
+          echo "CANONICAL_WITNESS_SELECTION_REMAINS_OPEN=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_6=PASS"
