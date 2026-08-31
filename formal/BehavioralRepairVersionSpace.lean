@@ -4,27 +4,22 @@ namespace BehavioralRepairVersionSpace
 
 open VerifierDoesNotDeterminePointwiseRequirement
 
-/-- Inclusion order on repairs. -/
 def RepairLE {I : Type} (R₁ R₂ : Repair I) : Prop :=
   ∀ i, R₁ i → R₂ i
 
-/-- An accepted repair is minimal when no strictly smaller accepted repair exists. -/
 def MinimalAccepted {I : Type}
     (V : RepairVerifier I) (R : Repair I) : Prop :=
   V.accepts R ∧
   ∀ S, V.accepts S → RepairLE S R → RepairLE R S
 
-/-- A repair exposes a future exactly when it contains some capability mapped to that future. -/
 def RepairReachable {I F : Type}
     (futureOf : I → F) (R : Repair I) : F → Prop :=
   fun f => ∃ i, R i ∧ futureOf i = f
 
-/-- Consequential equivalence of repairs: exactly the same future set is reachable. -/
 def RepairEquivalent {I F : Type}
     (futureOf : I → F) (R₁ R₂ : Repair I) : Prop :=
   ∀ f, RepairReachable futureOf R₁ f ↔ RepairReachable futureOf R₂ f
 
-/-- Consequential confluence means all minimal accepted repairs lie in one behavioural class. -/
 def ConsequentiallyConfluent {I F : Type}
     (V : RepairVerifier I) (futureOf : I → F) : Prop :=
   ∀ R₁ R₂,
@@ -59,35 +54,37 @@ def rightRepair : Repair Idx
 
 def futureOf : Idx → Fut := fun _ => .goal
 
-theorem left_accepted : V.accepts leftRepair := Or.inl trivial
-theorem right_accepted : V.accepts rightRepair := Or.inr trivial
+theorem left_accepted : V.accepts leftRepair := Or.inl True.intro
+theorem right_accepted : V.accepts rightRepair := Or.inr True.intro
 
 theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
-  · intro S hS hsub i hi
+  · intro S hS hsub
+    intro i hi
     cases i with
     | left =>
+        show S .left
         rcases hS with hleft | hright
         · exact hleft
         · have hf : False := hsub .right hright
-          exact hf.elim
+          exact False.elim hf
     | right =>
-        have hf : False := hi
-        exact hf.elim
+        exact False.elim hi
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
-  · intro S hS hsub i hi
+  · intro S hS hsub
+    intro i hi
     cases i with
     | left =>
-        have hf : False := hi
-        exact hf.elim
+        exact False.elim hi
     | right =>
+        show S .right
         rcases hS with hleft | hright
         · have hf : False := hsub .left hleft
-          exact hf.elim
+          exact False.elim hf
         · exact hright
 
 theorem syntactically_distinct :
@@ -95,11 +92,9 @@ theorem syntactically_distinct :
     (¬ RepairLE rightRepair leftRepair) := by
   constructor
   · intro h
-    have hf : False := h .left trivial
-    exact hf
+    exact h .left True.intro
   · intro h
-    have hf : False := h .right trivial
-    exact hf
+    exact h .right True.intro
 
 theorem behaviorally_equivalent :
     RepairEquivalent futureOf leftRepair rightRepair := by
@@ -107,9 +102,9 @@ theorem behaviorally_equivalent :
   cases f
   constructor
   · intro _
-    exact ⟨.right, trivial, rfl⟩
+    exact ⟨.right, True.intro, rfl⟩
   · intro _
-    exact ⟨.left, trivial, rfl⟩
+    exact ⟨.left, True.intro, rfl⟩
 
 theorem consequentially_confluent :
     ConsequentiallyConfluent V futureOf := by
@@ -147,46 +142,47 @@ def futureOf : Idx → Fut
   | .left => .alpha
   | .right => .beta
 
-theorem left_accepted : V.accepts leftRepair := Or.inl trivial
-theorem right_accepted : V.accepts rightRepair := Or.inr trivial
+theorem left_accepted : V.accepts leftRepair := Or.inl True.intro
+theorem right_accepted : V.accepts rightRepair := Or.inr True.intro
 
 theorem left_minimal : MinimalAccepted V leftRepair := by
   constructor
   · exact left_accepted
-  · intro S hS hsub i hi
+  · intro S hS hsub
+    intro i hi
     cases i with
     | left =>
+        show S .left
         rcases hS with hleft | hright
         · exact hleft
         · have hf : False := hsub .right hright
-          exact hf.elim
+          exact False.elim hf
     | right =>
-        have hf : False := hi
-        exact hf.elim
+        exact False.elim hi
 
 theorem right_minimal : MinimalAccepted V rightRepair := by
   constructor
   · exact right_accepted
-  · intro S hS hsub i hi
+  · intro S hS hsub
+    intro i hi
     cases i with
     | left =>
-        have hf : False := hi
-        exact hf.elim
+        exact False.elim hi
     | right =>
+        show S .right
         rcases hS with hleft | hright
         · have hf : False := hsub .left hleft
-          exact hf.elim
+          exact False.elim hf
         · exact hright
 
 theorem alpha_left : RepairReachable futureOf leftRepair .alpha :=
-  ⟨.left, trivial, rfl⟩
+  ⟨.left, True.intro, rfl⟩
 
 theorem alpha_not_right : ¬ RepairReachable futureOf rightRepair .alpha := by
   rintro ⟨i, hi, hif⟩
   cases i with
   | left =>
-      have hf : False := hi
-      exact hf
+      exact False.elim hi
   | right =>
       cases hif
 
@@ -203,9 +199,6 @@ theorem verifier_not_consequentially_confluent :
 
 end DivergentWitness
 
-/-- Cycle 6: the generic post-verifier object is a minimal-repair version space.
-    Syntactic nonuniqueness may collapse under future behaviour, but verifier
-    acceptance alone need not make the quotient confluent. -/
 theorem version_space_quotient_is_the_correct_boundary :
     (∃ (I F : Type) (V : RepairVerifier I) (futureOf : I → F)
         (R₁ R₂ : Repair I),
