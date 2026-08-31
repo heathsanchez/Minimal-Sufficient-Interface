@@ -1,0 +1,146 @@
+import GenericResidualCompletion
+
+universe u v
+
+namespace ResidualGeneratesNextObligation
+
+open GenericResidualCompletion
+
+/-- A token in the next developmental language is not merely the name of an
+    old obligation; it carries an actually available realization.  Thus the
+    next obligation carrier depends on the current capability state. -/
+structure RealizedToken (S : CapabilityState.{u,v}) where
+  obligation : S.Obligation
+  witness : S.Realize obligation
+
+/-- The next-stage obligation language is generated compositionally from
+    currently realized tokens.  No semantic repair-kind tag occurs here. -/
+structure NextObligation (S : CapabilityState.{u,v}) where
+  left : RealizedToken S
+  right : RealizedToken S
+
+/-- At a freshly generated next stage, the generated obligations are initially
+    unrealized.  A verifier may then expose a residual over this new carrier. -/
+def nextState (S : CapabilityState.{u,v}) : CapabilityState where
+  Obligation := NextObligation S
+  Realize := fun _ => Empty
+
+/-- A target-anchored next obligation requires a realization of the residual
+    target and an already available anchor. -/
+structure TargetAnchored
+    (S : CapabilityState.{u,v}) (target anchor : S.Obligation) where
+  targetWitness : S.Realize target
+  anchorWitness : S.Realize anchor
+
+/-- Before repair, the residual target cannot participate in the next
+    obligation language. -/
+theorem target_cannot_generate_next_obligation_before_repair
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} :
+    ¬ Nonempty (TargetAnchored S r.target anchor) := by
+  intro h
+  rcases h with ⟨h⟩
+  exact r.unrealized ⟨h.targetWitness⟩
+
+/-- After the least residual-generated completion, the previously unavailable
+    target can become a token in the next obligation language. -/
+def generatedTargetToken
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S) :
+    RealizedToken (complete S (generatedDemand r)) where
+  obligation := r.target
+  witness := forcedRealizer (target_is_generated_demand r)
+
+/-- Every retained old realization also remains available as a next-language
+    token. -/
+def retainedToken
+    {S : CapabilityState.{u,v}} {r : VerifiedResidual S}
+    {o : S.Obligation} (h : S.Realize o) :
+    RealizedToken (complete S (generatedDemand r)) where
+  obligation := o
+  witness := includeOld h
+
+/-- A lower-level repair therefore creates a concrete higher obligation that
+    could not be instantiated from the old target. -/
+def emergentHigherObligation
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} (hanchor : S.Realize anchor) :
+    NextObligation (complete S (generatedDemand r)) where
+  left := generatedTargetToken r
+  right := retainedToken hanchor
+
+/-- The newly generated higher obligation can itself be returned by a verifier
+    as a structured residual.  The generic completion operator is unchanged. -/
+def emergentHigherResidual
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} (hanchor : S.Realize anchor) :
+    VerifiedResidual (nextState (complete S (generatedDemand r))) where
+  target := emergentHigherObligation r hanchor
+  unrealized := by
+    intro h
+    rcases h with ⟨h⟩
+    exact h
+
+/-- The same semantic-kind-blind completion operator repairs the newly created
+    higher residual. -/
+theorem same_operator_repairs_emergent_higher_residual
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} (hanchor : S.Realize anchor) :
+    Nonempty
+      ((complete
+        (nextState (complete S (generatedDemand r)))
+        (generatedDemand (emergentHigherResidual r hanchor))).Realize
+        (emergentHigherResidual r hanchor).target) := by
+  exact failure_forces_target_realization (emergentHigherResidual r hanchor)
+
+/-- If the lower residual signal is ablated, its target remains unavailable, so
+    no target-anchored next obligation can be generated. -/
+theorem lower_failure_ablation_blocks_next_obligation_genesis
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} :
+    ¬ Nonempty
+      (TargetAnchored (complete S (erasedDemand S)) r.target anchor) := by
+  intro h
+  rcases h with ⟨h⟩
+  exact erasing_failure_signal_blocks_genesis r ⟨h.targetWitness⟩
+
+/-- Two-cycle developmental seed theorem.
+
+    A verifier-certified residual is repaired by the generic least completion;
+    that repair changes which higher obligations can be formed; a genuinely new
+    higher residual then becomes expressible; and the very same completion
+    operator repairs that residual.  Removing the first residual blocks the
+    higher obligation's genesis.
+
+    The theorem does not claim that arbitrary semantic ontologies are invented:
+    the recursive token-pair generator is supplied.  It does establish that the
+    *inhabited obligation carrier* of the next cycle is generated by prior
+    verified development rather than selected from a fixed repair-kind enum. -/
+theorem residual_recursively_generates_next_residual_address_space
+    {S : CapabilityState.{u,v}} (r : VerifiedResidual S)
+    {anchor : S.Obligation} (hanchor : S.Realize anchor) :
+    (¬ Nonempty (TargetAnchored S r.target anchor)) ∧
+    Nonempty
+      (TargetAnchored (complete S (generatedDemand r)) r.target anchor) ∧
+    Nonempty
+      ((complete
+        (nextState (complete S (generatedDemand r)))
+        (generatedDemand (emergentHigherResidual r hanchor))).Realize
+        (emergentHigherResidual r hanchor).target) ∧
+    (¬ Nonempty
+      (TargetAnchored (complete S (erasedDemand S)) r.target anchor)) := by
+  refine ⟨target_cannot_generate_next_obligation_before_repair r, ?_, ?_,
+    lower_failure_ablation_blocks_next_obligation_genesis r⟩
+  · exact ⟨{
+      targetWitness := forcedRealizer (target_is_generated_demand r)
+      anchorWitness := includeOld hanchor
+    }⟩
+  · exact same_operator_repairs_emergent_higher_residual r hanchor
+
+#check target_cannot_generate_next_obligation_before_repair
+#check emergentHigherObligation
+#check emergentHigherResidual
+#check same_operator_repairs_emergent_higher_residual
+#check lower_failure_ablation_blocks_next_obligation_genesis
+#check residual_recursively_generates_next_residual_address_space
+
+end ResidualGeneratesNextObligation
