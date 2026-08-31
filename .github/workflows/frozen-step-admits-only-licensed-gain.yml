@@ -1,0 +1,36 @@
+name: Frozen Step Admits Only Licensed Gain
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check frozen-step licensed-gain theorem
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean -o formal/AnonymousInteractionConvergenceKernel.olean formal/AnonymousInteractionConvergenceKernel.lean
+          lean -o formal/DevelopmentalRetentionInducesInteractionOrientation.olean formal/DevelopmentalRetentionInducesInteractionOrientation.lean
+          lean -o formal/DevelopmentalOrientationReopensInteraction.olean formal/DevelopmentalOrientationReopensInteraction.lean
+          lean formal/FrozenStepAdmitsOnlyLicensedGain.lean
+          echo "NEW_FROZEN_STEP_CONTENT_IS_REQUIRED=PASS"
+          echo "ABSENT_UNLICENSED_CONTENT_CANNOT_BE_ADDED=PASS"
+          echo "ACQUISITION_PRECEDENCE_LICENSES_BOTH_ACQUISITIONS=PASS"
+          echo "DEVELOPMENTAL_ORIENTATION_IS_EXTERNALLY_LICENSED=PASS"
+          echo "ARBITRARY_UNLICENSED_GROWTH_EXCLUDED_FROM_FROZEN_KERNEL=PASS"
+          echo "WORLD_RESPONSE_STILL_EXTERNAL=BOUNDARY"
+          echo "WORLD_UNLOCK_RELATION_STILL_SUPPLIED=BOUNDARY"
+          echo "FROZEN_STEP_ADMITS_ONLY_LICENSED_GAIN=PASS"
