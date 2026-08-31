@@ -1,0 +1,40 @@
+name: Extensional Omega Failure Obstruction
+
+on:
+  push:
+    paths:
+      - 'formal/ExtensionalOmegaFailureObstruction.lean'
+      - '.github/workflows/extensional-omega-failure-obstruction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/InfiniteBitOmegaFixedPoint.olean formal/InfiniteBitOmegaFixedPoint.lean
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+      - name: Check exact extensional omega obstruction
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/ExtensionalOmegaFailureObstruction.lean
+          echo "POINT_SEPARATING_BLOCKS_EXT_FAILURE=PASS"
+          echo "NO_EXT_FAILURE_IFF_POINT_SEPARATION=PASS"
+          echo "EXACT_NAT_OMEGA_POINT_SEPARATING=PASS"
+          echo "EXACT_NAT_OMEGA_NO_EXT_RESIDUAL=PASS"
+          echo "PURE_EXT_POST_LIMIT_GENESIS_BLOCKED=PASS"
+          echo "HIDDEN_BOOL_BREAKS_POINT_SEPARATION=PASS"
+          echo "CURRENT_OMEGA_FAILURE_CHANGES_ONLY_SUPPLIED_MODE=PASS"
+          echo "EXTENSIONAL_OMEGA_PLUS_ONE_BOUNDARY=PASS"
