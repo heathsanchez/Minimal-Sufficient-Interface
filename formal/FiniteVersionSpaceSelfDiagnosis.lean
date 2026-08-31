@@ -136,8 +136,9 @@ theorem firstSeparatorAgainst_sound
           simp [firstSeparatorAgainst, hfd] at h
           exact ih h
       | some g =>
-          simp [firstSeparatorAgainst, hfd] at h
-          cases h
+          have hpair : (a, g) = (d, f) := by
+            exact Option.some.inj (by simpa [firstSeparatorAgainst, hfd] using h)
+          cases hpair
           exact (firstDifference_sound
             (B.predict (repairOf c)) (B.predict (repairOf a))
             B.questions g hfd).2
@@ -149,7 +150,7 @@ def PairwiseEquivalent
   | [] => True
   | c :: cs =>
       (∀ d, d ∈ cs → RepairEquivalent futureOf (repairOf c) (repairOf d)) ∧
-      PairwiseEquivalent repairOf cs
+      PairwiseEquivalent (futureOf := futureOf) repairOf cs
 
 /-- The self-scan has an exact interpretation: `none` is a certificate that the
     entire finite version space has already collapsed to one consequential class. -/
@@ -199,8 +200,9 @@ theorem firstVersionSeparator_sound
           exact ih h
       | some df =>
           rcases df with ⟨b, g⟩
-          simp [firstVersionSeparator, hs] at h
-          cases h
+          have htriple : (a, b, g) = (c, d, f) := by
+            exact Option.some.inj (by simpa [firstVersionSeparator, hs] using h)
+          cases htriple
           exact firstSeparatorAgainst_sound B repairOf a hs
 
 namespace Witness
