@@ -36,7 +36,8 @@ theorem mismatch_determines_polarity (d : SupportDefect) :
 theorem polarity_is_unique (d : SupportDefect) :
     ¬ (RequiresRemoval d ∧ RequiresGeneration d) := by
   intro h
-  exact Bool.noConfusion (h.1.1.trans h.2.1.symm)
+  have htf : true = false := h.1.1.symm.trans h.2.1
+  exact Bool.noConfusion htf
 
 /-- At the support level, repair is simply normalization to verified required
     support.  The concrete meet/free constructions are realizations of the two
