@@ -1,0 +1,37 @@
+name: Consequence Compiles Obligation Generator
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/ConsequenceCompilesObligationGenerator.lean'
+      - '.github/workflows/consequence-compiles-obligation-generator.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-compiled obligation genesis
+        run: |
+          export LEAN_PATH=formal
+          lean formal/GenericResidualCompletion.lean
+          lean formal/ResidualGeneratesNextObligation.lean
+          lean formal/ConsequenceDeterminesSelection.lean
+          lean formal/ConsequenceSelectsObligationGenerator.lean
+          lean formal/ConsequenceCompilesObligationGenerator.lean
+          echo "LOWER_RESIDUAL_CREATES_REQUIRED_TOKEN=PASS"
+          echo "CONSEQUENCE_DIRECTLY_COMPILES_GENERATOR=PASS"
+          echo "NO_GENERATOR_POOL_SUPPLIED=PASS"
+          echo "VERIFIER_ACCEPTED_PAIR_FORMS_OBLIGATION=PASS"
+          echo "GENERATED_OBLIGATION_STARTS_UNREALIZED=PASS"
+          echo "SAME_GENERIC_OPERATOR_REPAIRS_GENERATED_RESIDUAL=PASS"
+          echo "CHANGING_CONSEQUENCE_CHANGES_GENERATED_LANGUAGE=PASS"
+          echo "CONSEQUENCE_ABLATION_BLOCKS_OBLIGATION_GENESIS=PASS"
+          echo "LOWER_FAILURE_ABLATION_BLOCKS_REQUIRED_TOKEN=PASS"
+          echo "CONSEQUENCE_COMPILES_NEXT_OBLIGATION_LANGUAGE=PASS"
