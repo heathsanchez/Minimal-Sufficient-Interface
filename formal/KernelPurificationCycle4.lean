@@ -23,7 +23,7 @@ def Refines {L : Type u} (M : MeetRepair L) (a b : L) : Prop :=
 theorem meet_refines_left {L : Type u} (M : MeetRepair L) (a b : L) :
     Refines M (M.meet a b) a := by
   unfold Refines
-  rw [M.assoc, M.idem]
+  rw [M.comm b a, ← M.assoc, M.idem]
 
 theorem meet_refines_right {L : Type u} (M : MeetRepair L) (a b : L) :
     Refines M (M.meet a b) b := by
@@ -119,6 +119,8 @@ theorem cycle4_polarity_obstruction :
   · intro I Old Gen i h
     exact positive_polarity_retains_old h
 
+#check meet_refines_left
+#check meet_refines_right
 #check meet_is_universal_constraint_repair
 #check free_adjoin_is_universal_generator_repair
 #check consequential_repair_has_two_universal_polarities
