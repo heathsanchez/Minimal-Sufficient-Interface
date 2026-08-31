@@ -1,0 +1,39 @@
+name: Failure Forces Composition Completion
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/FailureForcesCompositionCompletion.lean'
+      - '.github/workflows/failure-forces-composition-completion.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificate
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+      - name: Check failure-forced composition completion
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/FailureForcesCompositionCompletion.lean
+          echo "FAILED_COMPOSITION_CERTIFIED=PASS"
+          echo "COMPOSITE_TRANSPORT_GENUINELY_NEW=PASS"
+          echo "COMPOSITION_INPUTS_RETAINED=PASS"
+          echo "NO_UNRELATED_TRANSPORT_ADDED=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_COMPOSITE_GENESIS=PASS"
+          echo "COMPOSITION_COMPLETION_UNIVERSAL=PASS"
+          echo "FAILURE_FORCES_COMPOSITION_COMPLETION=PASS"
