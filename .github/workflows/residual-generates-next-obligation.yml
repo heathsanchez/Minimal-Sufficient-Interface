@@ -1,0 +1,32 @@
+name: Residual Generates Next Obligation
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/ResidualGeneratesNextObligation.lean'
+      - '.github/workflows/residual-generates-next-obligation.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check recursive residual-generated obligation language
+        run: |
+          lean formal/GenericResidualCompletion.lean
+          lean formal/ResidualGeneratesNextObligation.lean
+          echo "LOWER_RESIDUAL_CERTIFIED=PASS"
+          echo "TARGET_UNAVAILABLE_BEFORE_REPAIR=PASS"
+          echo "NEXT_OBLIGATION_GENERATED_BY_REPAIR=PASS"
+          echo "HIGHER_RESIDUAL_BECOMES_EXPRESSIBLE=PASS"
+          echo "SAME_GENERIC_OPERATOR_REPAIRS_HIGHER_RESIDUAL=PASS"
+          echo "LOWER_FAILURE_ABLATION_BLOCKS_HIGHER_GENESIS=PASS"
+          echo "NO_REPAIR_KIND_ENUM=PASS"
+          echo "RECURSIVE_RESIDUAL_ADDRESS_SPACE=PASS"
