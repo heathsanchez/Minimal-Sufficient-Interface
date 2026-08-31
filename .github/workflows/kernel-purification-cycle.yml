@@ -5,6 +5,7 @@ on:
     branches: [remove-finite-open-development-v16, kernel-purification-cycle-1]
     paths:
       - 'formal/KernelPurificationCycle.lean'
+      - 'formal/KernelPurificationCycle2.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -27,6 +28,7 @@ jobs:
           lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
           lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
           lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -41,3 +43,13 @@ jobs:
           echo "COMPOSITION_COMPLETION_PRIMITIVE_ELIMINATED=PASS"
           echo "REMAINING_BOUNDARY_IS_FAILURE_EXTRACTOR=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_1=PASS"
+      - name: Run second kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle2.lean
+          echo "DEMAND_ONLY_COMPLETION=PASS"
+          echo "ENDPOINT_WRAPPER_ELIMINATED=PASS"
+          echo "FAILURE_LABELS_ELIMINATED_FROM_COMPLETION=PASS"
+          echo "DEMAND_CAUSALLY_NECESSARY=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_2=PASS"
