@@ -28,7 +28,8 @@ theorem erased_consequence_generates_no_obligations
     ¬ Nonempty (GeneratedObligation S (compileGenerator (erasedConsequence (S := S)))) := by
   intro h
   rcases h with ⟨o⟩
-  simp [compileGenerator, erasedConsequence] at o.admissible
+  have hadmissible := o.admissible
+  simp [compileGenerator, erasedConsequence] at hadmissible
 
 /-- Changing only verifier consequence changes the generated language even
     though the compilation mechanism itself is unchanged. -/
