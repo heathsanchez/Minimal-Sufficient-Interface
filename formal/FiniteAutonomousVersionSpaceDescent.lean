@@ -1,4 +1,4 @@
-import ExecutablePairSelectionFromFiniteVersionSpace
+import RecursiveFiniteVersionSpaceResolution
 
 namespace FiniteAutonomousVersionSpaceDescent
 
@@ -9,55 +9,52 @@ open VerifiedVersionSpaceContraction
 open ExecutablePairSelectionFromFiniteVersionSpace
 
 /-- Executable filtering of a finite repair version space by one verified
-    Boolean future outcome. -/
+    Boolean future outcome. This is the same certified recursive filter used by
+    the preceding finite-resolution theorem, specialized to a constant outcome
+    at the selected future. -/
 def filterRepairs
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
     (f : F) (outcome : Bool) (rs : List (Repair I)) : List (Repair I) :=
-  rs.filter (fun R => B.predict R f == outcome)
+  RecursiveFiniteVersionSpaceResolution.filterRepairs B (fun _ => outcome) f rs
 
 /-- Filtering never invents repairs. -/
 theorem mem_filterRepairs_implies_mem
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
-    (f : F) (outcome : Bool) (rs : List (Repair I))
-    {R : Repair I}
-    (h : R ∈ filterRepairs B f outcome rs) :
-    R ∈ rs := by
-  exact (List.mem_filter.mp h).1
+    (f : F) (outcome : Bool) :
+    ∀ (rs : List (Repair I)) {R : Repair I},
+      R ∈ filterRepairs B f outcome rs → R ∈ rs := by
+  intro rs
+  induction rs with
+  | nil =>
+      intro R h
+      simp [filterRepairs, RecursiveFiniteVersionSpaceResolution.filterRepairs] at h
+  | cons A tail ih =>
+      intro R h
+      by_cases hA : B.predict A f = outcome
+      · simp only [filterRepairs,
+          RecursiveFiniteVersionSpaceResolution.filterRepairs, hA, if_pos,
+          List.mem_cons] at h
+        rcases h with hRA | htail
+        · exact Or.inl hRA
+        · exact Or.inr (ih htail)
+      · simp only [filterRepairs,
+          RecursiveFiniteVersionSpaceResolution.filterRepairs, hA, if_neg] at h
+        exact Or.inr (ih h)
 
 /-- If one listed repair disagrees with the verified outcome, filtering strictly
     shortens the finite version space. This is the well-founded measure. -/
 theorem filterRepairs_length_lt_of_eliminated
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
-    (f : F) (outcome : Bool) :
-    ∀ (rs : List (Repair I)) {R : Repair I},
-      R ∈ rs → B.predict R f ≠ outcome →
-      (filterRepairs B f outcome rs).length < rs.length := by
-  intro rs
-  induction rs with
-  | nil =>
-      intro R hmem _
-      simp at hmem
-  | cons A tail ih =>
-      intro R hmem hbad
-      rcases List.mem_cons.mp hmem with rfl | htail
-      · have hbool : (B.predict A f == outcome) = false := by
-          exact Bool.eq_false_iff.mpr hbad
-        simp [filterRepairs, hbool]
-      · by_cases hA : B.predict A f = outcome
-        · have hbool : (B.predict A f == outcome) = true := by
-            exact Bool.eq_true_iff.mpr hA
-          have hlt := ih R htail hbad
-          simpa [filterRepairs, hbool] using Nat.succ_lt_succ hlt
-        · have hbool : (B.predict A f == outcome) = false := by
-            exact Bool.eq_false_iff.mpr hA
-          have hlt := ih R htail hbad
-          have hle : (filterRepairs B f outcome tail).length ≤ tail.length := by
-            exact List.length_filter_le _ _
-          simp [filterRepairs, hbool]
-          exact Nat.lt_succ_of_le hle
+    (f : F) (outcome : Bool) (rs : List (Repair I))
+    {R : Repair I}
+    (hmem : R ∈ rs) (hbad : B.predict R f ≠ outcome) :
+    (filterRepairs B f outcome rs).length < rs.length := by
+  simpa [filterRepairs] using
+    (RecursiveFiniteVersionSpaceResolution.filterRepairs_length_lt_of_rejected
+      B (fun _ => outcome) f hmem hbad)
 
 /-- A pair of unequal Boolean predictions guarantees that every external outcome
     eliminates at least one of the two repairs. -/
@@ -124,10 +121,10 @@ theorem autonomous_terminal_is_consequentially_confluent
       RepairEquivalent futureOf R₁ R₂ := by
   exact firstUnresolvedPair_none_implies_confluent B hscan
 
-/-- Cycle-12 dichotomy: every finite state is either already one consequential
-    class, or the system computes an experiment whose verified outcome strictly
-    decreases the natural-number measure `length`. Hence there can be no
-    infinite sequence of nonterminal autonomous steps on a finite version space. -/
+/-- Every finite state is either already one consequential class, or the system
+    computes an experiment whose verified outcome strictly decreases the
+    natural-number measure `length`. Hence there can be no infinite sequence of
+    nonterminal autonomous steps on a finite version space. -/
 theorem finite_autonomous_descent_or_confluence
     {I F : Type} {futureOf : I → F}
     (B : CertifiedFiniteFutureInterface I F futureOf)
@@ -142,11 +139,11 @@ theorem finite_autonomous_descent_or_confluence
   cases hscan : firstUnresolvedPair B rs with
   | none =>
       left
-      exact ⟨hscan, autonomous_terminal_is_consequentially_confluent B rs hscan⟩
+      exact ⟨rfl, autonomous_terminal_is_consequentially_confluent B rs hscan⟩
   | some triple =>
       right
       rcases triple with ⟨R₁, R₂, f⟩
-      exact ⟨R₁, R₂, f, hscan, autonomousStep_strict_descent B truth rs hscan⟩
+      exact ⟨R₁, R₂, f, rfl, autonomousStep_strict_descent B truth rs hscan⟩
 
 #check filterRepairs
 #check mem_filterRepairs_implies_mem
