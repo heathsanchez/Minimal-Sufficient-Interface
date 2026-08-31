@@ -69,7 +69,8 @@ def lift
     (oldMap : ∀ {x y}, S.Hom x y → H x y)
     (idMap : ∀ {x}, D.demanded x → H x x)
     {x : S.Obj} (hx : D.demanded x) :
-    lift H oldMap idMap (forcedIdentity hx) = idMap hx := rfl
+    lift H oldMap idMap (forcedIdentity hx) = idMap hx := by
+  simp [forcedIdentity, lift]
 
 /-- Initiality/leastness at the generated-arrow level: once an interpretation's behavior
     on old arrows and demanded identities is fixed, its behavior on every completed arrow
@@ -89,7 +90,7 @@ theorem lift_unique
   | inr newh =>
       rcases newh with ⟨hxy, hx⟩
       cases hxy
-      exact hid hx
+      simpa [forcedIdentity] using hid hx
 
 /-- Completion invents no transport between distinct endpoints. -/
 theorem no_new_transport_between_distinct
