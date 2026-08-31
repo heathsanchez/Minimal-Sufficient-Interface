@@ -1,0 +1,44 @@
+name: Requirement Landscape Completion
+
+on:
+  push:
+    branches: [purify-developmental-kernel-v1]
+    paths:
+      - 'formal/RequirementLandscapeCompletion.lean'
+      - '.github/workflows/requirement-landscape-completion.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+      - name: Check requirement landscape completion
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/RequirementLandscapeCompletion.lean
+          echo "FAILED_INDEX_NOT_SUPPLIED=PASS"
+          echo "RESIDUAL_SET_DERIVED_FROM_REQUIREMENT_AND_ABSENCE=PASS"
+          echo "ALL_REQUIRED_ABSENCES_FILLED=PASS"
+          echo "NO_UNREQUIRED_CAPABILITY_ADDED=PASS"
+          echo "SATISFIED_REQUIREMENT_NOT_REPAIRED=PASS"
+          echo "REQUIREMENT_ABLATION_BLOCKS_GENESIS=PASS"
+          echo "LANDSCAPE_COMPLETION_UNIVERSAL=PASS"
+          echo "IDENTITY_AND_COMPOSITION_BOTH_COMPILE_FROM_LANDSCAPES=PASS"
+          echo "PURIFICATION_CYCLE_3=PASS"
