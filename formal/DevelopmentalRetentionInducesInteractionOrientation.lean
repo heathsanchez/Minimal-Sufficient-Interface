@@ -87,14 +87,16 @@ def ColEquivalent
 theorem serial_s0_strictly_retained_by_s1 : StrictRetains s0 s1 := by
   constructor
   · simpa [s1] using step_preserves serialWorld s0
-  · exact serial_step0_strict
+  · intro h
+    exact serial_step0_strict h.symm
 
 /-- The second serial transition is another strict retention step under the
     same unchanged kernel. -/
 theorem serial_s1_strictly_retained_by_s2 : StrictRetains s1 s2 := by
   constructor
   · simpa [s2] using step_preserves serialWorld s1
-  · exact serial_step1_strict
+  · intro h
+    exact serial_step1_strict h.symm
 
 /-- The world-generated residual really requires the first response at the
     empty state; this is not arbitrary internal growth. -/
