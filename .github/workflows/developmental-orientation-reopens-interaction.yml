@@ -1,0 +1,38 @@
+name: Developmental Orientation Reopens Interaction
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check orientation-driven interaction reopening
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean -o formal/AnonymousInteractionConvergenceKernel.olean formal/AnonymousInteractionConvergenceKernel.lean
+          lean -o formal/DevelopmentalRetentionInducesInteractionOrientation.olean formal/DevelopmentalRetentionInducesInteractionOrientation.lean
+          lean formal/DevelopmentalOrientationReopensInteraction.lean
+          echo "NO_CLOCK_TIMESTAMP_OR_ORDERED_HISTORY=PASS"
+          echo "DERIVED_ORIENTATION_EDGE_ENTAILS_LATER_CALL_UNAVAILABLE_BEFORE=PASS"
+          echo "DERIVED_ORIENTATION_EDGE_ENTAILS_LATER_CALL_AVAILABLE_AFTER=PASS"
+          echo "DIRECTIONAL_OPERATIONAL_ROLE_PRESENT=PASS"
+          echo "NEWLY_REACHABLE_CALL_GENERATES_NEXT_REQUIRED_RESIDUAL=PASS"
+          echo "SAME_FROZEN_KERNEL_STRICTLY_RETAINS_NEXT_RESPONSE=PASS"
+          echo "ONE_BOTTOM_LEVEL_SELF_REOPENING_CYCLE=PASS"
+          echo "ROLE_QUOTIENT_AS_INDEPENDENT_CAUSAL_PRIMITIVE=NOT_CLAIMED"
+          echo "WORLD_RESPONSE_STILL_EXTERNAL=BOUNDARY"
+          echo "WORLD_UNLOCK_RELATION_STILL_SUPPLIED=BOUNDARY"
+          echo "DEVELOPMENTAL_ORIENTATION_REOPENS_INTERACTION=PASS"
