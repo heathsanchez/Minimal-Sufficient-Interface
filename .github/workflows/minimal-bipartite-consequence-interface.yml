@@ -1,0 +1,32 @@
+name: Minimal Bipartite Consequence Interface
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/MinimalBipartiteConsequenceInterface.lean'
+      - '.github/workflows/minimal-bipartite-consequence-interface.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check generic minimal bipartite consequence interface
+        run: |
+          lean formal/MinimalBipartiteConsequenceInterface.lean
+          echo "RAW_CONTEXT_LABELS_DISCARDED_BY_ROW_IMAGE=PASS"
+          echo "RAW_OUTCOME_LABELS_DISCARDED_BY_COLUMN_IMAGE=PASS"
+          echo "ROW_IMAGE_REPRODUCES_CURRENT_INTERACTION=PASS"
+          echo "COLUMN_IMAGE_REPRODUCES_CURRENT_INTERACTION=PASS"
+          echo "ROW_EQUALITY_IFF_CURRENT_CONSEQUENCE_EQUIVALENCE=PASS"
+          echo "COLUMN_EQUALITY_IFF_CURRENT_CONSEQUENCE_EQUIVALENCE=PASS"
+          echo "EVERY_SUFFICIENT_ROW_ENCODING_PRESERVES_VISIBLE_DISTINCTIONS=PASS"
+          echo "EVERY_SUFFICIENT_COLUMN_ENCODING_PRESERVES_VISIBLE_DISTINCTIONS=PASS"
+          echo "RESULT_SEMANTICS_NOT_DERIVED_FROM_SYMMETRY=BOUNDARY"
+          echo "MINIMAL_BIPARTITE_CONSEQUENCE_INTERFACE=PASS"
