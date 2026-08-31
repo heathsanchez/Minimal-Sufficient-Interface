@@ -74,6 +74,34 @@ theorem target_witness_is_necessary_for_universal_generation (target : Ω) :
   intro h
   exact h.elim (fun f => PEmpty.elim (f (Path.refl target)))
 
+/--
+Ablate the continuation action while retaining a target witness.  On the
+smallest nontrivial one-way world, a target-pointed family can be empty at a
+predecessor even though that predecessor reaches the target.  Therefore the
+target witness alone cannot support the universal map enjoyed by
+`TargetObservation`: some law transporting observations backward along
+continuations is genuinely additional structure.
+-/
+inductive TwoPoint where
+  | source
+  | target
+
+inductive OneWay : TwoPoint → TwoPoint → Type where
+  | edge : OneWay .source .target
+
+theorem target_witness_without_continuation_closure_is_insufficient :
+    ¬ (∀ (O : TwoPoint → Type), O TwoPoint.target → ∀ z : TwoPoint,
+      Path OneWay z TwoPoint.target → O z) := by
+  intro h
+  let O : TwoPoint → Type := fun
+    | .source => Empty
+    | .target => Unit
+  have p : Path OneWay TwoPoint.source TwoPoint.target :=
+    .step .edge (.refl _)
+  have impossible : O TwoPoint.source :=
+    h O Unit.unit TwoPoint.source p
+  exact Empty.elim impossible
+
 theorem canonical_failure_consequence_certificate
     (r : VerifiedFailure G) :
     ((¬ Nonempty ((canonicalConsequence G r).carrier r.blocked)) ∧
@@ -89,6 +117,7 @@ theorem canonical_failure_consequence_certificate
 #check canonical_consequence_separates_failure
 #check failure_consequence_is_free
 #check target_witness_is_necessary_for_universal_generation
+#check target_witness_without_continuation_closure_is_insufficient
 #check canonical_failure_consequence_certificate
 
 end CanonicalFailureConsequence
