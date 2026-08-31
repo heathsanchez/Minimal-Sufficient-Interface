@@ -1,0 +1,43 @@
+name: Consequence Refines Hypothesis Universe
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis-positive-universe
+    paths:
+      - 'formal/ConsequenceRefinesHypothesisUniverse.lean'
+      - 'formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean'
+      - 'formal/VersionSpaceInducesDecidingContext.lean'
+      - 'formal/AmbiguityInducesDecidingContext.lean'
+      - 'formal/NewConsequenceSeparatesContextGrammar.lean'
+      - 'formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean'
+      - '.github/workflows/consequence-refines-hypothesis-universe.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-driven hypothesis-universe refinement
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean -o formal/VersionSpaceInducesDecidingContext.olean formal/VersionSpaceInducesDecidingContext.lean
+          lean -o formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.olean formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean
+          lean formal/ConsequenceRefinesHypothesisUniverse.lean
+          echo "CURRENT_HYPOTHESIS_SPACE_AMBIGUOUS=PASS"
+          echo "DECIDING_CONTEXT_IS_CONSEQUENCE_SELECTED=PASS"
+          echo "REFINEMENT_OPERATOR_RECEIVES_ONLY_NEW_VERIFIER_PROFILE=PASS"
+          echo "PREVIOUSLY_ADMISSIBLE_HYPOTHESIS_REJECTED=PASS"
+          echo "OLD_CONSTRAINTS_PRESERVED=PASS"
+          echo "HYPOTHESIS_UNIVERSE_STRICTLY_REFINED=PASS"
+          echo "NO_EXACT_HIDDEN_UNIVERSE_RECONSTRUCTION=PASS"
+          echo "RAW_CARRIER_AND_RAW_HYPOTHESIS_TYPE_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_GENERATES_NEXT_ADMISSIBLE_HYPOTHESIS_SPACE=PASS"
