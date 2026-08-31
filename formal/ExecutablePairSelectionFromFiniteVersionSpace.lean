@@ -118,15 +118,11 @@ theorem firstAgainst_none_implies_equivalent
           rcases List.mem_cons.mp hmem with rfl | hS
           · intro f
             by_contra hdiff
-            have hex : ∃ q,
-                firstDistinguishingFuture B R A = some q := by
-              have hsem : ¬ RepairEquivalent futureOf R A := by
-                intro hEq
-                have hp := (predictEquivalent_iff_repairEquivalent B R A).2 hEq
-                exact hdiff (hp f)
-              rcases executable_search_finds_separator B hsem with ⟨q, hfind, _⟩
-              exact ⟨q, hfind⟩
-            rcases hex with ⟨q, hfind⟩
+            have hsem : ¬ RepairEquivalent futureOf R A := by
+              intro hEq
+              have hp := (predictEquivalent_iff_repairEquivalent B R A).2 hEq
+              exact hdiff (hp f)
+            rcases executable_search_finds_separator B hsem with ⟨q, hfind, _⟩
             rw [hq] at hfind
             cases hfind
           · exact ih htail S hS
@@ -239,12 +235,58 @@ theorem autonomous_finite_ambiguity_step
         (FilterAt B (fun R => R ∈ rs) f outcome)
         (fun R => R ∈ rs) := by
   intro outcome
-  rcases firstUnresolvedPair_sound B hscan with ⟨h₁, h₂, _⟩
-  have hfind : firstDistinguishingFuture B R₁ R₂ = some f := by
-    -- The global scan's future is prediction-separating, so the local first
-    -- search may choose another separator. Strict contraction needs only the
-    -- returned global separator itself; prove it directly.
-    sorry
+  rcases firstUnresolvedPair_sound B hscan with ⟨h₁, h₂, hdiff⟩
+  constructor
+  · intro R hR
+    exact hR.1
+  · rcases unequal_predictions_exactly_one_matches hdiff with hleft | hright
+    · by_cases hout : B.predict R₁ f = outcome
+      · have hnot : B.predict R₂ f ≠ outcome := by
+          intro h₂out
+          exact hleft.2 (h₂out.trans hout.symm)
+        exact ⟨R₂, h₂, by
+          intro hs
+          exact hnot hs.2⟩
+      · exact ⟨R₁, h₁, by
+          intro hs
+          exact hout hs.2⟩
+    · by_cases hout : B.predict R₂ f = outcome
+      · have hnot : B.predict R₁ f ≠ outcome := by
+          intro h₁out
+          exact hright.2 (h₁out.trans hout.symm)
+        exact ⟨R₁, h₁, by
+          intro hs
+          exact hnot hs.2⟩
+      · exact ⟨R₂, h₂, by
+          intro hs
+          exact hout hs.2⟩
+
+/-- Cycle-11 conclusion: in a finite version space with a certified finite
+    future interface, no pair selector is needed. Either the scan returns none,
+    certifying one consequential class, or it autonomously returns a conflicting
+    pair and a distinguishing future whose verified outcome strictly contracts
+    the version space. -/
+theorem finite_version_space_self_selects_its_next_experiment
+    {I F : Type} {futureOf : I → F}
+    (B : CertifiedFiniteFutureInterface I F futureOf)
+    (rs : List (Repair I)) :
+    (firstUnresolvedPair B rs = none ∧
+      ∀ R₁, R₁ ∈ rs → ∀ R₂, R₂ ∈ rs →
+        RepairEquivalent futureOf R₁ R₂) ∨
+    (∃ R₁ R₂ f,
+      firstUnresolvedPair B rs = some (R₁, R₂, f) ∧
+      ∀ outcome : Bool,
+        StrictContraction
+          (FilterAt B (fun R => R ∈ rs) f outcome)
+          (fun R => R ∈ rs)) := by
+  cases hscan : firstUnresolvedPair B rs with
+  | none =>
+      left
+      exact ⟨hscan, firstUnresolvedPair_none_implies_confluent B hscan⟩
+  | some triple =>
+      right
+      rcases triple with ⟨R₁, R₂, f⟩
+      exact ⟨R₁, R₂, f, hscan, autonomous_finite_ambiguity_step B rs hscan⟩
 
 #check PredictEquivalent
 #check predictEquivalent_iff_repairEquivalent
@@ -255,5 +297,7 @@ theorem autonomous_finite_ambiguity_step
 #check firstUnresolvedPair_sound
 #check firstUnresolvedPair_none_implies_confluent
 #check multiclasse_ambiguity_forces_pair_selection
+#check autonomous_finite_ambiguity_step
+#check finite_version_space_self_selects_its_next_experiment
 
 end ExecutablePairSelectionFromFiniteVersionSpace
