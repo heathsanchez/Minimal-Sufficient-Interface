@@ -156,22 +156,17 @@ def complement (p : Probe) : Probe := fun x => ¬ p x
 
 theorem complement_same_behavior (p : Probe) :
     SameBehavior p (complement p) := by
+  classical
   intro x y
-  simp only [complement]
-  tauto
+  by_cases hx : p x <;> by_cases hy : p y <;>
+    simp [complement, hx, hy]
 
 theorem complement_is_also_in_versionSpace {C : Stage}
     (r : Failure C) (hp : VersionSpace r (generatedProbe r)) :
     VersionSpace r (complement (generatedProbe r)) := by
   intro h
   apply hp
-  constructor
-  · intro hl
-    by_contra hn
-    exact (h.mpr hn) hl
-  · intro hr
-    by_contra hn
-    exact (h.mp hn) hr
+  exact (complement_same_behavior (generatedProbe r) r.left r.right).mpr h
 
 /-- Retaining the generated probe is exactly language promotion. -/
 theorem repair_language_eq_promotion (w : World) :
