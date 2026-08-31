@@ -6,6 +6,7 @@ on:
     paths:
       - 'formal/KernelPurificationCycle.lean'
       - 'formal/KernelPurificationCycle2.lean'
+      - 'formal/KernelPurificationCycle3.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -29,6 +30,7 @@ jobs:
           lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
           lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
           lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
+          lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -53,3 +55,13 @@ jobs:
           echo "FAILURE_LABELS_ELIMINATED_FROM_COMPLETION=PASS"
           echo "DEMAND_CAUSALLY_NECESSARY=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_2=PASS"
+      - name: Run third kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle3.lean
+          echo "GENERIC_INDEXED_FREE_ADJOIN=PASS"
+          echo "TRANSPORT_COMPLETION_EQUIV_FREE_ADJOIN=PASS"
+          echo "TRANSPORT_PRIMITIVE_ELIMINATED=PASS"
+          echo "IDENTITY_AND_COMPOSITION_FACTOR_THROUGH_GENERIC_ADJOIN=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_3=PASS"
