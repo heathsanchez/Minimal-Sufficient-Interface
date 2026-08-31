@@ -18,9 +18,15 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Check recursive residual-generated obligation language
+      - name: Compile generic completion dependency
+        env:
+          LEAN_PATH: formal
         run: |
-          lean formal/GenericResidualCompletion.lean
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+      - name: Check recursive residual-generated obligation language
+        env:
+          LEAN_PATH: formal
+        run: |
           lean formal/ResidualGeneratesNextObligation.lean
           echo "LOWER_RESIDUAL_CERTIFIED=PASS"
           echo "TARGET_UNAVAILABLE_BEFORE_REPAIR=PASS"
