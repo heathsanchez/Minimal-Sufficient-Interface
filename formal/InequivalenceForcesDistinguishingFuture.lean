@@ -16,16 +16,19 @@ theorem inequivalence_has_separation
     (hneq : ¬ RepairEquivalent futureOf R₁ R₂) :
     Nonempty (SeparationWitness futureOf R₁ R₂) := by
   classical
-  by_contra hnone
+  apply Classical.byContradiction
+  intro hnone
   apply hneq
   intro f
   constructor
   · intro h₁
-    by_contra h₂
-    exact hnone ⟨.leftOnly f h₁ h₂⟩
+    by_cases h₂ : RepairReachable futureOf R₂ f
+    · exact h₂
+    · exact False.elim (hnone ⟨.leftOnly f h₁ h₂⟩)
   · intro h₂
-    by_contra h₁
-    exact hnone ⟨.rightOnly f h₂ h₁⟩
+    by_cases h₁ : RepairReachable futureOf R₁ f
+    · exact h₁
+    · exact False.elim (hnone ⟨.rightOnly f h₂ h₁⟩)
 
 /-- A separator can therefore be chosen from inequivalence itself. The use of
     `Classical.choice` is explicit so the remaining computational boundary is
@@ -93,17 +96,17 @@ end Witness
     extra separator input. The remaining supplied ingredient is classical
     choice; executable finite extraction is the next boundary. -/
 theorem bare_ambiguity_logically_forces_deciding_experiment :
-    ∀ {I F : Type} {futureOf : I → F} {R₁ R₂ : Repair I},
-      (¬ RepairEquivalent futureOf R₁ R₂) →
+    ∀ {I F : Type} {futureOf : I → F} {R₁ R₂ : Repair I}
+      (hneq : ¬ RepairEquivalent futureOf R₁ R₂),
       ∀ truth : F → Prop,
         (ConsistentAt futureOf truth
-            (questionFromInequivalence (R₁ := R₁) (R₂ := R₂) ‹¬ RepairEquivalent futureOf R₁ R₂›) R₁ ∧
+            (questionFromInequivalence hneq) R₁ ∧
           ¬ ConsistentAt futureOf truth
-            (questionFromInequivalence (R₁ := R₁) (R₂ := R₂) ‹¬ RepairEquivalent futureOf R₁ R₂›) R₂) ∨
+            (questionFromInequivalence hneq) R₂) ∨
         (ConsistentAt futureOf truth
-            (questionFromInequivalence (R₁ := R₁) (R₂ := R₂) ‹¬ RepairEquivalent futureOf R₁ R₂›) R₂ ∧
+            (questionFromInequivalence hneq) R₂ ∧
           ¬ ConsistentAt futureOf truth
-            (questionFromInequivalence (R₁ := R₁) (R₂ := R₂) ‹¬ RepairEquivalent futureOf R₁ R₂›) R₁) := by
+            (questionFromInequivalence hneq) R₁) := by
   intro I F futureOf R₁ R₂ hneq truth
   exact inequivalence_generated_question_decides_pair hneq truth
 
