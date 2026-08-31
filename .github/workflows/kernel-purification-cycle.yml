@@ -7,6 +7,7 @@ on:
       - 'formal/KernelPurificationCycle.lean'
       - 'formal/KernelPurificationCycle2.lean'
       - 'formal/KernelPurificationCycle3.lean'
+      - 'formal/KernelPurificationCycle4.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -31,6 +32,7 @@ jobs:
           lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
           lean -o formal/KernelPurificationCycle.olean formal/KernelPurificationCycle.lean
           lean -o formal/KernelPurificationCycle2.olean formal/KernelPurificationCycle2.lean
+          lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -65,3 +67,14 @@ jobs:
           echo "TRANSPORT_PRIMITIVE_ELIMINATED=PASS"
           echo "IDENTITY_AND_COMPOSITION_FACTOR_THROUGH_GENERIC_ADJOIN=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_3=PASS"
+      - name: Run fourth kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle4.lean
+          echo "MEET_IS_UNIVERSAL_CONSTRAINT_REPAIR=PASS"
+          echo "FREE_ADJOIN_IS_UNIVERSAL_GENERATOR_REPAIR=PASS"
+          echo "UNIVERSAL_REPAIR_CORE_HARDENS=PASS"
+          echo "CONSTRAINT_AND_GENERATOR_POLARITIES_DISTINCT=PASS"
+          echo "FALSE_LITERAL_FUSION_REJECTED=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_4=PASS"
