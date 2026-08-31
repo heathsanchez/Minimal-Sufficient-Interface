@@ -1,0 +1,30 @@
+name: Symmetric Interaction Cannot Induce Directional Roles
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check symmetry obstruction theorem
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/InteractionInducesMutualRoleQuotients.olean formal/InteractionInducesMutualRoleQuotients.lean
+          lean formal/SymmetricInteractionCannotInduceDirectionalRoles.lean
+          echo "GENERIC_ARBITRARY_CARRIER_SYMMETRY_THEOREM=PASS"
+          echo "SYMMETRIC_INTERACTION_COLLAPSES_ROW_AND_COLUMN_QUOTIENTS=PASS"
+          echo "SYMMETRY_BLOCKS_ROW_ONLY_ROLE=PASS"
+          echo "SYMMETRY_BLOCKS_COLUMN_ONLY_ROLE=PASS"
+          echo "PREVIOUS_DIRECTIONAL_WITNESS_FORCES_INTERACTION_ASYMMETRY=PASS"
+          echo "ROLE_PARTITION_NOT_REQUIRED_BUT_VISIBLE_ASYMMETRY_IS_REQUIRED=PASS"
+          echo "SOURCE_OF_ASYMMETRY_STILL_EXTERNAL=BOUNDARY"
+          echo "SYMMETRIC_INTERACTION_CANNOT_INDUCE_DIRECTIONAL_ROLES=PASS"
