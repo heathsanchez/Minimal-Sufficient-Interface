@@ -20,10 +20,18 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Compile dependencies
+        env:
+          LEAN_PATH: lean:formal
         run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean -o lean/MinimalRepair.olean lean/MinimalRepair.lean
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
+          lean -o formal/VerifiedConsequenceGenesis.olean formal/VerifiedConsequenceGenesis.lean
           lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
-          LEAN_PATH=lean lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
-          LEAN_PATH=lean:formal lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
+          lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
+          lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
       - name: Check integrated post-limit developmental cycle
         env:
           LEAN_PATH: lean:formal
