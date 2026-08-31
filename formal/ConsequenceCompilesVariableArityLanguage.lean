@@ -54,8 +54,8 @@ theorem target_token_unavailable_before_repair
     {S : CapabilityState.{u,v}} (r : VerifiedResidual S) :
     ¬ ∃ t : RealizedToken S, t.obligation = r.target := by
   rintro ⟨t, ht⟩
-  subst ht
-  exact r.unrealized ⟨t.witness⟩
+  have hw : S.Realize r.target := ht ▸ t.witness
+  exact r.unrealized ⟨hw⟩
 
 /-- Lower repair makes the missing target available as a token. -/
 def generatedTargetTuple
