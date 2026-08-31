@@ -38,7 +38,9 @@ theorem unit_world_has_no_distinct_hypotheses :
 
 theorem bool_world_has_distinct_hypotheses :
     HasDistinctHypotheses boolWorld := by
-  exact ⟨false, true, by decide⟩
+  refine ⟨false, true, ?_⟩
+  intro h
+  cases h
 
 /-- Despite their different raw carrier structure, the currently observable
     consequence images are extensionally identical. -/
