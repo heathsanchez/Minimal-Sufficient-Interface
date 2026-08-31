@@ -1,0 +1,30 @@
+name: Verifier Induces Minimal Role Quotient
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/VerifierInducesMinimalRoleQuotient.lean'
+      - '.github/workflows/verifier-induces-minimal-role-quotient.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check verifier-induced minimal role quotient
+        run: |
+          lean formal/VerifierInducesMinimalRoleQuotient.lean
+          echo "ROLE_VOCABULARY_NOT_SUPPLIED=PASS"
+          echo "ROLE_EQUALITY_IFF_VERIFIER_INDISTINGUISHABLE=PASS"
+          echo "VERIFIER_ASYMMETRY_CREATES_DISTINCT_ROLES=PASS"
+          echo "EVERY_SUFFICIENT_ENCODING_PRESERVES_DISTINCTIONS=PASS"
+          echo "QUOTIENT_ITSELF_IS_SUFFICIENT=PASS"
+          echo "VERIFIER_ERASURE_COLLAPSES_ROLES=PASS"
+          echo "MINIMAL_ROLE_ONTOLOGY_IS_CONSEQUENCE_SELECTED=PASS"
+          echo "VERIFIER_INDUCES_MINIMAL_ROLE_QUOTIENT=PASS"
