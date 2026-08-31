@@ -1,0 +1,28 @@
+name: Verifier Outcome Context Grammar Boundary
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean'
+      - '.github/workflows/verifier-outcome-context-grammar-boundary.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check context grammar identifiability boundary
+        run: |
+          lean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          echo "DISTINCT_CONTEXT_GRAMMARS=PASS"
+          echo "SAME_VERIFIER_OUTCOME_PROFILE=PASS"
+          echo "PROFILE_ONLY_EXACT_RECONSTRUCTION_IMPOSSIBLE=PASS"
+          echo "EXACT_CONTEXT_SYNTAX_NOT_IDENTIFIED_BY_POINTWISE_CONSEQUENCE=PASS"
+          echo "HIGHER_ORDER_CONTEXT_CONSEQUENCE_REQUIRED=BOUNDARY"
+          echo "VERIFIER_OUTCOME_CONTEXT_GRAMMAR_BOUNDARY=PASS"
