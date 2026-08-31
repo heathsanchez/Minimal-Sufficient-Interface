@@ -19,10 +19,10 @@ def Necessary {I : Type} (V : RepairVerifier I) (i : I) : Prop :=
 def necessaryRepair {I : Type} (V : RepairVerifier I) : Repair I :=
   fun i => Necessary V i
 
-/-- Purification counterexample: the verifier accepts either of two alternative
-    singleton repairs.  There is no pointwise capability present in every
-    accepted repair, and the intersection of successful repairs is itself
-    rejected. -/
+/- Purification counterexample: the verifier accepts either of two alternative
+   singleton repairs. There is no pointwise capability present in every
+   accepted repair, and the intersection of successful repairs is itself
+   rejected. -/
 namespace DisjunctiveWitness
 
 inductive Idx where
