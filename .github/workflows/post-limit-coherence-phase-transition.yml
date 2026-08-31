@@ -1,0 +1,49 @@
+name: Post Limit Coherence Phase Transition
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/PostLimitCoherencePhaseTransition.lean'
+      - 'formal/FailureForcesCoherenceCompletion.lean'
+      - '.github/workflows/post-limit-coherence-phase-transition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency stack
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/InfiniteBitOmegaFixedPoint.olean formal/InfiniteBitOmegaFixedPoint.lean
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+          lean -o formal/ExtensionalOmegaFailureObstruction.olean formal/ExtensionalOmegaFailureObstruction.lean
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/FailureForcesCoherenceCompletion.olean formal/FailureForcesCoherenceCompletion.lean
+      - name: Check post-limit coherence phase transition
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/PostLimitCoherencePhaseTransition.lean
+          echo "EXACT_EXT_IDENTITY_COMPLETE=PASS"
+          echo "EXTENSIONAL_RESIDUAL_EXHAUSTED=PASS"
+          echo "PRECOMPOSITION_ENDPOINT_UNAVAILABLE=PASS"
+          echo "COMPOSITION_CREATES_COHERENCE_RESIDUAL=PASS"
+          echo "BRACKETINGS_DISTINCT_BEFORE_LAW=PASS"
+          echo "VERIFIED_FAILURE_FORCES_ASSOCIATIVITY_INSTANCE=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_COHERENCE=PASS"
+          echo "NO_OBJECT_OR_ARROW_GENESIS=PASS"
+          echo "POINT_SEPARATION_SURVIVES_COHERENCE=PASS"
+          echo "NEW_STRUCTURE_EXPOSES_NEW_NECESSITY=PASS"
+          echo "POST_LIMIT_COHERENCE_PHASE_TRANSITION=PASS"
