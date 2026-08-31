@@ -73,7 +73,7 @@ theorem inequivalence_forces_executable_separator {F : Type}
       exfalso
       exact hneq ((firstDiff_none_iff_equivalent tests hcomplete p q).1 h)
   | some f =>
-      exact ⟨f, h, (firstDiff_some_sound p q h).2⟩
+      exact ⟨f, rfl, (firstDiff_some_sound p q h).2⟩
 
 /-- A Boolean verifier outcome on a generated separator keeps exactly one of two
     behaviourally different candidates. -/
