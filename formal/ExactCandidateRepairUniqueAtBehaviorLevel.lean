@@ -12,9 +12,9 @@ universe u v w z
 structure ExactRepair {H : Type u} {C : Type v}
     (V : H → C → Bool) (target : C → Bool) (K : Type w) where
   eval : K → C → Bool
-  include : H → K
+  embedOld : H → K
   witness : K
-  preserve : ∀ h, eval (include h) = V h
+  preserve : ∀ h, eval (embedOld h) = V h
   realizes : eval witness = target
   noExtra : ∀ k, Realized V (eval k) ∨ eval k = target
 
@@ -33,7 +33,7 @@ theorem exact_repair_realized_iff {H : Type u} {C : Type v} {K : Type w}
   · intro h
     rcases h with hold | htarget
     · rcases hold with ⟨h, hh⟩
-      exact ⟨R.include h, (R.preserve h).trans hh⟩
+      exact ⟨R.embedOld h, (R.preserve h).trans hh⟩
     · exact ⟨R.witness, R.realizes.trans htarget.symm⟩
 
 /-- Therefore any abstract exact repair is behaviorally equivalent to the free
@@ -67,7 +67,7 @@ def freeRepair {H : Type u} {C : Type v}
     (V : H → C → Bool) (target : C → Bool) :
     ExactRepair V target (Extend H) where
   eval := extendVerifier V target
-  include := Sum.inl
+  embedOld := Sum.inl
   witness := newWitness
   preserve := by intro h; rfl
   realizes := rfl
