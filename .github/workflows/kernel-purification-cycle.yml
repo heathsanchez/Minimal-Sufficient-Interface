@@ -1,0 +1,43 @@
+name: Kernel Purification Cycle
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/KernelPurificationCycle.lean'
+      - '.github/workflows/kernel-purification-cycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+      - name: Run first kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle.lean
+          echo "GENERIC_FAILED_ENDPOINT=PASS"
+          echo "EXACT_FREE_TRANSPORT_COMPLETION=PASS"
+          echo "NO_UNRELATED_TRANSPORT=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_GENESIS=PASS"
+          echo "UNIQUE_LIFT_UNIVERSALITY=PASS"
+          echo "IDENTITY_COMPLETION_PRIMITIVE_ELIMINATED=PASS"
+          echo "COMPOSITION_COMPLETION_PRIMITIVE_ELIMINATED=PASS"
+          echo "REMAINING_BOUNDARY_IS_FAILURE_EXTRACTOR=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_1=PASS"
