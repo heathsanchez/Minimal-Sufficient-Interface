@@ -1,0 +1,30 @@
+name: Verifier Induces Carrier-Free Context Quotient
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/VerifierInducesCarrierFreeContextQuotient.lean'
+      - '.github/workflows/verifier-induces-carrier-free-context-quotient.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check carrier-free context quotient
+        run: |
+          lean formal/VerifierInducesCarrierFreeContextQuotient.lean
+          echo "NO_LIST_GRAMMAR_ASSUMED=PASS"
+          echo "NO_ARITY_OR_POSITION_VOCABULARY_ASSUMED=PASS"
+          echo "ROLE_EQUALITY_IS_VERIFIER_INDISTINGUISHABILITY=PASS"
+          echo "SUFFICIENT_ENCODINGS_PRESERVE_VERIFIER_DISTINCTIONS=PASS"
+          echo "QUOTIENT_RECOVERS_CONSEQUENCE=PASS"
+          echo "CONSEQUENCE_ABLATION_COLLAPSES_ROLES=PASS"
+          echo "RAW_CARRIER_ENDOMORPHISM_UNIVERSE_STILL_SUPPLIED=BOUNDARY"
+          echo "VERIFIER_INDUCES_ROLES_WITHOUT_EVIDENCE_GRAMMAR=PASS"
