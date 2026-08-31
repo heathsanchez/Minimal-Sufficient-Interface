@@ -15,6 +15,13 @@ structure Stage where
   coords : Nat → Prop
   generated : Probe → Prop
 
+@[ext] theorem Stage.ext {A B : Stage}
+    (hcoords : A.coords = B.coords)
+    (hgenerated : A.generated = B.generated) : A = B := by
+  cases A
+  cases B
+  simp_all
+
 def observes (C : Stage) (p : Probe) : Prop :=
   (∃ k, C.coords k ∧ p = coord k) ∨ C.generated p
 
@@ -171,25 +178,30 @@ theorem toggle_ne (w : World) : toggle w ≠ w := by
   have hb := congrArg Prod.snd h
   simp [toggle] at hb
 
+def omegaFailure (w : World) : Failure omegaStage where
+  left := toggle w
+  right := w
+  distinct := toggle_ne w
+  invisible := by
+    intro p hp
+    rcases hp with ⟨k, _, rfl⟩ | h
+    · simp [coord, toggle]
+    · exact False.elim h
+
 theorem omega_failure_for_every_target (w : World) :
-    Nonempty (Failure omegaStage) := by
-  refine ⟨{ left := toggle w, right := w, distinct := toggle_ne w,
-    invisible := ?_ }⟩
-  intro p hp
-  rcases hp with ⟨k, _, rfl⟩ | h
-  · simp [coord, toggle]
-  · exact False.elim h
+    Nonempty (Failure omegaStage) := ⟨omegaFailure w⟩
 
 theorem omega_generates_every_singleton (w : World) :
     (omegaPlusOneStage.generated (fun z => z = w)) := by
-  rcases omega_failure_for_every_target w with ⟨r⟩
-  exact Or.inr ⟨fun _ => trivial, ⟨r, rfl⟩⟩
+  exact Or.inr ⟨fun _ => trivial, ⟨omegaFailure w, rfl⟩⟩
 
 theorem omega_not_fixed : develop omegaStage ≠ omegaStage := by
   intro h
   have hp := congrArg (fun C => C.generated (fun z => z = (0, false))) h
   have hnew := omega_generates_every_singleton (0, false)
-  simp [omegaPlusOneStage, omegaStage] at hp hnew
+  have : ¬ omegaStage.generated (fun z => z = (0, false)) := by
+    simp [omegaStage]
+  exact this (hp ▸ hnew)
 
 theorem omegaPlusOne_agrees_implies_eq {x y : World}
     (h : agrees omegaPlusOneStage x y) : x = y := by
