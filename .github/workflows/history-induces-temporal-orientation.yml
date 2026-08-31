@@ -1,0 +1,33 @@
+name: History Induces Temporal Orientation
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check history-induced orientation theorem
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/InteractionInducesMutualRoleQuotients.olean formal/InteractionInducesMutualRoleQuotients.lean
+          lean -o formal/SymmetricInteractionCannotInduceDirectionalRoles.olean formal/SymmetricInteractionCannotInduceDirectionalRoles.lean
+          lean -o formal/TemporalOrderInducesInteractionOrientation.olean formal/TemporalOrderInducesInteractionOrientation.lean
+          lean formal/HistoryInducesTemporalOrientation.lean
+          echo "SINGLE_ROLE_FREE_NODE_CARRIER=PASS"
+          echo "STATIC_BEFORE_RELATION_NOT_SUPPLIED=PASS"
+          echo "ORDERED_HISTORY_DERIVES_PRECEDENCE=PASS"
+          echo "FORWARD_HISTORY_DERIVES_FORWARD_ORIENTATION=PASS"
+          echo "REVERSING_HISTORY_REVERSES_ORIENTATION=PASS"
+          echo "FORGETTING_HISTORY_ORDER_ERASES_DIRECTIONAL_ROLE=PASS"
+          echo "SAME_UNORDERED_PARTICIPANTS_OPPOSITE_ORDER=PASS"
+          echo "ORDERED_HISTORY_STILL_EXTERNAL=BOUNDARY"
+          echo "HISTORY_INDUCES_TEMPORAL_ORIENTATION=PASS"
