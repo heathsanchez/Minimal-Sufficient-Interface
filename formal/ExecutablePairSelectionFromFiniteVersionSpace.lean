@@ -248,7 +248,7 @@ theorem multiclasse_ambiguity_forces_pair_selection
   | some triple =>
       rcases triple with ⟨R₁, R₂, f⟩
       rcases firstUnresolvedPair_sound B hscan with ⟨h₁, h₂, hdiff⟩
-      exact ⟨R₁, R₂, f, hscan, h₁, h₂, hdiff⟩
+      exact ⟨R₁, R₂, f, rfl, h₁, h₂, hdiff⟩
 
 /-- The selected triple immediately drives strict contraction of the finite
     version space under every external verifier outcome. -/
@@ -296,11 +296,11 @@ theorem finite_version_space_self_selects_its_next_experiment
   cases hscan : firstUnresolvedPair B rs with
   | none =>
       left
-      exact ⟨hscan, firstUnresolvedPair_none_implies_confluent B hscan⟩
+      exact ⟨rfl, firstUnresolvedPair_none_implies_confluent B hscan⟩
   | some triple =>
       right
       rcases triple with ⟨R₁, R₂, f⟩
-      exact ⟨R₁, R₂, f, hscan, autonomous_finite_ambiguity_step B rs hscan⟩
+      exact ⟨R₁, R₂, f, rfl, autonomous_finite_ambiguity_step B rs hscan⟩
 
 #check PredictEquivalent
 #check predictEquivalent_iff_repairEquivalent
