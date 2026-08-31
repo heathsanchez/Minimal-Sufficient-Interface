@@ -20,10 +20,10 @@ jobs:
       - name: Check consequence-compiled obligation genesis
         run: |
           export LEAN_PATH=formal
-          lean formal/GenericResidualCompletion.lean
-          lean formal/ResidualGeneratesNextObligation.lean
-          lean formal/ConsequenceDeterminesSelection.lean
-          lean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
           lean formal/ConsequenceCompilesObligationGenerator.lean
           echo "LOWER_RESIDUAL_CREATES_REQUIRED_TOKEN=PASS"
           echo "CONSEQUENCE_DIRECTLY_COMPILES_GENERATOR=PASS"
