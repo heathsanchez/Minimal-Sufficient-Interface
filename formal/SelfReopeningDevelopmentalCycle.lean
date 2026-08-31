@@ -25,17 +25,19 @@ theorem completion_reopens_and_autonomous_resolution_reconverges
     (truth : F → Bool)
     {i : I} {R₁ R₂ : Repair I}
     (hbefore : EquivalentUnder (reachableBefore (Cap := Cap) J)
-      B.predict R₁ R₂)
+      (fun f R => B.predict R f) R₁ R₂)
     (hreq : L.required i)
     (habs : ¬ Nonempty (Cap i))
     (hsep : B.predict R₁ (J.futureOf i) ≠ B.predict R₂ (J.futureOf i)) :
-    EquivalentUnder (reachableBefore (Cap := Cap) J) B.predict R₁ R₂ ∧
+    EquivalentUnder (reachableBefore (Cap := Cap) J)
+      (fun f R => B.predict R f) R₁ R₂ ∧
     reachableAfter J L (J.futureOf i) ∧
-    ¬ EquivalentUnder (reachableAfter J L) B.predict R₁ R₂ ∧
+    ¬ EquivalentUnder (reachableAfter J L)
+      (fun f R => B.predict R f) R₁ R₂ ∧
     firstUnresolvedPair B (resolve B truth [R₁, R₂]) = none := by
   refine ⟨hbefore, residual_fill_makes_future_reachable J L hreq habs, ?_, ?_⟩
   · exact completion_can_strictly_refine_consequential_equivalence
-      J B.predict L hbefore hreq habs hsep
+      J (fun f R => B.predict R f) L hbefore hreq habs hsep
   · exact recursive_finite_resolution_terminates_at_confluence
       B truth [R₁, R₂]
 
@@ -49,17 +51,18 @@ theorem completion_reopens_then_survivors_are_consequentially_equivalent
     (truth : F → Bool)
     {i : I} {R₁ R₂ : Repair I}
     (hbefore : EquivalentUnder (reachableBefore (Cap := Cap) J)
-      B.predict R₁ R₂)
+      (fun f R => B.predict R f) R₁ R₂)
     (hreq : L.required i)
     (habs : ¬ Nonempty (Cap i))
     (hsep : B.predict R₁ (J.futureOf i) ≠ B.predict R₂ (J.futureOf i)) :
-    (¬ EquivalentUnder (reachableAfter J L) B.predict R₁ R₂) ∧
+    (¬ EquivalentUnder (reachableAfter J L)
+      (fun f R => B.predict R f) R₁ R₂) ∧
     (∀ A, A ∈ resolve B truth [R₁, R₂] →
       ∀ C, C ∈ resolve B truth [R₁, R₂] →
         RepairEquivalent J.futureOf A C) := by
   constructor
   · exact completion_can_strictly_refine_consequential_equivalence
-      J B.predict L hbefore hreq habs hsep
+      J (fun f R => B.predict R f) L hbefore hreq habs hsep
   · intro A hA C hC
     exact recursive_survivors_are_consequentially_equivalent
       B truth [R₁, R₂] A hA C hC
@@ -103,7 +106,8 @@ noncomputable def basis : CertifiedFiniteFutureInterface Idx Fut J.futureOf := b
       cases i
       simpa [hi]
 
-noncomputable def observe : Fut → Repair Idx → Bool := basis.predict
+noncomputable def observe : Fut → Repair Idx → Bool :=
+  fun f R => basis.predict R f
 
 def truth : Fut → Bool := fun _ => true
 
