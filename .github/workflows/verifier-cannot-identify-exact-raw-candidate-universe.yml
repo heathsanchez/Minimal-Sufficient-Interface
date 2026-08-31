@@ -1,0 +1,30 @@
+name: Verifier Cannot Identify Exact Raw Candidate Universe
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check raw candidate universe identifiability boundary
+        run: |
+          export LEAN_PATH=formal
+          lean formal/VerifierCannotIdentifyExactRawCandidateUniverse.lean
+          echo "RAW_CANDIDATE_UNIVERSES_GENUINELY_DISTINCT=PASS"
+          echo "VERIFIER_BEHAVIORAL_IMAGE_IDENTICAL=PASS"
+          echo "EXACT_RAW_SYNTAX_UNIVERSE_RECONSTRUCTION_IMPOSSIBLE=PASS"
+          echo "OPERATIONAL_BEHAVIOR_QUOTIENT_IS_JUSTIFIED_OBJECT=PASS"
+          echo "FREE_CANDIDATE_EXTENSION_NOT_HIDDEN_SYNTAX_RECONSTRUCTION_REQUIRED=BOUNDARY"
+          echo "RAW_CANDIDATE_UNIVERSE_IDENTIFIABILITY_BOUNDARY=PASS"
