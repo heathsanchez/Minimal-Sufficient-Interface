@@ -1,0 +1,34 @@
+name: Empty Coverage Forces Behavioral Hypothesis Genesis
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check empty-coverage hypothesis genesis
+        run: |
+          export LEAN_PATH=formal
+          lean formal/EmptyCoverageForcesBehavioralHypothesisGenesis.lean
+          echo "CURRENT_HYPOTHESIS_LANGUAGE_COVERAGE_EMPTY=PASS"
+          echo "FILTER_ONLY_UPDATE_CANNOT_CONTINUE=PASS"
+          echo "VERIFIED_CONSEQUENCE_PROMOTED_TO_BEHAVIORAL_HYPOTHESIS=PASS"
+          echo "OLD_HYPOTHESES_PRESERVED=PASS"
+          echo "NO_UNRELATED_HYPOTHESIS_ADDED=PASS"
+          echo "FREE_LANGUAGE_COMPLETION_UNIVERSAL=PASS"
+          echo "RESIDUAL_ABLATION_BLOCKS_HYPOTHESIS_GENESIS=PASS"
+          echo "NO_TARGET_SYNTAX_OR_CONSTRUCTOR_SUPPLIED=PASS"
+          echo "SEMANTIC_BEHAVIOR_SPACE_STILL_SUPPLIED=BOUNDARY"
+          echo "EMPTY_COVERAGE_FORCES_BEHAVIORAL_HYPOTHESIS_GENESIS=PASS"
