@@ -187,8 +187,9 @@ theorem ablation_preserves_question_list
     (A : ExecutableCapabilityAvailability I Cap) :
     questionsAfter C A (erasedExecutableRequirements (I := I) (Cap := Cap)) =
       questionsBefore C A := by
-  simp [questionsAfter, questionsBefore, availableAfter,
-    erasedExecutableRequirements]
+  change C.indices.filter (fun i => A.available i || false) =
+    C.indices.filter A.available
+  simp
 
 namespace Witness
 
@@ -217,7 +218,16 @@ def A : ExecutableCapabilityAvailability Idx Cap where
     | _ => false
   faithful := by
     intro i
-    cases i <;> simp [generatedReachable, Cap]
+    cases i with
+    | old => exact ⟨Existing.token⟩
+    | fresh =>
+        intro h
+        rcases h with ⟨h⟩
+        exact nomatch h
+    | unrelated =>
+        intro h
+        rcases h with ⟨h⟩
+        exact nomatch h
 
 def semanticLandscape : RequirementLandscape Idx Cap where
   required
@@ -252,6 +262,22 @@ def rightRepair : Repair Idx
   | .fresh => False
   | .unrelated => False
 
+private theorem left_old_true : E.predict leftRepair .old = true :=
+  (E.faithful leftRepair .old).2 trivial
+
+private theorem right_old_true : E.predict rightRepair .old = true :=
+  (E.faithful rightRepair .old).2 trivial
+
+private theorem left_fresh_true : E.predict leftRepair .fresh = true :=
+  (E.faithful leftRepair .fresh).2 trivial
+
+private theorem right_fresh_false : E.predict rightRepair .fresh = false := by
+  cases h : E.predict rightRepair .fresh with
+  | false => rfl
+  | true =>
+      have hf : rightRepair .fresh := (E.faithful rightRepair .fresh).1 h
+      exact False.elim hf
+
 theorem before_questions_exact : questionsBefore C A = [.old] := by
   rfl
 
@@ -268,14 +294,15 @@ theorem fresh_is_generated :
 theorem old_scan_sees_no_difference :
     firstDifference (E.predict leftRepair) (E.predict rightRepair)
       (questionsBefore C A) = none := by
-  classical
-  simp [questionsBefore, C, A, E, leftRepair, rightRepair]
+  rw [before_questions_exact]
+  simp [firstDifference, left_old_true, right_old_true]
 
 theorem regenerated_scan_finds_fresh :
     firstDifference (E.predict leftRepair) (E.predict rightRepair)
       (questionsAfter C A R) = some .fresh := by
-  classical
-  simp [questionsAfter, availableAfter, C, A, R, E, leftRepair, rightRepair]
+  rw [after_questions_exact]
+  simp [firstDifference, left_old_true, right_old_true,
+    left_fresh_true, right_fresh_false]
 
 theorem ablated_questions_exact :
     questionsAfter C A (erasedExecutableRequirements (I := Idx) (Cap := Cap)) =
