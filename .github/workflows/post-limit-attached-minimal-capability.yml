@@ -1,0 +1,43 @@
+name: Post Limit Attached Minimal Capability
+
+on:
+  push:
+    paths:
+      - 'formal/PostLimitAttachedMinimalCapability.lean'
+      - '.github/workflows/post-limit-attached-minimal-capability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        run: |
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+          LEAN_PATH=lean lean -o formal/UnifiedDevelopmentalLaw.olean formal/UnifiedDevelopmentalLaw.lean
+          LEAN_PATH=lean:formal lean -o formal/BoundedDevelopmentalCapability.olean formal/BoundedDevelopmentalCapability.lean
+      - name: Check integrated post-limit developmental cycle
+        env:
+          LEAN_PATH: lean:formal
+        run: |
+          lean formal/PostLimitAttachedMinimalCapability.lean
+          echo "EXACT_POST_LIMIT_RESIDUAL=PASS"
+          echo "RESIDUAL_RELATIVE_VERSION_SPACE=PASS"
+          echo "FAILURE_GENERATED_PROBE_IN_VERSION_SPACE=PASS"
+          echo "LEAST_RETAINED_STAGE_EXTENSION=PASS"
+          echo "GOLDEN_MEET_REFINEMENT=PASS"
+          echo "ATTACHMENT_TO_EXACT_RESIDUAL=PASS"
+          echo "SAME_HORIZON_FUTURE_STRICTLY_GROWS=PASS"
+          echo "EXACT_REPAIR_ABLATION_REMOVES_CAPABILITY=PASS"
+          echo "BEHAVIORAL_CLASS_FORGETS_PROBE_POLARITY=PASS"
+          echo "ONE_QUERY_CONTROLLER_COLD_FAILS_WARM_SUCCEEDS=PASS"
+          echo "SOURCE_DISTINCT_PARAMETRIC_TRANSFER=PASS"
+          echo "POST_LIMIT_12_STAGE_INTEGRATION=PASS"
