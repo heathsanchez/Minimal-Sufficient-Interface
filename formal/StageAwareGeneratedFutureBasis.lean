@@ -219,15 +219,26 @@ def A : ExecutableCapabilityAvailability Idx Cap where
   faithful := by
     intro i
     cases i with
-    | old => exact ⟨Existing.token⟩
+    | old =>
+        constructor
+        · intro _
+          exact ⟨Existing.token⟩
+        · intro _
+          rfl
     | fresh =>
-        intro h
-        rcases h with ⟨h⟩
-        exact nomatch h
+        constructor
+        · intro h
+          cases h
+        · intro h
+          rcases h with ⟨h⟩
+          exact nomatch h
     | unrelated =>
-        intro h
-        rcases h with ⟨h⟩
-        exact nomatch h
+        constructor
+        · intro h
+          cases h
+        · intro h
+          rcases h with ⟨h⟩
+          exact nomatch h
 
 def semanticLandscape : RequirementLandscape Idx Cap where
   required
