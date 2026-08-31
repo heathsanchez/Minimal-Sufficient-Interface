@@ -2,11 +2,9 @@ import Std
 
 namespace ReflexivityNotForcedByDirectedFailure
 
-universe u v
-
 structure RawDirectedSubstrate where
-  Obj : Type u
-  Hom : Obj → Obj → Type v
+  Obj : Type
+  Hom : Obj → Obj → Type
 
 structure DirectedAsymmetry (S : RawDirectedSubstrate) where
   left : S.Obj
@@ -21,16 +19,26 @@ def twoPoint : RawDirectedSubstrate where
   Hom := fun x y => if x = false ∧ y = true then Unit else Empty
 
 private theorem hom_false_true : Nonempty (twoPoint.Hom false true) := by
-  simp [twoPoint]
+  change Nonempty Unit
+  exact ⟨()⟩
 
 private theorem no_hom_true_false : ¬ Nonempty (twoPoint.Hom true false) := by
-  simp [twoPoint]
+  change ¬ Nonempty Empty
+  intro h
+  rcases h with ⟨e⟩
+  exact nomatch e
 
 private theorem no_hom_false_false : ¬ Nonempty (twoPoint.Hom false false) := by
-  simp [twoPoint]
+  change ¬ Nonempty Empty
+  intro h
+  rcases h with ⟨e⟩
+  exact nomatch e
 
 private theorem no_hom_true_true : ¬ Nonempty (twoPoint.Hom true true) := by
-  simp [twoPoint]
+  change ¬ Nonempty Empty
+  intro h
+  rcases h with ⟨e⟩
+  exact nomatch e
 
 /-- Directed interaction plus failed reverse transport can exist without any self-transport. -/
 theorem asymmetry_without_reflexivity :
