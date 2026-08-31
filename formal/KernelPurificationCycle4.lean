@@ -23,7 +23,7 @@ def Refines {L : Type u} (M : MeetRepair L) (a b : L) : Prop :=
 theorem meet_refines_left {L : Type u} (M : MeetRepair L) (a b : L) :
     Refines M (M.meet a b) a := by
   unfold Refines
-  rw [M.comm b a, ← M.assoc, M.idem]
+  rw [M.assoc, M.comm b a, ← M.assoc, M.idem]
 
 theorem meet_refines_right {L : Type u} (M : MeetRepair L) (a b : L) :
     Refines M (M.meet a b) b := by
