@@ -2,7 +2,7 @@ name: Kernel Purification Cycle
 
 on:
   push:
-    branches: [remove-finite-open-development-v16]
+    branches: [remove-finite-open-development-v16, kernel-purification-cycle-1]
     paths:
       - 'formal/KernelPurificationCycle.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
