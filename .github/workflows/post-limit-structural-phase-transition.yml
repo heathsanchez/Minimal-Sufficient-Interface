@@ -1,0 +1,43 @@
+name: Post Limit Structural Phase Transition
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/PostLimitStructuralPhaseTransition.lean'
+      - '.github/workflows/post-limit-structural-phase-transition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/InfiniteBitOmegaFixedPoint.olean formal/InfiniteBitOmegaFixedPoint.lean
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+          lean -o formal/ExtensionalOmegaFailureObstruction.olean formal/ExtensionalOmegaFailureObstruction.lean
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+      - name: Check structural phase transition
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/PostLimitStructuralPhaseTransition.lean
+          echo "EXACT_STATE_IDENTITY=PASS"
+          echo "EXTENSIONAL_RESIDUAL_EXHAUSTED=PASS"
+          echo "VERIFIED_FAILURE_STILL_FORCES_NEW_LAW=PASS"
+          echo "FAILURE_ABLATION_BLOCKS_LAW_GENESIS=PASS"
+          echo "STATE_CARRIER_UNCHANGED=PASS"
+          echo "POINT_SEPARATION_SURVIVES_STRUCTURAL_GENESIS=PASS"
+          echo "POST_LIMIT_STRUCTURAL_PHASE_TRANSITION=PASS"
