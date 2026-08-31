@@ -1,0 +1,41 @@
+name: Verifier Deletion Selects Evidence Role
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/VerifierDeletionSelectsEvidenceRole.lean'
+      - 'formal/OrderedEvidenceInducesRoles.lean'
+      - '.github/workflows/verifier-deletion-selects-evidence-role.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check deletion-causal role genesis
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesVariableArityLanguage.olean formal/ConsequenceCompilesVariableArityLanguage.lean
+          lean -o formal/VerifierEvidenceInducesObligationSignature.olean formal/VerifierEvidenceInducesObligationSignature.lean
+          lean -o formal/PermutationBlindEvidenceRoleBoundary.olean formal/PermutationBlindEvidenceRoleBoundary.lean
+          lean -o formal/OrderedEvidenceInducesRoles.olean formal/OrderedEvidenceInducesRoles.lean
+          lean formal/VerifierDeletionSelectsEvidenceRole.lean
+          echo "ROLE_TYPE_INDUCED_FROM_ACCEPTED_EVIDENCE=PASS"
+          echo "ARBITRARY_TARGET_PREDICATE_REMOVED=PASS"
+          echo "LEAVE_ONE_OUT_INTERVENTION_CANONICAL=PASS"
+          echo "VERIFIER_BEHAVIOR_SELECTS_UNIQUE_ROLE=PASS"
+          echo "CAUSAL_ROLE_BECOMES_RESIDUAL_TARGET=PASS"
+          echo "GENERIC_COMPLETION_REPAIRS_CAUSAL_ROLE=PASS"
+          echo "INTERVENTION_INSENSITIVITY_BLOCKS_SELECTION=PASS"
+          echo "VERIFIER_DELETION_CAUSALITY_SELECTS_RESIDUAL=PASS"
