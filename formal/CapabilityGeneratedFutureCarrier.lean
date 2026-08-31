@@ -31,7 +31,7 @@ theorem embedOldFuture_injective
     Function.Injective (embedOldFuture L) := by
   intro x y h
   apply Subtype.ext
-  exact congrArg Subtype.val h
+  exact congrArg (fun z : GeneratedFutureAfter L => z.1) h
 
 /-- A verified residual constructs a future directly in the next carrier. -/
 def residualFuture
