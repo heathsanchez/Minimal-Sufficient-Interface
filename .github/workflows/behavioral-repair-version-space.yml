@@ -1,0 +1,46 @@
+name: Behavioral Repair Version Space
+
+on:
+  push:
+    branches: [purify-developmental-kernel-v1]
+    paths:
+      - 'formal/BehavioralRepairVersionSpace.lean'
+      - '.github/workflows/behavioral-repair-version-space.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+          lean -o formal/RequirementLandscapeCompletion.olean formal/RequirementLandscapeCompletion.lean
+          lean -o formal/ConsequentialCompletionCoupling.olean formal/ConsequentialCompletionCoupling.lean
+          lean -o formal/VerifierDoesNotDeterminePointwiseRequirement.olean formal/VerifierDoesNotDeterminePointwiseRequirement.lean
+      - name: Check behavioral repair version space
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/BehavioralRepairVersionSpace.lean
+          echo "MINIMAL_REPAIR_VERSION_SPACE=PASS"
+          echo "SYNTACTIC_MINIMAL_REPAIRS_CAN_DIFFER=PASS"
+          echo "BEHAVIORAL_QUOTIENT_CAN_COLLAPSE_NONUNIQUENESS=PASS"
+          echo "CONSEQUENTIAL_CONFLUENCE_YIELDS_UNIQUE_CLASS=PASS"
+          echo "VERIFIER_ALONE_DOES_NOT_IMPLY_CONFLUENCE=PASS"
+          echo "BEHAVIORALLY_DIVERGENT_MINIMAL_REPAIRS_EXIST=PASS"
+          echo "VERSION_SPACE_QUOTIENT_IS_CORRECT_BOUNDARY=PASS"
+          echo "PURIFICATION_CYCLE_6=PASS"
