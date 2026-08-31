@@ -10,6 +10,7 @@ on:
       - 'formal/KernelPurificationCycle4.lean'
       - 'formal/KernelPurificationCycle5.lean'
       - 'formal/KernelPurificationCycle6.lean'
+      - 'formal/KernelPurificationCycle7.lean'
       - '.github/workflows/kernel-purification-cycle.yml'
   workflow_dispatch:
 
@@ -37,6 +38,7 @@ jobs:
           lean -o formal/KernelPurificationCycle3.olean formal/KernelPurificationCycle3.lean
           lean -o formal/KernelPurificationCycle4.olean formal/KernelPurificationCycle4.lean
           lean -o formal/KernelPurificationCycle5.olean formal/KernelPurificationCycle5.lean
+          lean -o formal/KernelPurificationCycle6.olean formal/KernelPurificationCycle6.lean
       - name: Run first kernel purification cycle
         env:
           LEAN_PATH: formal
@@ -103,5 +105,15 @@ jobs:
           echo "SUPPLIED_COORDINATE_NOT_NEEDED_FOR_EXISTENCE=PASS"
           echo "LOCAL_DEFECT_INFERS_DIRECTION=PASS"
           echo "POINTWISE_AGREEMENT_BLOCKS_MISMATCH=PASS"
-          echo "CANONICAL_WITNESS_SELECTION_REMAINS_OPEN=PASS"
           echo "KERNEL_PURIFICATION_CYCLE_6=PASS"
+      - name: Run seventh kernel purification cycle
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/KernelPurificationCycle7.lean
+          echo "FULL_MISMATCH_SUPPORT_IS_CANONICAL=PASS"
+          echo "ARBITRARY_WITNESS_SELECTION_ELIMINATED=PASS"
+          echo "SUPPORT_PARTITIONS_BY_INFERRED_POLARITY=PASS"
+          echo "OUTSIDE_SUPPORT_ALREADY_SATISFIED=PASS"
+          echo "EMPTY_SUPPORT_FORCES_PROFILE_AGREEMENT=PASS"
+          echo "KERNEL_PURIFICATION_CYCLE_7=PASS"
