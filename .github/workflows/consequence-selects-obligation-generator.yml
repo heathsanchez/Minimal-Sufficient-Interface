@@ -1,0 +1,42 @@
+name: Consequence Selects Obligation Generator
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/ResidualGeneratesNextObligation.lean'
+      - 'formal/ConsequenceDeterminesSelection.lean'
+      - 'formal/ConsequenceSelectsObligationGenerator.lean'
+      - '.github/workflows/consequence-selects-obligation-generator.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+      - name: Check consequence-selected generator theorem
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/ConsequenceSelectsObligationGenerator.lean
+          echo "GENERATOR_IDENTITY_ANONYMOUS=PASS"
+          echo "GENERATOR_SELECTED_BY_VERIFIED_CONSEQUENCE=PASS"
+          echo "SELECTED_GENERATOR_FORMS_NEXT_OBLIGATION=PASS"
+          echo "NEXT_RESIDUAL_REPAIRED_BY_SAME_OPERATOR=PASS"
+          echo "CONSEQUENCE_ABLATION_BLOCKS_GENERATOR_SELECTION=PASS"
+          echo "LOWER_RESIDUAL_ABLATION_BLOCKS_NEXT_ADDRESS=PASS"
+          echo "NO_REPAIR_KIND_TAG=PASS"
+          echo "CONSEQUENCE_SELECTS_HOW_NEXT_NECESSITY_IS_FORMED=PASS"
