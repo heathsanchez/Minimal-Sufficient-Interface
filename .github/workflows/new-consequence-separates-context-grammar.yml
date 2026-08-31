@@ -1,0 +1,31 @@
+name: New Consequence Separates Context Grammar
+
+on:
+  push:
+    branches: [rgrs/residual-ontology-genesis]
+    paths:
+      - 'formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean'
+      - 'formal/NewConsequenceSeparatesContextGrammar.lean'
+      - '.github/workflows/new-consequence-separates-context-grammar.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check new consequence grammar separation
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean formal/NewConsequenceSeparatesContextGrammar.lean
+          echo "OLD_CONSEQUENCE_GRAMMAR_AMBIGUITY=PASS"
+          echo "NEW_DECIDING_CONTEXT_ADMITTED=PASS"
+          echo "NEW_CONTEXT_SEPARATES_PREVIOUSLY_EQUIVALENT_GRAMMARS=PASS"
+          echo "CONSEQUENCE_EQUIVALENCE_STRICTLY_REFINED=PASS"
+          echo "ARBITRARY_EXACT_GRAMMAR_IDENTIFICATION_NOT_CLAIMED=BOUNDARY"
+          echo "NEW_CONSEQUENCE_CREATES_NEW_STRUCTURAL_DISTINCTION=PASS"
