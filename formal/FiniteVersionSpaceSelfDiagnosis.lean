@@ -141,7 +141,7 @@ theorem firstSeparatorAgainst_sound
           cases hpair
           exact (firstDifference_sound
             (B.predict (repairOf c)) (B.predict (repairOf a))
-            B.questions g hfd).2
+            B.questions f hfd).2
 
 /-- Pairwise consequential confluence of a finite candidate list. -/
 def PairwiseEquivalent
@@ -168,7 +168,14 @@ theorem firstVersionSeparator_none_iff_pairwise
       cases hscan : firstSeparatorAgainst B repairOf c rest with
       | none =>
           have hall := (firstSeparatorAgainst_none_iff B repairOf c rest).1 hscan
-          simp [firstVersionSeparator, hscan, PairwiseEquivalent, ih, hall]
+          constructor
+          · intro hnone
+            have hrest : firstVersionSeparator B repairOf rest = none := by
+              simpa [firstVersionSeparator, hscan] using hnone
+            exact ⟨hall, ih.mp hrest⟩
+          · intro hp
+            have hrest : firstVersionSeparator B repairOf rest = none := ih.mpr hp.2
+            simpa [firstVersionSeparator, hscan] using hrest
       | some df =>
           rcases df with ⟨d, f⟩
           have hnot : ¬ (∀ d, d ∈ rest → RepairEquivalent futureOf (repairOf c) (repairOf d)) := by
@@ -176,7 +183,11 @@ theorem firstVersionSeparator_none_iff_pairwise
             have hnone := (firstSeparatorAgainst_none_iff B repairOf c rest).2 hall
             rw [hscan] at hnone
             contradiction
-          simp [firstVersionSeparator, hscan, PairwiseEquivalent, hnot]
+          constructor
+          · intro hnone
+            simp [firstVersionSeparator, hscan] at hnone
+          · intro hp
+            exact False.elim (hnot hp.1)
 
 /-- Any separator returned by self-diagnosis is an actual executable
     consequential disagreement between two candidates from the scanned space. -/
