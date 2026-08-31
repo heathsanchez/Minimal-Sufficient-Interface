@@ -90,17 +90,17 @@ inductive OneWay : TwoPoint → TwoPoint → Type where
   | edge : OneWay .source .target
 
 theorem target_witness_without_continuation_closure_is_insufficient :
-    ¬ (∀ (O : TwoPoint → Type), O TwoPoint.target → ∀ z : TwoPoint,
-      Path OneWay z TwoPoint.target → O z) := by
+    ¬ (∀ (O : TwoPoint → Type), Nonempty (O TwoPoint.target) → ∀ z : TwoPoint,
+      Nonempty (Path OneWay z TwoPoint.target) → Nonempty (O z)) := by
   intro h
   let O : TwoPoint → Type := fun
     | .source => Empty
     | .target => Unit
-  have p : Path OneWay TwoPoint.source TwoPoint.target :=
-    .step .edge (.refl _)
-  have impossible : O TwoPoint.source :=
-    h O Unit.unit TwoPoint.source p
-  exact Empty.elim impossible
+  have p : Nonempty (Path OneWay TwoPoint.source TwoPoint.target) :=
+    ⟨.step .edge (.refl _)⟩
+  have impossible : Nonempty (O TwoPoint.source) :=
+    h O ⟨Unit.unit⟩ TwoPoint.source p
+  exact impossible.elim (fun e => Empty.elim e)
 
 theorem canonical_failure_consequence_certificate
     (r : VerifiedFailure G) :
