@@ -38,6 +38,7 @@ jobs:
           lean -o formal/FiniteExecutableDistinguishingFuture.olean formal/FiniteExecutableDistinguishingFuture.lean
           lean -o formal/VerifiedVersionSpaceContraction.olean formal/VerifiedVersionSpaceContraction.lean
           lean -o formal/ExecutablePairSelectionFromFiniteVersionSpace.olean formal/ExecutablePairSelectionFromFiniteVersionSpace.lean
+          lean -o formal/RecursiveFiniteVersionSpaceResolution.olean formal/RecursiveFiniteVersionSpaceResolution.lean
       - name: Check finite autonomous descent
         env:
           LEAN_PATH: formal
