@@ -111,8 +111,7 @@ theorem resolveFuel_reaches_confluence
       intro rs hlen
       cases hscan : firstUnresolvedPair B rs with
       | none =>
-          unfold resolveFuel
-          rw [hscan]
+          simp [resolveFuel, hscan]
       | some triple =>
           rcases triple with ⟨R₁, R₂, f⟩
           have hlt : (filterRepairs B truth f rs).length < rs.length :=
@@ -193,6 +192,7 @@ theorem recursive_resolution_keeps_left :
   simp only [List.length_cons, List.length_nil]
   unfold resolveFuel
   rw [initial_scan]
+  simp only
   rw [alpha_filter]
   unfold resolveFuel
   rw [singleton_scan]
