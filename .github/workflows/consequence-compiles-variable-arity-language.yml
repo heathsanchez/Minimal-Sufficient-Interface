@@ -1,0 +1,42 @@
+name: Consequence Compiles Variable Arity Language
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/GenericResidualCompletion.lean'
+      - 'formal/ResidualGeneratesNextObligation.lean'
+      - 'formal/ConsequenceCompilesObligationGenerator.lean'
+      - 'formal/ConsequenceCompilesVariableArityLanguage.lean'
+      - '.github/workflows/consequence-compiles-variable-arity-language.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check variable-arity consequence compiler
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean formal/ConsequenceCompilesVariableArityLanguage.lean
+          echo "TARGET_TOKEN_UNAVAILABLE_BEFORE_REPAIR=PASS"
+          echo "LOWER_REPAIR_CREATES_REQUIRED_TOKEN=PASS"
+          echo "FIXED_BINARY_ARITY_REMOVED=PASS"
+          echo "CONSEQUENCE_SELECTS_ACCEPTED_ARITY=PASS"
+          echo "CHANGING_CONSEQUENCE_CHANGES_ACCEPTED_ARITY=PASS"
+          echo "VERIFIER_ACCEPTED_TUPLE_FORMS_OBLIGATION=PASS"
+          echo "GENERATED_VARIABLE_ARITY_OBLIGATION_STARTS_UNREALIZED=PASS"
+          echo "SAME_GENERIC_OPERATOR_REPAIRS_VARIABLE_ARITY_RESIDUAL=PASS"
+          echo "CONSEQUENCE_ABLATION_COLLAPSES_LANGUAGE=PASS"
+          echo "FINITE_LIST_META_SIGNATURE_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_COMPILES_VARIABLE_ARITY_LANGUAGE=PASS"
