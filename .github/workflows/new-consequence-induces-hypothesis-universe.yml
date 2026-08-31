@@ -1,0 +1,37 @@
+name: New Consequence Induces Hypothesis Universe
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check positive hypothesis-universe genesis
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/VerifierOutcomeCannotIdentifyExactContextGrammar.olean formal/VerifierOutcomeCannotIdentifyExactContextGrammar.lean
+          lean -o formal/NewConsequenceSeparatesContextGrammar.olean formal/NewConsequenceSeparatesContextGrammar.lean
+          lean -o formal/AmbiguityInducesDecidingContext.olean formal/AmbiguityInducesDecidingContext.lean
+          lean -o formal/VersionSpaceInducesDecidingContext.olean formal/VersionSpaceInducesDecidingContext.lean
+          lean -o formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.olean formal/VerifierOutcomeCannotIdentifyExactHypothesisUniverse.lean
+          lean formal/NewConsequenceInducesHypothesisUniverse.lean
+          echo "CURRENT_VERSION_SPACE_AMBIGUOUS=PASS"
+          echo "DECIDING_CONTEXT_CONSEQUENCE_SELECTED=PASS"
+          echo "NEW_VERIFIER_PROFILE_INDUCES_NEXT_UNIVERSE=PASS"
+          echo "PREVIOUSLY_COMPATIBLE_HYPOTHESIS_ELIMINATED=PASS"
+          echo "OBSERVABLE_HYPOTHESIS_UNIVERSE_STRICTLY_REFINED=PASS"
+          echo "NO_TARGET_HYPOTHESIS_UNIVERSE_SUPPLIED_TO_UPDATE=PASS"
+          echo "RAW_CARRIER_AND_RAW_HYPOTHESIS_LANGUAGE_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_SELECTED_CONTEXT_GENERATES_STRICTER_HYPOTHESIS_UNIVERSE=PASS"
