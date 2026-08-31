@@ -128,17 +128,15 @@ theorem completion_can_strictly_refine_consequential_equivalence
   exact (generated_future_refines_past_identity J observe L
     hbefore hreq habs hsep).2
 
-/-- Tiny closed witness showing the phase transition is inhabited, not merely
-    conditional.  There are two states and one future.  Initially no capability
-    exists, so the states are vacuously equivalent.  Requiring the missing
-    capability freely creates the future, which separates them. -/
+/- Tiny closed witness showing the phase transition is inhabited, not merely
+   conditional. There are two states and one future. Initially no capability
+   exists, so the states are vacuously equivalent. Requiring the missing
+   capability freely creates the future, which separates them. -/
 namespace Witness
 
-inductive State where | left | right
+inductive State where | left | right deriving DecidableEq
 inductive Idx where | probe
 inductive Fut where | probe
-
-instance : DecidableEq State := by infer_instance
 
 abbrev EmptyCap : Idx → Type := fun _ => Empty
 
