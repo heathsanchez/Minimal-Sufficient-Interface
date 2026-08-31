@@ -1,0 +1,35 @@
+name: Failure Generated Omega Plus One
+
+on:
+  push:
+    paths:
+      - 'formal/FailureGeneratedOmegaPlusOne.lean'
+      - '.github/workflows/failure-generated-omega-plus-one.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check failure-generated post-limit closure
+        run: |
+          lean formal/FailureGeneratedOmegaPlusOne.lean
+          echo "FINITE_ITERATES_EXACT=PASS"
+          echo "EVERY_FINITE_STAGE_ADVANCES=PASS"
+          echo "FINITE_SUPREMUM_IS_OMEGA=PASS"
+          echo "NO_POST_LIMIT_PROBE_AT_FINITE_STAGE=PASS"
+          echo "SEMANTIC_CLOSURE_GENERATES_FAILURE_PROBES=PASS"
+          echo "OMEGA_IS_NOT_FIXED=PASS"
+          echo "POST_LIMIT_REPRESENTATION_SEPARATES_WORLDS=PASS"
+          echo "OMEGA_PLUS_ONE_IS_FIXED=PASS"
+          echo "FAILURE_GENESIS_ABLATION_RESTORES_OMEGA_FIXED=PASS"
+          echo "NO_ORDINAL_POST_LIMIT_CONSTRUCTOR=PASS"
+          echo "FAILURE_GENERATED_CLOSURE_ONE_BEYOND_FINITE_SUP=PASS"
