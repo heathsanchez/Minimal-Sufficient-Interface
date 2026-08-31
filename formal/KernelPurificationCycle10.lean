@@ -69,7 +69,7 @@ def residualOfSupport
   distinct := by
     intro heq
     apply p.2.2
-    subst heq
+    cases heq
     rfl
 
 /-- The old consequence language is representation-mediated: each old
