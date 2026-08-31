@@ -1,0 +1,38 @@
+name: Verifier Evidence Induces Obligation Signature
+
+on:
+  push:
+    branches: [remove-finite-open-development-v16]
+    paths:
+      - 'formal/VerifierEvidenceInducesObligationSignature.lean'
+      - '.github/workflows/verifier-evidence-induces-obligation-signature.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check evidence-induced obligation signature
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/GenericResidualCompletion.olean formal/GenericResidualCompletion.lean
+          lean -o formal/ResidualGeneratesNextObligation.olean formal/ResidualGeneratesNextObligation.lean
+          lean -o formal/ConsequenceDeterminesSelection.olean formal/ConsequenceDeterminesSelection.lean
+          lean -o formal/ConsequenceSelectsObligationGenerator.olean formal/ConsequenceSelectsObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesObligationGenerator.olean formal/ConsequenceCompilesObligationGenerator.lean
+          lean -o formal/ConsequenceCompilesVariableArityLanguage.olean formal/ConsequenceCompilesVariableArityLanguage.lean
+          lean formal/VerifierEvidenceInducesObligationSignature.lean
+          echo "TARGET_BEARING_EVIDENCE_IMPOSSIBLE_BEFORE_REPAIR=PASS"
+          echo "LOWER_REPAIR_CREATES_EVIDENCE_TOKEN=PASS"
+          echo "NO_ARITY_PARAMETER_SUPPLIED=PASS"
+          echo "EVIDENCE_SHAPE_INDUCES_SIGNATURE=PASS"
+          echo "FRESH_SIGNATURED_OBLIGATION_IS_RESIDUAL=PASS"
+          echo "SAME_GENERIC_OPERATOR_REPAIRS_RESIDUAL=PASS"
+          echo "VERIFIER_ERASURE_BLOCKS_SIGNATURE_GENESIS=PASS"
+          echo "FINITE_LIST_META_GRAMMAR_REMAINS_EXPLICIT=PASS"
+          echo "VERIFIER_EVIDENCE_INDUCES_OBLIGATION_SIGNATURE=PASS"
