@@ -1,0 +1,42 @@
+name: Post Limit Failure Modality Boundary
+
+on:
+  push:
+    paths:
+      - 'formal/PostLimitFailureModalityBoundary.lean'
+      - '.github/workflows/post-limit-failure-modality-boundary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependency certificates
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/InfiniteBitOmegaFixedPoint.olean formal/InfiniteBitOmegaFixedPoint.lean
+          lean -o formal/FailureGeneratedOmegaPlusOne.olean formal/FailureGeneratedOmegaPlusOne.lean
+          lean -o formal/ExtensionalOmegaFailureObstruction.olean formal/ExtensionalOmegaFailureObstruction.lean
+          lean -o formal/ReflexivityNotForcedByDirectedFailure.olean formal/ReflexivityNotForcedByDirectedFailure.lean
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+      - name: Check joined post-limit boundary
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/PostLimitFailureModalityBoundary.lean
+          echo "EXACT_OMEGA_EXT_RESIDUAL_EXHAUSTED=PASS"
+          echo "RAW_DIRECTED_ASYMMETRY_DOES_NOT_FORCE_SOURCE_ID=PASS"
+          echo "RAW_DIRECTED_ASYMMETRY_DOES_NOT_FORCE_TARGET_ID=PASS"
+          echo "CLOSED_CONTINUATION_FAILURE_FORCES_MINIMAL_ID=PASS"
+          echo "FAILURE_SIGNAL_ABLATION_BLOCKS_POST_LIMIT_ID_GENESIS=PASS"
+          echo "POST_LIMIT_FAILURE_MODALITY_BOUNDARY=PASS"
