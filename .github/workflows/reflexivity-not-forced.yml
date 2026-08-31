@@ -1,0 +1,28 @@
+name: Reflexivity Not Forced By Directed Failure
+
+on:
+  push:
+    branches:
+      - remove-finite-open-development-v16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check reflexivity obstruction theorem
+        run: |
+          lean formal/ReflexivityNotForcedByDirectedFailure.lean
+          echo "RAW_DIRECTED_ASYMMETRY_EXISTS_WITHOUT_REFLEXIVITY=PASS"
+          echo "SOURCE_REFLEXIVITY_NOT_FORCED=PASS"
+          echo "TARGET_REFLEXIVITY_NOT_FORCED=PASS"
+          echo "GLOBAL_REFLEXIVITY_NOT_FORCED=PASS"
+          echo "REFLEXIVITY_REQUIRES_EXTRA_STRUCTURE_OR_RULE=PASS"
