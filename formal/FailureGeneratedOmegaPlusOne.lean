@@ -112,9 +112,10 @@ theorem develop_finite_step (n : Nat) :
       · exact Nat.lt_succ_iff.mpr (reachable_finite_le hr)
     · intro hk
       have hle : k ≤ n := Nat.lt_succ_iff.mp hk
-      rcases Nat.lt_or_eq_of_le hle with hlt | rfl
+      rcases Nat.lt_or_eq_of_le hle with hlt | heq
       · exact Or.inl hlt
-      · exact Or.inr ⟨fun j hj => hj, finite_coordinate_residual n⟩
+      · subst k
+        exact Or.inr ⟨fun j hj => hj, finite_coordinate_residual n⟩
   · funext p
     apply propext
     constructor
