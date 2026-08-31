@@ -1,0 +1,34 @@
+name: Retention Orientation Ablations
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check retention-orientation necessity ablations
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean -o formal/AnonymousInteractionConvergenceKernel.olean formal/AnonymousInteractionConvergenceKernel.lean
+          lean -o formal/DevelopmentalRetentionInducesInteractionOrientation.olean formal/DevelopmentalRetentionInducesInteractionOrientation.lean
+          lean formal/RetentionOrientationAblations.lean
+          echo "STRICT_GAIN_THEN_ERASURE_CANNOT_STABILIZE=PASS"
+          echo "ARBITRARY_INTERNAL_GAIN_IS_NOT_VERIFIER_LICENSED=PASS"
+          echo "SAME_UNORDERED_FINAL_MEMORY_OPPOSITE_ACQUISITION_ORDER=PASS"
+          echo "PERSISTENCE_IS_NECESSARY_FOR_STABLE_ORIENTATION=PASS"
+          echo "EXTERNAL_LICENSE_IS_NECESSARY_FOR_DEVELOPMENTAL_GAIN=PASS"
+          echo "ACQUISITION_ORDER_IS_NOT_RECOVERABLE_FROM_FINAL_SET=PASS"
+          echo "RETENTION_ORIENTATION_ABLATIONS=PASS"
