@@ -78,7 +78,7 @@ def emergentHigherResidual
   unrealized := by
     intro h
     rcases h with ⟨h⟩
-    exact h
+    exact Empty.elim h
 
 /-- The same semantic-kind-blind completion operator repairs the newly created
     higher residual. -/
