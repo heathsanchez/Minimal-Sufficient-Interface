@@ -1,0 +1,32 @@
+name: Canonical Failure Consequence
+
+on:
+  push:
+    paths:
+      - 'lean/CanonicalFailureConsequence.lean'
+      - '.github/workflows/canonical-failure-consequence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check canonical failure consequence theorem
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean lean/CanonicalFailureConsequence.lean
+          echo "RAW_CONTINUATION_GENERATES_REPRESENTABLE_OBSERVATION=PASS"
+          echo "REPRESENTABLE_MAPS_TO_EVERY_TARGET_OBSERVATION=PASS"
+          echo "VERIFIED_FAILURE_CANONICALLY_SELECTS_REPRESENTABLE=PASS"
+          echo "CANONICAL_CONSEQUENCE_SEPARATES_FAILURE=PASS"
+          echo "TARGET_WITNESS_ABLATION_BREAKS_UNIVERSAL_GENERATION=PASS"
+          echo "CANONICAL_FAILURE_CONSEQUENCE=PASS"
