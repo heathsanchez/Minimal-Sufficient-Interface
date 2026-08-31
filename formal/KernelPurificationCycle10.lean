@@ -85,12 +85,12 @@ theorem old_language_blind_on_nonfactor_support
     {X : Type u} {I : Type v} {R : Type w}
     (L : ConsequenceLanguage X I) (q : X → R) (c : X → Prop)
     (hfactor : LanguageFactorsThrough L q)
-    (p : ResidualIndex q c) :
-    L.observe p.1.1 p.1.2 ↔ L.observe p.1.1 p.1.1 := by
-  have heq : L.observe p.1.1 p.1.1 = L.observe p.1.1 p.1.2 :=
-    factorsThrough_implies_fiber_constancy q (L.observe p.1.1)
-      (hfactor p.1.1) p.1.1 p.1.2 p.2.1
-  exact (iff_of_eq heq).symm
+    (p : ResidualIndex q c) (i : I) :
+    L.observe i p.1.1 ↔ L.observe i p.1.2 := by
+  have heq : L.observe i p.1.1 = L.observe i p.1.2 :=
+    factorsThrough_implies_fiber_constancy q (L.observe i)
+      (hfactor i) p.1.1 p.1.2 p.2.1
+  exact iff_of_eq heq
 
 /-- Extend the old language by *all* consequence coordinates generated from the
     canonical non-factorization support.  Neither a failed pair nor a new probe
@@ -187,6 +187,7 @@ theorem global_nonfactorization_generates_residual_language
 #check prop_fiber_constancy_implies_factorsThrough
 #check nonfactorization_support_nonempty
 #check residualOfSupport
+#check old_language_blind_on_nonfactor_support
 #check extendFromNonfactorSupport
 #check support_generated_coordinates_are_new
 #check fullLanguageLift_unique
