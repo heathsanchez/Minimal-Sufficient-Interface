@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - remove-finite-open-development-v16
+    paths:
+      - 'formal/IdentityForcedAsMinimalCompletion.lean'
+      - 'formal/FailureForcesIdentityCompletion.lean'
+      - '.github/workflows/failure-forces-identity-completion.yml'
   workflow_dispatch:
 
 jobs:
@@ -17,7 +21,8 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Check failure-forces-identity theorem
         run: |
-          lean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          LEAN_PATH=formal lean formal/FailureForcesIdentityCompletion.lean
           echo "FAILURE_GENERATES_DEMAND=PASS"
           echo "MISSING_SELF_TRANSPORT_EXPOSED=PASS"
           echo "FAILURE_FORCES_NEW_SELF_TRANSPORT=PASS"
