@@ -44,14 +44,14 @@ theorem predictEquivalent_iff_repairEquivalent
       have hr₂ : RepairReachable futureOf R₂ f :=
         (B.faithful R₂ f).1 h₂
       have hr₁ : RepairReachable futureOf R₁ f := (hs f).2 hr₂
-      have : B.predict R₁ f = true := (B.faithful R₁ f).2 hr₁
-      simp [h₁] at this
+      have ht : B.predict R₁ f = true := (B.faithful R₁ f).2 hr₁
+      simp [h₁] at ht
     · exfalso
       have hr₁ : RepairReachable futureOf R₁ f :=
         (B.faithful R₁ f).1 h₁
       have hr₂ : RepairReachable futureOf R₂ f := (hs f).1 hr₁
-      have : B.predict R₂ f = true := (B.faithful R₂ f).2 hr₂
-      simp [h₂] at this
+      have ht : B.predict R₂ f = true := (B.faithful R₂ f).2 hr₂
+      simp [h₂] at ht
     · rfl
 
 /-- Search one fixed repair against a list of alternatives. The returned pair
@@ -94,6 +94,35 @@ theorem firstAgainst_sound
           rcases ih h with ⟨hmem, hdiff⟩
           exact ⟨by simp [hmem], hdiff⟩
 
+/-- If the executable pair search reports no distinguishing future, then the
+    two repairs agree on every question in the complete finite basis. -/
+theorem distinguishing_none_implies_predictEquivalent
+    {I F : Type} {futureOf : I → F}
+    (B : CertifiedFiniteFutureInterface I F futureOf)
+    (R S : Repair I)
+    (hnone : firstDistinguishingFuture B R S = none) :
+    PredictEquivalent B R S := by
+  intro f
+  cases hR : B.predict R f <;> cases hS : B.predict S f
+  · rfl
+  · have hdiff : B.predict R f ≠ B.predict S f := by simp [hR, hS]
+    have hex : ∃ q,
+        firstDistinguishingFuture B R S = some q := by
+      apply firstDifference_complete (B.predict R) (B.predict S) B.questions
+      exact ⟨f, B.covers f, hdiff⟩
+    rcases hex with ⟨q, hsome⟩
+    rw [hnone] at hsome
+    cases hsome
+  · have hdiff : B.predict R f ≠ B.predict S f := by simp [hR, hS]
+    have hex : ∃ q,
+        firstDistinguishingFuture B R S = some q := by
+      apply firstDifference_complete (B.predict R) (B.predict S) B.questions
+      exact ⟨f, B.covers f, hdiff⟩
+    rcases hex with ⟨q, hsome⟩
+    rw [hnone] at hsome
+    cases hsome
+  · rfl
+
 /-- Failure against a list means R agrees with every listed repair on every
     future in the certified complete basis. -/
 theorem firstAgainst_none_implies_equivalent
@@ -111,20 +140,14 @@ theorem firstAgainst_none_implies_equivalent
   | cons A as ih =>
       intro hnone S hmem
       cases hq : firstDistinguishingFuture B R A with
-      | some q => simp [firstAgainst, hq] at hnone
+      | some q =>
+          simp [firstAgainst, hq] at hnone
       | none =>
           have htail : firstAgainst B R as = none := by
             simpa [firstAgainst, hq] using hnone
-          rcases List.mem_cons.mp hmem with rfl | hS
-          · intro f
-            by_contra hdiff
-            have hsem : ¬ RepairEquivalent futureOf R A := by
-              intro hEq
-              have hp := (predictEquivalent_iff_repairEquivalent B R A).2 hEq
-              exact hdiff (hp f)
-            rcases executable_search_finds_separator B hsem with ⟨q, hfind, _⟩
-            rw [hq] at hfind
-            cases hfind
+          rcases List.mem_cons.mp hmem with hSA | hS
+          · subst S
+            exact distinguishing_none_implies_predictEquivalent B R A hq
           · exact ih htail S hS
 
 /-- Scan an entire finite repair list. No pair is supplied. -/
@@ -151,14 +174,14 @@ theorem firstUnresolvedPair_sound
   | nil =>
       intro R₁ R₂ f h
       simp [firstUnresolvedPair] at h
-  | cons R tail ih =>
+  | cons A tail ih =>
       intro R₁ R₂ f h
-      cases ha : firstAgainst B R tail with
+      cases ha : firstAgainst B A tail with
       | some p =>
           rcases p with ⟨S, q⟩
           simp [firstUnresolvedPair, ha] at h
           rcases h with ⟨rfl, rfl, rfl⟩
-          rcases firstAgainst_sound B R ha with ⟨hS, hdiff⟩
+          rcases firstAgainst_sound B A ha with ⟨hS, hdiff⟩
           exact ⟨by simp, by simp [hS], hdiff⟩
       | none =>
           simp [firstUnresolvedPair, ha] at h
@@ -179,23 +202,28 @@ theorem firstUnresolvedPair_none_implies_confluent
   | nil =>
       intro _ R₁ h₁
       simp at h₁
-  | cons R tail ih =>
+  | cons A tail ih =>
       intro hnone R₁ h₁ R₂ h₂
-      cases ha : firstAgainst B R tail with
-      | some p => simp [firstUnresolvedPair, ha] at hnone
+      cases ha : firstAgainst B A tail with
+      | some p =>
+          simp [firstUnresolvedPair, ha] at hnone
       | none =>
           have hrec : firstUnresolvedPair B tail = none := by
             simpa [firstUnresolvedPair, ha] using hnone
-          have hRtail := firstAgainst_none_implies_equivalent B R ha
-          rcases List.mem_cons.mp h₁ with rfl | h₁t
-          · rcases List.mem_cons.mp h₂ with rfl | h₂t
-            · intro f; exact Iff.rfl
-            · exact (predictEquivalent_iff_repairEquivalent B R R₂).1
-                (hRtail R₂ h₂t)
-          · rcases List.mem_cons.mp h₂ with rfl | h₂t
-            · have hEq : RepairEquivalent futureOf R R₁ :=
-                (predictEquivalent_iff_repairEquivalent B R R₁).1
-                  (hRtail R₁ h₁t)
+          have hAtail := firstAgainst_none_implies_equivalent B A ha
+          rcases List.mem_cons.mp h₁ with hR₁A | h₁t
+          · subst R₁
+            rcases List.mem_cons.mp h₂ with hR₂A | h₂t
+            · subst R₂
+              intro f
+              exact Iff.rfl
+            · exact (predictEquivalent_iff_repairEquivalent B A R₂).1
+                (hAtail R₂ h₂t)
+          · rcases List.mem_cons.mp h₂ with hR₂A | h₂t
+            · subst R₂
+              have hEq : RepairEquivalent futureOf A R₁ :=
+                (predictEquivalent_iff_repairEquivalent B A R₁).1
+                  (hAtail R₁ h₁t)
               intro f
               exact (hEq f).symm
             · exact ih hrec R₁ h₁t R₂ h₂t
@@ -213,14 +241,14 @@ theorem multiclasse_ambiguity_forces_pair_selection
       R₁ ∈ rs ∧ R₂ ∈ rs ∧
       B.predict R₁ f ≠ B.predict R₂ f := by
   cases hscan : firstUnresolvedPair B rs with
-  | some triple =>
-      rcases triple with ⟨R₁, R₂, f⟩
-      rcases firstUnresolvedPair_sound B hscan with ⟨h₁, h₂, hdiff⟩
-      exact ⟨R₁, R₂, f, hscan, h₁, h₂, hdiff⟩
   | none =>
       exfalso
       rcases hamb with ⟨R₁, h₁, R₂, h₂, hneq⟩
       exact hneq (firstUnresolvedPair_none_implies_confluent B hscan R₁ h₁ R₂ h₂)
+  | some triple =>
+      rcases triple with ⟨R₁, R₂, f⟩
+      rcases firstUnresolvedPair_sound B hscan with ⟨h₁, h₂, hdiff⟩
+      exact ⟨R₁, R₂, f, hscan, h₁, h₂, hdiff⟩
 
 /-- The selected triple immediately drives strict contraction of the finite
     version space under every external verifier outcome. -/
@@ -239,27 +267,13 @@ theorem autonomous_finite_ambiguity_step
   constructor
   · intro R hR
     exact hR.1
-  · rcases unequal_predictions_exactly_one_matches hdiff with hleft | hright
-    · by_cases hout : B.predict R₁ f = outcome
-      · have hnot : B.predict R₂ f ≠ outcome := by
-          intro h₂out
-          exact hleft.2 (h₂out.trans hout.symm)
-        exact ⟨R₂, h₂, by
-          intro hs
-          exact hnot hs.2⟩
-      · exact ⟨R₁, h₁, by
-          intro hs
-          exact hout hs.2⟩
-    · by_cases hout : B.predict R₂ f = outcome
-      · have hnot : B.predict R₁ f ≠ outcome := by
-          intro h₁out
-          exact hright.2 (h₁out.trans hout.symm)
-        exact ⟨R₁, h₁, by
-          intro hs
-          exact hnot hs.2⟩
-      · exact ⟨R₂, h₂, by
-          intro hs
-          exact hout hs.2⟩
+  · rcases unequal_predictions_exactly_one_matches (outcome := outcome) hdiff with hleft | hright
+    · exact ⟨R₂, h₂, by
+        intro hs
+        exact hleft.2 hs.2⟩
+    · exact ⟨R₁, h₁, by
+        intro hs
+        exact hright.2 hs.2⟩
 
 /-- Cycle-11 conclusion: in a finite version space with a certified finite
     future interface, no pair selector is needed. Either the scan returns none,
@@ -292,6 +306,7 @@ theorem finite_version_space_self_selects_its_next_experiment
 #check predictEquivalent_iff_repairEquivalent
 #check firstAgainst
 #check firstAgainst_sound
+#check distinguishing_none_implies_predictEquivalent
 #check firstAgainst_none_implies_equivalent
 #check firstUnresolvedPair
 #check firstUnresolvedPair_sound
