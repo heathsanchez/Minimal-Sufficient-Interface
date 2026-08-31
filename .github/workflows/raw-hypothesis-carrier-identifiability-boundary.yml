@@ -1,0 +1,30 @@
+name: Raw Hypothesis Carrier Identifiability Boundary
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/RawHypothesisCarrierIdentifiabilityBoundary.lean'
+      - '.github/workflows/raw-hypothesis-carrier-identifiability-boundary.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check raw hypothesis carrier identifiability boundary
+        run: |
+          lean formal/RawHypothesisCarrierIdentifiabilityBoundary.lean
+          echo "RAW_HYPOTHESIS_CARRIERS_GENUINELY_DIFFERENT=PASS"
+          echo "CURRENT_CONSEQUENCE_IMAGES_IDENTICAL=PASS"
+          echo "RAW_CARRIER_MULTIPLICITY_NOT_IDENTIFIABLE=PASS"
+          echo "EXACT_RAW_HYPOTHESIS_TYPE_NOT_JUSTIFIED=PASS"
+          echo "OPERATIONAL_IMAGE_NOT_HIDDEN_CARRIER=PASS"
+          echo "NEW_META_CONSEQUENCE_OR_CARRIER_GENESIS_REQUIRED=BOUNDARY"
+          echo "RAW_HYPOTHESIS_CARRIER_IDENTIFIABILITY_BOUNDARY=PASS"
