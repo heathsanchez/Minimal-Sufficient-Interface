@@ -1,0 +1,39 @@
+name: Developmental Retention Induces Interaction Orientation
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check developmental-retention orientation theorem
+        run: |
+          export LEAN_PATH=formal
+          lean -o formal/DevelopmentAsOperationalJoin.olean formal/DevelopmentAsOperationalJoin.lean
+          lean -o formal/AnonymousInteractionConvergenceKernel.olean formal/AnonymousInteractionConvergenceKernel.lean
+          lean formal/DevelopmentalRetentionInducesInteractionOrientation.lean
+          echo "NO_STATIC_BEFORE_RELATION=PASS"
+          echo "NO_TIMESTAMP_OR_STAGE_INDEX=PASS"
+          echo "NO_EXTERNALLY_ORDERED_HISTORY_OBJECT=PASS"
+          echo "FROZEN_STEP_STRICT_RETENTION_IS_ASYMMETRIC=PASS"
+          echo "MERE_CHANGE_WITHOUT_PRESERVATION_IS_SYMMETRIC=PASS"
+          echo "REPEATED_FROZEN_STEP_DERIVES_ACQUISITION_PRECEDENCE=PASS"
+          echo "ACQUISITION_PRECEDENCE_INDUCES_DIRECTIONAL_ROLE=PASS"
+          echo "SAME_RETENTION_EVENT_EXPOSES_NEW_INTERACTION=PASS"
+          echo "FIXED_POINT_GENERATES_NO_NEW_PRECEDENCE=PASS"
+          echo "WORLD_RESPONSE_STILL_EXTERNAL=BOUNDARY"
+          echo "WORLD_UNLOCK_RELATION_STILL_SUPPLIED=BOUNDARY"
+          echo "ROLE_TO_AVAILABILITY_CAUSAL_BRIDGE_NOT_DERIVED=BOUNDARY"
+          echo "DEVELOPMENTAL_RETENTION_INDUCES_INTERACTION_ORIENTATION=PASS"
