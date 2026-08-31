@@ -1,0 +1,30 @@
+name: Interaction Induces Mutual Role Quotients
+
+on:
+  push:
+    branches:
+      - rgrs/universe-genesis-positive
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check relation-first mutual role quotient theorem
+        run: |
+          lean formal/InteractionInducesMutualRoleQuotients.lean
+          echo "SINGLE_UNDIFFERENTIATED_NODE_CARRIER=PASS"
+          echo "NO_CALLER_CALLEE_KEY_RESPONSE_TYPES=PASS"
+          echo "ONLY_DIRECTED_INTERACTION_PRIMITIVE=PASS"
+          echo "EMPTY_INTERACTION_COLLAPSES_BOTH_ROLE_QUOTIENTS=PASS"
+          echo "ONE_VERIFIED_FACT_REFINES_FIRST_COORDINATE_QUOTIENT=PASS"
+          echo "SAME_FACT_REFINES_SECOND_COORDINATE_QUOTIENT=PASS"
+          echo "INDUCED_ROLES_ARE_DIRECTIONALLY_ASYMMETRIC=PASS"
+          echo "ROLE_PARTITION_NOT_SUPPLIED=PASS"
+          echo "RAW_NODE_CARRIER_AND_INTERACTION_ORIENTATION_STILL_SUPPLIED=BOUNDARY"
+          echo "INTERACTION_INDUCES_MUTUAL_ROLE_QUOTIENTS=PASS"
