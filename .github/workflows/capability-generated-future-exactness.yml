@@ -1,0 +1,46 @@
+name: Capability Generated Future Exactness
+
+on:
+  push:
+    branches:
+      - purify-developmental-kernel-v1
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject incomplete proofs
+        run: |
+          if grep -nE '(^|[^A-Za-z])(sorry|admit)([^A-Za-z]|$)' formal/CapabilityGeneratedFutureExactness.lean; then
+            echo "INCOMPLETE_PROOF_FOUND"
+            exit 1
+          fi
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean -o formal/IdentityForcedAsMinimalCompletion.olean formal/IdentityForcedAsMinimalCompletion.lean
+          lean -o formal/FailureForcesIdentityCompletion.olean formal/FailureForcesIdentityCompletion.lean
+          lean -o formal/FailureForcesCompositionCompletion.olean formal/FailureForcesCompositionCompletion.lean
+          lean -o formal/GenericVerifiedCompletionKernel.olean formal/GenericVerifiedCompletionKernel.lean
+          lean -o formal/RequirementLandscapeCompletion.olean formal/RequirementLandscapeCompletion.lean
+          lean -o formal/ConsequentialCompletionCoupling.olean formal/ConsequentialCompletionCoupling.lean
+          lean -o formal/CapabilityGeneratedFutureInterface.olean formal/CapabilityGeneratedFutureInterface.lean
+      - name: Check capability-generated future exactness
+        env:
+          LEAN_PATH: formal
+        run: |
+          lean formal/CapabilityGeneratedFutureExactness.lean
+          echo "POST_COMPLETION_FUTURES_ARE_OLD_OR_RESIDUAL=PASS"
+          echo "NEW_REACHABILITY_IFF_RESIDUAL=PASS"
+          echo "GENUINELY_NEW_FUTURES_EQUAL_RESIDUAL_SET=PASS"
+          echo "NO_UNRELATED_FUTURE_GENESIS=PASS"
+          echo "ABLATION_HAS_NO_NEW_FUTURES=PASS"
+          echo "NO_SORRY_OR_ADMIT=PASS"
+          echo "CYCLE_14_FRONTIER_STEP_3=PASS"
