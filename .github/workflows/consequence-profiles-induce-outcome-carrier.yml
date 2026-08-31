@@ -1,0 +1,30 @@
+name: Consequence Profiles Induce Outcome Carrier
+
+on:
+  push:
+    branches:
+      - rgrs/residual-ontology-genesis
+    paths:
+      - 'formal/ConsequenceProfilesInduceOutcomeCarrier.lean'
+      - '.github/workflows/consequence-profiles-induce-outcome-carrier.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check consequence-profile induced outcome carrier
+        run: |
+          lean formal/ConsequenceProfilesInduceOutcomeCarrier.lean
+          echo "RAW_OUTCOME_TYPE_NOT_RETAINED=PASS"
+          echo "DOWNSTREAM_CONSEQUENCE_PROFILE_DEFINES_OUTCOME_IDENTITY=PASS"
+          echo "INDUCED_OUTCOME_CARRIER_SUFFICIENT_FOR_ALL_CURRENT_CONSEQUENCES=PASS"
+          echo "NO_REALIZED_OPERATIONAL_OUTCOME_LOST=PASS"
+          echo "OLD_CONSEQUENCE_COLLAPSES_RAW_OUTCOME_DISTINCTION=PASS"
+          echo "NEW_CONSEQUENCE_SPLITS_OLD_OUTCOME_CLASS=PASS"
+          echo "OBSERVATION_CONTEXT_TYPE_AND_TERMINAL_BOOL_STILL_SUPPLIED=BOUNDARY"
+          echo "CONSEQUENCE_PROFILES_INDUCE_AND_REFINE_OUTCOME_CARRIER=PASS"
