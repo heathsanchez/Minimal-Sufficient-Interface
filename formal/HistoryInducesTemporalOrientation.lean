@@ -30,7 +30,7 @@ def historyOrderErased : Node → Node → Bool := encounter
 theorem same_unordered_participants_opposite_order :
     forwardHistory.first = reverseHistory.second ∧
     forwardHistory.second = reverseHistory.first := by
-  rfl
+  constructor <;> rfl
 
 /-- The static forward orientation from the preceding theorem is exactly what
     is reconstructed from the forward event history. -/
