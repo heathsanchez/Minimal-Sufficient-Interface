@@ -55,7 +55,7 @@ theorem filterRepairs_length_lt_of_rejected
         exact Nat.lt_succ_of_le (filterRepairs_length_le B truth f tail)
       · by_cases hA : B.predict A f = truth f
         · simp [filterRepairs, hA]
-          exact Nat.succ_lt_succ (ih htail)
+          exact ih htail
         · simp [filterRepairs, hA]
           exact Nat.lt_succ_of_le (filterRepairs_length_le B truth f tail)
 
@@ -84,7 +84,7 @@ def resolveFuel
     (truth : F → Bool) : Nat → List (Repair I) → List (Repair I)
   | 0, rs => rs
   | n + 1, rs =>
-      match h : firstUnresolvedPair B rs with
+      match firstUnresolvedPair B rs with
       | none => rs
       | some (_, _, f) => resolveFuel B truth n (filterRepairs B truth f rs)
 
@@ -161,7 +161,12 @@ def truth : Fut → Bool
 
 theorem recursive_resolution_keeps_left :
     resolve basis truth [leftRepair, rightRepair] = [leftRepair] := by
-  rfl
+  classical
+  simp [resolve, resolveFuel, firstUnresolvedPair, firstAgainst,
+    FiniteExecutableDistinguishingFuture.Witness.computes_alpha,
+    filterRepairs, truth,
+    FiniteExecutableDistinguishingFuture.Witness.basis,
+    leftRepair, rightRepair]
 
 end Witness
 
