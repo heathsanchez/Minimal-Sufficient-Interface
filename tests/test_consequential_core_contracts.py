@@ -1,6 +1,7 @@
 import unittest
 
 from consequential_core import (
+    AcquisitionResidual,
     ClosureCertificate,
     ClosureResidual,
     DevelopmentState,
@@ -38,7 +39,6 @@ class ConsequentialCoreContracts(unittest.TestCase):
         self.assertEqual(after.active_representation, new)
         self.assertEqual(ablate(after, token), state)
 
-        # A merge is not a repair: it would erase a previously licensed split.
         indiscrete = EquivalenceRelation.from_partition(X, ({0, 1, 2, 3},))
         with self.assertRaises(ValueError):
             certify_repair(
@@ -72,10 +72,7 @@ class ConsequentialCoreContracts(unittest.TestCase):
             language_snapshot=language_snapshot,
         )
         residual = ClosureResidual(required, realized, closure)
-        state = DevelopmentState(
-            X,
-            language=language_snapshot,
-        )
+        state = DevelopmentState(X, language=language_snapshot)
 
         delta = "s_twist"
         repair = ExtendLanguage(delta)
@@ -94,7 +91,6 @@ class ConsequentialCoreContracts(unittest.TestCase):
         self.assertIn(delta, after.language)
         self.assertEqual(ablate(after, token), state)
 
-        # Exact old residual cannot be replayed after the language has changed.
         with self.assertRaises(ValueError):
             certify_repair(
                 after,
@@ -104,19 +100,9 @@ class ConsequentialCoreContracts(unittest.TestCase):
                 attachment="stale residual",
             )
 
-    def test_recursive_compounding_is_policy_change_not_language_extension(self):
+    def test_recursive_compounding_is_explicit_second_order_acquisition(self):
         X = tuple(range(len(recursive.TARGET_LABELS)))
-        empty_rep = EquivalenceRelation.from_observation(X, lambda _i: 0)
-        pair = recursive.residual(recursive.TARGET_LABELS, recursive.TARGET_QUERIES, ())
-        self.assertIsNotNone(pair)
-        left, right = pair
-        residual = PairResidual(
-            left,
-            right,
-            empty_rep,
-            recursive.TARGET_LABELS[left],
-            recursive.TARGET_LABELS[right],
-        )
+        language = tuple(recursive.TARGET_QUERIES)
 
         source_chosen, source_history = recursive.cold_episode(
             recursive.SOURCE_LABELS,
@@ -128,20 +114,39 @@ class ConsequentialCoreContracts(unittest.TestCase):
             recursive.SOURCE_QUERIES, recursive.SOURCE_ORDER, source_history
         )
 
+        cold_chosen, _ = recursive.policy_episode(
+            recursive.TARGET_LABELS,
+            recursive.TARGET_QUERIES,
+            recursive.TARGET_ORDER,
+            budget=1,
+            policy={},
+        )
+        self.assertFalse(
+            recursive.sufficient(
+                recursive.TARGET_LABELS, recursive.TARGET_QUERIES, cold_chosen
+            )
+        )
+
         state = DevelopmentState(
             X,
-            active_representation=empty_rep,
-            language=tuple(recursive.TARGET_QUERIES),
+            language=language,
             policy=None,
+        )
+        residual = AcquisitionResidual(
+            task="reach exact target interface in one query",
+            language_snapshot=language,
+            policy_snapshot=None,
+            budget=1,
+            cold_success=False,
         )
         repair = UpdatePolicy(warm_policy)
 
-        def resolves(_state, candidate, _residual):
+        def resolves(_state, candidate, rho):
             chosen, _ = recursive.policy_episode(
                 recursive.TARGET_LABELS,
                 recursive.TARGET_QUERIES,
                 recursive.TARGET_ORDER,
-                budget=1,
+                budget=rho.budget,
                 policy=candidate.new_policy,
             )
             return recursive.sufficient(
@@ -153,14 +158,15 @@ class ConsequentialCoreContracts(unittest.TestCase):
             residual,
             repair,
             resolves,
-            attachment="source residual history changes next target acquisition",
+            attachment="source residual history changes bounded future acquisition",
         )
         after, token = compile_repair(state, certified)
         self.assertEqual(after.language, state.language)
         self.assertEqual(after.policy, warm_policy)
         self.assertEqual(ablate(after, token), state)
 
-        # The successful repair changes D, not E or C.
+        # The second-order repair changes D only; it does not pretend to have
+        # immediately refined E or extended C.
         self.assertEqual(after.active_representation, state.active_representation)
         self.assertEqual(after.language, state.language)
 
