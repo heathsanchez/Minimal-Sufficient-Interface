@@ -26,7 +26,7 @@ class IRLMSIControlLadder(unittest.TestCase):
     """Finite control ladder for reward partial-identifiability.
 
     The model is deliberately minimal: one state, two actions, entropy-regularized
-    policy. At any fixed nonzero inverse temperature beta, the soft policy is an
+    policy. At any fixed positive inverse temperature beta, the soft policy is an
     injective function of d = r1-r0, so d is an exact symbolic policy signature.
     This lets us exhaust the ambiguity without floating-point approximation.
     """
@@ -71,28 +71,33 @@ class IRLMSIControlLadder(unittest.TestCase):
             self.assertEqual(optimal_action(rep[1] - rep[0]), optimal_action(d))
         print("IRL_CONTROL_04 PASS canonical_gauge=r0_zero representatives=13")
 
-    def test_05_second_nonzero_temperature_does_not_break_shift_ambiguity(self):
-        # Exact symbolic logits beta*d. Any fixed nonzero beta has the same kernel.
-        for beta in (1, 2, 3, -1, -2):
+    def test_05_positive_temperatures_do_not_break_shift_ambiguity(self):
+        # Exact symbolic logits beta*d. Any fixed positive beta has the same kernel.
+        for beta in (1, 2, 3, 4, 5):
             signature = tuple(beta * d for d in self.diff)
             self.assertEqual(kernel(signature), kernel(self.diff))
-        print("IRL_CONTROL_05 PASS temperatures=5 kernel_unchanged=true")
+        print("IRL_CONTROL_05 PASS positive_temperatures=5 kernel_unchanged=true")
 
-    def test_06_random_postprocessing_cannot_split_a_policy_fibre(self):
-        # Exhaust deterministic maps from the 13 observed policy signatures to 3 labels.
-        # Rather than enumerate 3^13 maps, check the defining invariant exhaustively over
-        # all reward pairs: any postprocessor keyed only by signature is constant on fibre.
+    def test_06_evidence_only_postprocessing_is_constant_on_every_policy_fibre(self):
+        # This checks the defining invariant pairwise over the whole reward universe:
+        # any constructed output that is a function only of the policy signature must
+        # assign equal outputs to rewards with the same signature. The universal fact
+        # itself is the ordinary kernel/postprocessing theorem formalized elsewhere.
         labels = {d: (abs(d) + 2 * d) % 3 for d in set(self.diff)}
         post = tuple(labels[d] for d in self.diff)
+        checked_pairs = 0
         for i in range(49):
             for j in range(49):
                 if self.diff[i] == self.diff[j]:
+                    checked_pairs += 1
                     self.assertEqual(post[i], post[j])
         self.assertGreater(ambiguous_pairs(post), 0)
-        print("IRL_CONTROL_06 PASS postprocessing_cannot_split_policy_fibre=true")
+        print(
+            "IRL_CONTROL_06 PASS evidence_only_postprocessing_constant_on_fibres=true "
+            f"equal_signature_ordered_pairs_checked={checked_pairs}"
+        )
 
     def test_07_prior_selects_representative_but_does_not_identify_true_reward(self):
-        # Two priors induce different MAP representatives in the d=0 fibre.
         fibre = [i for i, d in enumerate(self.diff) if d == 0]
         low_sum = min(fibre, key=lambda i: sum(abs(x) for x in self.rewards[i]))
         high_sum = max(fibre, key=lambda i: sum(abs(x) for x in self.rewards[i]))
@@ -105,7 +110,6 @@ class IRLMSIControlLadder(unittest.TestCase):
         self.assertEqual(ambiguous_pairs(self.diff), 91)
         self.assertEqual(ambiguous_pairs(enriched), 0)
         self.assertEqual(len(classes(enriched)), 49)
-        # Exact ablation of the absolute anchor returns the original quotient.
         self.assertEqual(ambiguous_pairs(self.diff), 91)
         print("IRL_CONTROL_08 PASS added_anchor ambiguity=91_to_0 ablation=0_to_91")
 
@@ -125,8 +129,6 @@ class IRLMSIControlLadder(unittest.TestCase):
         )
 
     def test_10_msi_minimal_repair_of_coarse_policy_is_soft_policy_quotient(self):
-        # Meet of the coarse kernel with the protected difference kernel equals the
-        # difference kernel because difference already determines sign.
         coarse = kernel(self.sign)
         protected = kernel(self.diff)
         meet = tuple(
@@ -150,9 +152,6 @@ class IRLMSIControlLadder(unittest.TestCase):
         print(f"IRL_CONTROL_11 PASS misspecification_residuals={len(residuals)}")
 
     def test_12_known_irl_quotient_does_not_require_representative_identification(self):
-        # Every representative in a soft-policy fibre agrees on the downstream optimal
-        # action. Therefore representative non-identifiability is harmless for this
-        # protected downstream query; MSI stops at the quotient, matching invariance logic.
         for c in classes(self.diff):
             self.assertEqual(len({self.sign[i] for i in c}), 1)
         self.assertEqual(kernel(self.diff), kernel(tuple((d, optimal_action(d)) for d in self.diff)))
