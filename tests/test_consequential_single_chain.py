@@ -1,107 +1,191 @@
 import unittest
 
-from src.consequential_core_full import (
+from consequential_core import (
+    AcquisitionResidual,
+    ClosureCertificate,
+    ClosureResidual,
+    CoupledRepair,
     DevelopmentState,
-    FiniteObservationLanguage,
+    EquivalenceRelation,
+    ExtendLanguage,
+    PairResidual,
+    UpdatePolicy,
     ablate,
-    certify_capability_repair,
-    certify_residual,
-    compile_capability,
-    compile_representation,
-    discriminating_pairs,
+    certify_repair,
+    compile_repair,
     quotient_admissible,
-    representation_version_space,
-    select_by_verified_pair,
+    residual_resolved_by_representation,
 )
+from tests.test_difference_test import coarsest_lawful_repairs, distinguishing_pairs
 
 
-def residual_orbit_indicator(state, residual, generator):
-    """Domain constructor using only certified pair + declared dynamics.
+def rel_from_partition(X, p):
+    return EquivalenceRelation.from_partition(X, p)
 
-    It proposes a candidate observation. All novelty, attachment, compile,
-    representation and ablation semantics remain owned by the shared core.
-    """
-    x, y = residual.pair
-    seen = set()
-    z = x
-    while z not in seen:
-        seen.add(z)
-        z = generator[z]
-    if y in seen:
-        raise ValueError("residual endpoints lie in the same generated orbit")
-    return tuple(1 if s in seen else 0 for s in state.carrier)
+
+def kernel_fingerprint(rel):
+    unseen = set(rel.carrier)
+    sizes = []
+    while unseen:
+        x = min(unseen)
+        block = {y for y in rel.carrier if rel.same(x, y)}
+        sizes.append(len(block))
+        unseen -= block
+    return tuple(sorted(sizes))
 
 
 class ConsequentialSingleChain(unittest.TestCase):
-    def test_one_state_object_runs_capability_then_version_space_then_ablation(self):
-        X = (0, 1, 2, 3)
-        identity = (0, 1, 2, 3)
+    def test_representation_to_language_to_second_order_development(self):
+        X = tuple(range(4))
+        old_p = (frozenset({0, 1, 2}), frozenset({3}))
+        old_E = EquivalenceRelation.from_partition(X, old_p)
+        rho1 = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
 
-        # S0: no consequential distinction is initially available.
-        language0 = FiniteObservationLanguage(
-            observations=((0, 0, 0, 0),),
-            dynamics=(identity,),
-        )
-        s0 = DevelopmentState.from_language(X, language0)
-        self.assertEqual(s0.representation, ((0, 1, 2, 3),))
+        g = (0, 0, 0, 0)
+        lawful, coarsest = coarsest_lawful_repairs(X, old_p, (0, 1), g)
+        self.assertTrue(lawful)
+        self.assertEqual(len(coarsest), 2)
+        H0 = tuple(rel_from_partition(X, p) for p in coarsest)
+        self.assertTrue(all(h.strictly_refines(old_E) for h in H0))
 
-        # Residual 1 carries only the externally certified pair-separation fact.
-        # No hidden target feature/column is stored in the Residual object.
-        rho1 = certify_residual(s0, (3, 0), verifier_separates=True)
-        delta1 = residual_orbit_indicator(s0, rho1, identity)
-        self.assertEqual(delta1, (0, 0, 0, 1))
-
-        cap1 = certify_capability_repair(s0, rho1, delta1)
-        s1 = compile_capability(s0, cap1, "capability-1")
-        self.assertEqual(s1.representation, ((0, 1, 2), (3,)))
-
-        # Residual 2 now lands in a genuine 3+1 geometry. The verifier certifies
-        # only 0 != 1; that pair-level evidence leaves two coarsest repairs live.
-        rho2 = certify_residual(s1, (0, 1), verifier_separates=True)
-        version_space = representation_version_space(s1, rho2)
-        self.assertEqual(len(version_space), 2)
-        self.assertEqual(
-            {r.new_representation for r in version_space},
-            {
-                ((0,), (1, 2), (3,)),
-                ((0, 2), (1,), (3,)),
-            },
+        S0 = DevelopmentState(
+            X,
+            active_representation=old_E,
+            version_space=H0,
+            language=("id",),
+            policy=None,
         )
 
-        # The ambiguity itself generates the next discriminating question.
-        probes = discriminating_pairs(version_space)
-        self.assertTrue(probes)
-        probe = (0, 2)
-        self.assertIn(probe, probes)
-
-        # External answer: 0 and 2 are equal under the sealed target structure.
-        survivors = select_by_verified_pair(version_space, probe, should_be_equal=True)
+        probe_pairs = distinguishing_pairs(coarsest[0], coarsest[1])
+        self.assertTrue(probe_pairs)
+        probe = probe_pairs[0]
+        observed_same = True
+        survivors = tuple(h for h in H0 if h.same(*probe) == observed_same)
         self.assertEqual(len(survivors), 1)
         selected = survivors[0]
-        self.assertEqual(selected.new_representation, ((0, 2), (1,), (3,)))
 
-        s2 = compile_representation(s1, selected, "representation-2")
+        repair1 = CoupledRepair(
+            new_representation=selected,
+            new_version_space=(selected,),
+        )
+        certified1 = certify_repair(
+            S0,
+            rho1,
+            repair1,
+            lambda _s, r, rho: (
+                residual_resolved_by_representation(rho, r.new_representation)
+                and r.new_version_space == (r.new_representation,)
+            ),
+            attachment=f"verified experiment {probe} collapses residual-relative H",
+        )
+        S1, token1 = compile_repair(S0, certified1)
+        self.assertEqual(S1.active_representation, selected)
+        self.assertEqual(S1.version_space, (selected,))
 
-        # A downstream executable action was present all along but did not descend
-        # through P1. It becomes quotient-admissible only after the selected repair.
-        downstream = (0, 3, 2, 3)
-        self.assertFalse(quotient_admissible(downstream, s1.representation))
-        self.assertTrue(quotient_admissible(downstream, s2.representation))
+        action_table = (0, 3, 2, 3)
+        action = lambda z: action_table[z]
+        self.assertFalse(quotient_admissible(action, old_E))
+        self.assertTrue(quotient_admissible(action, selected))
 
-        # Exact provenance ablation removes only the representation repair and
-        # restores the previous developmental frontier.
-        back_to_s1 = ablate(s2, "representation-2")
-        self.assertEqual(back_to_s1, s1)
-        self.assertFalse(quotient_admissible(downstream, back_to_s1.representation))
+        required1 = EquivalenceRelation.from_observation(X, action)
+        identity_kernel = EquivalenceRelation.from_observation(X, lambda z: z)
+        self.assertNotEqual(required1, identity_kernel)
+        closure1 = ClosureCertificate(
+            interactions=("id",),
+            complete=True,
+            regime="one-step identity-only executable language",
+            language_snapshot=S1.language,
+        )
+        rho2 = ClosureResidual(required1, (identity_kernel,), closure1)
+        repair2 = ExtendLanguage("licensed_action")
+        certified2 = certify_repair(
+            S1,
+            rho2,
+            repair2,
+            lambda s, r, rho: (
+                r.delta == "licensed_action"
+                and quotient_admissible(action, s.active_representation)
+                and EquivalenceRelation.from_observation(X, action) == rho.required
+            ),
+            attachment="new quotient makes the new executable operator lawful",
+        )
+        S2, token2 = compile_repair(S1, certified2)
 
-        # Ablating the earlier capability returns exactly to the indiscrete start.
-        back_to_s0 = ablate(back_to_s1, "capability-1")
-        self.assertEqual(back_to_s0, s0)
+        def executable_capability(state):
+            return (
+                "licensed_action" in state.language
+                and state.active_representation is not None
+                and quotient_admissible(action, state.active_representation)
+            )
+
+        self.assertFalse(executable_capability(S1))
+        self.assertTrue(executable_capability(S2))
+        S2_without_language = ablate(S2, token2)
+        self.assertEqual(S2_without_language, S1)
+        self.assertFalse(executable_capability(S2_without_language))
+
+        self.assertEqual(ablate(S1, token1), S0)
+        self.assertFalse(quotient_admissible(action, S0.active_representation))
+
+        learned_policy = kernel_fingerprint(required1)
+        self.assertEqual(learned_policy, (1, 1, 2))
+
+        future_tables = {
+            "future_bad": (0, 1, 2, 3),
+            "future_good": (0, 1, 1, 2),
+        }
+        future_kernels = {
+            name: EquivalenceRelation.from_observation(X, lambda i, t=table: t[i])
+            for name, table in future_tables.items()
+        }
+        future_target = future_kernels["future_good"]
+        self.assertNotEqual(future_target, required1)
+        self.assertEqual(kernel_fingerprint(future_target), learned_policy)
+        self.assertNotEqual(kernel_fingerprint(future_kernels["future_bad"]), learned_policy)
+
+        def acquisition_episode(policy):
+            order = ("future_bad", "future_good")
+            if policy is None:
+                chosen = order[0]
+            else:
+                matches = [q for q in order if kernel_fingerprint(future_kernels[q]) == policy]
+                chosen = matches[0] if matches else order[0]
+            return chosen, future_kernels[chosen] == future_target
+
+        cold_choice, cold_success = acquisition_episode(S2.policy)
+        self.assertEqual(cold_choice, "future_bad")
+        self.assertFalse(cold_success)
+
+        rho3 = AcquisitionResidual(
+            task="select an unseen target-realizing extension in one proposal",
+            language_snapshot=S2.language,
+            policy_snapshot=S2.policy,
+            budget=1,
+            cold_success=False,
+        )
+        repair3 = UpdatePolicy(learned_policy)
+        certified3 = certify_repair(
+            S2,
+            rho3,
+            repair3,
+            lambda _s, r, _rho: acquisition_episode(r.new_policy)[1],
+            attachment="prior successful repair changes the next bounded acquisition",
+        )
+        S3, token3 = compile_repair(S2, certified3)
+
+        warm_choice, warm_success = acquisition_episode(S3.policy)
+        self.assertEqual(warm_choice, "future_good")
+        self.assertTrue(warm_success)
+
+        S3_ablated = ablate(S3, token3)
+        self.assertEqual(S3_ablated, S2)
+        self.assertFalse(acquisition_episode(S3_ablated.policy)[1])
 
         print(
             "CONSEQUENTIAL SINGLE CHAIN PASS "
-            "S0=1block capability->S1=3+1 version_space=2 "
-            "experiment->S2=3blocks downstream=PASS ablation=FAIL"
+            "H=2->1 representation_unlock=PASS language_compile=PASS "
+            "language_ablation=FAIL second_order_warm=PASS "
+            "second_order_ablation=FAIL"
         )
 
 
