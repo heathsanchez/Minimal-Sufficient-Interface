@@ -1,13 +1,15 @@
 """Shared formal objects for consequential distinction and verified development.
 
-The core is intentionally small and restrictive. It distinguishes three kinds
-of developmental change instead of hiding them behind a generic state update:
+The core keeps distinct what the experiments actually keep distinct:
 
-- representation refinement E' ⊂ E,
-- executable language extension C' ⊃ C,
-- developmental policy change D' != D.
+- E: an optional active observational equivalence / representation;
+- H: an explicit operational version space of representable kernels;
+- C: the executable interaction / constructor language;
+- D: an optional developmental policy controlling acquisition from C.
 
-A repair must be certified against a concrete residual before it can compile.
+Repairs are tagged. Representation refinement, language extension and policy
+change are not identified by fiat. Residuals are tagged too: pairwise failed
+identification and closure-level non-realizability are different certificates.
 """
 
 from __future__ import annotations
@@ -44,9 +46,7 @@ class EquivalenceRelation:
         return (x, y) in self.pairs
 
     def refines(self, older: "EquivalenceRelation") -> bool:
-        if self.carrier != older.carrier:
-            return False
-        return self.pairs <= older.pairs
+        return self.carrier == older.carrier and self.pairs <= older.pairs
 
     def strictly_refines(self, older: "EquivalenceRelation") -> bool:
         return self.refines(older) and self.pairs < older.pairs
@@ -71,7 +71,18 @@ class EquivalenceRelation:
 
 
 @dataclass(frozen=True)
-class Residual:
+class ClosureCertificate:
+    interactions: Tuple[Any, ...]
+    complete: bool
+    regime: str
+
+    def __post_init__(self):
+        if not self.regime:
+            raise ValueError("closure certificate must name its resource regime")
+
+
+@dataclass(frozen=True)
+class PairResidual:
     left: Hashable
     right: Hashable
     representation: EquivalenceRelation
@@ -89,26 +100,51 @@ class Residual:
 
 
 @dataclass(frozen=True)
-class ClosureCertificate:
-    interactions: Tuple[Any, ...]
-    complete: bool
-    regime: str
+class ClosureResidual:
+    """Verified failure of an entire representational closure to realize a target."""
+
+    required: EquivalenceRelation
+    realized: Tuple[EquivalenceRelation, ...]
+    closure: ClosureCertificate
+    verifier_tag: str = "verified"
 
     def __post_init__(self):
-        if not self.regime:
-            raise ValueError("closure certificate must name its resource regime")
+        if self.verifier_tag != "verified":
+            raise ValueError("residual is not verifier-certified")
+        if not self.closure.complete:
+            raise ValueError("non-realizability requires a complete closure certificate")
+        if any(r.carrier != self.required.carrier for r in self.realized):
+            raise ValueError("closure kernels use a different carrier")
+        if self.required in self.realized:
+            raise ValueError("required representation is already realizable")
+
+
+Residual = PairResidual | ClosureResidual
 
 
 @dataclass(frozen=True)
 class DevelopmentState:
-    representation: EquivalenceRelation
+    carrier: Tuple[Hashable, ...]
+    active_representation: Optional[EquivalenceRelation] = None
+    version_space: Tuple[EquivalenceRelation, ...] = ()
     language: Tuple[Hashable, ...] = ()
     policy: Any = None
+
+    def __post_init__(self):
+        if self.active_representation is not None and self.active_representation.carrier != self.carrier:
+            raise ValueError("active representation uses a different carrier")
+        if any(r.carrier != self.carrier for r in self.version_space):
+            raise ValueError("version-space representation uses a different carrier")
 
 
 @dataclass(frozen=True)
 class RefineRepresentation:
     new_representation: EquivalenceRelation
+
+
+@dataclass(frozen=True)
+class ReplaceVersionSpace:
+    new_version_space: Tuple[EquivalenceRelation, ...]
 
 
 @dataclass(frozen=True)
@@ -124,12 +160,13 @@ class UpdatePolicy:
 @dataclass(frozen=True)
 class CoupledRepair:
     new_representation: Optional[EquivalenceRelation] = None
+    new_version_space: Optional[Tuple[EquivalenceRelation, ...]] = None
     language_delta: Optional[Hashable] = None
     new_policy: Any = None
     changes_policy: bool = False
 
 
-Repair = RefineRepresentation | ExtendLanguage | UpdatePolicy | CoupledRepair
+Repair = RefineRepresentation | ReplaceVersionSpace | ExtendLanguage | UpdatePolicy | CoupledRepair
 
 
 @dataclass(frozen=True)
@@ -156,28 +193,47 @@ class ProvenanceToken:
 
 def conservative(state: DevelopmentState, repair: Repair) -> bool:
     if isinstance(repair, RefineRepresentation):
-        return repair.new_representation.refines(state.representation)
+        return (
+            state.active_representation is not None
+            and repair.new_representation.refines(state.active_representation)
+        )
+    if isinstance(repair, ReplaceVersionSpace):
+        return bool(repair.new_version_space) and all(r.carrier == state.carrier for r in repair.new_version_space)
     if isinstance(repair, ExtendLanguage):
         return repair.delta not in state.language
     if isinstance(repair, UpdatePolicy):
         return repair.new_policy != state.policy
     if isinstance(repair, CoupledRepair):
-        if repair.new_representation is not None and not repair.new_representation.refines(state.representation):
-            return False
+        if repair.new_representation is not None:
+            if state.active_representation is None or not repair.new_representation.refines(state.active_representation):
+                return False
+        if repair.new_version_space is not None:
+            if not repair.new_version_space or any(r.carrier != state.carrier for r in repair.new_version_space):
+                return False
         if repair.language_delta is not None and repair.language_delta in state.language:
             return False
         if repair.changes_policy and repair.new_policy == state.policy:
             return False
         return any((
             repair.new_representation is not None,
+            repair.new_version_space is not None,
             repair.language_delta is not None,
             repair.changes_policy,
         ))
     raise TypeError(type(repair))
 
 
-def residual_resolved_by_representation(residual: Residual, representation: EquivalenceRelation) -> bool:
+def residual_resolved_by_representation(residual: PairResidual, representation: EquivalenceRelation) -> bool:
     return not representation.same(residual.left, residual.right)
+
+
+def residual_belongs_to_state(state: DevelopmentState, residual: Residual) -> bool:
+    if isinstance(residual, PairResidual):
+        return residual.representation == state.active_representation
+    if isinstance(residual, ClosureResidual):
+        # H is the extensional representational closure being certified.
+        return tuple(residual.realized) == tuple(state.version_space)
+    raise TypeError(type(residual))
 
 
 def certify_repair(
@@ -189,8 +245,8 @@ def certify_repair(
     attachment: str,
     verifier_tag: str = "verified",
 ) -> CertifiedRepair:
-    if residual.representation != state.representation:
-        raise ValueError("residual was not generated from this state representation")
+    if not residual_belongs_to_state(state, residual):
+        raise ValueError("residual was not generated from this developmental state")
     if not conservative(state, repair):
         raise ValueError("repair violates conservative-development constraints")
     if not resolves(state, repair, residual):
@@ -200,19 +256,24 @@ def certify_repair(
 
 def compile_repair(state: DevelopmentState, certified: CertifiedRepair) -> tuple[DevelopmentState, ProvenanceToken]:
     repair = certified.repair
-    representation = state.representation
+    active = state.active_representation
+    version_space = state.version_space
     language = state.language
     policy = state.policy
 
     if isinstance(repair, RefineRepresentation):
-        representation = repair.new_representation
+        active = repair.new_representation
+    elif isinstance(repair, ReplaceVersionSpace):
+        version_space = repair.new_version_space
     elif isinstance(repair, ExtendLanguage):
         language = language + (repair.delta,)
     elif isinstance(repair, UpdatePolicy):
         policy = repair.new_policy
     elif isinstance(repair, CoupledRepair):
         if repair.new_representation is not None:
-            representation = repair.new_representation
+            active = repair.new_representation
+        if repair.new_version_space is not None:
+            version_space = repair.new_version_space
         if repair.language_delta is not None:
             language = language + (repair.language_delta,)
         if repair.changes_policy:
@@ -220,17 +281,13 @@ def compile_repair(state: DevelopmentState, certified: CertifiedRepair) -> tuple
     else:
         raise TypeError(type(repair))
 
-    after = DevelopmentState(representation, language, policy)
+    after = DevelopmentState(state.carrier, active, version_space, language, policy)
     token = ProvenanceToken(state, after, repair, certified.attachment)
     return after, token
 
 
 def ablate(state: DevelopmentState, token: ProvenanceToken) -> DevelopmentState:
-    """Exact counterfactual ablation of one compiled contribution.
-
-    This intentionally requires the current state to equal the provenance token's
-    recorded post-state. It cannot silently erase unrelated later changes.
-    """
+    """Exact counterfactual ablation of one compiled contribution."""
     if state != token.after:
         raise ValueError("cannot exact-ablate after unrelated state changes")
     return token.before
