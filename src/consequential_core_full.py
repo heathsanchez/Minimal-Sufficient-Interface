@@ -118,20 +118,26 @@ class DevelopmentState:
 @dataclass(frozen=True)
 class Residual:
     pair: Tuple[int, int]
-    consequence: Optional[Column]
     certified: bool
     closure_exhausted: bool
 
 
-def certify_residual(state: DevelopmentState, pair: Tuple[int, int], consequence: Optional[Column] = None) -> Residual:
+def certify_residual(state: DevelopmentState, pair: Tuple[int, int], verifier_separates: bool) -> Residual:
+    """Certify pair-level consequential difference without storing a target feature.
+
+    `verifier_separates` is the external authority's certified statement that the
+    two currently identified states must differ for the protected consequence.
+    The core independently checks that the complete declared interaction closure
+    still identifies them. No hidden consequence column is retained in Residual.
+    """
     x, y = pair
+    if not verifier_separates:
+        raise ValueError("external verifier did not certify a consequential split")
     if not equivalent(state.representation, x, y):
         raise ValueError("pair is already distinguished")
     if not all(col[x] == col[y] for col in state.language.closure_observations(state.carrier)):
         raise ValueError("closure already distinguishes pair")
-    if consequence is not None and consequence[x] == consequence[y]:
-        raise ValueError("consequence does not separate pair")
-    return Residual(pair, consequence, True, True)
+    return Residual(pair, True, True)
 
 
 @dataclass(frozen=True)
