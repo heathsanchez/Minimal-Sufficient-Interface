@@ -6,6 +6,7 @@ on:
       - constitutional-failed-factorization
     paths:
       - 'lean/ConstitutionalFailedFactorization.lean'
+      - 'lean/ConstitutionalRealizationAndRecursion.lean'
       - 'tests/test_constitutional_realization_census.py'
       - 'lean-toolchain'
       - '.github/workflows/constitutional-failed-factorization.yml'
@@ -30,3 +31,6 @@ jobs:
       - name: Check constitutional theorems
         working-directory: lean
         run: lean ConstitutionalFailedFactorization.lean
+      - name: Check realization and higher-order recursion theorems
+        working-directory: lean
+        run: lean ConstitutionalRealizationAndRecursion.lean
