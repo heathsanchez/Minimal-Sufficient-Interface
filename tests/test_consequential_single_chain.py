@@ -54,7 +54,6 @@ class ConsequentialSingleChain(unittest.TestCase):
             language=("id",),
         )
 
-        # Conservative but unattached: it leaves the motivating pair merged.
         bad = CoupledRepair(new_representation=old_E, new_version_space=(old_E,))
         with self.assertRaises(ValueError):
             certify_representation_repair(
@@ -66,8 +65,6 @@ class ConsequentialSingleChain(unittest.TestCase):
                 attachment="should be rejected",
             )
 
-        # A resolving candidate is still rejected if the verified pair answer
-        # selects the other live hypothesis.
         with self.assertRaises(ValueError):
             certify_representation_repair(
                 S,
@@ -96,8 +93,6 @@ class ConsequentialSingleChain(unittest.TestCase):
                 attachment="wrong kernel",
             )
 
-        # The finite-table gate binds the certificate to the actual table rather
-        # than trusting a separately supplied kernel claim.
         with self.assertRaises(ValueError):
             certify_finite_table_language_extension(
                 S,
@@ -112,7 +107,6 @@ class ConsequentialSingleChain(unittest.TestCase):
         old_E = EquivalenceRelation.from_partition(X, ({0, 1, 2}, {3}))
         rho1 = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
 
-        # Version-space enumeration is owned by the shared core subsystem.
         pre = DevelopmentState(X, active_representation=old_E, language=("id",))
         dynamics = (lambda _z: 0,)
         H0 = coarsest_representation_repairs(pre, rho1, dynamics)
@@ -127,10 +121,12 @@ class ConsequentialSingleChain(unittest.TestCase):
             policy=None,
         )
 
-        # H itself determines a discriminating experiment.
         probes = discriminating_pairs(H0)
         self.assertTrue(probes)
-        probe = probes[0]
+        # Pick an explicit available discriminating experiment; do not rely on
+        # implementation sort order to select the developmental branch.
+        probe = (0, 2)
+        self.assertIn(probe, probes)
         observed_same = True
         survivors = update_version_space_from_pair_answer(
             H0, probe, observed_same=observed_same
@@ -154,14 +150,11 @@ class ConsequentialSingleChain(unittest.TestCase):
         self.assertEqual(S1.active_representation, selected)
         self.assertEqual(S1.version_space, (selected,))
 
-        # The representation change makes an already-defined downstream action
-        # quotient-admissible. It was not lawful on the previous quotient.
         action_table = (0, 3, 2, 3)
         action = lambda z: action_table[z]
         self.assertFalse(quotient_admissible(action, old_E))
         self.assertTrue(quotient_admissible(action, selected))
 
-        # The declared old language cannot realize the action's required kernel.
         required1 = EquivalenceRelation.from_observation(X, action)
         identity_kernel = EquivalenceRelation.from_observation(X, lambda z: z)
         self.assertNotEqual(required1, identity_kernel)
@@ -197,13 +190,9 @@ class ConsequentialSingleChain(unittest.TestCase):
         self.assertEqual(S2_without_language, S1)
         self.assertFalse(executable_capability(S2_without_language))
 
-        # Exact ancestor ablation restores the old quotient on which the same
-        # action is not admissible.
         self.assertEqual(ablate(S1, token1), S0)
         self.assertFalse(quotient_admissible(action, S0.active_representation))
 
-        # Second-order development: retain an anonymous structural fingerprint of
-        # the successful extension, not its literal name/table.
         learned_policy = kernel_fingerprint(required1)
         self.assertEqual(learned_policy, (1, 1, 2))
 
