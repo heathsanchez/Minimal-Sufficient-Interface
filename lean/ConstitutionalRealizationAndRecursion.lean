@@ -103,6 +103,117 @@ theorem strict_refinement_no_cycle {P : Type} {R S : P → P → Prop}
     (hRS : StrictRefines R S) : ¬ Refines S R := by
   exact hRS.2
 
+/-! ## General fixed-point laws for canonical constitutional repair -/
+
+/-- Add one decision kernel to an already constructed relation. -/
+def AddDecision {P : Type} {A : Type} (R : P → P → Prop) (D : P → A) :
+    P → P → Prop :=
+  fun x y => R x y ∧ D x = D y
+
+/-- Replaying any already protected decision after canonical repair is
+    idempotent: it cannot refine the representation again. -/
+theorem canonical_repair_idempotent
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type}
+    (I : P → E) (D : (q : Q) → P → A q) (q : Q) :
+    AddDecision (ConstitutionalRefinement I D) (D q) =
+      ConstitutionalRefinement I D := by
+  funext x y
+  apply propext
+  constructor
+  · intro h
+    exact h.1
+  · intro h
+    exact ⟨h, h.2 q⟩
+
+/-- More generally, replaying any subfamily of the already protected decisions
+    is idempotent after canonical repair. -/
+theorem canonical_repair_subfamily_idempotent
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type}
+    (I : P → E) (D : (q : Q) → P → A q) (S : Q → Prop) :
+    (fun x y => ConstitutionalRefinement I D x y ∧
+      ∀ q, S q → D q x = D q y) =
+      ConstitutionalRefinement I D := by
+  funext x y
+  apply propext
+  constructor
+  · intro h
+    exact h.1
+  · intro h
+    exact ⟨h, fun q _ => h.2 q⟩
+
+/-- If a candidate higher-order decision is already determined on every class
+    of the canonical repair, adding it cannot cause another refinement. -/
+theorem determined_new_decision_is_fixed_point
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type} {B : Type}
+    (I : P → E) (D : (q : Q) → P → A q) (Dstar : P → B)
+    (hdet : Refines (ConstitutionalRefinement I D) (KernelEq Dstar)) :
+    AddDecision (ConstitutionalRefinement I D) Dstar =
+      ConstitutionalRefinement I D := by
+  funext x y
+  apply propext
+  constructor
+  · intro h
+    exact h.1
+  · intro h
+    exact ⟨h, hdet h⟩
+
+/-- Conversely, failure of a new higher-order decision to be determined by the
+    repaired representation has an explicit residual pair: two constitutions
+    still identified by the repair but separated by the new decision. -/
+theorem new_decision_insufficiency_has_residual
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type} {B : Type}
+    (I : P → E) (D : (q : Q) → P → A q) (Dstar : P → B)
+    (hnew : ¬ Refines (ConstitutionalRefinement I D) (KernelEq Dstar)) :
+    ∃ x y, ConstitutionalRefinement I D x y ∧ Dstar x ≠ Dstar y := by
+  classical
+  by_contra hn
+  apply hnew
+  intro x y hxy
+  by_contra hneq
+  apply hn
+  exact ⟨x, y, hxy, hneq⟩
+
+/-- A genuine residual for a new higher-order decision forces strict further
+    refinement when that decision is adjoined. -/
+theorem new_residual_forces_strict_refinement
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type} {B : Type}
+    (I : P → E) (D : (q : Q) → P → A q) (Dstar : P → B)
+    {x y : P}
+    (hrepair : ConstitutionalRefinement I D x y)
+    (hstar : Dstar x ≠ Dstar y) :
+    StrictRefines
+      (AddDecision (ConstitutionalRefinement I D) Dstar)
+      (ConstitutionalRefinement I D) := by
+  constructor
+  · intro a b h
+    exact h.1
+  · intro hback
+    have hadded := hback hrepair
+    exact hstar hadded.2
+
+/-- Exact characterization: adjoining a new higher-order decision strictly
+    refines the canonical repair iff that decision contributes a distinction
+    absent from the repaired interface. -/
+theorem strict_further_refinement_iff_new_distinction
+    {P : Type} {E : Type} {Q : Type} {A : Q → Type} {B : Type}
+    (I : P → E) (D : (q : Q) → P → A q) (Dstar : P → B) :
+    StrictRefines
+      (AddDecision (ConstitutionalRefinement I D) Dstar)
+      (ConstitutionalRefinement I D) ↔
+    ∃ x y, ConstitutionalRefinement I D x y ∧ Dstar x ≠ Dstar y := by
+  constructor
+  · intro hstrict
+    classical
+    by_contra hn
+    apply hstrict.2
+    intro x y hxy
+    refine ⟨hxy, ?_⟩
+    by_contra hneq
+    apply hn
+    exact ⟨x, y, hxy, hneq⟩
+  · rintro ⟨x, y, hxy, hneq⟩
+    exact new_residual_forces_strict_refinement I D Dstar hxy hneq
+
 /-- A three-level finite hierarchy.  Level 0 observes only authority.  Level 1
     adds the protected audit decision.  Level 2 asks whether another protected
     decision (XOR) forces a further quotient refinement. -/
