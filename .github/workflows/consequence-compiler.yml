@@ -5,10 +5,13 @@ on:
     branches:
       - consequence-compiler
       - constitutional-failed-factorization
+      - residual-driven-realizer-synthesis
     paths:
       - 'consequence_compiler.py'
+      - 'realizer_synthesis.py'
       - 'consequential_core.py'
       - 'tests/test_consequence_compiler_cross_domain.py'
+      - 'tests/test_residual_driven_realizer_synthesis.py'
       - 'docs/CONSEQUENCE_COMPILER.md'
       - '.github/workflows/consequence-compiler.yml'
   workflow_dispatch:
@@ -23,3 +26,5 @@ jobs:
           python-version: '3.12'
       - name: Generic compiler cross-domain controls
         run: python -m unittest tests.test_consequence_compiler_cross_domain -v
+      - name: Residual-driven realizer synthesis controls
+        run: python -m unittest tests.test_residual_driven_realizer_synthesis -v
