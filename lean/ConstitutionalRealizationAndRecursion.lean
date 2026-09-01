@@ -95,7 +95,7 @@ theorem strictRefines_trans {P : Type} {R S T : P → P → Prop}
   · intro hTR
     apply hST.2
     intro x y hxy
-    exact hTR (hRS.1 hxy)
+    exact hRS.1 (hTR hxy)
 
 /-- A strict monotone constitutional-refinement chain cannot return to an
     earlier representation. -/
@@ -142,9 +142,9 @@ theorem level2_is_fixed_point : E2 = E1 := by
         rcases h with ⟨rfl, rfl⟩
         rfl
 
-/-- Concrete finite D-of-D trichotomy for this hierarchy: a strict first
-    refinement is followed by a representation-level fixed point; no cycle is
-    possible under the monotone update law. -/
+/-- Concrete finite D-of-D certificate for this hierarchy: a strict first
+    refinement is followed by a representation-level fixed point; no return
+    to the coarser representation is compatible with monotone refinement. -/
 theorem finite_higher_order_recursion_certificate :
     StrictRefines E1 E0 ∧ E2 = E1 ∧ ¬ Refines E0 E1 := by
   exact ⟨level1_strictly_refines_level0, level2_is_fixed_point,
