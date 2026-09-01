@@ -166,10 +166,12 @@ theorem new_decision_insufficiency_has_residual
     (hnew : ¬ Refines (ConstitutionalRefinement I D) (KernelEq Dstar)) :
     ∃ x y, ConstitutionalRefinement I D x y ∧ Dstar x ≠ Dstar y := by
   classical
-  by_contra hn
+  apply Classical.byContradiction
+  intro hn
   apply hnew
   intro x y hxy
-  by_contra hneq
+  apply Classical.byContradiction
+  intro hneq
   apply hn
   exact ⟨x, y, hxy, hneq⟩
 
@@ -204,14 +206,17 @@ theorem strict_further_refinement_iff_new_distinction
   constructor
   · intro hstrict
     classical
-    by_contra hn
+    apply Classical.byContradiction
+    intro hn
     apply hstrict.2
     intro x y hxy
     refine ⟨hxy, ?_⟩
-    by_contra hneq
+    apply Classical.byContradiction
+    intro hneq
     apply hn
     exact ⟨x, y, hxy, hneq⟩
-  · rintro ⟨x, y, hxy, hneq⟩
+  · intro hex
+    rcases hex with ⟨x, y, hxy, hneq⟩
     exact new_residual_forces_strict_refinement I D Dstar hxy hneq
 
 /-- A three-level finite hierarchy.  Level 0 observes only authority.  Level 1
