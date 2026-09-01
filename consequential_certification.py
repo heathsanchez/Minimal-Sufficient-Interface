@@ -1,8 +1,8 @@
 """Residual-specific certification paths for the consequential core.
 
-These wrappers prevent load-bearing experiments from licensing arbitrary
-conservative state updates with an ad-hoc resolver. Each residual kind has a
-specific evidential gate matching the developmental move it licenses.
+Load-bearing experiments use these typed paths rather than arbitrary resolver
+callbacks. Domain facts are supplied only where the generic core cannot compute
+them; finite representation and table-extension checks are computed here.
 """
 
 from __future__ import annotations
@@ -13,11 +13,13 @@ from consequential_core import (
     ClosureResidual,
     CoupledRepair,
     DevelopmentState,
+    EquivalenceRelation,
     ExtendLanguage,
     PairResidual,
     RefineRepresentation,
     UpdatePolicy,
     certify_repair,
+    quotient_admissible,
     residual_resolved_by_representation,
 )
 
@@ -27,25 +29,27 @@ def certify_representation_repair(
     residual: PairResidual,
     repair: RefineRepresentation | CoupledRepair,
     *,
-    selected_by_verified_experiment: bool,
+    experiment_pair,
+    observed_same: bool,
     attachment: str,
 ) -> CertifiedRepair:
-    """License a representation repair only after verified hypothesis selection.
-
-    For a coupled E/H update, the selected representation must be a surviving
-    member of the new version space, and an external discriminating experiment
-    must have certified the selection rather than an arbitrary tie-break.
-    """
-    def resolves(_state, r, rho):
-        if not selected_by_verified_experiment:
-            return False
+    """License E/H change only when the verified pair answer uniquely selects it."""
+    def resolves(s, r, rho):
         new_rep = r.new_representation
-        if new_rep is None:
+        if new_rep is None or not residual_resolved_by_representation(rho, new_rep):
             return False
-        if not residual_resolved_by_representation(rho, new_rep):
-            return False
+
+        # If H is live, the verified experiment must uniquely select the proposed E.
+        if s.version_space:
+            x, y = experiment_pair
+            survivors = tuple(
+                h for h in s.version_space if h.same(x, y) == observed_same
+            )
+            if len(survivors) != 1 or survivors[0] != new_rep:
+                return False
+
         if isinstance(r, CoupledRepair) and r.new_version_space is not None:
-            if new_rep not in r.new_version_space:
+            if r.new_version_space != (new_rep,):
                 return False
         return True
 
@@ -61,12 +65,48 @@ def certify_language_extension(
     lawful_under_active_representation: bool,
     attachment: str,
 ) -> CertifiedRepair:
-    """License C-growth only if it realizes the missing kernel and is lawful now."""
+    """Generic C-growth gate when an external verifier returns the realized kernel."""
     def resolves(_state, _repair, rho):
         return (
             bool(lawful_under_active_representation)
             and realized_required_kernel == rho.required
         )
+
+    return certify_repair(state, residual, repair, resolves, attachment=attachment)
+
+
+def certify_finite_table_language_extension(
+    state: DevelopmentState,
+    residual: ClosureResidual,
+    repair: ExtendLanguage,
+    *,
+    executable_table,
+    attachment: str,
+) -> CertifiedRepair:
+    """Strong finite gate: derive both kernel and quotient-lawfulness from artifact.
+
+    The load-bearing finite single-chain encodes a language delta as
+    `(opaque_name, executable_table)`. Certification recomputes the table kernel
+    and its quotient law directly, so a caller cannot separately assert either.
+    """
+    table = tuple(executable_table)
+    if not (
+        isinstance(repair.delta, tuple)
+        and len(repair.delta) == 2
+        and tuple(repair.delta[1]) == table
+    ):
+        raise ValueError("language delta is not bound to the certified executable table")
+    if len(table) != len(state.carrier):
+        raise ValueError("executable table arity does not match carrier")
+    if state.active_representation is None:
+        raise ValueError("finite quotient-lawfulness requires an active representation")
+
+    action = lambda z: table[z]
+    realized = EquivalenceRelation.from_observation(state.carrier, action)
+    lawful = quotient_admissible(action, state.active_representation)
+
+    def resolves(_state, _repair, rho):
+        return lawful and realized == rho.required
 
     return certify_repair(state, residual, repair, resolves, attachment=attachment)
 
