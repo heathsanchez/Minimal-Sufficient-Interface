@@ -1,7 +1,8 @@
 """Residual-specific certification paths for the consequential core.
 
-These wrappers prevent the single-chain experiment from licensing arbitrary
-conservative state updates with an ad-hoc `lambda: True` resolver.
+These wrappers prevent load-bearing experiments from licensing arbitrary
+conservative state updates with an ad-hoc resolver. Each residual kind has a
+specific evidential gate matching the developmental move it licenses.
 """
 
 from __future__ import annotations
@@ -26,9 +27,18 @@ def certify_representation_repair(
     residual: PairResidual,
     repair: RefineRepresentation | CoupledRepair,
     *,
+    selected_by_verified_experiment: bool,
     attachment: str,
 ) -> CertifiedRepair:
+    """License a representation repair only after verified hypothesis selection.
+
+    For a coupled E/H update, the selected representation must be a surviving
+    member of the new version space, and an external discriminating experiment
+    must have certified the selection rather than an arbitrary tie-break.
+    """
     def resolves(_state, r, rho):
+        if not selected_by_verified_experiment:
+            return False
         new_rep = r.new_representation
         if new_rep is None:
             return False
@@ -48,11 +58,15 @@ def certify_language_extension(
     repair: ExtendLanguage,
     *,
     realized_required_kernel,
+    lawful_under_active_representation: bool,
     attachment: str,
 ) -> CertifiedRepair:
-    """License a language extension only with a verifier-returned required kernel."""
+    """License C-growth only if it realizes the missing kernel and is lawful now."""
     def resolves(_state, _repair, rho):
-        return realized_required_kernel == rho.required
+        return (
+            bool(lawful_under_active_representation)
+            and realized_required_kernel == rho.required
+        )
 
     return certify_repair(state, residual, repair, resolves, attachment=attachment)
 
@@ -65,7 +79,7 @@ def certify_policy_update(
     warm_success: bool,
     attachment: str,
 ) -> CertifiedRepair:
-    """License second-order policy change only when the bounded rerun succeeds."""
+    """License D-change only when the same bounded acquisition rerun succeeds."""
     def resolves(_state, _repair, _rho):
         return bool(warm_success)
 
