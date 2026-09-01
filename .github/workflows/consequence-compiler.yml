@@ -8,6 +8,7 @@ on:
       - 'consequence_compiler.py'
       - 'consequential_core.py'
       - 'tests/test_consequence_compiler_cross_domain.py'
+      - 'docs/CONSEQUENCE_COMPILER.md'
       - '.github/workflows/consequence-compiler.yml'
   workflow_dispatch:
 
