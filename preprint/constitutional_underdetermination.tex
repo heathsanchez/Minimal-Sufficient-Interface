@@ -1,0 +1,103 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{hyperref}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
+\title{Constitutional Underdetermination in Consequential Development}
+\author{Heath Sanchez\\Metalogic Labs}
+\date{1 September 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+A consequential developmental system updates representations relative to a protected consequence regime. This note isolates a boundary in selecting that regime. Relative to an explicit meta-constitution $\Pi^*$ that fixes which observations are admissible as invariant evidence, two constitutions that agree on all such evidence but prescribe different future developmental decisions are not identifiable by any selector restricted to that evidence. The result is deliberately conditional: it proves non-identifiability from a stated evidence interface, not impossibility of constitutional choice. Priors, external observations, randomization, authority, or stronger meta-criteria may break the underdetermination, but each adds a distinguishing commitment not contained in the invariant evidence alone.
+\end{abstract}
+
+\section{Setup}
+Let $\mathcal P$ be a nonempty set of candidate constitutions. A constitution $\Pi\in\mathcal P$ determines which consequences are protected and therefore which developmental moves are licensed. Let $\Pi^*$ be a stated meta-constitution fixing an invariant observation interface
+\[
+I_{\Pi^*}:\mathcal P\to\mathcal I.
+\]
+No claim is made that $\Pi^*$ is uniquely justified. It is an explicit parameter of the theorem.
+
+Let $\mathcal Q$ be a set of future developmental questions and let
+\[
+D:\mathcal P\times\mathcal Q\to\mathcal A
+\]
+be the constitution-relative developmental decision map.
+
+\begin{definition}[Relative observational equivalence]
+For $\Pi_1,\Pi_2\in\mathcal P$ define
+\[
+\Pi_1\sim_{\Pi^*}\Pi_2
+\quad\Longleftrightarrow\quad
+I_{\Pi^*}(\Pi_1)=I_{\Pi^*}(\Pi_2).
+\]
+\end{definition}
+
+\begin{definition}[Constitution-sensitive question]
+A question $Q\in\mathcal Q$ separates $\Pi_1$ and $\Pi_2$ when
+\[
+D(\Pi_1,Q)\neq D(\Pi_2,Q).
+\]
+\end{definition}
+
+\begin{definition}[$\Pi^*$-invariant selector]
+A deterministic selector is $\Pi^*$-invariant when its output factors through the invariant observation interface: there exists $\bar F:\mathcal I\to\mathcal P$ such that
+\[
+F=\bar F\circ I_{\Pi^*}.
+\]
+Equivalently, equal invariant evidence forces equal selector output.
+\end{definition}
+
+\section{Boundary theorem}
+\begin{theorem}[Constitutional underdetermination, $\Pi^*$-relative form]\label{thm:cu}
+Let $\Pi_1,\Pi_2\in\mathcal P$ satisfy
+\[
+\Pi_1\sim_{\Pi^*}\Pi_2
+\]
+and suppose some $Q\in\mathcal Q$ separates them:
+\[
+D(\Pi_1,Q)\neq D(\Pi_2,Q).
+\]
+Then no $\Pi^*$-invariant selector can use the invariant evidence alone to identify a constitution-dependent distinction between $\Pi_1$ and $\Pi_2$. In particular, for every $F=\bar F\circ I_{\Pi^*}$,
+\[
+F(\Pi_1)=F(\Pi_2).
+\]
+Hence any procedure that makes different selections on $\Pi_1$ and $\Pi_2$ must depend on information or commitment not represented in $I_{\Pi^*}$.
+\end{theorem}
+
+\begin{proof}
+Since $\Pi_1\sim_{\Pi^*}\Pi_2$, we have
+$I_{\Pi^*}(\Pi_1)=I_{\Pi^*}(\Pi_2)$. For any selector factoring as $F=\bar F\circ I_{\Pi^*}$,
+\[
+F(\Pi_1)=\bar F(I_{\Pi^*}(\Pi_1))
+=\bar F(I_{\Pi^*}(\Pi_2))=F(\Pi_2).
+\]
+Thus no such selector distinguishes the pair. The existence of $Q$ with different constitution-relative decisions shows that the collapsed distinction can matter downstream. Therefore a procedure that distinguishes the pair must use an input not contained in the stated invariant interface.\qedhere
+\end{proof}
+
+\begin{corollary}[Failed factorization form]
+If $D_Q(\Pi):=D(\Pi,Q)$, the hypotheses of Theorem~\ref{thm:cu} are exactly a failed factorization witness for $D_Q$ through $I_{\Pi^*}$: two constitutions are identified by the interface while $D_Q$ separates them.
+\end{corollary}
+
+\section{What the theorem does not say}
+The theorem does not establish that a constitution cannot be chosen, that values cannot arise, or that all meta-constitutions are equivalent. It establishes only non-identifiability relative to a declared evidence interface. A prior, external observation, hidden constitutional information, random seed, social authority, physical constraint, or stronger meta-criterion can alter the input and break the equivalence. Such an addition is a distinguishing commitment and must be represented explicitly rather than attributed to the invariant evidence.
+
+\section{Five adversarial obligations before public preprint}
+The statement is not considered stable until it survives the following attacks.
+\begin{enumerate}
+\item \textbf{Randomized selector.} Replace $F$ by a Markov kernel and determine whether the theorem should concern point identification, distributional identification, or justified preference.
+\item \textbf{Bayesian prior.} Add a prior over $\mathcal P$ and test whether the prior merely augments the meta-constitution/evidence state or defeats the claimed boundary.
+\item \textbf{External observation.} Permit new evidence outside $I_{\Pi^*}$ and verify that the theorem explicitly allows the boundary to move.
+\item \textbf{Hidden constitutional information.} Test selectors with side information correlated with $\Pi$; characterize precisely when that information refines $I_{\Pi^*}$.
+\item \textbf{Over-restrictive invariance.} Construct examples where a richer but still defensible $\Pi^*$ separates the constitutions, preventing a vacuous boundary generated only by an artificially weak interface.
+\end{enumerate}
+
+\section{MSI interpretation}
+The theorem is native to the minimal-sufficient-interface pattern. A representation identifies objects when the protected observation interface cannot distinguish them. A residual is produced when a protected downstream consequence fails to factor through that representation. Here the objects are constitutions, the representation is $I_{\Pi^*}$, and the separating consequence is a future developmental decision. The result therefore names a candidate constitutional boundary without claiming an absolute foundation or an internally privileged anchor.
+
+\paragraph{Status.} OPEN / theorem candidate. Paper proof supplied above; adversarial obligations and Lean formalization remain outstanding. It must not be cited as a machine-checked theorem until those gates are complete.
+\end{document}
