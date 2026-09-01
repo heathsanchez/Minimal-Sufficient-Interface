@@ -28,9 +28,11 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Toolchain
         run: lean --version
-      - name: Check constitutional theorems
+      - name: Compile constitutional theorems
         working-directory: lean
-        run: lean ConstitutionalFailedFactorization.lean
+        run: lean -o ConstitutionalFailedFactorization.olean ConstitutionalFailedFactorization.lean
       - name: Check realization and higher-order recursion theorems
         working-directory: lean
+        env:
+          LEAN_PATH: .
         run: lean ConstitutionalRealizationAndRecursion.lean
