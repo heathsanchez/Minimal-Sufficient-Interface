@@ -9,7 +9,6 @@ from src.consequential_core_full import (
     compile_capability,
     compile_representation,
     discriminating_pairs,
-    equivalent,
     quotient_admissible,
     representation_version_space,
     select_by_verified_pair,
@@ -17,11 +16,10 @@ from src.consequential_core_full import (
 
 
 def residual_orbit_indicator(state, residual, generator):
-    """Temporary adapter: indicator of the residual endpoint's generated orbit.
+    """Domain constructor using only certified pair + declared dynamics.
 
-    This is deliberately tiny and will move into the shared core once the chain
-    proves that the abstraction is sound. It uses only the certified residual
-    endpoint and declared dynamics, not the hidden consequence column.
+    It proposes a candidate observation. All novelty, attachment, compile,
+    representation and ablation semantics remain owned by the shared core.
     """
     x, y = residual.pair
     seen = set()
@@ -47,11 +45,9 @@ class ConsequentialSingleChain(unittest.TestCase):
         s0 = DevelopmentState.from_language(X, language0)
         self.assertEqual(s0.representation, ((0, 1, 2, 3),))
 
-        # Residual 1: verifier certifies that 3 and 0 must differ. Exhaustive old
-        # closure still merges them. The hidden consequence is used only for
-        # certification; its literal feature is not supplied to the constructor.
-        hidden1 = (0, 0, 0, 1)
-        rho1 = certify_residual(s0, (3, 0), hidden1)
+        # Residual 1 carries only the externally certified pair-separation fact.
+        # No hidden target feature/column is stored in the Residual object.
+        rho1 = certify_residual(s0, (3, 0), verifier_separates=True)
         delta1 = residual_orbit_indicator(s0, rho1, identity)
         self.assertEqual(delta1, (0, 0, 0, 1))
 
@@ -59,9 +55,9 @@ class ConsequentialSingleChain(unittest.TestCase):
         s1 = compile_capability(s0, cap1, "capability-1")
         self.assertEqual(s1.representation, ((0, 1, 2), (3,)))
 
-        # Residual 2 now lands in a genuine 3+1 geometry. Its pair-level evidence
-        # does not uniquely determine a representation repair.
-        rho2 = certify_residual(s1, (0, 1), None)
+        # Residual 2 now lands in a genuine 3+1 geometry. The verifier certifies
+        # only 0 != 1; that pair-level evidence leaves two coarsest repairs live.
+        rho2 = certify_residual(s1, (0, 1), verifier_separates=True)
         version_space = representation_version_space(s1, rho2)
         self.assertEqual(len(version_space), 2)
         self.assertEqual(
