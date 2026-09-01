@@ -1,0 +1,33 @@
+name: Ship boundary and dose gates
+on:
+  push:
+    branches: [ship-boundary-dose-mathlib]
+  workflow_dispatch:
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run verifier-dose x meta-language harness
+        run: python experiments/verifier_dose_meta_language_factorial.py | tee /tmp/dose.txt
+      - name: Require protocol hash and ten cells
+        run: |
+          grep '^PROTOCOL_SHA256=' /tmp/dose.txt
+          python - <<'PY'
+          import json
+          line=open('/tmp/dose.txt').readline()
+          d=json.loads(line)
+          assert len(d['cells']) == 10
+          assert set(d['languages']) == {'A','B'}
+          assert len(d['channels']) == 5
+          assert d['status'] == 'HARNESS_ONLY_NOT_FROZEN_RESULT'
+          print('DOSE_FACTORIAL_PROTOCOL_GATE=PASS')
+          PY
+      - name: Preprint scope guard
+        run: |
+          grep -q 'OPEN / theorem candidate' preprint/constitutional_underdetermination.tex
+          grep -q 'does not establish that a constitution cannot be chosen' preprint/constitutional_underdetermination.tex
+          echo 'BOUNDARY_PREPRINT_SCOPE_GATE=PASS'
