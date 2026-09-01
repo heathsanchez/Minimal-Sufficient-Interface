@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - consequence-compiler
+      - constitutional-failed-factorization
     paths:
       - 'consequence_compiler.py'
       - 'consequential_core.py'
