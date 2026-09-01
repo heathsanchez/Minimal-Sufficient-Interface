@@ -3,7 +3,7 @@
 The core keeps distinct what the experiments actually keep distinct:
 
 - E: an optional active observational equivalence / representation;
-- H: an explicit operational version space of representable kernels;
+- H: an explicit operational version space of live representation hypotheses;
 - C: the executable interaction / constructor language;
 - D: an optional developmental policy controlling acquisition from C.
 
@@ -75,6 +75,7 @@ class ClosureCertificate:
     interactions: Tuple[Any, ...]
     complete: bool
     regime: str
+    language_snapshot: Tuple[Hashable, ...] = ()
 
     def __post_init__(self):
         if not self.regime:
@@ -101,7 +102,7 @@ class PairResidual:
 
 @dataclass(frozen=True)
 class ClosureResidual:
-    """Verified failure of an entire representational closure to realize a target."""
+    """Verified failure of an entire language closure to realize a target kernel."""
 
     required: EquivalenceRelation
     realized: Tuple[EquivalenceRelation, ...]
@@ -231,8 +232,7 @@ def residual_belongs_to_state(state: DevelopmentState, residual: Residual) -> bo
     if isinstance(residual, PairResidual):
         return residual.representation == state.active_representation
     if isinstance(residual, ClosureResidual):
-        # H is the extensional representational closure being certified.
-        return tuple(residual.realized) == tuple(state.version_space)
+        return residual.closure.language_snapshot == state.language
     raise TypeError(type(residual))
 
 
