@@ -126,8 +126,10 @@ class DifferenceTest(unittest.TestCase):
     once the target varies inside an old quotient block, non-factorization is
     immediate mathematically.
 
-    Separate tests below stress genuine version-space non-uniqueness and check
-    that the same residual-orbit construction is not tied to one carrier size.
+    Separate tests below stress genuine version-space non-uniqueness and an
+    explicitly constructed cardinality family X_n = Z_n x {0,1}. The latter is
+    only a cardinality check: the hidden-coordinate role is fixed by design, so
+    it is not evidence of robustness to structural variation.
     """
 
     def run_equivariant_world(self, perm):
@@ -231,8 +233,6 @@ class DifferenceTest(unittest.TestCase):
         p, q = coarsest
         probes = distinguishing_pairs(p, q)
         self.assertTrue(probes)
-        # The ambiguity itself determines a discriminating next experiment:
-        # ask whether one pair is identified. No arbitrary tie-breaking needed.
         x, y = probes[0]
         self.assertNotEqual(eq_from_partition(p)(x, y), eq_from_partition(q)(x, y))
 
@@ -241,11 +241,16 @@ class DifferenceTest(unittest.TestCase):
             f"coarsest_repairs={len(coarsest)}; discriminating_pair={probes[0]}"
         )
 
-    def test_same_residual_orbit_constructor_crosses_carrier_size(self):
-        """Stronger than relabeling, but intentionally not called domain transfer."""
+    def test_residual_orbit_constructor_on_explicit_cardinality_family(self):
+        """Cardinality-only family, not a structural-variation transfer claim.
+
+        X_n = Z_n x {0,1}; g_n(i,b)=(i+1 mod n,b). Therefore |<g_n>|=n by
+        construction, while the residual endpoints (0,0),(0,1) generate the two
+        hidden-bit orbits. We test a bounded family only to ensure the executable
+        constructor follows this elementary law rather than two hand-picked cases.
+        """
         worlds = []
-        for width in (2, 3):
-            # States are (phase, hidden_bit), encoded as 2*phase+hidden_bit.
+        for width in range(2, 9):
             X = tuple(range(2 * width))
             g = tuple(2 * (((z // 2) + 1) % width) + (z % 2) for z in X)
             old_p = tuple(
@@ -271,11 +276,10 @@ class DifferenceTest(unittest.TestCase):
             same = delta == target
             flipped = tuple(1 - b for b in delta) == target
             self.assertTrue(same or flipped)
-            worlds.append((len(X), len(closure), delta))
+            worlds.append((len(X), len(closure)))
 
-        self.assertNotEqual(worlds[0][0], worlds[1][0])
-        self.assertNotEqual(worlds[0][1], worlds[1][1])
-        print(f"DIFFERENCE TEST CROSS-CARDINALITY PASS worlds={worlds}")
+        self.assertEqual(worlds, [(2 * n, n) for n in range(2, 9)])
+        print(f"DIFFERENCE TEST CARDINALITY FAMILY PASS worlds={worlds}")
 
 
 if __name__ == '__main__':
