@@ -1,5 +1,10 @@
 import unittest
 
+from consequential_certification import (
+    certify_language_extension,
+    certify_policy_update,
+    certify_representation_repair,
+)
 from consequential_core import (
     AcquisitionResidual,
     ClosureCertificate,
@@ -11,9 +16,7 @@ from consequential_core import (
     RefineRepresentation,
     UpdatePolicy,
     ablate,
-    certify_repair,
     compile_repair,
-    residual_resolved_by_representation,
 )
 from tests import test_golden_law_meta_becoming as meta
 from tests import test_recursive_developmental_compounding as recursive
@@ -28,24 +31,30 @@ class ConsequentialCoreContracts(unittest.TestCase):
         state = DevelopmentState(X, active_representation=old)
         repair = RefineRepresentation(new)
 
-        certified = certify_repair(
+        certified = certify_representation_repair(
             state,
             residual,
             repair,
-            lambda _s, r, rho: residual_resolved_by_representation(rho, r.new_representation),
+            experiment_pair=(0, 1),
+            observed_same=False,
             attachment="separator splits motivating pair",
         )
         after, token = compile_repair(state, certified)
         self.assertEqual(after.active_representation, new)
         self.assertEqual(ablate(after, token), state)
 
-        indiscrete = EquivalenceRelation.from_partition(X, ({0, 1, 2, 3},))
+        # A merge is not conservative development.
+        partially_refined = EquivalenceRelation.from_partition(X, ({0}, {1}, {2, 3}))
+        merge = EquivalenceRelation.from_partition(X, ({0, 1}, {2, 3}))
+        merge_state = DevelopmentState(X, active_representation=partially_refined)
+        merge_residual = PairResidual(2, 3, partially_refined, 0, 1)
         with self.assertRaises(ValueError):
-            certify_repair(
-                DevelopmentState(X, active_representation=new),
-                PairResidual(0, 1, old, 0, 1),
-                RefineRepresentation(indiscrete),
-                lambda *_: True,
+            certify_representation_repair(
+                merge_state,
+                merge_residual,
+                RefineRepresentation(merge),
+                experiment_pair=(2, 3),
+                observed_same=False,
                 attachment="invalid merge",
             )
 
@@ -76,27 +85,35 @@ class ConsequentialCoreContracts(unittest.TestCase):
 
         delta = "s_twist"
         repair = ExtendLanguage(delta)
-        certified = certify_repair(
+        domain_repairs = meta.exact_repairs_with_operator(
+            meta.SOURCE_ATOMS, meta.SOURCE_OPS[delta], hidden
+        )
+        self.assertTrue(domain_repairs)
+        realized_col = domain_repairs[0][2]
+        realized_kernel = EquivalenceRelation.from_observation(
+            X, lambda i: realized_col[i]
+        )
+
+        certified = certify_language_extension(
             state,
             residual,
             repair,
-            lambda _s, _r, _rho: bool(
-                meta.exact_repairs_with_operator(
-                    meta.SOURCE_ATOMS, meta.SOURCE_OPS[delta], hidden
-                )
-            ),
+            realized_required_kernel=realized_kernel,
+            lawful_under_active_representation=True,
             attachment="operator realizes previously absent target kernel",
         )
         after, token = compile_repair(state, certified)
         self.assertIn(delta, after.language)
         self.assertEqual(ablate(after, token), state)
 
+        # The closure residual is tied to the exact old C snapshot.
         with self.assertRaises(ValueError):
-            certify_repair(
+            certify_language_extension(
                 after,
                 residual,
                 ExtendLanguage("s_untwist"),
-                lambda *_: True,
+                realized_required_kernel=required,
+                lawful_under_active_representation=True,
                 attachment="stale residual",
             )
 
@@ -104,7 +121,7 @@ class ConsequentialCoreContracts(unittest.TestCase):
         X = tuple(range(len(recursive.TARGET_LABELS)))
         language = tuple(recursive.TARGET_QUERIES)
 
-        source_chosen, source_history = recursive.cold_episode(
+        _, source_history = recursive.cold_episode(
             recursive.SOURCE_LABELS,
             recursive.SOURCE_QUERIES,
             recursive.SOURCE_ORDER,
@@ -127,11 +144,7 @@ class ConsequentialCoreContracts(unittest.TestCase):
             )
         )
 
-        state = DevelopmentState(
-            X,
-            language=language,
-            policy=None,
-        )
+        state = DevelopmentState(X, language=language, policy=None)
         residual = AcquisitionResidual(
             task="reach exact target interface in one query",
             language_snapshot=language,
@@ -141,23 +154,23 @@ class ConsequentialCoreContracts(unittest.TestCase):
         )
         repair = UpdatePolicy(warm_policy)
 
-        def resolves(_state, candidate, rho):
-            chosen, _ = recursive.policy_episode(
-                recursive.TARGET_LABELS,
-                recursive.TARGET_QUERIES,
-                recursive.TARGET_ORDER,
-                budget=rho.budget,
-                policy=candidate.new_policy,
-            )
-            return recursive.sufficient(
-                recursive.TARGET_LABELS, recursive.TARGET_QUERIES, chosen
-            )
+        warm_chosen, _ = recursive.policy_episode(
+            recursive.TARGET_LABELS,
+            recursive.TARGET_QUERIES,
+            recursive.TARGET_ORDER,
+            budget=residual.budget,
+            policy=warm_policy,
+        )
+        warm_success = recursive.sufficient(
+            recursive.TARGET_LABELS, recursive.TARGET_QUERIES, warm_chosen
+        )
+        self.assertTrue(warm_success)
 
-        certified = certify_repair(
+        certified = certify_policy_update(
             state,
             residual,
             repair,
-            resolves,
+            warm_success=warm_success,
             attachment="source residual history changes bounded future acquisition",
         )
         after, token = compile_repair(state, certified)
@@ -165,8 +178,7 @@ class ConsequentialCoreContracts(unittest.TestCase):
         self.assertEqual(after.policy, warm_policy)
         self.assertEqual(ablate(after, token), state)
 
-        # The second-order repair changes D only; it does not pretend to have
-        # immediately refined E or extended C.
+        # The second-order repair changes D only.
         self.assertEqual(after.active_representation, state.active_representation)
         self.assertEqual(after.language, state.language)
 
