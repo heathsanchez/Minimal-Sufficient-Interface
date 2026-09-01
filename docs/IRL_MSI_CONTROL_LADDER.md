@@ -1,10 +1,10 @@
 # IRL-shaped control ladder for MSI constitutional identifiability
 
-Status: executable finite control, not a claim that IRL lacks quotient or invariance theory.
+Status: executable finite control, not a claim that IRL lacks quotient, invariance, or realization structure.
 
 ## Purpose
 
-This control asks a deliberately adversarial question: does the MSI constitutional package merely rediscover standard partial-identifiability structure already known in inverse reinforcement learning, or does the quotient-to-realization layer add a distinct obligation?
+This control asks a deliberately adversarial question: does the MSI constitutional package merely rediscover standard partial-identifiability structure already known in inverse reinforcement learning, and if a quotient-to-realization layer appears, is that layer actually specific to the constitutional example?
 
 The control must first reproduce known IRL ambiguity faithfully. Only after that is any MSI-specific comparison admissible.
 
@@ -18,7 +18,7 @@ The experiment is aligned with established IRL results rather than positioned ag
 
 These sources already establish the legitimacy of reward equivalence classes / fibres / invariances. MSI does not claim invention of that layer.
 
-## Frozen finite model
+## Frozen finite soft-policy model
 
 Reward universe:
 
@@ -62,35 +62,90 @@ s=r+c(1,1).
 11. **Misspecification residual.** A sign-only behavioural model merges rewards separated by the true soft-policy signature, producing explicit residual pairs.
 12. **Stopping control.** Reward representative identity is not needed when the protected downstream query is already invariant across the policy fibre.
 
-## Comparison with the constitutional experiment
+## Independent exact-gap realization control
 
-The IRL control establishes the familiar layer
-
-\[
-\text{latent reward}
-\to
-\text{behavioural observation}
-\to
-\text{equivalence class / quotient}
-\to
-\text{downstream invariance test}.
-\]
-
-MSI should agree with that. In this finite control it does: when optimal action is the protected downstream question, the soft-policy quotient is sufficient and the system should stop. Choosing a gauge-fixed reward representative does not create new evidence and is not required for the protected task.
-
-The constitutional finite witness asks a different second-layer question. There the abstract repaired quotient \(E^+\) is fixed, yet within a declared implementation language there are multiple concrete interface realizations with different operational cost profiles for later protected questions. The distinction is therefore:
+A separate finite control over \(\{-2,-1,0,1,2\}^2\) protects exact reward identity after observing only the gap \(d=r_1-r_0\). Adding either primitive coordinate \(r_0\) or \(r_1\) produces the same discrete repaired kernel:
 
 \[
-\underbrace{\text{which latent points are observationally equivalent}}_{\text{standard partial identifiability}}
-\qquad\text{vs}\qquad
-\underbrace{\text{how the required quotient is concretely realized}}_{\text{MSI realization layer}}.
+\ker(d,r_0)=\ker(d,r_1)=\ker(\mathrm{id}_R).
 \]
 
-The current finite evidence supports the existence of that second layer in the constitutional model. It does **not** establish that IRL theory globally lacks analogous structured realization questions, nor that this layer is universally nontrivial.
+Under the frozen operational language where a retained primitive costs 1 and reconstructing the other reward coordinate with one add/subtract operation costs 2, the two lawful realizations have opposite future-query profiles:
+
+\[
+(r_0\text{-realizer})=(1,2),\qquad
+(r_1\text{-realizer})=(2,1).
+\]
+
+Thus an IRL-shaped control itself exhibits:
+
+\[
+\text{same required quotient} + \text{multiple operational realizations}.
+\]
+
+This directly falsifies any claim that the quotient-to-realization distinction is unique to the constitutional example.
+
+## Potential-shaping control
+
+A second control uses a deterministic two-path, two-step reward family with \(\gamma=1/2\), 81 base reward vectors, and all 27 potentials in \(\{-1,0,1\}^3\). Across all 2,187 shaping interventions,
+
+\[
+r'(s,a,s')=r(s,a,s')+\gamma\Phi(s')-\Phi(s)
+\]
+
+preserves return difference and therefore optimal choice, while changing the concrete reward vector in 2,106 interventions. The finite search generates 1,297 distinct shaped reward vectors from 81 base rewards while the protected quotient remains unchanged.
+
+The same control also recovers a strict interface-refinement lattice:
+
+\[
+\ker(\mathrm{full\ reward})
+\subsetneq
+\ker(\mathrm{return\ difference})
+\subsetneq
+\ker(\mathrm{optimal\ choice}),
+\]
+
+with class counts \(81>13>3\) and ambiguity counts \(0<310<1200\). Protecting a literal transition reward, which is not shaping-invariant, generates 202 residual pairs and forces refinement beyond the return-difference quotient.
+
+## Corrected comparison with the constitutional experiment
+
+The IRL controls establish that both of the following are already meaningful in a standard partial-identifiability setting:
+
+\[
+\underbrace{\text{which latent points are observationally equivalent}}_{\text{quotient / partial identifiability}}
+\]
+
+and
+
+\[
+\underbrace{\text{how a sufficient quotient is concretely represented or transformed}}_{\text{realization / gauge / shaping structure}}.
+\]
+
+Therefore MSI should **not** claim novelty from the bare existence of a quotient-realization distinction.
+
+The stronger MSI object is the developmental composition:
+
+\[
+I
+\to
+\text{failed factorization}
+\to
+E^+
+\to
+\mathcal V(E^+;\mathcal H)
+\to
+\text{later protected consequence}
+\to
+\text{certified residual}
+\to
+\text{minimal refinement or fixed point},
+\]
+
+with explicit attachment, replay, provenance, ablation, and stopping conditions. The constitutional and IRL controls are now calibration domains for that same machine rather than evidence that one domain contains a uniquely new mathematical layer.
 
 ## Falsifiers
 
-The control fails if any of the following occurs under the frozen universe:
+The soft-policy control fails if any of the following occurs under the frozen universe:
 
 - the soft-policy kernel differs from additive-shift equivalence;
 - class count is not 13 or ambiguity count is not 91;
@@ -100,10 +155,14 @@ The control fails if any of the following occurs under the frozen universe:
 - the MSI meet repair differs from the protected soft-policy quotient;
 - the misspecified sign model has no residual pair.
 
+The realization control fails if \(\ker(d,r_0)\neq\ker(d,r_1)\), if either differs from exact reward identity, or if the frozen operational profiles cease to differ.
+
+The shaping control fails if any enumerated potential-shaping intervention changes return difference or optimal choice, if the refinement lattice ceases to be strict, or if the reported census counts change under the frozen universe.
+
 ## Scientific interpretation
 
-If all gates pass, the warranted conclusion is modest but useful:
+The warranted conclusion is now stronger and more conservative at the same time:
 
-> MSI reproduces a known partial-identifiability/invariance pattern in a finite IRL-shaped control, correctly stops when the quotient is sufficient for the protected downstream task, and separately exposes a quotient-realization distinction in the constitutional finite model.
+> MSI reproduces known partial-identifiability and invariance structure in finite IRL-shaped controls, correctly stops when the current quotient is sufficient for protected downstream tasks, detects when non-invariant protected questions require refinement, and tracks multiple concrete realizations without claiming that realization structure is unique to MSI or to constitutional reasoning.
 
-That is a calibration result, not a global novelty theorem.
+The remaining candidate contribution is the **verifier-governed developmental calculus linking these layers**, not any one layer in isolation.
