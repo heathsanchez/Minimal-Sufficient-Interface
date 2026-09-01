@@ -1,5 +1,10 @@
 import unittest
 
+from consequential_certification import (
+    certify_language_extension,
+    certify_policy_update,
+    certify_representation_repair,
+)
 from consequential_core import (
     AcquisitionResidual,
     ClosureCertificate,
@@ -11,19 +16,18 @@ from consequential_core import (
     PairResidual,
     UpdatePolicy,
     ablate,
-    certify_repair,
     compile_repair,
     quotient_admissible,
-    residual_resolved_by_representation,
 )
-from tests.test_difference_test import coarsest_lawful_repairs, distinguishing_pairs
-
-
-def rel_from_partition(X, p):
-    return EquivalenceRelation.from_partition(X, p)
+from consequential_version_space import (
+    coarsest_representation_repairs,
+    discriminating_pairs,
+    update_version_space_from_pair_answer,
+)
 
 
 def kernel_fingerprint(rel):
+    """Domain policy feature; not part of the representation/repair kernel."""
     unseen = set(rel.carrier)
     sizes = []
     while unseen:
@@ -35,17 +39,49 @@ def kernel_fingerprint(rel):
 
 
 class ConsequentialSingleChain(unittest.TestCase):
+    def test_non_repairs_are_rejected_on_the_shared_path(self):
+        X = tuple(range(4))
+        old_E = EquivalenceRelation.from_partition(X, ({0, 1, 2}, {3}))
+        rho = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
+        S = DevelopmentState(X, active_representation=old_E, language=("id",))
+
+        # Conservative but unattached: it leaves the motivating pair merged.
+        bad = CoupledRepair(new_representation=old_E, new_version_space=(old_E,))
+        with self.assertRaises(ValueError):
+            certify_representation_repair(
+                S,
+                rho,
+                bad,
+                attachment="should be rejected",
+            )
+
+        required = EquivalenceRelation.from_partition(X, ({0, 2}, {1}, {3}))
+        closure = ClosureCertificate(
+            interactions=("id",),
+            complete=True,
+            regime="identity-only",
+            language_snapshot=S.language,
+        )
+        rho_closure = ClosureResidual(required, (old_E,), closure)
+        with self.assertRaises(ValueError):
+            certify_language_extension(
+                S,
+                rho_closure,
+                ExtendLanguage("sham"),
+                realized_required_kernel=old_E,
+                attachment="wrong kernel",
+            )
+
     def test_representation_to_language_to_second_order_development(self):
         X = tuple(range(4))
-        old_p = (frozenset({0, 1, 2}), frozenset({3}))
-        old_E = EquivalenceRelation.from_partition(X, old_p)
+        old_E = EquivalenceRelation.from_partition(X, ({0, 1, 2}, {3}))
         rho1 = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
 
-        g = (0, 0, 0, 0)
-        lawful, coarsest = coarsest_lawful_repairs(X, old_p, (0, 1), g)
-        self.assertTrue(lawful)
-        self.assertEqual(len(coarsest), 2)
-        H0 = tuple(rel_from_partition(X, p) for p in coarsest)
+        # Version-space enumeration is now owned by the shared core subsystem.
+        pre = DevelopmentState(X, active_representation=old_E, language=("id",))
+        dynamics = (lambda _z: 0,)
+        H0 = coarsest_representation_repairs(pre, rho1, dynamics)
+        self.assertEqual(len(H0), 2)
         self.assertTrue(all(h.strictly_refines(old_E) for h in H0))
 
         S0 = DevelopmentState(
@@ -56,11 +92,14 @@ class ConsequentialSingleChain(unittest.TestCase):
             policy=None,
         )
 
-        probe_pairs = distinguishing_pairs(coarsest[0], coarsest[1])
-        self.assertTrue(probe_pairs)
-        probe = probe_pairs[0]
+        # The live version space itself determines a discriminating experiment.
+        probes = discriminating_pairs(H0)
+        self.assertTrue(probes)
+        probe = probes[0]
         observed_same = True
-        survivors = tuple(h for h in H0 if h.same(*probe) == observed_same)
+        survivors = update_version_space_from_pair_answer(
+            H0, probe, observed_same=observed_same
+        )
         self.assertEqual(len(survivors), 1)
         selected = survivors[0]
 
@@ -68,25 +107,24 @@ class ConsequentialSingleChain(unittest.TestCase):
             new_representation=selected,
             new_version_space=(selected,),
         )
-        certified1 = certify_repair(
+        certified1 = certify_representation_repair(
             S0,
             rho1,
             repair1,
-            lambda _s, r, rho: (
-                residual_resolved_by_representation(rho, r.new_representation)
-                and r.new_version_space == (r.new_representation,)
-            ),
             attachment=f"verified experiment {probe} collapses residual-relative H",
         )
         S1, token1 = compile_repair(S0, certified1)
         self.assertEqual(S1.active_representation, selected)
         self.assertEqual(S1.version_space, (selected,))
 
+        # The representation change makes an already-defined downstream action
+        # quotient-admissible. It was not lawful on the previous quotient.
         action_table = (0, 3, 2, 3)
         action = lambda z: action_table[z]
         self.assertFalse(quotient_admissible(action, old_E))
         self.assertTrue(quotient_admissible(action, selected))
 
+        # A complete declared old language cannot realize the required action kernel.
         required1 = EquivalenceRelation.from_observation(X, action)
         identity_kernel = EquivalenceRelation.from_observation(X, lambda z: z)
         self.assertNotEqual(required1, identity_kernel)
@@ -97,23 +135,23 @@ class ConsequentialSingleChain(unittest.TestCase):
             language_snapshot=S1.language,
         )
         rho2 = ClosureResidual(required1, (identity_kernel,), closure1)
-        repair2 = ExtendLanguage("licensed_action")
-        certified2 = certify_repair(
+
+        executable_delta = ("licensed_action", action_table)
+        repair2 = ExtendLanguage(executable_delta)
+        # The verifier returns the kernel actually realized by the executable table.
+        realized = EquivalenceRelation.from_observation(X, action)
+        certified2 = certify_language_extension(
             S1,
             rho2,
             repair2,
-            lambda s, r, rho: (
-                r.delta == "licensed_action"
-                and quotient_admissible(action, s.active_representation)
-                and EquivalenceRelation.from_observation(X, action) == rho.required
-            ),
-            attachment="new quotient makes the new executable operator lawful",
+            realized_required_kernel=realized,
+            attachment="new quotient makes the executable operator lawful",
         )
         S2, token2 = compile_repair(S1, certified2)
 
         def executable_capability(state):
             return (
-                "licensed_action" in state.language
+                executable_delta in state.language
                 and state.active_representation is not None
                 and quotient_admissible(action, state.active_representation)
             )
@@ -124,9 +162,13 @@ class ConsequentialSingleChain(unittest.TestCase):
         self.assertEqual(S2_without_language, S1)
         self.assertFalse(executable_capability(S2_without_language))
 
+        # Exact ancestor ablation of the representation transition restores the
+        # old quotient on which the same action is not admissible.
         self.assertEqual(ablate(S1, token1), S0)
         self.assertFalse(quotient_admissible(action, S0.active_representation))
 
+        # Second-order development: retain an anonymous structural fingerprint of
+        # the successful extension, not its literal name/table.
         learned_policy = kernel_fingerprint(required1)
         self.assertEqual(learned_policy, (1, 1, 2))
 
@@ -148,7 +190,10 @@ class ConsequentialSingleChain(unittest.TestCase):
             if policy is None:
                 chosen = order[0]
             else:
-                matches = [q for q in order if kernel_fingerprint(future_kernels[q]) == policy]
+                matches = [
+                    q for q in order
+                    if kernel_fingerprint(future_kernels[q]) == policy
+                ]
                 chosen = matches[0] if matches else order[0]
             return chosen, future_kernels[chosen] == future_target
 
@@ -164,11 +209,12 @@ class ConsequentialSingleChain(unittest.TestCase):
             cold_success=False,
         )
         repair3 = UpdatePolicy(learned_policy)
-        certified3 = certify_repair(
+        warm_success_before_compile = acquisition_episode(repair3.new_policy)[1]
+        certified3 = certify_policy_update(
             S2,
             rho3,
             repair3,
-            lambda _s, r, _rho: acquisition_episode(r.new_policy)[1],
+            warm_success=warm_success_before_compile,
             attachment="prior successful repair changes the next bounded acquisition",
         )
         S3, token3 = compile_repair(S2, certified3)
