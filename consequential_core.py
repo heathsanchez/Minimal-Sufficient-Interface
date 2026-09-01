@@ -7,9 +7,9 @@ The core keeps distinct what the experiments actually keep distinct:
 - C: the executable interaction / constructor language;
 - D: an optional developmental policy controlling acquisition from C.
 
-Repairs are tagged. Representation refinement, language extension and policy
-change are not identified by fiat. Residuals are tagged too: pairwise failed
-identification and closure-level non-realizability are different certificates.
+Repairs and residuals are tagged. The point is not to make every update look the
+same; it is to make distinct developmental moves share one certified state and
+provenance discipline without erasing their semantics.
 """
 
 from __future__ import annotations
@@ -84,6 +84,8 @@ class ClosureCertificate:
 
 @dataclass(frozen=True)
 class PairResidual:
+    """A current identification is contradicted by protected consequence."""
+
     left: Hashable
     right: Hashable
     representation: EquivalenceRelation
@@ -102,7 +104,7 @@ class PairResidual:
 
 @dataclass(frozen=True)
 class ClosureResidual:
-    """Verified failure of an entire language closure to realize a target kernel."""
+    """Complete current language closure cannot realize a required kernel."""
 
     required: EquivalenceRelation
     realized: Tuple[EquivalenceRelation, ...]
@@ -120,7 +122,32 @@ class ClosureResidual:
             raise ValueError("required representation is already realizable")
 
 
-Residual = PairResidual | ClosureResidual
+@dataclass(frozen=True)
+class AcquisitionResidual:
+    """A bounded acquisition episode fails under the current developmental policy.
+
+    This is the honest residual type for second-order development: changing D
+    need not immediately change E or C, but it can change what the next bounded
+    acquisition episode reaches.
+    """
+
+    task: Hashable
+    language_snapshot: Tuple[Hashable, ...]
+    policy_snapshot: Any
+    budget: int
+    cold_success: bool = False
+    verifier_tag: str = "verified"
+
+    def __post_init__(self):
+        if self.verifier_tag != "verified":
+            raise ValueError("residual is not verifier-certified")
+        if self.budget < 0:
+            raise ValueError("budget must be nonnegative")
+        if self.cold_success:
+            raise ValueError("no acquisition residual exists when the current policy already succeeds")
+
+
+Residual = PairResidual | ClosureResidual | AcquisitionResidual
 
 
 @dataclass(frozen=True)
@@ -233,6 +260,11 @@ def residual_belongs_to_state(state: DevelopmentState, residual: Residual) -> bo
         return residual.representation == state.active_representation
     if isinstance(residual, ClosureResidual):
         return residual.closure.language_snapshot == state.language
+    if isinstance(residual, AcquisitionResidual):
+        return (
+            residual.language_snapshot == state.language
+            and residual.policy_snapshot == state.policy
+        )
     raise TypeError(type(residual))
 
 
