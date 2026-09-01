@@ -1,0 +1,25 @@
+name: Constitutional Failed Factorization
+
+on:
+  push:
+    branches:
+      - constitutional-failed-factorization
+    paths:
+      - 'lean/ConstitutionalFailedFactorization.lean'
+      - 'lean-toolchain'
+      - '.github/workflows/constitutional-failed-factorization.yml'
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+      - name: Toolchain
+        run: lean --version
+      - name: Check constitutional theorems
+        working-directory: lean
+        run: lean ConstitutionalFailedFactorization.lean
