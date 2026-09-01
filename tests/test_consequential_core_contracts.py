@@ -27,7 +27,11 @@ class ConsequentialCoreContracts(unittest.TestCase):
         X = tuple(range(4))
         old = EquivalenceRelation.from_partition(X, ({0, 1}, {2, 3}))
         residual = PairResidual(0, 1, old, 0, 1)
-        new = EquivalenceRelation.from_partition(X, ({0}, {1}, {2}, {3}))
+
+        # Minimality is part of the representation contract: split only the
+        # motivating old block. The fully discrete relation would also resolve
+        # the residual, but is correctly rejected as unnecessarily fine.
+        new = EquivalenceRelation.from_partition(X, ({0}, {1}, {2, 3}))
         state = DevelopmentState(X, active_representation=old)
         repair = RefineRepresentation(new)
 
@@ -37,11 +41,22 @@ class ConsequentialCoreContracts(unittest.TestCase):
             repair,
             experiment_pair=(0, 1),
             observed_same=False,
-            attachment="separator splits motivating pair",
+            attachment="minimal separator splits motivating pair",
         )
         after, token = compile_repair(state, certified)
         self.assertEqual(after.active_representation, new)
         self.assertEqual(ablate(after, token), state)
+
+        discrete = EquivalenceRelation.from_partition(X, ({0}, {1}, {2}, {3}))
+        with self.assertRaises(ValueError):
+            certify_representation_repair(
+                state,
+                residual,
+                RefineRepresentation(discrete),
+                experiment_pair=(0, 1),
+                observed_same=False,
+                attachment="valid but nonminimal refinement",
+            )
 
         # A merge is not conservative development.
         partially_refined = EquivalenceRelation.from_partition(X, ({0}, {1}, {2, 3}))
