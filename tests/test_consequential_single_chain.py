@@ -52,7 +52,20 @@ class ConsequentialSingleChain(unittest.TestCase):
                 S,
                 rho,
                 bad,
+                selected_by_verified_experiment=True,
                 attachment="should be rejected",
+            )
+
+        # Even an otherwise resolving refinement cannot be licensed by an
+        # unverified/arbitrary version-space tie-break.
+        good_E = EquivalenceRelation.from_partition(X, ({0}, {1, 2}, {3}))
+        with self.assertRaises(ValueError):
+            certify_representation_repair(
+                S,
+                rho,
+                CoupledRepair(new_representation=good_E, new_version_space=(good_E,)),
+                selected_by_verified_experiment=False,
+                attachment="unverified tie-break",
             )
 
         required = EquivalenceRelation.from_partition(X, ({0, 2}, {1}, {3}))
@@ -69,7 +82,20 @@ class ConsequentialSingleChain(unittest.TestCase):
                 rho_closure,
                 ExtendLanguage("sham"),
                 realized_required_kernel=old_E,
+                lawful_under_active_representation=True,
                 attachment="wrong kernel",
+            )
+
+        # Correct kernel alone is insufficient if the proposed operator does not
+        # lawfully descend through the active representation.
+        with self.assertRaises(ValueError):
+            certify_language_extension(
+                S,
+                rho_closure,
+                ExtendLanguage("wrong-quotient"),
+                realized_required_kernel=required,
+                lawful_under_active_representation=False,
+                attachment="kernel matches but quotient law fails",
             )
 
     def test_representation_to_language_to_second_order_development(self):
@@ -77,7 +103,7 @@ class ConsequentialSingleChain(unittest.TestCase):
         old_E = EquivalenceRelation.from_partition(X, ({0, 1, 2}, {3}))
         rho1 = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
 
-        # Version-space enumeration is now owned by the shared core subsystem.
+        # Version-space enumeration is owned by the shared core subsystem.
         pre = DevelopmentState(X, active_representation=old_E, language=("id",))
         dynamics = (lambda _z: 0,)
         H0 = coarsest_representation_repairs(pre, rho1, dynamics)
@@ -111,6 +137,9 @@ class ConsequentialSingleChain(unittest.TestCase):
             S0,
             rho1,
             repair1,
+            selected_by_verified_experiment=(
+                len(survivors) == 1 and survivors[0] == selected
+            ),
             attachment=f"verified experiment {probe} collapses residual-relative H",
         )
         S1, token1 = compile_repair(S0, certified1)
@@ -138,13 +167,14 @@ class ConsequentialSingleChain(unittest.TestCase):
 
         executable_delta = ("licensed_action", action_table)
         repair2 = ExtendLanguage(executable_delta)
-        # The verifier returns the kernel actually realized by the executable table.
         realized = EquivalenceRelation.from_observation(X, action)
+        lawful_now = quotient_admissible(action, S1.active_representation)
         certified2 = certify_language_extension(
             S1,
             rho2,
             repair2,
             realized_required_kernel=realized,
+            lawful_under_active_representation=lawful_now,
             attachment="new quotient makes the executable operator lawful",
         )
         S2, token2 = compile_repair(S1, certified2)
