@@ -9,6 +9,8 @@ on:
       - 'lean/ConstitutionalRealizationAndRecursion.lean'
       - 'tests/test_constitutional_realization_census.py'
       - 'tests/test_constitutional_attacks.py'
+      - 'tests/test_irl_msi_control_ladder.py'
+      - 'docs/IRL_MSI_CONTROL_LADDER.md'
       - 'lean-toolchain'
       - '.github/workflows/constitutional-failed-factorization.yml'
   workflow_dispatch:
@@ -25,6 +27,8 @@ jobs:
         run: python -m unittest tests.test_constitutional_realization_census -v
       - name: Five constitutional adversarial attacks
         run: python -m unittest tests.test_constitutional_attacks -v
+      - name: IRL-shaped MSI control ladder
+        run: python -m unittest tests.test_irl_msi_control_ladder -v
       - name: Install Lean toolchain
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
