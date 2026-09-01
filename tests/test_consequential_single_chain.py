@@ -1,6 +1,7 @@
 import unittest
 
 from consequential_certification import (
+    certify_finite_table_language_extension,
     certify_language_extension,
     certify_policy_update,
     certify_representation_repair,
@@ -43,7 +44,15 @@ class ConsequentialSingleChain(unittest.TestCase):
         X = tuple(range(4))
         old_E = EquivalenceRelation.from_partition(X, ({0, 1, 2}, {3}))
         rho = PairResidual(0, 1, old_E, consequence_left=0, consequence_right=1)
-        S = DevelopmentState(X, active_representation=old_E, language=("id",))
+
+        good_E = EquivalenceRelation.from_partition(X, ({0}, {1, 2}, {3}))
+        alternative_E = EquivalenceRelation.from_partition(X, ({0, 2}, {1}, {3}))
+        S = DevelopmentState(
+            X,
+            active_representation=old_E,
+            version_space=(good_E, alternative_E),
+            language=("id",),
+        )
 
         # Conservative but unattached: it leaves the motivating pair merged.
         bad = CoupledRepair(new_representation=old_E, new_version_space=(old_E,))
@@ -52,23 +61,24 @@ class ConsequentialSingleChain(unittest.TestCase):
                 S,
                 rho,
                 bad,
-                selected_by_verified_experiment=True,
+                experiment_pair=(0, 2),
+                observed_same=False,
                 attachment="should be rejected",
             )
 
-        # Even an otherwise resolving refinement cannot be licensed by an
-        # unverified/arbitrary version-space tie-break.
-        good_E = EquivalenceRelation.from_partition(X, ({0}, {1, 2}, {3}))
+        # A resolving candidate is still rejected if the verified pair answer
+        # selects the other live hypothesis.
         with self.assertRaises(ValueError):
             certify_representation_repair(
                 S,
                 rho,
                 CoupledRepair(new_representation=good_E, new_version_space=(good_E,)),
-                selected_by_verified_experiment=False,
-                attachment="unverified tie-break",
+                experiment_pair=(0, 2),
+                observed_same=True,
+                attachment="wrong survivor",
             )
 
-        required = EquivalenceRelation.from_partition(X, ({0, 2}, {1}, {3}))
+        required = alternative_E
         closure = ClosureCertificate(
             interactions=("id",),
             complete=True,
@@ -86,16 +96,15 @@ class ConsequentialSingleChain(unittest.TestCase):
                 attachment="wrong kernel",
             )
 
-        # Correct kernel alone is insufficient if the proposed operator does not
-        # lawfully descend through the active representation.
+        # The finite-table gate binds the certificate to the actual table rather
+        # than trusting a separately supplied kernel claim.
         with self.assertRaises(ValueError):
-            certify_language_extension(
+            certify_finite_table_language_extension(
                 S,
                 rho_closure,
-                ExtendLanguage("wrong-quotient"),
-                realized_required_kernel=required,
-                lawful_under_active_representation=False,
-                attachment="kernel matches but quotient law fails",
+                ExtendLanguage(("wrong-artifact", (0, 1, 2, 3))),
+                executable_table=(0, 0, 2, 3),
+                attachment="delta/table mismatch",
             )
 
     def test_representation_to_language_to_second_order_development(self):
@@ -118,7 +127,7 @@ class ConsequentialSingleChain(unittest.TestCase):
             policy=None,
         )
 
-        # The live version space itself determines a discriminating experiment.
+        # H itself determines a discriminating experiment.
         probes = discriminating_pairs(H0)
         self.assertTrue(probes)
         probe = probes[0]
@@ -137,9 +146,8 @@ class ConsequentialSingleChain(unittest.TestCase):
             S0,
             rho1,
             repair1,
-            selected_by_verified_experiment=(
-                len(survivors) == 1 and survivors[0] == selected
-            ),
+            experiment_pair=probe,
+            observed_same=observed_same,
             attachment=f"verified experiment {probe} collapses residual-relative H",
         )
         S1, token1 = compile_repair(S0, certified1)
@@ -153,7 +161,7 @@ class ConsequentialSingleChain(unittest.TestCase):
         self.assertFalse(quotient_admissible(action, old_E))
         self.assertTrue(quotient_admissible(action, selected))
 
-        # A complete declared old language cannot realize the required action kernel.
+        # The declared old language cannot realize the action's required kernel.
         required1 = EquivalenceRelation.from_observation(X, action)
         identity_kernel = EquivalenceRelation.from_observation(X, lambda z: z)
         self.assertNotEqual(required1, identity_kernel)
@@ -167,14 +175,11 @@ class ConsequentialSingleChain(unittest.TestCase):
 
         executable_delta = ("licensed_action", action_table)
         repair2 = ExtendLanguage(executable_delta)
-        realized = EquivalenceRelation.from_observation(X, action)
-        lawful_now = quotient_admissible(action, S1.active_representation)
-        certified2 = certify_language_extension(
+        certified2 = certify_finite_table_language_extension(
             S1,
             rho2,
             repair2,
-            realized_required_kernel=realized,
-            lawful_under_active_representation=lawful_now,
+            executable_table=action_table,
             attachment="new quotient makes the executable operator lawful",
         )
         S2, token2 = compile_repair(S1, certified2)
@@ -192,8 +197,8 @@ class ConsequentialSingleChain(unittest.TestCase):
         self.assertEqual(S2_without_language, S1)
         self.assertFalse(executable_capability(S2_without_language))
 
-        # Exact ancestor ablation of the representation transition restores the
-        # old quotient on which the same action is not admissible.
+        # Exact ancestor ablation restores the old quotient on which the same
+        # action is not admissible.
         self.assertEqual(ablate(S1, token1), S0)
         self.assertFalse(quotient_admissible(action, S0.active_representation))
 
