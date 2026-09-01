@@ -1,23 +1,25 @@
 # Consequential Core Contracts
 
-This note is a pre-refactor constraint. It is intentionally stronger than an implementation sketch: the shared kernel must preserve the semantic distinctions already present in the experiments rather than erase them behind a generic `update(state)` interface.
+This note is a pre-refactor constraint. The shared kernel must preserve the semantic distinctions already present in the experiments rather than erase them behind a generic `update(state)` interface.
 
-## 1. Shared state
+## Shared state
 
-The smallest common developmental state that honestly covers the Difference Test, recursive developmental compounding, and meta-becoming is
+The compatibility audit shows that the smallest honest common state is provisionally
 
 \[
-S = (E, C),
+S=(E,H,C,D),
 \]
 
 where:
 
-- `E` is the current observational equivalence / representation kernel on the carrier;
-- `C` is the current executable interaction / constructor language.
+- `E` is an optional active observational equivalence / representation kernel;
+- `H` is an explicit operational version space of representable kernels;
+- `C` is the executable interaction / constructor language;
+- `D` is an optional developmental policy controlling acquisition from `C`.
 
-Neither component is reducible to the other in general. A representation refinement changes which states are identified. A language extension changes which future distinctions/consequences are executable and may induce a later refinement of `E`.
+`E`, `C`, and `D` are not identified. A representation refinement changes which states are identified. A language extension changes which future distinctions/consequences are executable. A developmental-policy change changes how the next interaction is selected. `H` is required because some failures are closure-level non-realizability claims with no single privileged current representation.
 
-## 2. Five required contracts
+## Core contracts
 
 ### Representation
 
@@ -25,169 +27,134 @@ Neither component is reducible to the other in general. A representation refinem
 Representation[X] := EquivalenceRelation[X]
 ```
 
-Required laws:
-
-1. reflexive, symmetric, transitive;
-2. operationally extensional: outcome labels may be renamed without changing the relation;
-3. refinements preserve previously licensed separations:
-   `refines(E_new, E_old)` means `E_new ⊆ E_old` as relations.
-
-A Boolean column is admitted only through its kernel:
+It must be reflexive, symmetric, transitive, and operationally extensional. A Boolean column enters the core only through its kernel. Refinement means relation inclusion:
 
 ```text
-kernel : Observation[X,O] -> Representation[X]
+refines(E_new,E_old) := E_new subseteq E_old
 ```
 
-so the shared object is not "a Boolean vector" but the equivalence relation it induces.
+so lawful refinement cannot merge states already separated by protected evidence.
 
 ### Residual
 
+Residual is a tagged sum, because the existing experiments genuinely contain two distinct failure types:
+
 ```text
-Residual[X] := {
-    left: X,
-    right: X,
-    represented_same: E(left,right),
-    certified_consequence_distinguishes: V(left,right)
-}
+Residual[X] :=
+    | PairResidual(
+        left, right,
+        E(left,right),
+        certified consequence distinguishes left/right)
+    | ClosureResidual(
+        required_kernel,
+        realized_version_space H,
+        complete closure certificate,
+        required_kernel notin H)
 ```
 
-A residual is therefore a witnessed failure of current identification under protected consequence. It is not a generic error string or unsolved task.
+The Difference Test and recursive-compounding test use `PairResidual`. Meta-becoming naturally uses `ClosureResidual`: its failure is that no kernel realizable by the current language equals the required target kernel. Forcing that through one arbitrarily selected current `E` would be semantically dishonest.
 
 ### Closure
 
 ```text
-Closure[X] : Language[X] -> Set[Interaction[X]]
+ClosureCertificate := (interactions, complete, resource_regime)
 ```
 
-with a declared resource regime when closure is bounded. A search-failure claim is licensed only relative to this closure and its completeness statement.
+A non-reachability claim is licensed only relative to an explicit closure and resource regime. `ClosureResidual` additionally requires `complete=True`.
 
 ### Repair
 
-`Repair` is deliberately a tagged sum, not one homogeneous mutation:
+Repair is also a tagged sum:
 
 ```text
 Repair[X] :=
-    | RefineRepresentation(new_E: Representation[X])
-    | ExtendLanguage(delta: LanguageExtension[X])
-    | Coupled(new_E: Representation[X], delta: LanguageExtension[X])
+    | RefineRepresentation(new_E)
+    | ReplaceVersionSpace(new_H)
+    | ExtendLanguage(delta_C)
+    | UpdatePolicy(new_D)
+    | Coupled(...)
 ```
 
-This is the minimum signature that covers both representation change and machinery change without identifying them by fiat.
+A repair is lawful only when it is conservative, resolves the motivating residual, attaches to that residual, and is verifier-licensed.
 
-A candidate is a lawful repair only if it satisfies all applicable constraints:
+Meaningful non-repairs therefore exist:
 
-```text
-lawful_repair(S, residual, repair) :=
-    conservative(repair, S)
-    and resolves(residual, apply(repair,S))
-    and attaches(repair, residual)
-    and verifier_licensed(repair)
-```
+- a merge that erases a licensed distinction;
+- a duplicate/inert language extension;
+- an unchanged policy presented as development;
+- an incomplete-closure claim presented as non-realizability;
+- a new operator that does not resolve the motivating failure;
+- an unverified or unattached state mutation.
 
-`conservative` means, at minimum:
-
-- representation updates cannot merge states already separated by `E`;
-- language updates cannot delete existing licensed operators unless provenance explicitly withdraws authority;
-- coupled updates obey both conditions.
-
-Examples of non-repairs under this signature:
-
-- an arbitrary merge that erases a previously licensed distinction;
-- a new operator that does not resolve or attach to the motivating residual;
-- an unverified state mutation;
-- a language extension whose only effect is outside the protected consequence boundary;
-- a representation split with no certified consequential witness.
-
-Thus the interface is general enough to contain both update kinds but restrictive enough to exclude meaningful counterexamples.
+This is why the interface is not vacuous despite covering multiple update types.
 
 ### compile / ablate
 
 ```text
-compile : (S, LawfulRepair) -> S'
+compile : (S, CertifiedRepair) -> (S', ProvenanceToken)
 ablate  : (S', ProvenanceToken) -> S_counterfactual
 ```
 
-`compile` must preserve the repair's tag and provenance. `ablate` removes exactly the retained contribution named by that provenance token; it is not permitted to reset unrelated state.
+Compilation preserves the repair tag. Exact ablation is only allowed against the precise post-state stored in provenance, so it cannot silently erase unrelated later changes.
 
-## 3. Compatibility audit without changing existing code
+## Compatibility audit against unchanged experiments
 
-### A. `tests/test_difference_test.py`
+### `tests/test_difference_test.py`
 
-Current objects:
+- `E`: explicit partition / equivalence relation;
+- residual: pair currently merged but protected consequence separates;
+- closure: `action_closure(g)`;
+- repair: `RefineRepresentation`;
+- compilation: old observation + generated separator induces the new quotient.
 
-- `Representation`: explicit partition / `eq_from_partition`;
-- `Residual`: pair `(x,y)` such that current partition merges them and a protected target separates them;
-- `Closure`: `action_closure(g)`;
-- `Repair`: representation refinement generated from residual orbits;
-- `compile`: combine old observation with generated separator to induce `new_p`;
-- `ablate`: conceptually remove that separator and recover the old quotient.
+**Fits directly.**
 
-Result: **fits `RefineRepresentation` directly.**
+### `tests/test_golden_law_meta_becoming.py`
 
-### B. `tests/test_recursive_developmental_compounding.py`
+- representations: kernels of executable columns;
+- `H`: kernels realizable by the current base language;
+- residual: required target kernel absent from `H` under complete tested closure;
+- repair: retained behavioural class of binary operator;
+- compilation: `ExtendLanguage` with a target-domain realizer;
+- ablation: remove the learned class and restore base-language failure.
 
-Current objects:
+**Fits as language development, not representation refinement.**
 
-- `Representation`: relation induced by chosen query columns;
-- `Residual`: first differently labelled pair still merged by chosen observations;
-- `Closure`: finite supplied query language under the episode budget;
-- `Repair`: learned query-selection policy changes which interaction is acquired next;
-- `compile`: retain the policy from source residual history;
-- `ablate`: replace retained policy with the cold empty policy;
-- downstream capability: `quotient_admissible` on the resulting relation.
+### `tests/test_recursive_developmental_compounding.py`
 
-Result: **does not fit pure `RefineRepresentation`. It fits machinery change only if policy retention is modelled as an `ExtendLanguage`-like developmental capability or, more accurately, as a policy component above `C`.**
+- `E`: relation induced by currently chosen queries;
+- residual: first differently labelled pair still merged by `E`;
+- `C`: fixed target query language;
+- repair: retained query-selection policy;
+- compilation: `UpdatePolicy`;
+- ablation: remove that policy while keeping `C` unchanged.
 
-This exposes a possible further state component `D` (developmental policy). If `D` cannot be represented extensionally as executable interactions in `C`, then the honest common state is `(E,C,D)`, not `(E,C)`.
+**Fits only if `D` remains a distinct state component.** Treating this as `ExtendLanguage` would erase the exact second-order content the experiment is meant to test.
 
-### C. `tests/test_golden_law_meta_becoming.py`
+## Refactor-or-redesign decision
 
-Current objects:
+The contracts survive, but the audit changes the original refactor plan in a substantive way. The common machine is not simply `(E,C)`. It is `(E,H,C,D)` with tagged residuals and tagged repairs.
 
-- `Representation`: `kernel(column)` genuinely yields an equivalence relation;
-- `Residual`: target kernel absent from the current base language;
-- `Closure`: columns constructible from atoms and currently available operator tables under the tested depth;
-- `Repair`: retained behavioural class of binary operator;
-- `compile`: add a target-domain realizer of that behavioural class to the executable generator;
-- `ablate`: remove the learned class and recover base-language failure.
-
-Result: **fits `ExtendLanguage`, not `RefineRepresentation`.** The resulting operator can later induce new representation kernels, but the repair object itself is machinery.
-
-## 4. Refactor-or-redesign decision
-
-The contracts survive, but the audit reveals one load-bearing seam:
-
-- Difference Test: update acts directly on `E`.
-- Meta-becoming: update acts directly on `C` and only indirectly on future `E`.
-- Recursive developmental compounding: update may act on a policy `D` controlling acquisition from `C` rather than on `C` itself.
-
-Therefore a two-component `(E,C)` kernel is sufficient only if the developmental policy can be compiled extensionally into the executable language. That must be tested, not assumed.
-
-The next implementation should therefore use
+The next question is now precise rather than rhetorical:
 
 ```text
-DevelopmentState[X] = (E, C, D)
+Does there exist a verified compilation map D -> C_extension
+that preserves target behaviour and exact ablation?
 ```
 
-with `D` optional/trivial for first-order cases, unless we formally prove a compilation map
+Until that is proved, policy development and language development remain distinct constructors in the common calculus.
 
-```text
-compile_policy_into_language : D -> C_extension
-```
+## Single-chain acceptance criteria
 
-that preserves target behaviour and ablation.
+A future single-chain experiment counts as one formal machine only if:
 
-## 5. Required invariants for a single-chain experiment
+1. all representations use the same `EquivalenceRelation` type;
+2. residuals use the shared tagged residual type rather than bespoke error notions;
+3. closure claims use the same `ClosureCertificate` interface;
+4. repairs use the shared tagged repair constructors;
+5. compilation always produces the same `DevelopmentState` type;
+6. ablation is provenance-exact;
+7. domain transfer changes only domain adapters, not core contracts;
+8. second-order development changes `D` explicitly or passes through a separately verified `D -> C` compilation theorem.
 
-A future single-chain test counts as one formal machine only if:
-
-1. every representation is the same `EquivalenceRelation` type;
-2. every residual is the same witnessed identification failure type;
-3. every closure claim names the same closure interface plus resource regime;
-4. every repair is one of the tagged repair constructors above;
-5. every compilation produces the same `DevelopmentState` type;
-6. every ablation is provenance-exact;
-7. source-distinct transfer changes domain adapters only, not the core contracts;
-8. second-order development changes `D` or compiles `D` into `C` through an explicit, tested map.
-
-If any existing experiment cannot satisfy these without weakening one of its original claims, the shared-kernel effort is a redesign and must be reported as such.
+If an experiment can only be made to fit by weakening one of its original claims, that is a redesign, not a refactor, and must be reported as such.
