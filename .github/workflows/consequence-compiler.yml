@@ -6,12 +6,15 @@ on:
       - consequence-compiler
       - constitutional-failed-factorization
       - residual-driven-realizer-synthesis
+      - consequential-interaction-selection
     paths:
       - 'consequence_compiler.py'
       - 'realizer_synthesis.py'
+      - 'interaction_selection.py'
       - 'consequential_core.py'
       - 'tests/test_consequence_compiler_cross_domain.py'
       - 'tests/test_residual_driven_realizer_synthesis.py'
+      - 'tests/test_consequential_interaction_selection.py'
       - 'docs/CONSEQUENCE_COMPILER.md'
       - '.github/workflows/consequence-compiler.yml'
   workflow_dispatch:
@@ -28,3 +31,5 @@ jobs:
         run: python -m unittest tests.test_consequence_compiler_cross_domain -v
       - name: Residual-driven realizer synthesis controls
         run: python -m unittest tests.test_residual_driven_realizer_synthesis -v
+      - name: Consequential interaction selection controls
+        run: python -m unittest tests.test_consequential_interaction_selection -v
