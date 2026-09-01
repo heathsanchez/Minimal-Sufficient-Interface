@@ -1,0 +1,23 @@
+name: Minimum Calculus Self Audit
+
+on:
+  push:
+    branches:
+      - minimum-calculus-self-audit
+      - constitutional-failed-factorization
+    paths:
+      - 'minimum_calculus_self_audit.py'
+      - 'tests/test_minimum_calculus_self_audit.py'
+      - '.github/workflows/minimum-calculus-self-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  self-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Executable self-audit
+        run: python -m unittest tests.test_minimum_calculus_self_audit -v
