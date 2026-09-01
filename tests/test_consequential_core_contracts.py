@@ -49,12 +49,13 @@ class ConsequentialCoreContracts(unittest.TestCase):
                 attachment="invalid merge",
             )
 
-    def test_meta_becoming_is_literal_language_extension_over_kernel_version_space(self):
+    def test_meta_becoming_is_literal_language_extension_over_kernel_closure(self):
         hidden = meta.source_training_tasks()[0]
         X = meta.SOURCE_STATES
         required = EquivalenceRelation.from_observation(X, lambda i: hidden[i])
 
-        base_cols = tuple(meta.base_language(meta.SOURCE_ATOMS).values())
+        base_language = meta.base_language(meta.SOURCE_ATOMS)
+        base_cols = tuple(base_language.values())
         realized = tuple(
             dict.fromkeys(
                 EquivalenceRelation.from_observation(X, lambda i, col=col: col[i])
@@ -63,16 +64,17 @@ class ConsequentialCoreContracts(unittest.TestCase):
         )
         self.assertNotIn(required, realized)
 
+        language_snapshot = tuple(base_language)
         closure = ClosureCertificate(
-            interactions=tuple(meta.base_language(meta.SOURCE_ATOMS)),
+            interactions=language_snapshot,
             complete=True,
             regime="base atoms plus negations",
+            language_snapshot=language_snapshot,
         )
         residual = ClosureResidual(required, realized, closure)
         state = DevelopmentState(
             X,
-            version_space=realized,
-            language=tuple(meta.base_language(meta.SOURCE_ATOMS)),
+            language=language_snapshot,
         )
 
         delta = "s_twist"
@@ -92,14 +94,14 @@ class ConsequentialCoreContracts(unittest.TestCase):
         self.assertIn(delta, after.language)
         self.assertEqual(ablate(after, token), state)
 
-        # Duplicate extension is structurally inert and is rejected by the core.
+        # Exact old residual cannot be replayed after the language has changed.
         with self.assertRaises(ValueError):
             certify_repair(
                 after,
                 residual,
-                ExtendLanguage(delta),
+                ExtendLanguage("s_untwist"),
                 lambda *_: True,
-                attachment="duplicate",
+                attachment="stale residual",
             )
 
     def test_recursive_compounding_is_policy_change_not_language_extension(self):
@@ -158,10 +160,9 @@ class ConsequentialCoreContracts(unittest.TestCase):
         self.assertEqual(after.policy, warm_policy)
         self.assertEqual(ablate(after, token), state)
 
-        # This establishes the seam explicitly: the successful repair changes D,
-        # not E or C. A later theorem may compile D into C, but this test does not
-        # assume such a map exists.
+        # The successful repair changes D, not E or C.
         self.assertEqual(after.active_representation, state.active_representation)
+        self.assertEqual(after.language, state.language)
 
 
 if __name__ == "__main__":
