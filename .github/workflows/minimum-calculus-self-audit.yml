@@ -5,6 +5,7 @@ on:
     branches:
       - minimum-calculus-self-audit
       - minimum-calculus-tournament
+      - recursive-process-compounding
       - constitutional-failed-factorization
     paths:
       - 'minimum_calculus_self_audit.py'
@@ -12,11 +13,13 @@ on:
       - 'calculus_tournament.py'
       - 'calculus_compounding_tournament.py'
       - 'sequential_motif_tournament.py'
+      - 'recursive_process_compounding.py'
       - 'tests/test_minimum_calculus_self_audit.py'
       - 'tests/test_self_attack_synthesis.py'
       - 'tests/test_calculus_tournament.py'
       - 'tests/test_calculus_compounding_tournament.py'
       - 'tests/test_sequential_motif_tournament.py'
+      - 'tests/test_recursive_process_compounding.py'
       - '.github/workflows/minimum-calculus-self-audit.yml'
   workflow_dispatch:
 
@@ -44,3 +47,7 @@ jobs:
         run: |
           python -m unittest tests.test_sequential_motif_tournament -v
           python sequential_motif_tournament.py
+      - name: Recursive process compounding
+        run: |
+          python -m unittest tests.test_recursive_process_compounding -v
+          python recursive_process_compounding.py
