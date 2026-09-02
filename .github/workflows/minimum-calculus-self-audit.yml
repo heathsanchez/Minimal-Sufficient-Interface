@@ -11,10 +11,12 @@ on:
       - 'self_attack_synthesis.py'
       - 'calculus_tournament.py'
       - 'calculus_compounding_tournament.py'
+      - 'sequential_motif_tournament.py'
       - 'tests/test_minimum_calculus_self_audit.py'
       - 'tests/test_self_attack_synthesis.py'
       - 'tests/test_calculus_tournament.py'
       - 'tests/test_calculus_compounding_tournament.py'
+      - 'tests/test_sequential_motif_tournament.py'
       - '.github/workflows/minimum-calculus-self-audit.yml'
   workflow_dispatch:
 
@@ -38,3 +40,7 @@ jobs:
         run: |
           python -m unittest tests.test_calculus_compounding_tournament -v
           python calculus_compounding_tournament.py
+      - name: Sequential motif tournament
+        run: |
+          python -m unittest tests.test_sequential_motif_tournament -v
+          python sequential_motif_tournament.py
