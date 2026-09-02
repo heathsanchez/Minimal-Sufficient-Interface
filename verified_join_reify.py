@@ -1,9 +1,14 @@
 """Verified JOIN -> REIFY -> TEST -> PROMOTE layer.
 
-This module deliberately does not decide truth. It organizes already-grounded dots,
-asks heterogeneous join generators for candidate relations, turns those relations into
-operational reifications, and promotes only candidates accepted by an external test plus
-an ablation check.
+This module deliberately does not decide truth. It organizes grounded dots from BOTH
+positive and negative evidence, asks heterogeneous join generators for candidate relations,
+turns those relations into operational reifications, and promotes only candidates accepted
+by an external test plus an ablation check.
+
+Canonical JOIN evidence includes verified successes, verified failures/counterexamples,
+true-but-low-leverage results, residuals, obstructions/frontiers, developmental trajectories,
+and promoted concepts. Failed *claims* are never treated as true facts; their verifier
+rejection and the exact residual they induce are the grounded negative dots.
 """
 from __future__ import annotations
 
@@ -102,15 +107,43 @@ class VerifiedJoinReifyEngine:
 
     @staticmethod
     def retrieve(state: JoinState, limit: int = 24) -> tuple[Dot, ...]:
-        """Residual-directed retrieval without pretending lexical score is semantic truth."""
+        """Residual-directed, evidence-class-complete retrieval.
+
+        Lexical relevance orders dots, but before filling by score we reserve the best
+        available member of every evidence kind. This prevents a current residual from
+        accidentally hiding failures, counterexamples, trajectories, or low-leverage truths
+        merely because their wording differs from the residual.
+        """
         words = {w.lower().strip('.,:;()[]') for w in state.residual.split() if len(w) > 3}
         ranked = []
         for dot in state.dots:
             hay = (dot.statement + ' ' + ' '.join(dot.tags)).lower()
             score = sum(1 for w in words if w in hay) + 2 * int(dot.consequential)
+            # Negative evidence is not downweighted: a verified failure can be more useful
+            # than a success. consequential means future-changing, not positive outcome.
             ranked.append((score, dot.id, dot))
         ranked.sort(key=lambda x: (-x[0], x[1]))
-        return tuple(x[2] for x in ranked[:limit])
+
+        selected: list[Dot] = []
+        seen_ids: set[str] = set()
+        seen_kinds: set[str] = set()
+        # First pass: preserve evidence-class diversity.
+        for _, _, dot in ranked:
+            if dot.kind not in seen_kinds:
+                selected.append(dot)
+                seen_ids.add(dot.id)
+                seen_kinds.add(dot.kind)
+                if len(selected) >= limit:
+                    return tuple(selected)
+        # Second pass: fill remaining capacity by residual relevance.
+        for _, _, dot in ranked:
+            if dot.id in seen_ids:
+                continue
+            selected.append(dot)
+            seen_ids.add(dot.id)
+            if len(selected) >= limit:
+                break
+        return tuple(selected)
 
     @staticmethod
     def _semantic_key(c: JoinCandidate) -> str:
@@ -149,11 +182,30 @@ class VerifiedJoinReifyEngine:
             record = {'candidate': asdict(candidate), 'reification': asdict(r), 'test': asdict(tested)}
             if not (tested.accepted and tested.consequential):
                 state.rejected.append(record)
+                # A rejected JOIN is itself useful negative evidence for later process diagnosis.
+                state.dots.append(Dot(
+                    id=f'rejected-join:{r.id}',
+                    kind='verified-failure',
+                    statement=f'JOIN candidate {candidate.id} failed promotion: {tested.reason}',
+                    evidence={'test': asdict(tested), 'candidate': asdict(candidate)},
+                    tags=('join-failure', candidate.strategy, r.object_type),
+                    parents=candidate.dot_ids,
+                    consequential=True,
+                ))
                 continue
             ablated = self.ablator(r, state, tested)
             record['ablation'] = asdict(ablated)
             if not ablated.causal:
                 state.rejected.append(record)
+                state.dots.append(Dot(
+                    id=f'noncausal-join:{r.id}',
+                    kind='verified-failure',
+                    statement=f'JOIN candidate {candidate.id} was true/useful but failed causal ablation: {ablated.reason}',
+                    evidence={'test': asdict(tested), 'ablation': asdict(ablated), 'candidate': asdict(candidate)},
+                    tags=('ablation-failure', candidate.strategy, r.object_type),
+                    parents=candidate.dot_ids,
+                    consequential=True,
+                ))
                 continue
             state.promoted.append(record)
             state.dots.append(Dot(
