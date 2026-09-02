@@ -17,7 +17,7 @@ CONSTITUTION = (
 )
 RESIDUAL_TYPES = (
     'SEARCH', 'REPRESENTATION', 'OBSERVABLE', 'OPERATOR',
-    'COMPOSITION', 'SCOPE', 'VERIFIER', 'INFRA', 'UNKNOWN'
+    'COMPOSITION', 'SCOPE', 'VERIFIER', 'DERIVATION', 'INFRA', 'UNKNOWN'
 )
 
 @dataclass(frozen=True)
@@ -94,10 +94,17 @@ class DevelopmentalOperatingSystem:
             'COMPOSITION': ('compose','composition','chain','closure','transitive','cocycle'),
             'SCOPE': ('scope','finite','infinite','bound','domain','generalize'),
             'VERIFIER': ('verifier','proof-check','certificate','judge','replay'),
+            'DERIVATION': ('prove','derive','theorem','lemma','symbolically','deduce','show that','equivalent','equivalence','from the laws','without exhaustive'),
             'INFRA': ('timeout','network','install','dependency','runner','infrastructure'),
         }
         scores = {k: sum(text.count(w) for w in words) for k, words in lex.items()}
-        best = max(scores.items(), key=lambda kv: (kv[1], -list(lex).index(kv[0])))
+        # DERIVATION is intentionally preferred on ties: once a representation has
+        # already yielded an explicit theorem target, the controller should prove it
+        # rather than re-enter representation search just because nouns like "phase"
+        # or "representation" remain in the residual text.
+        priority = {'DERIVATION': 0, 'VERIFIER': 1, 'INFRA': 2, 'REPRESENTATION': 3,
+                    'OBSERVABLE': 4, 'COMPOSITION': 5, 'OPERATOR': 6, 'SCOPE': 7, 'SEARCH': 8}
+        best = max(scores.items(), key=lambda kv: (kv[1], -priority[kv[0]]))
         return (best[0] if best[1] > 0 else 'UNKNOWN', scores)
 
     def ingest_verified_join_state(self, state: DevelopmentalOSState, join_state: dict[str, Any]) -> None:
@@ -138,6 +145,8 @@ class DevelopmentalOperatingSystem:
         ]
         if state.residual_type == 'REPRESENTATION':
             candidates.append(Action('act:reframe','REFRAME','Construct the smallest representation change demanded by the certified residual.',triggers,3.5,3.5,1.4,residual_types=('REPRESENTATION',)))
+        if state.residual_type == 'DERIVATION':
+            candidates.append(Action('act:derive','DERIVE','Derive the target statement from the retained verified laws, isolate the smallest lemmas, and independently verify each implication before synthesis.',triggers,4.0,4.0,1.2,residual_types=('DERIVATION',)))
         if len(state.obstruction_atlas)>=2:
             candidates.append(Action('act:negative-join','JOIN','Join verified failures/boundaries to extract the common obstruction.',triggers,2.5,2.0,1.2,residual_types=('REPRESENTATION','SEARCH','UNKNOWN')))
         if 'verified-success' in kinds and state.obstruction_atlas:
@@ -168,8 +177,7 @@ class DevelopmentalOperatingSystem:
     def action_feasible(self, state: DevelopmentalOSState, action: Action) -> bool:
         self._init_budget(state)
         if state.remaining_budget.get('search_steps', float('inf')) < 1.0: return False
-        # Scalar action cost is charged against model_calls only for generative modes.
-        if action.mode in {'REFRAME','JOIN','META'} and state.remaining_budget.get('model_calls', float('inf')) < 1.0: return False
+        if action.mode in {'REFRAME','JOIN','META','DERIVE'} and state.remaining_budget.get('model_calls', float('inf')) < 1.0: return False
         return True
 
     def select_and_debit_next_action(self, state: DevelopmentalOSState) -> Action | None:
@@ -179,7 +187,7 @@ class DevelopmentalOperatingSystem:
             if not self.action_feasible(state, action):
                 continue
             if 'search_steps' in state.remaining_budget: state.remaining_budget['search_steps'] -= 1.0
-            if action.mode in {'REFRAME','JOIN','META'} and 'model_calls' in state.remaining_budget:
+            if action.mode in {'REFRAME','JOIN','META','DERIVE'} and 'model_calls' in state.remaining_budget:
                 state.remaining_budget['model_calls'] -= 1.0
             state.action_history.append({'action_id': action.id, 'mode': action.mode, 'residual_type': state.residual_type, 'charged': True})
             self.invariant_guard(state)
