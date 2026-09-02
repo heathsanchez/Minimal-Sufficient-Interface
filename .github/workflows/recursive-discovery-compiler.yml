@@ -19,7 +19,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py
+      - name: Run causal process qualification
+        run: python developmental_os_causal_qualification.py
       - name: Run five-generation recursive discovery compiler
         run: python e677_recursive_discovery_run_v5.py
       - name: Replay compact prior structural certificate
@@ -59,11 +61,13 @@ jobs:
           assert len(o['action_queue']) > 0
           assert len(o['installed_capabilities']) > 0
           assert 0 < len(o['active_capabilities']) <= len(o['installed_capabilities'])
+          assert o['residual_type'] == 'REPRESENTATION'
           actions={x['id'] for x in o['action_queue']}
-          assert {'act:negative-join','act:contrast-join'} <= actions
+          assert {'act:negative-join','act:contrast-join','act:reframe'} <= actions
           assert not o['process_residuals']
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('DEVELOPMENTAL_OS_VERIFIED')
+          print('RESIDUAL_ROUTING_VERIFIED=' + o['residual_type'])
           print('laws=' + str(len(o['lawbook'])))
           print('obstructions=' + str(len(o['obstruction_atlas'])))
           print('actions=' + str(len(o['action_queue'])))
