@@ -1,0 +1,99 @@
+{
+  "case_sha256": "188e139b191276d66d19c9248ffb682add2b3a31f6ef432780212b8fe6dbe9bc",
+  "experiment": "directness_baseline_v1",
+  "rows": [
+    {
+      "case": "dev_a",
+      "proposal_order": [
+        "dev_a_side",
+        "dev_a_follow"
+      ],
+      "solved": false,
+      "spent": 3,
+      "split": "develop",
+      "terminal": "UNKNOWN",
+      "workflow": "Pi0_value_per_cost"
+    },
+    {
+      "case": "dev_a",
+      "proposal_order": [
+        "prove_existing_lemma"
+      ],
+      "solved": true,
+      "spent": 3,
+      "split": "develop",
+      "terminal": "SOLVED",
+      "workflow": "Pi1_directness_gate"
+    },
+    {
+      "case": "dev_b",
+      "proposal_order": [
+        "dev_b_side",
+        "dev_b_follow"
+      ],
+      "solved": false,
+      "spent": 3,
+      "split": "develop",
+      "terminal": "UNKNOWN",
+      "workflow": "Pi0_value_per_cost"
+    },
+    {
+      "case": "dev_b",
+      "proposal_order": [
+        "repair_known_test"
+      ],
+      "solved": true,
+      "spent": 3,
+      "split": "develop",
+      "terminal": "SOLVED",
+      "workflow": "Pi1_directness_gate"
+    },
+    {
+      "case": "hold_c",
+      "proposal_order": [
+        "hold_c_side",
+        "hold_c_follow"
+      ],
+      "solved": false,
+      "spent": 3,
+      "split": "heldout",
+      "terminal": "UNKNOWN",
+      "workflow": "Pi0_value_per_cost"
+    },
+    {
+      "case": "hold_c",
+      "proposal_order": [
+        "execute_feasible_plan"
+      ],
+      "solved": true,
+      "spent": 3,
+      "split": "heldout",
+      "terminal": "SOLVED",
+      "workflow": "Pi1_directness_gate"
+    },
+    {
+      "case": "hold_d",
+      "proposal_order": [
+        "hold_d_side",
+        "hold_d_follow"
+      ],
+      "solved": false,
+      "spent": 3,
+      "split": "heldout",
+      "terminal": "UNKNOWN",
+      "workflow": "Pi0_value_per_cost"
+    },
+    {
+      "case": "hold_d",
+      "proposal_order": [
+        "run_supported_solver"
+      ],
+      "solved": true,
+      "spent": 3,
+      "split": "heldout",
+      "terminal": "SOLVED",
+      "workflow": "Pi1_directness_gate"
+    }
+  ],
+  "scope": "bounded synthetic matched replay"
+}
