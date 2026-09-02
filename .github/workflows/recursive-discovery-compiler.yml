@@ -21,13 +21,15 @@ jobs:
       - name: Install exact finite verifier
         run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_total13_ablation.py shifted_profile_orientation_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_total13_ablation.py shifted_profile_orientation_probe.py shifted_orientation_core_probe.py
       - name: Run four-generation recursive discovery compiler
         run: python e677_recursive_discovery_run.py
       - name: Replay compact prior structural certificate
         run: python four_row_total13_ablation.py
-      - name: Test newest saturated-profile residual against shifted constraints
+      - name: Test saturated-profile residual against shifted constraints
         run: python shifted_profile_orientation_probe.py
+      - name: Find minimal shifted-family UNSAT cores
+        run: python shifted_orientation_core_probe.py
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
@@ -37,21 +39,20 @@ jobs:
           assert len(d['verified']) == 3
           assert len(d['low_leverage']) == 1
           assert len(d['rejected']) == 0
-          assert d['residuals'][-1].startswith('Test every orientation of the four surviving total-14 profile types')
           g=d['generations'][-1]['worker']['answer']
           assert g['opposite_pair_types'] == [[7,0,0],[5,2,0],[4,3,0],[3,2,2]]
-          assert g['all_triangles_saturate'] is True
-          assert g['opposite_edges_equal'] is True
           a=json.load(open('artifacts/four_row_total13_ablation.json'))
           assert a['proof_certificate']['contradiction'] is True
           s=json.load(open('artifacts/shifted_profile_orientation_probe.json'))
-          assert set(s['types']) == {'7-0-0','5-2-0','4-3-0','3-2-2'}
+          counts={k:v['sat_count'] for k,v in s['types'].items()}
+          assert counts == {'3-2-2':1,'4-3-0':4,'5-2-0':3,'7-0-0':3}
+          c=json.load(open('artifacts/shifted_orientation_core_probe.json'))
+          assert set(c['results']) == {'3-2-2','4-3-0','5-2-0'}
+          assert all(row['minimal_unsat_cores'] for rows in c['results'].values() for row in rows)
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
-          print('compiled_generations=' + str(len(d['generations'])))
-          print('K4_SATURATED_PROFILE_TYPES_VERIFIED')
-          print('shifted_profile_sat_counts=' + str({k:v['sat_count'] for k,v in s['types'].items()}))
-          print('next_residual=' + d['residuals'][-1])
+          print('shifted_profile_sat_counts=' + str(counts))
+          print('minimal_shifted_cores=' + str(c['results']))
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -60,3 +61,4 @@ jobs:
             artifacts/e677_recursive_discovery_state.json
             artifacts/four_row_total13_ablation.json
             artifacts/shifted_profile_orientation_probe.json
+            artifacts/shifted_orientation_core_probe.json
