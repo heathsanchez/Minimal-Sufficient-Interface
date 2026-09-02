@@ -6,6 +6,7 @@ on:
       - minimum-calculus-self-audit
       - minimum-calculus-tournament
       - recursive-process-compounding
+      - verified-recursive-workflow-optimizer-v1
       - constitutional-failed-factorization
     paths:
       - 'minimum_calculus_self_audit.py'
