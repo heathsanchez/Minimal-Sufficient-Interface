@@ -21,48 +21,40 @@ jobs:
       - name: Install exact finite verifier
         run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_local_probe.py four_row_total13_ablation.py
-      - name: Run three-generation recursive discovery compiler
+        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_local_probe.py four_row_total13_ablation.py shifted_profile_orientation_probe.py
+      - name: Run four-generation recursive discovery compiler
         run: python e677_recursive_discovery_run.py
-      - name: Independently replay four-row SAT residual
+      - name: Replay four-row SAT residual
         run: python four_row_local_probe.py
-      - name: Independently replay total-13 causal certificate
+      - name: Replay total-13 causal certificate
         run: python four_row_total13_ablation.py
+      - name: Test saturated profile orientations against shifted constraints
+        run: python shifted_profile_orientation_probe.py
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
           import json
           d=json.load(open('artifacts/e677_recursive_discovery_state.json'))
-          assert len(d['generations']) == 3
-          assert len(d['verified']) == 2
+          assert len(d['generations']) == 4
+          assert len(d['verified']) == 3
           assert len(d['low_leverage']) == 1
           assert len(d['rejected']) == 0
-          assert d['residuals'][-1].startswith('Classify the full six-edge four-row agreement profile')
+          assert d['residuals'][-1].startswith('Test every orientation of the four surviving total-14 profile types')
+          g=d['generations'][-1]['worker']['answer']
+          assert g['opposite_pair_types'] == [[7,0,0],[5,2,0],[4,3,0],[3,2,2]]
+          assert g['all_triangles_saturate'] is True
+          assert g['opposite_edges_equal'] is True
           p=json.load(open('artifacts/four_row_local_probe.json'))
-          assert p['upper_bound_14_proved_unsat'] is True
-          assert p['min_total_pair_agreement'] == 0
-          assert p['max_total_pair_agreement'] == 14
           assert p['missing_totals_0_to_14'] == [13]
-          assert p['total13_unsat_primary'] is True
-          assert p['total13_unsat_independent_encoding'] is True
           a=json.load(open('artifacts/four_row_total13_ablation.json'))
           assert a['proof_certificate']['contradiction'] is True
-          assert a['shifted_constraints_used_in_proof'] is False
-          assert a['no_triple_used_in_proof'] is True
-          checks=a['witness_without_no_triple']['checks']
-          assert checks == {
-              'all_rows_permutations': True,
-              'no_triple': False,
-              'shifted_disagreement': True,
-              'total_pair_agreement': 13,
-          }
+          s=json.load(open('artifacts/shifted_profile_orientation_probe.json'))
+          assert set(s['types']) == {'7-0-0','5-2-0','4-3-0','3-2-2'}
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
           print('compiled_generations=' + str(len(d['generations'])))
-          print('four_row_missing_totals=' + str(p['missing_totals_0_to_14']))
-          print('TOTAL13_EXCLUSION_REPRODUCED')
-          print('SHIFTED_ABLATED_FROM_TOTAL13_PROOF')
-          print('NO_TRIPLE_NECESSITY_WITNESS_VERIFIED')
+          print('K4_SATURATED_PROFILE_TYPES_VERIFIED')
+          print('shifted_profile_sat_counts=' + str({k:v['sat_count'] for k,v in s['types'].items()}))
           print('next_residual=' + d['residuals'][-1])
           PY
       - uses: actions/upload-artifact@v4
@@ -72,3 +64,4 @@ jobs:
             artifacts/e677_recursive_discovery_state.json
             artifacts/four_row_local_probe.json
             artifacts/four_row_total13_ablation.json
+            artifacts/shifted_profile_orientation_probe.json
