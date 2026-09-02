@@ -38,12 +38,17 @@ jobs:
           assert d['residuals'][-1].startswith('Classify four-row weighted agreement graphs')
           p=json.load(open('artifacts/four_row_local_probe.json'))
           assert p['upper_bound_14_proved_unsat'] is True
-          assert p['max_total_pair_agreement'] <= 14
+          assert p['min_total_pair_agreement'] == 0
+          assert p['max_total_pair_agreement'] == 14
+          assert p['missing_totals_0_to_14'] == [13]
+          assert p['total13_unsat_primary'] is True
+          assert p['total13_unsat_independent_encoding'] is True
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
           print('four_row_min_total=' + str(p['min_total_pair_agreement']))
           print('four_row_max_total=' + str(p['max_total_pair_agreement']))
-          print('four_row_attainable_totals=' + str(p['attainable_totals_0_to_14']))
+          print('four_row_missing_totals=' + str(p['missing_totals_0_to_14']))
+          print('TOTAL13_EXCLUSION_REPRODUCED')
           PY
       - uses: actions/upload-artifact@v4
         with:
