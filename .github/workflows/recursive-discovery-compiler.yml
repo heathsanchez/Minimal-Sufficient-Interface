@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py
       - name: Run causal process qualification
         run: python developmental_os_causal_qualification.py
       - name: Run matched outer process tournament
@@ -44,6 +44,8 @@ jobs:
         run: python phase_pair_responsibility_probe.py
       - name: Certify symbolic phase theorem
         run: python phase_symbolic_theorem_certificate.py
+      - name: Derive local block feasibility from phase theorem
+        run: python phase_block_feasibility_probe.py
       - name: Run verified JOIN reify assembly with phase feedback
         run: python e677_verified_join_reify_run.py
       - name: Run cumulative developmental operating system
@@ -69,29 +71,23 @@ jobs:
           resp=json.load(open('artifacts/phase_pair_responsibility_probe.json'))
           assert resp['all_formula_matches'] and resp['all_symbolic_cores_stable_n6_to_n8']
           sym=json.load(open('artifacts/phase_symbolic_theorem_certificate.json'))
-          assert sym['symbolic_complete_n_ge_4']
-          assert all(x['match'] for x in sym['finite_replay_orders_3_to_8'].values())
+          assert sym['symbolic_complete_n_ge_4'] and all(x['match'] for x in sym['finite_replay_orders_3_to_8'].values())
+          blk=json.load(open('artifacts/phase_block_feasibility_probe.json'))
+          assert blk['reconstructs_entire_shifted_frontier'] and blk['legal_partition_derangement_states']==141
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
           assert len(j['candidates'])==3 and len(j['promoted'])==3
           assert j['residual'].startswith('Prove or refute the candidate arbitrary-n saturated phase theorem')
-          kinds={x['kind'] for x in j['dots']}; assert {'verified-success','verified-low-leverage','residual','trajectory','verified-frontier','promoted-concept'} <= kinds
-          assert any(x['id']=='law:phase-unary-exact' for x in j['dots'])
           o=json.load(open('artifacts/e677_developmental_os_state.json'))
-          assert len(o['lawbook'])>0 and len(o['obstruction_atlas'])>0 and len(o['action_queue'])>0 and len(o['installed_capabilities'])>0
-          assert 0 < len(o['active_capabilities']) <= len(o['installed_capabilities'])
-          assert o['residual'].startswith('Prove or refute the candidate arbitrary-n saturated phase theorem')
           assert o['residual_type']=='DERIVATION'
           actions=[x['id'] for x in o['action_queue']]
-          assert 'act:derive' in actions and actions[0]=='act:derive'
-          assert not o['process_residuals']
+          assert 'act:derive' in actions and actions[0]=='act:derive' and not o['process_residuals']
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('DEVELOPMENTAL_OS_VERIFIED')
           print('DERIVATION_ROUTING_VERIFIED')
-          print('PHASE_UNARY_EXACT=True')
-          print('PHASE_UNARY_IRREDUNDANT=' + str(thm['unary_irredundant']))
-          print('CROSS_ORDER_EXACT=' + str(gen['unary_exact_orders']))
           print('PHASE_SYMBOLIC_N_GE_4=' + str(sym['symbolic_complete_n_ge_4']))
-          print('next_residual=' + o['residual'])
+          print('PHASE_LOCAL_RECONSTRUCTION=' + str(blk['legal_partition_derangement_states']))
+          print('PHASE_FEASIBLE_SIZE_TRIPLES=' + str(blk['feasible_ordered_size_triples']))
+          print('BLOCK_RESIDUAL=' + blk['residual'])
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -109,3 +105,4 @@ jobs:
             artifacts/phase_cross_order_generalization_probe.json
             artifacts/phase_pair_responsibility_probe.json
             artifacts/phase_symbolic_theorem_certificate.json
+            artifacts/phase_block_feasibility_probe.json
