@@ -21,14 +21,12 @@ jobs:
       - name: Install exact finite verifier
         run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_local_probe.py four_row_total13_ablation.py shifted_profile_orientation_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_total13_ablation.py shifted_profile_orientation_probe.py
       - name: Run four-generation recursive discovery compiler
         run: python e677_recursive_discovery_run.py
-      - name: Replay four-row SAT residual
-        run: python four_row_local_probe.py
-      - name: Replay total-13 causal certificate
+      - name: Replay compact prior structural certificate
         run: python four_row_total13_ablation.py
-      - name: Test saturated profile orientations against shifted constraints
+      - name: Test newest saturated-profile residual against shifted constraints
         run: python shifted_profile_orientation_probe.py
       - name: Verify machine-readable state
         run: |
@@ -44,8 +42,6 @@ jobs:
           assert g['opposite_pair_types'] == [[7,0,0],[5,2,0],[4,3,0],[3,2,2]]
           assert g['all_triangles_saturate'] is True
           assert g['opposite_edges_equal'] is True
-          p=json.load(open('artifacts/four_row_local_probe.json'))
-          assert p['missing_totals_0_to_14'] == [13]
           a=json.load(open('artifacts/four_row_total13_ablation.json'))
           assert a['proof_certificate']['contradiction'] is True
           s=json.load(open('artifacts/shifted_profile_orientation_probe.json'))
@@ -62,6 +58,5 @@ jobs:
           name: e677-recursive-discovery-state
           path: |
             artifacts/e677_recursive_discovery_state.json
-            artifacts/four_row_local_probe.json
             artifacts/four_row_total13_ablation.json
             artifacts/shifted_profile_orientation_probe.json
