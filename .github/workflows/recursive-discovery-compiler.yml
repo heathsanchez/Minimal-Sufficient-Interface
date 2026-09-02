@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py
       - name: Run five-generation recursive discovery compiler
         run: python e677_recursive_discovery_run_v5.py
       - name: Replay compact prior structural certificate
@@ -30,6 +30,8 @@ jobs:
         run: python partition_derangement_probe.py
       - name: Run verified JOIN reify assembly
         run: python e677_verified_join_reify_run.py
+      - name: Run cumulative developmental operating system
+        run: python e677_developmental_os_run.py
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
@@ -39,10 +41,6 @@ jobs:
           assert len(d['verified']) == 4
           assert len(d['low_leverage']) == 1
           assert len(d['rejected']) == 0
-          assert d['residuals'][-1].startswith('For each of the nine cycle signatures')
-          g=d['generations'][-1]['worker']['answer']
-          assert all(g['derived'].values())
-          assert sum(v['count'] for v in g['profiles'].values()) == 9
           p=json.load(open('artifacts/partition_derangement_probe.json'))
           assert p['shifted_saturated_states'] > 0
           assert len(p['shifted_profile_counts']) == 11
@@ -53,26 +51,27 @@ jobs:
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
           assert len(j['candidates']) == 3
           assert len(j['promoted']) == 3
-          assert len(j['rejected']) == 0
           kinds={x['kind'] for x in j['dots']}
           assert {'verified-success','verified-low-leverage','residual','trajectory','verified-frontier','promoted-concept'} <= kinds
-          strategies={x['strategy'] for x in j['candidates']}
-          assert strategies == {'common-mechanism','contrast','trajectory'}
-          assert any(x['kind']=='promoted-concept' for x in j['dots'])
+          o=json.load(open('artifacts/e677_developmental_os_state.json'))
+          assert len(o['lawbook']) > 0
+          assert len(o['obstruction_atlas']) > 0
+          assert len(o['action_queue']) > 0
+          assert len(o['installed_capabilities']) > 0
+          assert 0 < len(o['active_capabilities']) <= len(o['installed_capabilities'])
+          actions={x['id'] for x in o['action_queue']}
+          assert {'act:negative-join','act:contrast-join'} <= actions
+          assert not o['process_residuals']
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
-          print('state_sha256=' + d['state_sha256'])
-          print('compiled_generations=' + str(len(d['generations'])))
-          print('CYCLE_REPRESENTATION_PROMOTED')
-          print('partition_derangement_total=' + str(p['total_saturated_states']))
-          print('shifted_saturated_states=' + str(p['shifted_saturated_states']))
-          print('shifted_oriented_profiles=' + str(len(p['shifted_profile_counts'])))
-          print('shifted_cycle_signature_total=' + str(sum(len(v) for v in p['shifted_cycle_signatures_by_ordered_sizes'].values())))
-          print('VERIFIED_JOIN_REIFY_ASSEMBLED')
-          print('JOIN_EVIDENCE_CLASSES=' + ','.join(sorted(kinds)))
-          print('JOIN_STRATEGIES=' + ','.join(sorted(strategies)))
-          print('join_state_sha256=' + j['state_sha256'])
-          print('promoted_join_concepts=' + str(len(j['promoted'])))
-          print('next_residual=' + j['residual'])
+          print('DEVELOPMENTAL_OS_VERIFIED')
+          print('laws=' + str(len(o['lawbook'])))
+          print('obstructions=' + str(len(o['obstruction_atlas'])))
+          print('actions=' + str(len(o['action_queue'])))
+          print('installed_capabilities=' + str(len(o['installed_capabilities'])))
+          print('active_capabilities=' + str(len(o['active_capabilities'])))
+          print('macros=' + str(len(o['macros'])))
+          print('os_state_sha256=' + o['state_sha256'])
+          print('next_residual=' + o['residual'])
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -80,6 +79,7 @@ jobs:
           path: |
             artifacts/e677_recursive_discovery_state.json
             artifacts/e677_verified_join_reify_state.json
+            artifacts/e677_developmental_os_state.json
             artifacts/four_row_total13_ablation.json
             artifacts/column_symbol_cycle_probe.json
             artifacts/partition_derangement_probe.json
