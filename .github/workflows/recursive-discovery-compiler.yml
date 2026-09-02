@@ -21,11 +21,13 @@ jobs:
       - name: Install exact finite verifier
         run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_local_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py four_row_local_probe.py four_row_total13_ablation.py
       - name: Replay verified recursive discovery compiler
         run: python e677_recursive_discovery_run.py
       - name: Run next blind four-row residual probe
         run: python four_row_local_probe.py
+      - name: Run total-13 causal ablation
+        run: python four_row_total13_ablation.py
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
@@ -43,12 +45,13 @@ jobs:
           assert p['missing_totals_0_to_14'] == [13]
           assert p['total13_unsat_primary'] is True
           assert p['total13_unsat_independent_encoding'] is True
+          a=json.load(open('artifacts/four_row_total13_ablation.json'))
+          assert a['cases']['full']['status'] == 'unsat'
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
-          print('four_row_min_total=' + str(p['min_total_pair_agreement']))
-          print('four_row_max_total=' + str(p['max_total_pair_agreement']))
           print('four_row_missing_totals=' + str(p['missing_totals_0_to_14']))
           print('TOTAL13_EXCLUSION_REPRODUCED')
+          print('total13_ablation=' + str({k:v['status'] for k,v in a['cases'].items()}))
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -56,3 +59,4 @@ jobs:
           path: |
             artifacts/e677_recursive_discovery_state.json
             artifacts/four_row_local_probe.json
+            artifacts/four_row_total13_ablation.json
