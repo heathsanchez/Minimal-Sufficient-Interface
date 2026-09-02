@@ -51,9 +51,13 @@ jobs:
               assert sum(v)==14
               assert v[0]==v[5] and v[1]==v[4] and v[2]==v[3]
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
-          assert len(j['candidates']) == 2
-          assert len(j['promoted']) == 2
+          assert len(j['candidates']) == 3
+          assert len(j['promoted']) == 3
           assert len(j['rejected']) == 0
+          kinds={x['kind'] for x in j['dots']}
+          assert {'verified-success','verified-low-leverage','residual','trajectory','verified-frontier','promoted-concept'} <= kinds
+          strategies={x['strategy'] for x in j['candidates']}
+          assert strategies == {'common-mechanism','contrast','trajectory'}
           assert any(x['kind']=='promoted-concept' for x in j['dots'])
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
@@ -64,6 +68,8 @@ jobs:
           print('shifted_oriented_profiles=' + str(len(p['shifted_profile_counts'])))
           print('shifted_cycle_signature_total=' + str(sum(len(v) for v in p['shifted_cycle_signatures_by_ordered_sizes'].values())))
           print('VERIFIED_JOIN_REIFY_ASSEMBLED')
+          print('JOIN_EVIDENCE_CLASSES=' + ','.join(sorted(kinds)))
+          print('JOIN_STRATEGIES=' + ','.join(sorted(strategies)))
           print('join_state_sha256=' + j['state_sha256'])
           print('promoted_join_concepts=' + str(len(j['promoted'])))
           print('next_residual=' + j['residual'])
