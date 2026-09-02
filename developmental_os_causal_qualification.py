@@ -24,15 +24,11 @@ def test_suppression_ablation():
     os = DevelopmentalOperatingSystem()
     bad = Action('act:bad','PUSH','repeat dominated route',('repeat-low-leverage-route',),9,9,0.1)
     good = Action('act:good','PROBE','new discriminating route',(),2,2,1.0)
-
     with_obstruction = base_state('find a separating observable')
     with_obstruction.action_queue = [bad, good]
-    with_obstruction.obstruction_atlas = [Obstruction(
-        'obs:x','old route','verified low leverage','qualification',{},('repeat-low-leverage-route',)
-    )]
+    with_obstruction.obstruction_atlas = [Obstruction('obs:x','old route','verified low leverage','qualification',{},('repeat-low-leverage-route',))]
     os.suppress_dominated_actions(with_obstruction)
     assert [a.id for a in with_obstruction.action_queue] == ['act:good']
-
     ablated = base_state('find a separating observable')
     ablated.action_queue = [bad, good]
     os.suppress_dominated_actions(ablated)
@@ -46,6 +42,7 @@ def test_typed_routing():
         'REPRESENTATION':'Find the smallest quotient representation preserving shifted realizability without full state.',
         'OBSERVABLE':'Find a probe observable that separates the two surviving explanations.',
         'VERIFIER':'The verifier certificate cannot replay the claimed theorem.',
+        'DERIVATION':'Prove the phase theorem symbolically from the retained laws without exhaustive enumeration.',
         'INFRA':'The runner timed out because a dependency install failed.',
     }
     out={}
@@ -74,12 +71,18 @@ def test_budget_debit_and_boundary():
 def test_representation_route_wakes_reframe():
     os=DevelopmentalOperatingSystem(); s=base_state('Search for the smallest quotient of permutation action that preserves shifted realizability without retaining full state.')
     s.residual_type,s.residual_type_scores=os.classify_residual(s.residual)
-    os.wake_actions(s)
-    ids=[a.id for a in s.action_queue]
-    assert s.residual_type=='REPRESENTATION'
-    assert 'act:reframe' in ids
-    # Routed representation work must beat raw push in this residual.
-    assert ids.index('act:reframe') < ids.index('act:push')
+    os.wake_actions(s); ids=[a.id for a in s.action_queue]
+    assert s.residual_type=='REPRESENTATION'; assert 'act:reframe' in ids; assert ids.index('act:reframe') < ids.index('act:push')
+    return {'type':s.residual_type,'queue':ids}
+
+
+def test_derivation_route_wakes_derive():
+    os=DevelopmentalOperatingSystem(); s=base_state('Prove or refute the arbitrary-n saturated phase theorem symbolically from the six shifted inequalities without exhaustive enumeration.')
+    s.residual_type,s.residual_type_scores=os.classify_residual(s.residual)
+    os.wake_actions(s); ids=[a.id for a in s.action_queue]
+    assert s.residual_type=='DERIVATION', (s.residual_type,s.residual_type_scores)
+    assert 'act:derive' in ids
+    assert ids[0]=='act:derive', ids
     return {'type':s.residual_type,'queue':ids}
 
 
@@ -89,6 +92,7 @@ def main():
         'typed_routing':test_typed_routing(),
         'budget':test_budget_debit_and_boundary(),
         'representation_route':test_representation_route_wakes_reframe(),
+        'derivation_route':test_derivation_route_wakes_derive(),
     }
     import json
     print(json.dumps(results,indent=2,sort_keys=True))
