@@ -1,0 +1,43 @@
+name: Recursive discovery compiler
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e677-bounded-recursive-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python sources
+        run: python -m py_compile recursive_discovery_compiler.py e677_recursive_discovery_run.py
+      - name: Run bounded recursive discovery compiler
+        run: python e677_recursive_discovery_run.py
+      - name: Verify machine-readable state
+        run: |
+          python - <<'PY'
+          import json
+          p='artifacts/e677_recursive_discovery_state.json'
+          d=json.load(open(p))
+          assert len(d['generations']) == 2
+          assert len(d['verified']) == 1
+          assert len(d['low_leverage']) == 1
+          assert len(d['rejected']) == 0
+          assert d['residuals'][-1].startswith('Classify four-row weighted agreement graphs')
+          print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
+          print('state_sha256=' + d['state_sha256'])
+          print('next_residual=' + d['residuals'][-1])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e677-recursive-discovery-state
+          path: artifacts/e677_recursive_discovery_state.json
