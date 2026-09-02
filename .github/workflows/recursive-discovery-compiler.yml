@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py
       - name: Run causal process qualification
         run: python developmental_os_causal_qualification.py
       - name: Run matched outer process tournament
@@ -38,6 +38,8 @@ jobs:
         run: python phase_invariant_derivation_probe.py
       - name: Independently certify irredundant unary phase theorem
         run: python phase_unary_theorem_certificate.py
+      - name: Test unary phase law across orders 3 through 8
+        run: python phase_cross_order_generalization_probe.py
       - name: Run verified JOIN reify assembly with phase feedback
         run: python e677_verified_join_reify_run.py
       - name: Run cumulative developmental operating system
@@ -47,59 +49,37 @@ jobs:
           python - <<'PY'
           import ast, json
           d=json.load(open('artifacts/e677_recursive_discovery_state.json'))
-          assert len(d['generations']) == 5
-          assert len(d['verified']) == 4
-          assert len(d['low_leverage']) == 1
-          assert len(d['rejected']) == 0
+          assert len(d['generations']) == 5 and len(d['verified']) == 4 and len(d['low_leverage']) == 1 and len(d['rejected']) == 0
           p=json.load(open('artifacts/partition_derangement_probe.json'))
-          assert p['shifted_saturated_states'] > 0
-          assert len(p['shifted_profile_counts']) == 11
+          assert p['shifted_saturated_states'] > 0 and len(p['shifted_profile_counts']) == 11
           for key in p['shifted_profile_counts']:
-              v=ast.literal_eval(key)
-              assert sum(v)==14
-              assert v[0]==v[5] and v[1]==v[4] and v[2]==v[3]
+              v=ast.literal_eval(key); assert sum(v)==14; assert v[0]==v[5] and v[1]==v[4] and v[2]==v[3]
           q=json.load(open('artifacts/shifted_realizability_quotient_probe.json'))
-          assert q['total_states'] == p['total_saturated_states']
-          assert q['shifted_states'] == p['shifted_saturated_states']
-          assert q['coarsest_tested_pure_quotient'] == 'phase'
+          assert q['total_states']==p['total_saturated_states'] and q['shifted_states']==p['shifted_saturated_states'] and q['coarsest_tested_pure_quotient']=='phase'
           inv=json.load(open('artifacts/phase_invariant_derivation_probe.json'))
-          assert inv['states'] == q['total_states']
-          assert inv['shifted'] == q['shifted_states']
-          assert inv['unary_false_positive_states'] == 0
-          assert inv['unary_false_negative_states'] == 0
+          assert inv['states']==q['total_states'] and inv['shifted']==q['shifted_states'] and inv['unary_false_positive_states']==0 and inv['unary_false_negative_states']==0
           thm=json.load(open('artifacts/phase_unary_theorem_certificate.json'))
-          assert thm['total_states'] == 16146 and thm['shifted_states'] == 141
-          assert thm['false_positives'] == 0 and thm['false_negatives'] == 0
-          assert thm['unary_irredundant']
+          assert thm['total_states']==16146 and thm['shifted_states']==141 and thm['false_positives']==0 and thm['false_negatives']==0 and thm['unary_irredundant']
+          gen=json.load(open('artifacts/phase_cross_order_generalization_probe.json'))
+          assert [x['n'] for x in gen['orders']] == [3,4,5,6,7,8]
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
-          assert len(j['candidates']) == 3
-          assert len(j['promoted']) == 3
-          assert j['residual'].startswith('Prove the exact n=7 phase representation theorem symbolically')
-          kinds={x['kind'] for x in j['dots']}
-          assert {'verified-success','verified-low-leverage','residual','trajectory','verified-frontier','promoted-concept'} <= kinds
+          assert len(j['candidates'])==3 and len(j['promoted'])==3 and j['residual'].startswith('Prove the exact n=7 phase representation theorem symbolically')
+          kinds={x['kind'] for x in j['dots']}; assert {'verified-success','verified-low-leverage','residual','trajectory','verified-frontier','promoted-concept'} <= kinds
           assert any(x['id']=='law:phase-unary-exact' for x in j['dots'])
           o=json.load(open('artifacts/e677_developmental_os_state.json'))
-          assert len(o['lawbook']) > 0
-          assert len(o['obstruction_atlas']) > 0
-          assert len(o['action_queue']) > 0
-          assert len(o['installed_capabilities']) > 0
+          assert len(o['lawbook'])>0 and len(o['obstruction_atlas'])>0 and len(o['action_queue'])>0 and len(o['installed_capabilities'])>0
           assert 0 < len(o['active_capabilities']) <= len(o['installed_capabilities'])
-          assert o['residual_type'] == 'REPRESENTATION'
-          assert o['residual'].startswith('Prove the exact n=7 phase representation theorem symbolically')
-          actions={x['id'] for x in o['action_queue']}
-          assert {'act:negative-join','act:contrast-join','act:reframe'} <= actions
-          assert not o['process_residuals']
+          assert o['residual_type']=='REPRESENTATION' and o['residual'].startswith('Prove the exact n=7 phase representation theorem symbolically')
+          actions={x['id'] for x in o['action_queue']}; assert {'act:negative-join','act:contrast-join','act:reframe'} <= actions; assert not o['process_residuals']
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('DEVELOPMENTAL_OS_VERIFIED')
           print('VERIFIED_CONSEQUENCE_CHANGED_FUTURE_SEARCH')
-          print('RESIDUAL_ROUTING_VERIFIED=' + o['residual_type'])
-          print('QUOTIENT_PURE=' + str(q['coarsest_tested_pure_quotient']))
-          print('QUOTIENT_CLASSES=' + str(q['coarsest_tested_pure_classes']))
           print('PHASE_UNARY_EXACT=True')
           print('PHASE_UNARY_IRREDUNDANT=' + str(thm['unary_irredundant']))
-          print('ALLOWED_DISPLACEMENTS=' + str(thm['allowed_displacements']))
+          print('CROSS_ORDER_EXACT=' + str(gen['unary_exact_orders']))
+          for row in gen['orders']:
+              print('ORDER_' + str(row['n']) + '_ALLOWED=' + str(row['allowed']) + '_EXACT=' + str(row['unary_exact']))
           print('next_residual=' + o['residual'])
-          print('os_state_sha256=' + o['state_sha256'])
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -114,3 +94,4 @@ jobs:
             artifacts/shifted_realizability_quotient_probe.json
             artifacts/phase_invariant_derivation_probe.json
             artifacts/phase_unary_theorem_certificate.json
+            artifacts/phase_cross_order_generalization_probe.json
