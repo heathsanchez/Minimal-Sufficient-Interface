@@ -22,10 +22,12 @@ class BlindPacket:
     constraints: tuple[str, ...] = ()
     forbidden_context: tuple[str, ...] = ()
     verifier_id: str = ""
+    role: str = "analysis"
 
     def public_view(self) -> dict[str, Any]:
         return {
             "id": self.id,
+            "role": self.role,
             "question": self.question,
             "facts": list(self.facts),
             "constraints": list(self.constraints),
@@ -105,12 +107,14 @@ class RecursiveDiscoveryCompiler:
             packet = self.question_policy(state)
             if packet is None:
                 break
-            # Context firewall: the worker gets ONLY this public local packet.
             worker_input = packet.public_view()
-            leaked = set(packet.forbidden_context) & set(json.dumps(worker_input).split())
+            serialized = json.dumps(worker_input)
+            leaked = [token for token in packet.forbidden_context if token and token in serialized]
             if leaked:
                 raise RuntimeError(f"context firewall failure: {sorted(leaked)}")
             result = self.worker(worker_input)
+            if result.packet_id != packet.id:
+                raise RuntimeError("worker returned result for wrong packet")
             verifier = self.verifiers[packet.verifier_id]
             checked = verifier(packet, result)
             event: dict[str, Any] = {
