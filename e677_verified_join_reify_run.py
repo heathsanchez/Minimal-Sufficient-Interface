@@ -18,6 +18,18 @@ from verified_join_reify import (
 )
 
 
+def phase_residual() -> str:
+    cross = Path('artifacts/phase_cross_order_generalization_probe.json')
+    if cross.exists():
+        g=json.load(open(cross))
+        if g.get('all_tested_exact'):
+            return ('Prove or refute the candidate arbitrary-n saturated phase theorem suggested by exact orders 3 through 8: '
+                    'shifted realizability is equivalent to per-color modular displacement exclusions '
+                    'A avoids {1,2,3}, B avoids {1,3,-1}, and C avoids {1,2,-2,-1}; derive these exclusions from the six shifted row-pair inequalities without exhaustive enumeration.')
+    return ('Prove the exact n=7 phase representation theorem symbolically from the six shifted row-pair inequalities, '
+            'rather than by exhaustive enumeration, and identify which argument can generalize beyond n=7.')
+
+
 def load_dots() -> JoinState:
     compiled = json.load(open('artifacts/e677_recursive_discovery_state.json'))
     frontier = json.load(open('artifacts/partition_derangement_probe.json'))
@@ -88,8 +100,7 @@ def load_dots() -> JoinState:
             tags=('trajectory','representation-change','phase'),
             parents=('frontier:partition-derangement','law:phase-unary-exact'), consequential=True,
         ))
-        residual=('Prove the exact n=7 phase representation theorem symbolically from the six shifted row-pair inequalities, '
-                  'rather than by exhaustive enumeration, and identify which argument can generalize beyond n=7.')
+        residual=phase_residual()
 
     return JoinState(residual=residual, dots=dots)
 
@@ -169,9 +180,15 @@ def ablate(r,state,tested):
 
 
 def main():
-    state=load_dots(); kinds_before={d.kind for d in state.dots}; required={'verified-success','verified-low-leverage','residual','trajectory','verified-frontier'}; assert required.issubset(kinds_before)
+    state=load_dots(); intended_residual=state.residual
+    kinds_before={d.kind for d in state.dots}; required={'verified-success','verified-low-leverage','residual','trajectory','verified-frontier'}; assert required.issubset(kinds_before)
     engine=VerifiedJoinReifyEngine(join_generators={'common-mechanism':common_mechanism,'contrast':contrast,'trajectory':trajectory_join},reifier=reifier,tests={'partition-derangement-lossless':test_lossless,'phase-exactness':test_phase_exactness,'aggregate-vs-action':test_aggregate_vs_action},ablator=ablate,max_candidates=20)
-    state=engine.run(state); out=asdict(state); out['state_sha256']=state.digest(); Path('artifacts').mkdir(exist_ok=True); Path('artifacts/e677_verified_join_reify_state.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+    state=engine.run(state)
+    # Promotion tests may propose local next actions, but they must not overwrite a sharper
+    # verifier-earned object-level residual established before JOIN.
+    if Path('artifacts/phase_unary_theorem_certificate.json').exists():
+        state.residual=intended_residual
+    out=asdict(state); out['state_sha256']=state.digest(); Path('artifacts').mkdir(exist_ok=True); Path('artifacts/e677_verified_join_reify_state.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
     summary={'dots':len(state.dots),'dot_kinds':sorted({d.kind for d in state.dots}),'join_candidates':len(state.candidates),'join_strategies':sorted({c.strategy for c in state.candidates}),'reifications':len(state.reifications),'promoted':len(state.promoted),'rejected':len(state.rejected),'process_residuals':state.process_residuals,'next_residual':state.residual,'state_sha256':state.digest()}
     print(json.dumps(summary,indent=2,sort_keys=True)); assert len(state.candidates)==3; assert len(state.promoted)==3; assert not state.rejected; assert {'common-mechanism','contrast','trajectory'}=={c.strategy for c in state.candidates}; assert any(d.kind=='promoted-concept' for d in state.dots); print('VERIFIED_JOIN_REIFY_ASSEMBLY_PASS')
 
