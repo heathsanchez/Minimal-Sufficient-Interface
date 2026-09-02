@@ -18,26 +18,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install exact finite verifier
-        run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py four_row_total13_ablation.py shifted_profile_orientation_probe.py shifted_orientation_core_probe.py column_symbol_cycle_probe.py cycle_signature_witness_probe.py
+        run: python -m py_compile recursive_discovery_compiler.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py
       - name: Run five-generation recursive discovery compiler
         run: python e677_recursive_discovery_run_v5.py
       - name: Replay compact prior structural certificate
         run: python four_row_total13_ablation.py
-      - name: Test saturated-profile residual against shifted constraints
-        run: python shifted_profile_orientation_probe.py
-      - name: Find minimal shifted-family UNSAT cores
-        run: python shifted_orientation_core_probe.py
-      - name: Verify column-symbol cycle representation independently
+      - name: Verify cycle representation independently
         run: python column_symbol_cycle_probe.py
-      - name: Extract cycle signatures from shifted survivors
-        run: python cycle_signature_witness_probe.py
+      - name: Enumerate exact partition-derangement frontier
+        run: python partition_derangement_probe.py
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
-          import json
+          import ast, json
           d=json.load(open('artifacts/e677_recursive_discovery_state.json'))
           assert len(d['generations']) == 5
           assert len(d['verified']) == 4
@@ -47,16 +41,21 @@ jobs:
           g=d['generations'][-1]['worker']['answer']
           assert all(g['derived'].values())
           assert sum(v['count'] for v in g['profiles'].values()) == 9
-          s=json.load(open('artifacts/shifted_profile_orientation_probe.json'))
-          counts={k:v['sat_count'] for k,v in s['types'].items()}
-          assert counts == {'3-2-2':1,'4-3-0':4,'5-2-0':3,'7-0-0':3}
-          w=json.load(open('artifacts/cycle_signature_witness_probe.json'))
-          assert w['distinct_witness_signatures'] >= 1
+          p=json.load(open('artifacts/partition_derangement_probe.json'))
+          assert p['shifted_saturated_states'] > 0
+          assert len(p['shifted_profile_counts']) == 11
+          for key in p['shifted_profile_counts']:
+              v=ast.literal_eval(key)
+              assert sum(v)==14
+              assert v[0]==v[5] and v[1]==v[4] and v[2]==v[3]
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
           print('state_sha256=' + d['state_sha256'])
           print('compiled_generations=' + str(len(d['generations'])))
           print('CYCLE_REPRESENTATION_PROMOTED')
-          print('distinct_shifted_witness_cycle_signatures=' + str(w['distinct_witness_signatures']))
+          print('partition_derangement_total=' + str(p['total_saturated_states']))
+          print('shifted_saturated_states=' + str(p['shifted_saturated_states']))
+          print('shifted_oriented_profiles=' + str(len(p['shifted_profile_counts'])))
+          print('shifted_cycle_signature_total=' + str(sum(len(v) for v in p['shifted_cycle_signatures_by_ordered_sizes'].values())))
           print('next_residual=' + d['residuals'][-1])
           PY
       - uses: actions/upload-artifact@v4
@@ -65,7 +64,5 @@ jobs:
           path: |
             artifacts/e677_recursive_discovery_state.json
             artifacts/four_row_total13_ablation.json
-            artifacts/shifted_profile_orientation_probe.json
-            artifacts/shifted_orientation_core_probe.json
             artifacts/column_symbol_cycle_probe.json
-            artifacts/cycle_signature_witness_probe.json
+            artifacts/partition_derangement_probe.json
