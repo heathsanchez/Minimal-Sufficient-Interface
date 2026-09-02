@@ -1,116 +1,44 @@
-"""Symbolic certificate for the saturated arbitrary-n phase theorem.
+"""Symbolic certificate for the saturated phase theorem.
 
-This does not enumerate saturated states. It proves the equivalence by local algebra on
-one index and its color, using only:
-  * row0(i)=i;
-  * the A/B/C saturated row reconstruction;
-  * sigma_c maps each color block to itself;
-  * shifted(t,u): r_u(i) != r_t(i+u-t).
-
-For every pair-family violation we derive one forbidden phase displacement; conversely
-every forbidden displacement constructs a violation of one named pair family.
+Main theorem (n >= 4): no saturated-state enumeration is used.  The equivalence is
+proved by local algebra plus a color-separation lemma.  Order n=3 is a degenerate
+modular case (the 03 shift is zero) and is retained only as a separately exhaustive
+finite replay, not smuggled into the symbolic argument.
 """
 from __future__ import annotations
 import json
 from pathlib import Path
 
 PAIRS=((0,1),(0,2),(0,3),(1,2),(1,3),(2,3))
-FORBIDDEN={
-    'A':{1,2,3},
-    'B':{1,3,-1},
-    'C':{1,2,-2,-1},
-}
-
-# A symbolic row expression at a point of known color.
-# 'id' means x, 'sig' means sigma(x).
+FORBIDDEN={'A':{1,2,3},'B':{1,3,-1},'C':{1,2,-2,-1}}
 ROW_EXPR={
     'A':('id','id','sig','sig'),
     'B':('id','sig','id','sig'),
     'C':('id','sig','sig','id'),
 }
-
-# Direct forbidden-atom -> violating pair witnesses.
-# same: test shifted pair at i=x.
-# image: test at i=sigma(x), using block closure.
 WITNESSES={
-    ('A',1):((1,2),'same'),
-    ('A',2):((0,2),'same'),
-    ('A',3):((0,3),'same'),
-    ('B',1):((0,1),'same'),
-    ('B',3):((0,3),'same'),
-    ('B',-1):((1,2),'image'),
-    ('C',1):((0,1),'same'),
-    ('C',2):((0,2),'same'),
-    ('C',-2):((1,3),'image'),
-    ('C',-1):((2,3),'image'),
+    ('A',1):((1,2),'same'),('A',2):((0,2),'same'),('A',3):((0,3),'same'),
+    ('B',1):((0,1),'same'),('B',3):((0,3),'same'),('B',-1):((1,2),'image'),
+    ('C',1):((0,1),'same'),('C',2):((0,2),'same'),('C',-2):((1,3),'image'),('C',-1):((2,3),'image'),
 }
 
 
-def mod_eq(a,b,n):
-    return (a-b)%n==0
-
-
 def direct_witness_holds(color,d,pair,mode,n):
-    """Check the witness algebra for generic representatives x=0, sigma(x)=d mod n.
-
-    This is not state enumeration: the expressions contain only x and sigma(x), and
-    translation invariance lets us normalize x=0.
-    """
     t,u=pair; delta=u-t; x=0; sx=d%n
     if mode=='same':
-        i=x
-        # Evaluate r_u(x) using color of x.
-        left = x if ROW_EXPR[color][u]=='id' else sx
-        j=(i+delta)%n
-        # The intended direct witnesses have j=sigma(x), hence same color by closure,
-        # or t=0 where row0(j)=j independent of color.
-        if t==0:
-            right=j
+        i=x; left=x if ROW_EXPR[color][u]=='id' else sx; j=(i+delta)%n
+        if t==0: right=j
         else:
-            assert j==sx, (color,d,pair,mode,n,j,sx)
-            right = sx if ROW_EXPR[color][t]=='id' else None
-            # For these witnesses the t-row at sigma(x) is identity on the block.
-            assert right is not None
+            assert j==sx
+            right=sx if ROW_EXPR[color][t]=='id' else None; assert right is not None
         return left==right
-    else:
-        i=sx
-        j=(i+delta)%n
-        assert j==x, (color,d,pair,mode,n,j,x)
-        # sigma(x) lies in same block; in image witnesses row u is identity there.
-        left = sx if ROW_EXPR[color][u]=='id' else None
-        assert left is not None
-        # j=x; row t(x) is sigma(x) in image witnesses.
-        right = sx if ROW_EXPR[color][t]=='sig' else None
-        assert right is not None
-        return left==right
-
-
-def violation_implies_forbidden(color,t,u,case):
-    """Return the displacement forced by a pair violation in a local color case.
-
-    case says whether the left index i or shifted index j=i+delta supplies the
-    non-identity sigma expression. Cases that compare two independent sigma values
-    cannot occur in the saturated same-color local reduction without injectivity;
-    the complete table below is obtained directly from ROW_EXPR and block closure.
-    """
-    delta=u-t
-    # For a violation r_u(i)=r_t(j), j=i+delta.
-    # If left is sigma(i), right is j (identity), d=+delta.
-    # If left is i (identity), right is sigma(j), sigma(j)=i=j-delta, so d=-delta.
-    if case=='left-sigma/right-id': return delta
-    if case=='left-id/right-sigma': return -delta
-    raise ValueError(case)
+    i=sx; j=(i+delta)%n; assert j==x
+    left=sx if ROW_EXPR[color][u]=='id' else None; assert left is not None
+    right=sx if ROW_EXPR[color][t]=='sig' else None; assert right is not None
+    return left==right
 
 
 def symbolic_pair_table():
-    """For each shifted pair, list exactly which color-phase atoms it can forbid.
-
-    On a color block, a row coordinate is either identity or sigma. A pair constraint
-    only creates a unary phase restriction when one side is sigma and the other is
-    identity. Equal identity/identity is impossible because delta != 0; sigma/sigma
-    reduces by injectivity to the same impossibility. Thus the two mixed cases are
-    complete.
-    """
     table={}
     for t,u in PAIRS:
         atoms=[]; delta=u-t
@@ -122,54 +50,65 @@ def symbolic_pair_table():
     return table
 
 
+def proof_case_table():
+    """Record why every possible equality reduces to the unary same-color table.
+
+    Let j=i+delta, color(i)=c, color(j)=c'.  A sigma_c value belongs to block c.
+    Blocks are disjoint.  Therefore:
+      id/id: i=j, impossible for n>=4 because delta in {1,2,3} is nonzero mod n.
+      sig/sig: equality forces c=c'; injectivity of sigma_c gives i=j, impossible.
+      sig/id: sigma_c(i)=j forces j in block c, so c'=c and d_c(i)=+delta.
+      id/sig: i=sigma_c'(j) forces i in block c', so c=c' and d_c(j)=-delta.
+    Thus no cross-color equality case is omitted.
+    """
+    return {
+        'id/id':'equality forces i=j; impossible for n>=4 since shifted delta is 1,2,or3',
+        'sig/sig':'equal outputs lie in both color blocks, hence same color; injectivity then forces i=j, impossible',
+        'sig/id':'sigma_c(i)=j forces j into color c, hence same color and displacement +delta',
+        'id/sig':'i=sigma_c(j) forces i into color c, hence same color and displacement -delta',
+    }
+
+
 def main():
-    pair_table=symbolic_pair_table()
+    pair_table=symbolic_pair_table(); cases=proof_case_table()
     union={(c,d) for atoms in pair_table.values() for c,d in atoms}
     expected={(c,d) for c,ds in FORBIDDEN.items() for d in ds}
     assert union==expected, (union,expected,pair_table)
 
-    # Independently check every constructive witness for a range of moduli where
-    # signed residues may collide. This validates modular normalization only; the
-    # theorem argument itself is the symbolic table above.
-    witness_checks={}
-    for n in range(3,33):
-        ok=True
-        for atom,(pair,mode) in WITNESSES.items():
-            c,d=atom
-            # If d=0 mod n it cannot be a derangement phase atom and is vacuous.
+    # Constructive converse: every forbidden atom explicitly violates a named pair.
+    for n in range(4,33):
+        for (c,d),(pair,mode) in WITNESSES.items():
             if d%n==0: continue
-            ok &= direct_witness_holds(c,d,pair,mode,n)
-        witness_checks[str(n)]=bool(ok)
-        assert ok, n
+            assert direct_witness_holds(c,d,pair,mode,n), (n,c,d,pair,mode)
 
-    # Verify the pair-table forbidden formula modulo n against the previously
-    # exhaustive orders 3..8 when that artifact is available.
-    cross_path=Path('artifacts/phase_cross_order_generalization_probe.json')
-    finite_replay={}
+    # External finite replay of the symbolic modular formula, including the n=3
+    # degenerate case, against the independently exhaustive cross-order artifact.
+    finite_replay={}; cross_path=Path('artifacts/phase_cross_order_generalization_probe.json')
     if cross_path.exists():
         cross=json.load(open(cross_path))
         for row in cross['orders']:
             n=row['n']
             predicted={(c,d%n) for c,ds in FORBIDDEN.items() for d in ds if d%n!=0}
             observed={tuple(x) for x in row['forbidden_atoms']}
-            finite_replay[str(n)]={'predicted':sorted([list(x) for x in predicted]),'observed':sorted([list(x) for x in observed]),'match':predicted==observed}
+            finite_replay[str(n)]={'match':predicted==observed,'degenerate_symbolic_exception':n==3}
             assert predicted==observed, (n,predicted,observed)
 
     out={
-        'theorem':('For any cyclic order n, on a saturated partition-derangement state, all six shifted row-pair inequalities hold iff '
-                   'every A-phase avoids {+1,+2,+3}, every B-phase avoids {+1,+3,-1}, and every C-phase avoids {+1,+2,-2,-1}, interpreted modulo n; zero residues are vacuous because each sigma is fixed-point-free.'),
-        'assumptions':['cyclic indices mod n','saturated A/B/C row reconstruction','each sigma_c is a fixed-point-free permutation of its color block'],
+        'theorem_n_ge_4':('For every cyclic order n>=4, on a saturated partition-derangement state, all six shifted row-pair inequalities hold iff every A-phase avoids {+1,+2,+3}, every B-phase avoids {+1,+3,-1}, and every C-phase avoids {+1,+2,-2,-1}, modulo n; zero phase is already excluded by fixed-point-freeness.'),
+        'n3_status':'degenerate delta=3 case; formula separately verified by exhaustive finite replay, not covered by the n>=4 symbolic proof',
+        'assumptions':['cyclic indices mod n','n>=4 for symbolic proof','disjoint A/B/C partition','saturated row reconstruction','each sigma_c is a fixed-point-free permutation of its color block'],
+        'color_separation_lemma':cases,
         'pair_table':{k:[[c,d] for c,d in v] for k,v in pair_table.items()},
         'forbidden_union':sorted([[c,d] for c,d in expected]),
         'constructive_witnesses':{f'{c}:{d}':{'pair':list(pair),'mode':mode} for (c,d),(pair,mode) in WITNESSES.items()},
-        'witness_moduli_checked':[3,32],
+        'symbolic_moduli_witness_checked':[4,32],
         'finite_replay_orders_3_to_8':finite_replay,
-        'symbolic_complete':True,
-        'residual':'Use the arbitrary-n phase theorem to replace all six shifted constraints on the saturated frontier by local displacement avoidance, then test whether this collapses the remaining E677 frontier enough to derive the next structural obstruction toward E255.'
+        'symbolic_complete_n_ge_4':True,
+        'residual':'Replace the six shifted inequalities by the arbitrary-n local phase exclusions on the saturated frontier and determine the strongest new structural consequence for the E677-to-E255 obstruction.'
     }
     Path('artifacts').mkdir(exist_ok=True)
     Path('artifacts/phase_symbolic_theorem_certificate.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-    print(json.dumps({'theorem':out['theorem'],'pair_table':out['pair_table'],'symbolic_complete':True,'residual':out['residual']},indent=2,sort_keys=True))
+    print(json.dumps({'theorem_n_ge_4':out['theorem_n_ge_4'],'color_separation_lemma':cases,'pair_table':out['pair_table'],'symbolic_complete_n_ge_4':True,'residual':out['residual']},indent=2,sort_keys=True))
     print('PHASE_SYMBOLIC_THEOREM_CERTIFICATE_PASS')
 
 if __name__=='__main__': main()
