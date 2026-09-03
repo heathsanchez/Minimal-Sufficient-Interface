@@ -1,0 +1,57 @@
+name: E677 mixed diagonal-escape
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  mixed-diagonal-escape:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        run: |
+          echo "MIXED_ESCAPE_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "MIXED_ESCAPE_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        run: pip install z3-solver
+      - name: Compile certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        run: python -m py_compile e677_mixed_diagonal_escape_certificate.py
+      - name: Run mixed diagonal-escape certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        run: python e677_mixed_diagonal_escape_certificate.py --out artifacts/e677_mixed_diagonal_escape_certificate.json --n 3
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_mixed_diagonal_escape_certificate.json'))
+          assert x['arm_eq_u_result'] == 'unsat'
+          assert x['global_e677_implication_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['finite_domain_claimed'] is False
+          assert x['proposed_transition']['classification'] == 'PROMOTE'
+          print('MIXED_ESCAPE_ARM_EQ_U='+x['arm_eq_u_result'])
+          print('MIXED_ESCAPE_CORE_SIZE='+str(x['core_size']))
+          print('MIXED_ESCAPE_CORE_HEAVY='+str(x['core_uses_heavy_axioms']).lower())
+          print('MIXED_ESCAPE_TRANSITION=PROMOTE')
+          print('MIXED_ESCAPE_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_MIXED_DIAGONAL_ESCAPE'
+        with:
+          name: e677-mixed-diagonal-escape
+          path: artifacts/e677_mixed_diagonal_escape_certificate.json
