@@ -22,9 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
+    "artifact_id": 9916225784,
     "classification": "PROMOTE",
+    "job_id": 100845348503,
     "note": "mixed diagonal-escape: collision fibre is not row-invariant (r*b != u; hinge h=b Good=Bad)",
-    "result_id": "mixed_diagonal_escape"
+    "result_id": "mixed_diagonal_escape",
+    "run_id": 33815090183
   },
   "live_residual": {
     "text": "Mixed diagonal-escape established: the collision fibre F={r:r*u=b} is not row-invariant (r*b != u, else the hinge h=b gives Good=Bad). Attach to the finite-backward-root machinery: the fibre's tau image {b} U {(r_i,u)} contains the state (b,h) whose tau-successor (u, u\\h) is the canonical mixed nonperiodic state; verify its backward tau-component terminates in a coloured boundary or a genuine ZERO root (the mixed analogue of the frozen root classification).",
@@ -373,8 +376,14 @@
       "status": "PROMOTE"
     },
     {
+      "artifact_id": 9916225784,
       "claim": "Mixed analogue of the frozen diagonal-escape mechanism. In the all-A collision fibre F={r:r*u=b}, no arm equals the Good input u (r_i=u UNSAT, 7-assertion local core, no E677/injectivity/fixer): the A-transition forces the Good hinge h0 to equal the Bad target b. Hence the row-invariance closure L_r(U_r)=U_r (U_r={u,b}) is impossible, because it would force r*b=u. So the fibre is not row-invariant: the transition r->r*b sends b outside U_r, the canonical escape value (r*b) forced outside the periodic inputs.",
+      "commit": "35f5e5f9367200dd053021ab10cb9f7d11bdd969",
+      "core_size": 7,
+      "core_uses_heavy_axioms": false,
       "id": "mixed_diagonal_escape",
+      "job_id": 100845348503,
+      "run_id": 33815090183,
       "scope": "mixed Good-row/Bad-target collision fibre; transfers the frozen 'h notin U_a' causal mechanism (periodic closure requires inside, diagonal forces outside)",
       "status": "PROMOTE"
     }
