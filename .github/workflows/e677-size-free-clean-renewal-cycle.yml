@@ -1,0 +1,59 @@
+name: E677 size-free clean renewal cycle
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-renewal-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate authoritative frontier
+        run: python frontier_contract.py
+      - name: Route from authoritative residual
+        id: router
+        run: python frontier_router.py --github-output
+      - name: Record clean non-applicability
+        if: steps.router.outputs.route != 'SIZE_FREE_RENEWAL'
+        run: echo "RENEWAL_WORKFLOW_SKIPPED_ROUTE=${{ steps.router.outputs.route }}"
+      - name: Install exact solver
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        run: pip install z3-solver==4.15.3.0
+      - name: Compile renewal probe
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        run: python -m py_compile good_row_clean_cycle_probe.py frontier_transition_compiler.py
+      - name: Run source-backed clean-cycle discriminator
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        run: python good_row_clean_cycle_probe.py
+      - name: Compile stale-safe candidate frontier transition
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        run: python frontier_transition_compiler.py artifacts/good_row_clean_cycle_probe.json --out artifacts/good_row_candidate_transition.json
+      - name: Verify no global overclaim
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/good_row_clean_cycle_probe.json'))
+          t=json.load(open('artifacts/good_row_candidate_transition.json'))
+          assert x['global_claimed'] is False
+          assert 'length exactly 1' in x['scope']
+          assert x['proposed_transition']['classification'] in {'REFRAME','REQUIRE_ATTACHMENT'}
+          assert t['mutation_applied'] is False
+          print('SIZE_FREE_RENEWAL_SCOPE_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
+        with:
+          name: e677-size-free-clean-renewal-cycle
+          path: |
+            artifacts/good_row_clean_cycle_probe.json
+            artifacts/good_row_candidate_transition.json
