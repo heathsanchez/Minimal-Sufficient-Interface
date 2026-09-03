@@ -22,16 +22,13 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9916225784,
     "classification": "PROMOTE",
-    "job_id": 100845348503,
-    "note": "mixed diagonal-escape: collision fibre is not row-invariant (r*b != u; hinge h=b Good=Bad)",
-    "result_id": "mixed_diagonal_escape",
-    "run_id": 33815090183
+    "consumed_frontier_commit": "b59942a",
+    "result_id": "mixed_tau_merger_forces_root"
   },
   "live_residual": {
-    "text": "The mixed diagonal-escape (collision fibre not row-invariant, r*b != u) is PROMOTEd. Its routing to a coloured/ZERO boundary requires the finite-backward-root argument, which the uninterpreted-universe model cannot express (fresh predecessors always exist). The next object is a FINITE-domain mixed encoding: fix a finite Good/Bad partition, fully specify the all-A collision fibre plus the diagonal self-band E677(b,b) and E677(u,u), and check whether the smallest finite completion is UNSAT (mixed analogue of the frozen order-10 K5-shell exclusion). This is a representation change (uninterpreted -> finite), not a bound increase.",
-    "type": "REFRAME"
+    "text": "The mixed escape PROMOTEs, and JOIN isolates the minimal finiteness consequence as indegree conservation: the tau-merger at (b,h) (indegree N(u,b)>=3) forces an indegree-0 root. Next and final object: send this mixed root through the frozen HIT/ZERO descent (Bad*Bad->Good, Good-row->Bad, or all-Bad ZERO) without reusing a collision charge, to force Bad = empty. This is the single remaining direct proof task named in the frozen diagonal-escape lemma (line 163-164).",
+    "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
   "mathematical_scope": "The n=7 cyclic-P phase branch is parked after full 5,040-D closure because it is not globally attached. Active search is size-free under the source-backed ZERO-reuse/no-HIT Bad-shadow and marked renewal consequences.",
@@ -170,6 +167,11 @@
       "run_id": 33806042627,
       "scope": "FORK reverse-lift local coupling of two canonical D-cells; 13 named terms; 3051 ground axioms; uninterpreted universe; no finite-domain axiom",
       "status": "PARK"
+    },
+    {
+      "id": "allshare_fibre_finite_closure_lower_bound",
+      "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout)",
+      "status": "PARK"
     }
   ],
   "process_laws": [
@@ -190,7 +192,8 @@
     "A coarse route for an entire size-free era is still stale-search machinery: experiment eligibility must be typed to the current size-free stage.",
     "When a stronger first-order representation times out, preserve its axioms and change verifier representation before changing the mathematics.",
     "When the shared algebra itself survives, change the coupling being represented rather than adding more isolated copies of the same local mark.",
-    "Before promoting any UNSAT result, ablate the new bridge and each major inherited assumption (E677 family, row injectivity, unique/no fixer, Bad carrier, shadow linkage, terminal condition) one at a time to identify the causal contradiction."
+    "Before promoting any UNSAT result, ablate the new bridge and each major inherited assumption (E677 family, row injectivity, unique/no fixer, Bad carrier, shadow linkage, terminal condition) one at a time to identify the causal contradiction.",
+    "JOIN-before-expand: the minimal finiteness consequence used by the backward-root argument is pigeonhole (forced repetition in a finite backward tau-chain), NOT the complete magma table; the minimal object is the finite tau-state closure."
   ],
   "programme": "verified-recursive-development",
   "promoted": [
@@ -387,6 +390,11 @@
       "run_id": 33815090183,
       "scope": "mixed Good-row/Bad-target collision fibre; transfers the frozen 'h notin U_a' causal mechanism (periodic closure requires inside, diagonal forces outside)",
       "status": "PROMOTE"
+    },
+    {
+      "claim": "The tau map tau(r,w)=(r*w,(r*w)\\w) has a merger at the mixed state (b,h): indegree N(u,b)=n>=3 (the n collision arms all satisfy r_i*u=b and map to (b,h)). By indegree conservation (sum of indegrees over the finite state set equals its size, every state being the tau-image of exactly one state), some state has indegree 0. That indegree-0 root is the mixed analogue of the frozen coloured-boundary/ZERO root feeding the HIT/ZERO descent. Minimal finiteness consequence = pigeonhole/indegree conservation, NOT the full magma table.",
+      "id": "mixed_tau_merger_forces_root",
+      "status": "PROMOTE"
     }
   ],
   "promotion_contract": [
@@ -396,6 +404,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 23,
+  "schema_version": 25,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
