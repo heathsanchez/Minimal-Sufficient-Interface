@@ -22,19 +22,19 @@ jobs:
         id: router
         run: python frontier_router.py --github-output
       - name: Record non-applicability
-        if: steps.router.outputs.route != 'REFRAME'
+        if: steps.router.outputs.route != 'SIZE_FREE_RENEWAL'
         run: echo "FORK_GCROSS_SKIPPED_ROUTE=${{ steps.router.outputs.route }}"
       - name: Install exact solver
-        if: steps.router.outputs.route == 'REFRAME'
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
         run: pip install z3-solver
       - name: Compile probe
-        if: steps.router.outputs.route == 'REFRAME'
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
         run: python -m py_compile e677_fork_gcross_ground_e677_probe.py
       - name: Run exact ground consequence test
-        if: steps.router.outputs.route == 'REFRAME'
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
         run: python e677_fork_gcross_ground_e677_probe.py
       - name: Verify classified transition
-        if: steps.router.outputs.route == 'REFRAME'
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
         run: |
           python - <<'PY'
           import json
@@ -51,7 +51,7 @@ jobs:
           print('FORK_GCROSS_TRANSITION_VERIFIED')
           PY
       - uses: actions/upload-artifact@v4
-        if: steps.router.outputs.route == 'REFRAME'
+        if: steps.router.outputs.route == 'SIZE_FREE_RENEWAL'
         with:
           name: e677-fork-gcross-ground-e677
           path: artifacts/e677_fork_gcross_ground_e677_probe.json
