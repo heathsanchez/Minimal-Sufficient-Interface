@@ -1,0 +1,57 @@
+name: Verified recursive development frontier
+
+on:
+  push:
+    branches: [recursive-development-frontier-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Validate authoritative frontier
+        run: python frontier_contract.py
+      - name: Route authoritative residual
+        id: router
+        run: python frontier_router.py --github-output
+      - name: Verify current route
+        run: |
+          test "${{ steps.router.outputs.route }}" = "SIZE_FREE_RENEWAL"
+          echo FRONTIER_DISPATCH_ROUTE=${{ steps.router.outputs.route }}
+      - name: Install exact solver
+        run: pip install z3-solver
+      - name: Compile applicable verifier only
+        run: python -m py_compile e677_linked_two_mark_probe.py e677_shared_bad_shadow_ground_probe.py
+      - name: Run decidable shared Bad-shadow ground projection
+        run: python e677_shared_bad_shadow_ground_probe.py
+      - name: Verify explicit classified transition
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_shared_bad_shadow_ground_probe.json'))
+          assert x['consumed_frontier_schema'] >= 10
+          assert x['ground_e677_instances']==361
+          assert x['named_bad_inputs']==9
+          for b in ('ZIPPER','GCROSS'):
+              assert x['results'][b] in {'sat','unsat'}
+          assert x['finite_model_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['global_e677_implication_claimed'] is False
+          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK'}
+          print('GROUND_SHADOW_ZIPPER='+x['results']['ZIPPER'])
+          print('GROUND_SHADOW_GCROSS='+x['results']['GCROSS'])
+          print('GROUND_SHADOW_TRANSITION='+x['proposed_transition']['classification'])
+          print('GROUND_SHADOW_RESIDUAL='+x['proposed_transition']['residual'])
+          print('FRONTIER_DISPATCH_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontier-shared-bad-shadow-ground
+          path: artifacts/e677_shared_bad_shadow_ground_probe.json
