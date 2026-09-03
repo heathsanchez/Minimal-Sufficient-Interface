@@ -1,0 +1,60 @@
+name: E677 simultaneous collision renewal
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  simultaneous-collision-renewal:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        run: |
+          echo "SIMULTANEOUS_RENEWAL_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "SIMULTANEOUS_RENEWAL_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        run: pip install z3-solver
+      - name: Compile probe
+        if: steps.route.outputs.route == 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        run: python -m py_compile e677_simultaneous_collision_renewal_probe.py
+      - name: Run simultaneous renewal probe
+        if: steps.route.outputs.route == 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        run: python e677_simultaneous_collision_renewal_probe.py --out artifacts/e677_simultaneous_collision_renewal_probe.json --timeout-ms 30000
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_simultaneous_collision_renewal_probe.json'))
+          assert x['finite_domain_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['global_e677_implication_claimed'] is False
+          assert x['size_free_theorem_claimed'] is False
+          assert x['case_count'] == x['sat_count'] + x['unsat_count'] + x['unknown_count']
+          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK','REQUIRE_ATTACHMENT'}
+          print('SIMULTANEOUS_RENEWAL_CASES='+str(x['case_count']))
+          print('SIMULTANEOUS_RENEWAL_SAT='+str(x['sat_count']))
+          print('SIMULTANEOUS_RENEWAL_UNSAT='+str(x['unsat_count']))
+          print('SIMULTANEOUS_RENEWAL_UNKNOWN='+str(x['unknown_count']))
+          print('SIMULTANEOUS_RENEWAL_TRANSITION='+x['proposed_transition']['classification'])
+          print('SIMULTANEOUS_RENEWAL_RESIDUAL='+x['proposed_transition']['residual'])
+          print('SIMULTANEOUS_RENEWAL_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_SIMULTANEOUS_RENEWAL'
+        with:
+          name: e677-simultaneous-collision-renewal
+          path: artifacts/e677_simultaneous_collision_renewal_probe.json
