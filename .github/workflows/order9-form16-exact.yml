@@ -24,6 +24,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install exact SAT runtime
+        run: |
+          python -m pip install --disable-pip-version-check "python-sat==1.8.dev24"
+          python - <<'PY'
+          from pysat.solvers import Solver
+          for name in ('cadical195','glucose42'):
+              with Solver(name=name, bootstrap_with=[[1]]) as s:
+                  assert s.solve() is True
+              print('solver-ready', name)
+          PY
       - name: Exact six-outcome coverage in two engines
         shell: bash
         run: |
@@ -51,7 +61,7 @@ jobs:
       - name: Verify exhaustive representative coverage
         run: |
           python - <<'PY'
-          import json, re
+          import json
           from pathlib import Path
 
           root=Path('artifacts/form16')
@@ -88,11 +98,11 @@ jobs:
                   raise SystemExit(f'{engine}: unresolved Good representatives: {bad_good}')
           (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
           if counterexamples:
-              print('FORM16_VERIFIED_COUNTEREXAMPLE_CANDIDATE', counterexamples)
-          else:
-              print('ORDER9_FORM16_EXACTLY_EXCLUDED_IN_TWO_ENGINES')
+              raise SystemExit(f'FORM16_VERIFIED_COUNTEREXAMPLE_CANDIDATE {counterexamples}')
+          print('ORDER9_FORM16_EXACTLY_EXCLUDED_IN_TWO_ENGINES')
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: order9-form16-exact
           path: artifacts/form16
