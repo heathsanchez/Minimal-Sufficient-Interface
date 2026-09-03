@@ -26,11 +26,12 @@
     "classification": "PROMOTE",
     "consumed_frontier_commit": "8d3bb7885cc4009b5eb1783d122ecaab49eaaa77",
     "job_id": 100825453939,
-    "result_id": "allshare_renewal_cycle_classification",
+    "note": "boundary-mined single-B causal E677 instance recorded",
+    "result_id": "renewal_singleB_impossibility",
     "run_id": 33808777952
   },
   "live_residual": {
-    "text": "Compression: the all-share (u,b) Good-row A/B renewal cycle space is fully classified \u2014 only all-A (tau-companion) cycles of length >=3 survive; length-2, >=2 B, and single-B cycles are impossible (local). The local renewal lemmas are exhausted. The residual is the all-A tau-companion cycle, which is a genuine tau cycle (the A-transition is the tau-companion z*q=x). The next object is the global mechanism that eliminates it: the tau-cycle canonical port / periodic-tau escape (frozen lemmas e677_genuine_tau_cycle_canonical_port_long_lemma.md, e677_diagonal_escape_from_periodic_tau_lemma.md) or the cross-component fork charge / D-descent.",
+    "text": "Boundary mining refined the all-share renewal classification: the A-transition (tau-companion) is the unique transition compatible with an all-share cycle, and any B-transition is killed by a single E677 instance E(r_{i-1},u) (B forces r_i=u -> z_{i-1}=u -> u*u=b). The surviving all-A tau-companion cycle is a mixed (Good-row/Bad-input) tau structure. The next object is the mixed analog of the frozen diagonal-escape lemma: the self-instance E677(b,b) (diagonal b*b=s(b), b*kappa(b)=b) must force the all-A cycle to produce a coloured boundary or ZERO root, or the tau-cycle canonical-port surplus (ell>=2m+1) must force a global occurrence surplus. Implement the smallest concrete attachment test: does the all-A tau-companion cycle plus the diagonal self-band and the tau-map canonical-port structure force UNSAT.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -49,7 +50,8 @@
     "Solver UNKNOWN caused by timeout is verifier-inconclusive and cannot be read as SAT, UNSAT, attachment, or obstruction.",
     "The shared Bad-shadow quasigroup and exact unique Bad-carrier ground consequences remain satisfiable on both linked marked branches; isolated local shadow algebra is insufficient.",
     "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell.",
-    "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift."
+    "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift.",
+    "Boundary-mining: the all-share (u,b) Good-row renewal cycle survives iff it is all-A (tau-companion). A single B-transition flips it to UNSAT via exactly one E677 instance E(r_{i-1},u): B forces r_i=u hence z_{i-1}=u hence u*u=b, which E677 contradicts."
   ],
   "next_process_test": "The router must select SIZE_FREE_RENEWAL_SINGLEB_CERTIFICATE only. Historical b-collapse, 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
   "nonlinear_D_total": 4998,
@@ -336,6 +338,17 @@
     },
     {
       "artifact_id": 9913972686,
+      "boundary_mined_core": {
+        "causal_e677_instance": "E(r_{i-1}, z_{i-1}) = E(r_{i-1}, u) for the single B at position i",
+        "core_size": {
+          "e677_instances": 1,
+          "structural": 15,
+          "total": 16
+        },
+        "mechanism": "B-transition sets g_next=r_i, all-share gives r_i=u; the preceding A-transition gives r_i=z_{i-1}, so z_{i-1}=u; then u*u=b (Good square = Bad target) and the single E677 instance E(r_{i-1},u) is contradictory with the structural renewal/transition equations.",
+        "n": 3,
+        "word": "AAB"
+      },
       "cases": 7,
       "claim": "A single-B all-share (u,b) Good-row A/B renewal cycle of length >=3 is UNSAT under left-row injectivity plus the global E677 identity (equivalently injectivity plus the no-Bad-fixer law). Ablation: E677 alone, or no-fixer alone, suffices on top of injectivity.",
       "commit": "8d3bb7885cc4009b5eb1783d122ecaab49eaaa77",
@@ -364,6 +377,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 18,
+  "schema_version": 19,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
