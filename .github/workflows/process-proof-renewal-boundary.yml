@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile qualification sources
-        run: python -m py_compile developmental_operating_system.py developmental_operating_system_v2.py developmental_process_tournament.py developmental_process_tournament_v2.py renewal_unique_fixer_boundary.py renewal_marked_pair_boundary.py renewal_block_scope_boundary.py renewal_scope_stable_core.py
+        run: python -m py_compile developmental_operating_system.py developmental_operating_system_v2.py developmental_process_tournament.py developmental_process_tournament_v2.py renewal_unique_fixer_boundary.py renewal_marked_pair_boundary.py renewal_block_scope_boundary.py renewal_scope_stable_core.py renewal_equality_completion_boundary.py
       - name: Re-run frozen baseline process tournament
         run: python developmental_process_tournament.py
       - name: Run attachment-aware matched process tournament
@@ -25,8 +25,10 @@ jobs:
         run: python renewal_marked_pair_boundary.py | tee renewal_marked_pair_boundary.log
       - name: Verify general SHORT/LONG block scope ablation
         run: python renewal_block_scope_boundary.py | tee renewal_block_scope_boundary.log
-      - name: Extract scope-stable causal cores
+      - name: Extract distinct-label causal cores
         run: python renewal_scope_stable_core.py | tee renewal_scope_stable_core.log
+      - name: Verify equality-completed renewal boundary
+        run: python renewal_equality_completion_boundary.py | tee renewal_equality_completion_boundary.log
       - name: Verify promotion markers
         run: |
           grep -q 'DEVELOPMENTAL_PROCESS_TOURNAMENT_PASS' <(python developmental_process_tournament.py)
@@ -35,4 +37,5 @@ jobs:
           grep -q 'RENEWAL_MARKED_PAIR_BOUNDARY_VERIFIED' renewal_marked_pair_boundary.log
           grep -q 'RENEWAL_BLOCK_SCOPE_BOUNDARY_VERIFIED' renewal_block_scope_boundary.log
           grep -q 'RENEWAL_SCOPE_STABLE_CORE_VERIFIED' renewal_scope_stable_core.log
-          echo PROCESS_AND_OBJECT_SCOPE_BOUNDARY_VERIFIED
+          grep -q 'RENEWAL_EQUALITY_COMPLETION_BOUNDARY_VERIFIED' renewal_equality_completion_boundary.log
+          echo PROCESS_AND_OBJECT_EQUALITY_BOUNDARY_VERIFIED
