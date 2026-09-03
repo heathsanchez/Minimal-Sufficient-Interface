@@ -1,0 +1,19 @@
+name: Typed OS Attachment Replay
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v2-live-attachment]
+  workflow_dispatch:
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile typed OS candidate
+        run: python -m py_compile developmental_operating_system.py typed_residual_protocol.py developmental_operating_system_typed.py typed_os_attachment_replay.py
+      - name: Run causal attachment intervention and ablation
+        run: python typed_os_attachment_replay.py
