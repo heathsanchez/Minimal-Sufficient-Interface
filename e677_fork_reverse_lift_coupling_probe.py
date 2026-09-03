@@ -221,10 +221,11 @@ def main():
             "constraint; do not append another isolated mark or widen bounds blindly."
         )
     elif res == "unknown":
-        classification = "REQUIRE_ATTACHMENT"
+        classification = "VERIFIER_INCONCLUSIVE"
         residual = (
-            "The FORK coupling is verifier-UNKNOWN. Minimize the theory (ablate carrier/shadow/"
-            "kappa/E677 subsets) before reading any mathematics from the run."
+            "The FORK coupling is verifier-UNKNOWN (timeout). This is verifier-inconclusive, "
+            "not attachment failure. Minimize the theory (ablate carrier/shadow/kappa/E677 "
+            "subsets) and split by branch before reading any mathematics from the run."
         )
     else:
         classification = "PROMOTE"

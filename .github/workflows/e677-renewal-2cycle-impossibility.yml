@@ -1,0 +1,61 @@
+name: E677 renewal 2-cycle impossibility
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  renewal-2cycle-certificate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        run: |
+          echo "RENEWAL_2CYCLE_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "RENEWAL_2CYCLE_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        run: pip install z3-solver
+      - name: Compile certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        run: python -m py_compile e677_renewal_2cycle_certificate.py
+      - name: Run renewal 2-cycle impossibility certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        run: python e677_renewal_2cycle_certificate.py --out artifacts/e677_renewal_2cycle_certificate.json
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_renewal_2cycle_certificate.json'))
+          assert x['all_words_unsat'] is True
+          assert x['size_free_theorem_claimed'] is True
+          assert x['bounded_length_2_only'] is True
+          assert x['global_e677_implication_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['finite_domain_claimed'] is False
+          assert x['proposed_transition']['classification'] == 'PROMOTE'
+          for c in x['cases']:
+              assert c['result'] == 'unsat', c['word']
+          print('RENEWAL_2CYCLE_ALL_UNSAT='+str(x['all_words_unsat']).lower())
+          for c in x['cases']:
+              print('RENEWAL_2CYCLE_WORD_'+c['word']+'='+c['result']+':core='+str(c['core_size']))
+          print('RENEWAL_2CYCLE_TRANSITION=PROMOTE')
+          print('RENEWAL_2CYCLE_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE'
+        with:
+          name: e677-renewal-2cycle-impossibility
+          path: artifacts/e677_renewal_2cycle_certificate.json

@@ -22,15 +22,15 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9889996267,
+    "artifact_id": 9912941711,
     "classification": "PARK",
-    "consumed_frontier_commit": "62e5378f58db11751c89c5a59ed609f083e048cc",
-    "job_id": 100621537941,
-    "result_id": "bad_target_gcross_coupling_sat",
-    "run_id": 33746961346
+    "consumed_frontier_commit": "8b6ac06e1b98ce64eab3dc5664ac323f01a8cb0c",
+    "job_id": 100816625104,
+    "result_id": "fork_reverse_lift_coupling_sat",
+    "run_id": 33806042627
   },
   "live_residual": {
-    "text": "The bounded Good-row simultaneous renewal network remains SAT even after attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target (run 33746961346). Under ZERO-reuse/no-HIT every Bad D-cycle reaches a first COLLISION or FORK, and at a FORK the reverse edge D(x)*q=x (q=H(x)) coexists with the canonical edge sigma(q)*q=D(q)=e with D(q)!=x, so both x and q carry canonical ZIPPER/G-CROSS D-cells. Attach the FORK reverse-lift coupling of x and q=H(x) to their two canonical D-cells (z=t*e, z*t=h, ZIPPER/G-CROSS dichotomy for each) and test whether this coupling closes the fragment. If SAT survives, the local two-cell trichotomy is insufficient and the next invariant must compare the fork orbit globally (cross-component charge / strict descent / conservation).",
+    "text": "Both the bad-target G-CROSS coupling and the FORK reverse-lift coupling remain SAT: the local two-cell trichotomy is satisfiable (matching the frozen source boundary). The repeated UNSAT signal in the bounded Good-row renewal probe is at cycle length 2 (words AA, AB, BA, BB all UNSAT) before the first length-3 SAT (AAA). Extract the length-2 UNSAT core to identify the source-backed invariant that kills 2-cycles but not 3-cycles; this is a small length-independent invariant candidate that must be read off the verifier (unsat core), not hand-derived.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -51,7 +51,7 @@
     "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell.",
     "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift."
   ],
-  "next_process_test": "The router must select SIZE_FREE_FORK_CANONICAL_DCELL only. Historical bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
+  "next_process_test": "The router must select SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE only. Historical fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
   "nonlinear_D_total": 4998,
   "parked": [
     {
@@ -154,6 +154,19 @@
       "status": "PARK",
       "unknown_cases": 0,
       "unsat_cases": 4
+    },
+    {
+      "artifact_id": 9912941711,
+      "commit": "8b6ac06e1b98ce64eab3dc5664ac323f01a8cb0c",
+      "gcross_branch": "both x and q",
+      "ground_axioms": 3051,
+      "id": "fork_reverse_lift_coupling_sat",
+      "job_id": 100816625104,
+      "named_terms": 13,
+      "reason": "The FORK reverse-lift coupling of x and q=H(x) under D(q)!=x, with both canonical ZIPPER/G-CROSS D-cells and the full source-backed ground theory (E677, left-row injectivity, unique/no fixer, kappa self-band, Bad shadow, exact Bad carriers, off-diagonal closure), is SAT on 13 named terms with all 3051 ground axioms. Both D-cells take the G-CROSS branch (z Good), so the local two-cell trichotomy is satisfiable. This independently confirms the frozen source's stated boundary: repeating the local two-cell trichotomy does not by itself give a strict descent.",
+      "run_id": 33806042627,
+      "scope": "FORK reverse-lift local coupling of two canonical D-cells; 13 named terms; 3051 ground axioms; uninterpreted universe; no finite-domain axiom",
+      "status": "PARK"
     }
   ],
   "process_laws": [
@@ -173,7 +186,8 @@
     "Repeated SAT after one-mark and two-mark locality is evidence to change representation to a shared global coupling, not to append more local copies",
     "A coarse route for an entire size-free era is still stale-search machinery: experiment eligibility must be typed to the current size-free stage.",
     "When a stronger first-order representation times out, preserve its axioms and change verifier representation before changing the mathematics.",
-    "When the shared algebra itself survives, change the coupling being represented rather than adding more isolated copies of the same local mark."
+    "When the shared algebra itself survives, change the coupling being represented rather than adding more isolated copies of the same local mark.",
+    "Before promoting any UNSAT result, ablate the new bridge and each major inherited assumption (E677 family, row injectivity, unique/no fixer, Bad carrier, shadow linkage, terminal condition) one at a time to identify the causal contradiction."
   ],
   "programme": "verified-recursive-development",
   "promoted": [
@@ -290,6 +304,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 13,
+  "schema_version": 14,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }

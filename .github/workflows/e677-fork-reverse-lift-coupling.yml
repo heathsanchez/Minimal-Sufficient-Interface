@@ -43,7 +43,7 @@ jobs:
           assert x['counterexample_claimed'] is False
           assert x['global_e677_implication_claimed'] is False
           assert x['size_free_theorem_claimed'] is False
-          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK','REQUIRE_ATTACHMENT'}
+          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK','REQUIRE_ATTACHMENT','VERIFIER_INCONCLUSIVE'}
           print('FORK_COUPLING_RESULT='+x['case']['result'])
           print('FORK_COUPLING_NAMED_TERMS='+str(x['case']['named_terms']))
           print('FORK_COUPLING_GROUND_AXIOMS='+str(x['case']['ground_axioms']))
