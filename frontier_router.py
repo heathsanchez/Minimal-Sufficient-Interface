@@ -33,6 +33,8 @@ def route(frontier: dict) -> str:
     if residual_type in {"ATTACHMENT", "REFRAME"} and "full_D_phase_frontier_closed" in promoted:
         # Most specific active size-free stage first. Later residuals retain
         # vocabulary from earlier stages, so broad keyword checks must follow.
+        if "tau-fiber" in residual_text or "collision fiber" in residual_text or ("all-a" in residual_text and "fiber" in residual_text):
+            return "SIZE_FREE_ALLA_TAUFIBER_ATTACH"
         if "single-b" in residual_text or "single b" in residual_text:
             return "SIZE_FREE_RENEWAL_SINGLEB_CERTIFICATE"
         if "b-collapse" in residual_text or "bcollapse" in residual_text or ("b-transition" in residual_text and "collapse" in residual_text):

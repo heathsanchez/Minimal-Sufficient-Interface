@@ -22,16 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9913972686,
     "classification": "PROMOTE",
-    "consumed_frontier_commit": "8d3bb7885cc4009b5eb1783d122ecaab49eaaa77",
-    "job_id": 100825453939,
-    "note": "boundary-mined single-B causal E677 instance recorded",
-    "result_id": "renewal_singleB_impossibility",
-    "run_id": 33808777952
+    "note": "attachment bridge: all-A cycle = x*b cycle on collision fiber with N(u,b)>=3 occurrence surplus",
+    "result_id": "allA_tau_fiber_attachment"
   },
   "live_residual": {
-    "text": "Boundary mining refined the all-share renewal classification: the A-transition (tau-companion) is the unique transition compatible with an all-share cycle, and any B-transition is killed by a single E677 instance E(r_{i-1},u) (B forces r_i=u -> z_{i-1}=u -> u*u=b). The surviving all-A tau-companion cycle is a mixed (Good-row/Bad-input) tau structure. The next object is the mixed analog of the frozen diagonal-escape lemma: the self-instance E677(b,b) (diagonal b*b=s(b), b*kappa(b)=b) must force the all-A cycle to produce a coloured boundary or ZERO root, or the tau-cycle canonical-port surplus (ell>=2m+1) must force a global occurrence surplus. Implement the smallest concrete attachment test: does the all-A tau-companion cycle plus the diagonal self-band and the tau-map canonical-port structure force UNSAT.",
+    "text": "Attachment verified: the all-A tau-companion cycle is a collision-fiber x*b cycle tau-collapsing to (b,b\\u) with N(u,b)=n>=3 (the canonical-port occurrence surplus). Next: route this surplus through the frozen diagonal-escape / ZERO-root machinery. The smallest concrete test: does the x*b cycle on the collision fiber, plus the diagonal self-instance E677(b,b) (b*b=s(b) Good, b*kappa(b)=b) and the unique-fixer sigma(u)*u=u, force a nonperiodic tau-state / coloured boundary (i.e. UNSAT for the closed-reuse case)?",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -53,7 +49,7 @@
     "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift.",
     "Boundary-mining: the all-share (u,b) Good-row renewal cycle survives iff it is all-A (tau-companion). A single B-transition flips it to UNSAT via exactly one E677 instance E(r_{i-1},u): B forces r_i=u hence z_{i-1}=u hence u*u=b, which E677 contradicts."
   ],
-  "next_process_test": "The router must select SIZE_FREE_RENEWAL_SINGLEB_CERTIFICATE only. Historical b-collapse, 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
+  "next_process_test": "The router must select SIZE_FREE_ALLA_TAUFIBER_ATTACH only. Historical single-B, b-collapse, 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip.",
   "nonlinear_D_total": 4998,
   "parked": [
     {
@@ -368,6 +364,12 @@
       "scope": "all-share (u,b) renewal cycles; subsumes the three local impossibility lemmas",
       "status": "PROMOTE",
       "surviving_residual": "all-A (tau-companion) cycles of length >=3"
+    },
+    {
+      "claim": "The surviving all-share all-A Good-row renewal cycle is exactly a cycle of the right-multiplication map x->x*b on the collision fiber F={r:r*u=b}; under tau(r,u)=(r*u,(r*u)\\u) the whole fiber collapses to the single tau-state (b,b\\u), so N(u,b)=n. Since length-2 cycles are impossible (PROMOTE), n=N(u,b)>=3, matching the frozen canonical-port lemma's occurrence-surplus threshold (some label occurs >=3 times).",
+      "id": "allA_tau_fiber_attachment",
+      "scope": "attachment bridge: Good-row A/B renewal (all-A tau-companion cycle) <-> frozen tau-cycle canonical-port occurrence surplus; characterization, not a closure",
+      "status": "PROMOTE"
     }
   ],
   "promotion_contract": [
@@ -377,6 +379,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 19,
+  "schema_version": 20,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }

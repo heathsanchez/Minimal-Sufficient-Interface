@@ -1,0 +1,55 @@
+name: E677 all-A tau-fiber attachment
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  alla-tau-fiber-attach:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        run: |
+          echo "ALLA_TAUFIBER_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "ALLA_TAUFIBER_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        run: pip install z3-solver
+      - name: Compile certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        run: python -m py_compile e677_allA_tau_fiber_certificate.py
+      - name: Run all-A tau-fiber attachment certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        run: python e677_allA_tau_fiber_certificate.py --out artifacts/e677_allA_tau_fiber_certificate.json --n 3
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_allA_tau_fiber_certificate.json'))
+          assert x['global_e677_implication_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['finite_domain_claimed'] is False
+          assert x['proposed_transition']['classification'] == 'PROMOTE'
+          print('ALLA_TAUFIBER_CYCLE_SAT='+str(x['allA_cycle_sat']).lower())
+          print('ALLA_TAUFIBER_ATTACH_SAT='+str(x.get('x_times_b_cycle_and_tau_fiber_sat')).lower())
+          print('ALLA_TAUFIBER_TRANSITION=PROMOTE')
+          print('ALLA_TAUFIBER_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_ALLA_TAUFIBER_ATTACH'
+        with:
+          name: e677-allA-tau-fiber-attach
+          path: artifacts/e677_allA_tau_fiber_certificate.json
