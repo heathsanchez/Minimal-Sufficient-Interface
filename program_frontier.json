@@ -30,7 +30,7 @@
     "run_id": 33815090183
   },
   "live_residual": {
-    "text": "Mixed diagonal-escape established: the collision fibre F={r:r*u=b} is not row-invariant (r*b != u, else the hinge h=b gives Good=Bad). Attach to the finite-backward-root machinery: the fibre's tau image {b} U {(r_i,u)} contains the state (b,h) whose tau-successor (u, u\\h) is the canonical mixed nonperiodic state; verify its backward tau-component terminates in a coloured boundary or a genuine ZERO root (the mixed analogue of the frozen root classification).",
+    "text": "The mixed diagonal-escape (collision fibre not row-invariant, r*b != u) is PROMOTEd. Its routing to a coloured/ZERO boundary requires the finite-backward-root argument, which the uninterpreted-universe model cannot express (fresh predecessors always exist). The next object is a FINITE-domain mixed encoding: fix a finite Good/Bad partition, fully specify the all-A collision fibre plus the diagonal self-band E677(b,b) and E677(u,u), and check whether the smallest finite completion is UNSAT (mixed analogue of the frozen order-10 K5-shell exclusion). This is a representation change (uninterpreted -> finite), not a bound increase.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -51,7 +51,8 @@
     "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell.",
     "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift.",
     "Boundary-mining: the all-share (u,b) Good-row renewal cycle survives iff it is all-A (tau-companion). A single B-transition flips it to UNSAT via exactly one E677 instance E(r_{i-1},u): B forces r_i=u hence z_{i-1}=u hence u*u=b, which E677 contradicts.",
-    "The frozen diagonal-escape trigger does not fire on the mixed all-A collision-fiber cycle: sigma(b)=h=b\\u is NOT forced (SAT with sigma(b)!=h), and sigma(b)=h=u is UNSAT. The all-Bad diagonal escape therefore needs a genuinely new mixed analog before it can route the N(u,b)>=3 surplus to a coloured boundary/ZERO root."
+    "The frozen diagonal-escape trigger does not fire on the mixed all-A collision-fiber cycle: sigma(b)=h=b\\u is NOT forced (SAT with sigma(b)!=h), and sigma(b)=h=u is UNSAT. The all-Bad diagonal escape therefore needs a genuinely new mixed analog before it can route the N(u,b)>=3 surplus to a coloured boundary/ZERO root.",
+    "The finite-backward-root argument (frozen tau lemmas) cannot be probed in the uninterpreted-universe bounded consequence model: every tau-state trivially gains a fresh predecessor, so the all-Bad 'diagonal has indegree zero' step has no mixed analogue in this encoding. The mixed escape (collision fibre not row-invariant) is size-free and PROMOTEd, but routing it to a coloured/ZERO root requires a FINITE-domain encoding (the mixed analogue of the frozen order-10 K5 completion), a different verifier representation."
   ],
   "next_process_test": "The router must select SIZE_FREE_MIXED_DIAGONAL_ESCAPE only. Historical allA-tau-fiber, single-B, b-collapse, 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip.",
   "nonlinear_D_total": 4998,
@@ -395,6 +396,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 22,
+  "schema_version": 23,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
