@@ -33,6 +33,8 @@ def route(frontier: dict) -> str:
     if residual_type in {"ATTACHMENT", "REFRAME"} and "full_D_phase_frontier_closed" in promoted:
         # Most specific active size-free stage first. Later residuals retain
         # vocabulary from earlier stages, so broad keyword checks must follow.
+        if ("fork" in residual_text or "reverse-lift" in residual_text) and "canonical" in residual_text:
+            return "SIZE_FREE_FORK_CANONICAL_DCELL"
         if ("g-cross" in residual_text or "zipper" in residual_text) and "coupling" in residual_text:
             return "SIZE_FREE_BAD_TARGET_GCROSS_COUPLING"
         if "simultaneous" in residual_text and "renewal" in residual_text:
