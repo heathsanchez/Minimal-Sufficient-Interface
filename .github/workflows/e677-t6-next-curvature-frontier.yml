@@ -1,0 +1,53 @@
+name: E677 T6 next curvature frontier
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  next-curvature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate authoritative frontier first
+        run: python frontier_contract.py
+      - name: Compile frontier-driven math probe
+        run: python -m py_compile phase_T6_next_curvature_probe.py
+      - name: Derive and test next curvature layer
+        run: python phase_T6_next_curvature_probe.py
+      - name: Verify explicit state transition
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/phase_T6_next_curvature_probe.json'))
+          assert x['previous_excluded_kappa']==18
+          assert x['next_attainable_nonlinear_kappa']>18
+          assert x['normalization_coverage_exact']
+          assert x['phase_states']==141
+          assert x['A_domain']=='all 720 permutations of Z7 fixing 0'
+          assert x['rows_tested']==[0,1,2,3]
+          assert x['full_seven_row_core_claimed'] is False
+          assert x['e677_implication_solved_claimed'] is False
+          assert x['proposed_transition']['classification'] in {'PROMOTE','REQUIRE_ATTACHMENT'}
+          print('NEXT_KAPPA=' + str(x['next_attainable_nonlinear_kappa']))
+          print('NEXT_KAPPA_LABELLED=' + str(x['labelled_maps_in_next_layer']))
+          print('NEXT_KAPPA_NORMALIZED=' + str(x['normalized_D_count']))
+          print('NEXT_KAPPA_SURVIVORS=' + str(x['surviving_pairs']))
+          print('NEXT_KAPPA_D_WITH_SURVIVOR=' + str(x['D_maps_with_survivor']))
+          print('NEXT_KAPPA_TRANSITION=' + x['proposed_transition']['classification'])
+          print('NEXT_KAPPA_RESIDUAL=' + x['proposed_transition']['residual'])
+          print('FRONTIER_DRIVEN_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e677-t6-next-curvature-frontier
+          path: artifacts/phase_T6_next_curvature_probe.json
