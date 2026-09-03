@@ -1,0 +1,62 @@
+name: E677 shared Bad-shadow ground projection
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ground-shared-bad-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Validate authoritative frontier
+        run: python frontier_contract.py
+      - name: Route from authoritative residual
+        id: router
+        run: python frontier_router.py --github-output
+      - name: Record non-applicability
+        if: steps.router.outputs.route != 'SIZE_FREE_SHADOW_GROUND'
+        run: echo "GROUND_SHARED_BAD_SHADOW_SKIPPED_ROUTE=${{ steps.router.outputs.route }}"
+      - name: Install exact solver
+        if: steps.router.outputs.route == 'SIZE_FREE_SHADOW_GROUND'
+        run: pip install z3-solver
+      - name: Compile ground probe
+        if: steps.router.outputs.route == 'SIZE_FREE_SHADOW_GROUND'
+        run: python -m py_compile e677_linked_two_mark_probe.py e677_shared_bad_shadow_probe.py e677_shared_bad_shadow_ground_probe.py
+      - name: Run ground shared Bad-shadow projection
+        if: steps.router.outputs.route == 'SIZE_FREE_SHADOW_GROUND'
+        run: python e677_shared_bad_shadow_ground_probe.py
+      - name: Verify classified transition
+        if: steps.router.outputs.route == 'SIZE_FREE_SHADOW_GROUND'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_shared_bad_shadow_ground_probe.json'))
+          assert x['named_elements']==19
+          assert x['finite_domain_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['finite_counterexample_claimed'] is False
+          assert x['global_e677_implication_claimed'] is False
+          for b in ('ZIPPER','GCROSS'):
+              assert x['results'][b]['result'] in {'sat','unsat','unknown'}
+              assert x['results'][b]['ground_axiom_count'] > 0
+          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK','REQUIRE_ATTACHMENT'}
+          print('GROUND_SHADOW_ZIPPER='+x['results']['ZIPPER']['result'])
+          print('GROUND_SHADOW_GCROSS='+x['results']['GCROSS']['result'])
+          print('GROUND_SHADOW_AXIOMS='+str(x['results']['ZIPPER']['ground_axiom_count']))
+          print('GROUND_SHADOW_TRANSITION='+x['proposed_transition']['classification'])
+          print('GROUND_SHADOW_RESIDUAL='+x['proposed_transition']['residual'])
+          print('GROUND_SHARED_BAD_SHADOW_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.router.outputs.route == 'SIZE_FREE_SHADOW_GROUND'
+        with:
+          name: e677-shared-bad-shadow-ground
+          path: artifacts/e677_shared_bad_shadow_ground_probe.json
