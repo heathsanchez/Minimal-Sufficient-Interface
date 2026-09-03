@@ -1,0 +1,56 @@
+name: T6 Phase Consequence
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  consequence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile consequence chain
+        run: python -m py_compile phase_cross_order_generalization_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py e677_live_frontier_attachment_probe.py t6_relative_phase_theorem_certificate.py t6_phase_consequence_probe.py
+      - name: Rebuild source phase evidence
+        run: |
+          python phase_cross_order_generalization_probe.py
+          python phase_symbolic_theorem_certificate.py
+          python phase_block_feasibility_probe.py
+      - name: Verify live attachment and relative phase theorem
+        run: |
+          python e677_live_frontier_attachment_probe.py
+          python t6_relative_phase_theorem_certificate.py
+      - name: Read structural consequence
+        run: python t6_phase_consequence_probe.py
+      - name: Verify retained coordinate
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/t6_phase_consequence_probe.json'))
+          assert all(t['all_total_at_most_6_realizable'] for t in x['triangle_types'])
+          assert x['phase_balance']['duplicate_missing_balance_exact']
+          assert x['phase_balance']['uniform_z_edges']==14
+          assert x['phase_balance']['edge_transport_equivalent_to_rho_on_z_edges']
+          assert x['phase_balance']['rho_failed_edges']>0
+          assert 'EdgeTransport' in x['retained_coordinate']
+          print('T6_FIXED_COUNT_SUMMARY_RETIRED')
+          print('T6_PHASE_BALANCE_VERIFIED')
+          print('T6_EDGE_TRANSPORT_REIFIED')
+          print('NEXT_RESIDUAL=' + x['residual'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t6-phase-consequence
+          path: |
+            artifacts/e677_live_frontier_attachment_probe.json
+            artifacts/t6_relative_phase_theorem_certificate.json
+            artifacts/t6_phase_consequence_probe.json
