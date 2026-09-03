@@ -1,7 +1,6 @@
 """Qualification for cumulative developmental OS over the verified E677 JOIN state.
 
-Later verifier-earned residuals strictly outrank older residuals.  The ordered chain is
-live T6 theorem > attachment gate > local block theorem > older symbolic/JOIN state.
+Later verifier-earned consequences strictly outrank older residuals.
 """
 from __future__ import annotations
 from dataclasses import asdict
@@ -11,25 +10,18 @@ from developmental_operating_system import DevelopmentalOperatingSystem, Develop
 
 
 def strongest_verified_residual(join_state):
-    rel = Path('artifacts/t6_relative_phase_theorem_certificate.json')
-    if rel.exists():
-        r=json.load(open(rel))
-        if r.get('direct_live_phase_attachment_verified'):
-            return r['residual'], {'source':'t6-relative-phase-theorem'}
-    attachment=Path('artifacts/e677_live_frontier_attachment_probe.json')
-    if attachment.exists():
-        a=json.load(open(attachment))
-        return a['residual'], {'source':'live-frontier-attachment','attachment_status':a['attachment_status']}
-    block=Path('artifacts/phase_block_feasibility_probe.json')
-    if block.exists():
-        b=json.load(open(block))
-        if b.get('reconstructs_entire_shifted_frontier'):
-            return b['residual'], {'source':'phase-block-feasibility'}
-    symbolic=Path('artifacts/phase_symbolic_theorem_certificate.json')
-    if symbolic.exists():
-        s=json.load(open(symbolic))
-        if s.get('symbolic_complete_n_ge_4'):
-            return s['residual'], {'source':'phase-symbolic-theorem'}
+    chain=(
+        ('artifacts/t6_phase_consequence_probe.json','t6-phase-consequence','retained_coordinate'),
+        ('artifacts/t6_relative_phase_theorem_certificate.json','t6-relative-phase-theorem','direct_live_phase_attachment_verified'),
+        ('artifacts/e677_live_frontier_attachment_probe.json','live-frontier-attachment','mechanism_attachment_verified'),
+        ('artifacts/phase_block_feasibility_probe.json','phase-block-feasibility','reconstructs_entire_shifted_frontier'),
+        ('artifacts/phase_symbolic_theorem_certificate.json','phase-symbolic-theorem','symbolic_complete_n_ge_4'),
+    )
+    for filename,source,gate in chain:
+        p=Path(filename)
+        if not p.exists(): continue
+        d=json.load(open(p))
+        if d.get(gate): return d['residual'], {'source':source}
     return join_state['residual'], {'source':'join-state'}
 
 
@@ -46,7 +38,7 @@ def main():
         budget={'model_calls':100.0,'verifier_seconds':900.0,'search_steps':1000.0},
     )
     state=DevelopmentalOSState(target=lock.problem,residual=residual,lock=lock)
-    os=DevelopmentalOperatingSystem(); state=os.cycle(state,routed)
+    state=DevelopmentalOperatingSystem().cycle(state,routed)
     state.provenance_graph.append({'id':'controller:strongest-residual','kind':'routing-decision','parents':[],'evidence':prov})
     out=asdict(state); out['strongest_residual_provenance']=prov; out['state_sha256']=state.digest()
     Path('artifacts').mkdir(exist_ok=True)
@@ -58,8 +50,8 @@ def main():
     assert 'act:negative-join' in {a.id for a in state.action_queue}
     assert 'act:contrast-join' in {a.id for a in state.action_queue}
     assert 'trajectory' in kinds and state.residual==residual and not state.process_residuals
-    if prov['source']=='t6-relative-phase-theorem':
-        assert state.residual.startswith('Join the pair-specific forbidden phases')
+    if prov['source']=='t6-phase-consequence':
+        assert state.residual.startswith('Classify phase-labelled agreement edges')
     print('DEVELOPMENTAL_OS_QUALIFICATION_PASS')
     print('STRONGEST_VERIFIED_RESIDUAL_ROUTING_PASS')
 
