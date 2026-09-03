@@ -19,3 +19,5 @@ jobs:
         run: python renewal_marked_pair_boundary.py | tee renewal_marked_pair_boundary.log
       - name: Verify machine-readable marker
         run: grep -q 'RENEWAL_MARKED_PAIR_BOUNDARY_VERIFIED' renewal_marked_pair_boundary.log
+      - name: Preserve retrigger provenance
+        run: echo MARKED_PAIR_RETRIGGER_UNCHANGED_EQUATIONS
