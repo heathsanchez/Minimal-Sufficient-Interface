@@ -1,0 +1,97 @@
+name: Order9 Forms11 18 Exact
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+    paths:
+      - '.github/workflows/order9-forms11-18-exact.yml'
+  workflow_dispatch:
+
+jobs:
+  solve:
+    strategy:
+      fail-fast: false
+      matrix:
+        form: [11, 18]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen external verifier source
+        run: |
+          git clone --filter=blob:none https://github.com/Grisha-Pochuev/finite-magma-e677-to-e255.git external
+          git -C external checkout 5a205195a84eec54dbcb2fd766f0b2d1ded1831b
+          observed=$(git -C external hash-object tools/e677_order9_no_hit_bad_count_sat.py)
+          echo "checker-blob=$observed"
+          test "$observed" = "efe356acd0047eef8ae5645b2cb04ac2a493632d"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact SAT runtime
+        run: |
+          python -m pip install --disable-pip-version-check "python-sat==1.8.dev24"
+          python - <<'PY'
+          from pysat.solvers import Solver
+          for name in ('cadical195','glucose42'):
+              with Solver(name=name, bootstrap_with=[[1]]) as s:
+                  assert s.solve() is True
+              print('solver-ready', name)
+          PY
+      - name: Exact canonical and Good-representative coverage
+        shell: bash
+        run: |
+          set +e
+          form=${{ matrix.form }}
+          mkdir -p "artifacts/form${form}"
+          checker=external/tools/e677_order9_no_hit_bad_count_sat.py
+          common="--min-bad 3 --max-bad 3 --scan-bad3-structural --bad3-case ${form}"
+
+          python "$checker" $common --bad3-canonical-root-outcomes --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee "artifacts/form${form}/cadical_canonical.txt"
+          python "$checker" $common --bad3-good-product-reps-only --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee "artifacts/form${form}/cadical_good_reps.txt"
+          python "$checker" $common --bad3-canonical-root-outcomes --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee "artifacts/form${form}/glucose_canonical.txt"
+          python "$checker" $common --bad3-good-product-reps-only --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee "artifacts/form${form}/glucose_good_reps.txt"
+          exit 0
+      - name: Compile exact residual
+        run: |
+          FORM=${{ matrix.form }} python - <<'PY'
+          import json, os
+          from pathlib import Path
+          form=int(os.environ['FORM'])
+          root=Path(f'artifacts/form{form}')
+          out={}
+          for engine in ('cadical','glucose'):
+              c=(root/f'{engine}_canonical.txt').read_text()
+              g=(root/f'{engine}_good_reps.txt').read_text()
+              crows=[x for x in c.splitlines() if f'bad3 case {form}/24 split ' in x]
+              grows=[x for x in g.splitlines() if f'bad3 case {form}/24 split ' in x]
+              out[engine]={
+                  'canonical_total':len(crows),
+                  'canonical_unsat':sum(': UNSAT;' in x for x in crows),
+                  'canonical_unknown':[x for x in crows if ': UNKNOWN;' in x],
+                  'canonical_sat':[x for x in crows if ': SAT;' in x],
+                  'good_total':len(grows),
+                  'good_unsat':sum(': UNSAT;' in x for x in grows),
+                  'good_unknown':[x for x in grows if ': UNKNOWN;' in x],
+                  'good_sat':[x for x in grows if ': SAT;' in x],
+                  'canonical_statuses':crows,
+                  'good_statuses':grows,
+              }
+          (root/'summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps({e:{k:v for k,v in d.items() if k not in ('canonical_statuses','good_statuses')} for e,d in out.items()},indent=2))
+          if any(d['canonical_sat'] or d['good_sat'] for d in out.values()):
+              print(f'ORDER9_FORM{form}_SAT_RESIDUAL_REQUIRES_RECHECK')
+          elif all(not d['canonical_unknown'] and not d['good_unknown'] and d['canonical_unsat']==d['canonical_total'] and d['good_unsat']==d['good_total'] for d in out.values()):
+              print(f'ORDER9_FORM{form}_EXACTLY_EXCLUDED_IN_TWO_ENGINES')
+          else:
+              print(f'ORDER9_FORM{form}_EXACT_RESIDUAL_RETAINED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: order9-form${{ matrix.form }}-exact
+          path: artifacts/form${{ matrix.form }}
