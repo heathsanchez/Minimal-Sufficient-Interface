@@ -22,15 +22,15 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9913711432,
+    "artifact_id": 9913972686,
     "classification": "PROMOTE",
-    "consumed_frontier_commit": "4fc14a690e6b86ac434b5388a969348b834d5e19",
-    "job_id": 100823087680,
-    "result_id": "renewal_bcollapse",
-    "run_id": 33808030765
+    "consumed_frontier_commit": "8d3bb7885cc4009b5eb1783d122ecaab49eaaa77",
+    "job_id": 100825453939,
+    "result_id": "allshare_renewal_cycle_classification",
+    "run_id": 33808777952
   },
   "live_residual": {
-    "text": "Local exploration completes the all-share (u,b) clean renewal cycle classification: length-2 is impossible under injectivity, >=2 B-transitions impossible under transition equations, and single-B (length >=3) impossible under injectivity + E677 (or + no-fixer). Only all-A (tau-companion) cycles of length >=3 survive even the full theory. Certify the single-B impossibility (all-share single-B cycles of length >=3 UNSAT under injectivity + E677), then the residual is the all-A tau-companion cycle, whose elimination requires a global mechanism (tau-cycle canonical port / D-descent / fork charge) since local renewal lemmas are now exhausted.",
+    "text": "Compression: the all-share (u,b) Good-row A/B renewal cycle space is fully classified \u2014 only all-A (tau-companion) cycles of length >=3 survive; length-2, >=2 B, and single-B cycles are impossible (local). The local renewal lemmas are exhausted. The residual is the all-A tau-companion cycle, which is a genuine tau cycle (the A-transition is the tau-companion z*q=x). The next object is the global mechanism that eliminates it: the tau-cycle canonical port / periodic-tau escape (frozen lemmas e677_genuine_tau_cycle_canonical_port_long_lemma.md, e677_diagonal_escape_from_periodic_tau_lemma.md) or the cross-component fork charge / D-descent.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -333,6 +333,28 @@
       "run_id": 33808030765,
       "scope": "all-share (u,b) renewal cycles; >=2 B-transitions; transition equations + distinct rows only; length-independent",
       "status": "PROMOTE"
+    },
+    {
+      "artifact_id": 9913972686,
+      "cases": 7,
+      "claim": "A single-B all-share (u,b) Good-row A/B renewal cycle of length >=3 is UNSAT under left-row injectivity plus the global E677 identity (equivalently injectivity plus the no-Bad-fixer law). Ablation: E677 alone, or no-fixer alone, suffices on top of injectivity.",
+      "commit": "8d3bb7885cc4009b5eb1783d122ecaab49eaaa77",
+      "id": "renewal_singleB_impossibility",
+      "job_id": 100825453939,
+      "n_range": [
+        3,
+        4
+      ],
+      "run_id": 33808777952,
+      "scope": "all-share (u,b) renewal cycles; exactly one B-transition; injectivity + E677",
+      "status": "PROMOTE"
+    },
+    {
+      "claim": "COMPRESSION of renewal_2cycle_impossibility + renewal_bcollapse + renewal_singleB_impossibility: an all-share (u,b) Good-row A/B renewal cycle with distinct rows exists only as an all-A (tau-companion) cycle of length >=3. Length-2, >=2 B-transition, and single-B all-share cycles are impossible (local, verifier-backed).",
+      "id": "allshare_renewal_cycle_classification",
+      "scope": "all-share (u,b) renewal cycles; subsumes the three local impossibility lemmas",
+      "status": "PROMOTE",
+      "surviving_residual": "all-A (tau-companion) cycles of length >=3"
     }
   ],
   "promotion_contract": [
@@ -342,6 +364,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 17,
+  "schema_version": 18,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
