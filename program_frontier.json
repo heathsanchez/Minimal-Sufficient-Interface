@@ -23,11 +23,11 @@
   "full_D_total": 5040,
   "last_transition": {
     "classification": "PROMOTE",
-    "note": "attachment bridge: all-A cycle = x*b cycle on collision fiber with N(u,b)>=3 occurrence surplus",
+    "note": "diagonal-escape trigger tested: sigma(b)=b\\u not forced on the mixed x*b cycle (negative boundary recorded)",
     "result_id": "allA_tau_fiber_attachment"
   },
   "live_residual": {
-    "text": "Attachment verified: the all-A tau-companion cycle is a collision-fiber x*b cycle tau-collapsing to (b,b\\u) with N(u,b)=n>=3 (the canonical-port occurrence surplus). Next: route this surplus through the frozen diagonal-escape / ZERO-root machinery. The smallest concrete test: does the x*b cycle on the collision fiber, plus the diagonal self-instance E677(b,b) (b*b=s(b) Good, b*kappa(b)=b) and the unique-fixer sigma(u)*u=u, force a nonperiodic tau-state / coloured boundary (i.e. UNSAT for the closed-reuse case)?",
+    "text": "The all-Bad diagonal-escape trigger does not fire on the mixed all-A collision-fiber x*b cycle (sigma(b)=b\\u is not forced; sigma(b)=h=u is UNSAT). The mixed Good-row/Bad-target tau structure therefore needs a genuinely new diagonal-escape analog: identify the mixed-state self-instance (E677(b,b) on the Bad target, or E677(u,u) on the repeated Good input) that forces a nonperiodic tau-state for the mixed cycle. This is the sharp remaining obstruction; the local renewal classification, boundary mining, and tau-fiber attachment are all complete and PROMOTEd.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -47,7 +47,8 @@
     "The shared Bad-shadow quasigroup and exact unique Bad-carrier ground consequences remain satisfiable on both linked marked branches; isolated local shadow algebra is insufficient.",
     "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell.",
     "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift.",
-    "Boundary-mining: the all-share (u,b) Good-row renewal cycle survives iff it is all-A (tau-companion). A single B-transition flips it to UNSAT via exactly one E677 instance E(r_{i-1},u): B forces r_i=u hence z_{i-1}=u hence u*u=b, which E677 contradicts."
+    "Boundary-mining: the all-share (u,b) Good-row renewal cycle survives iff it is all-A (tau-companion). A single B-transition flips it to UNSAT via exactly one E677 instance E(r_{i-1},u): B forces r_i=u hence z_{i-1}=u hence u*u=b, which E677 contradicts.",
+    "The frozen diagonal-escape trigger does not fire on the mixed all-A collision-fiber cycle: sigma(b)=h=b\\u is NOT forced (SAT with sigma(b)!=h), and sigma(b)=h=u is UNSAT. The all-Bad diagonal escape therefore needs a genuinely new mixed analog before it can route the N(u,b)>=3 surplus to a coloured boundary/ZERO root."
   ],
   "next_process_test": "The router must select SIZE_FREE_ALLA_TAUFIBER_ATTACH only. Historical single-B, b-collapse, 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip.",
   "nonlinear_D_total": 4998,
@@ -379,6 +380,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 20,
+  "schema_version": 21,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
