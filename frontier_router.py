@@ -4,9 +4,14 @@ This is intentionally small: it does not decide mathematics, only whether a
 known experiment is applicable to the current residual. Non-applicable
 workflows must skip cleanly rather than fail after their version space is gone.
 
-Size-free work is deliberately stage-typed.  A broad SIZE_FREE_RENEWAL route
+Size-free work is deliberately stage-typed. A broad SIZE_FREE_RENEWAL route
 reactivated already-exhausted historical probes, so the residual text now
 selects one precise experiment family instead of a whole research era.
+
+Routing precedence matters: a later-stage residual can legitimately mention
+retained earlier structure (for example Bad-shadow inside simultaneous
+renewal). Therefore specific current-stage signatures must be tested before
+broader inherited-structure signatures.
 """
 from __future__ import annotations
 import argparse, json, os
@@ -26,14 +31,16 @@ def route(frontier: dict) -> str:
         return "AFFINE_D"
 
     if residual_type in {"ATTACHMENT", "REFRAME"} and "full_D_phase_frontier_closed" in promoted:
+        # Most specific active size-free stage first. Later residuals retain
+        # vocabulary from earlier stages, so broad keyword checks must follow.
+        if "simultaneous" in residual_text and "renewal" in residual_text:
+            return "SIZE_FREE_SIMULTANEOUS_RENEWAL"
         if "finite-model/ground consequence projection" in residual_text or (
             "ground consequence" in residual_text and "bad-shadow" in residual_text
         ):
             return "SIZE_FREE_SHADOW_GROUND"
         if "bad shadow" in residual_text or "bad-shadow" in residual_text:
             return "SIZE_FREE_SHADOW_FIRST_ORDER"
-        if "simultaneous" in residual_text and "renewal" in residual_text:
-            return "SIZE_FREE_SIMULTANEOUS_RENEWAL"
         return "SIZE_FREE_UNROUTED"
 
     return "UNROUTED"
