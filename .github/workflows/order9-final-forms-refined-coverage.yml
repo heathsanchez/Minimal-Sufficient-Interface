@@ -1,0 +1,142 @@
+name: Order9 Final Forms Refined Coverage
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+    paths:
+      - '.github/workflows/order9-final-forms-refined-coverage.yml'
+  workflow_dispatch:
+
+jobs:
+  solve:
+    strategy:
+      fail-fast: false
+      matrix:
+        form: [15, 18, 21, 24]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen external verifier source
+        run: |
+          git clone --filter=blob:none https://github.com/Grisha-Pochuev/finite-magma-e677-to-e255.git external
+          git -C external checkout 5a205195a84eec54dbcb2fd766f0b2d1ded1831b
+          observed=$(git -C external hash-object tools/e677_order9_no_hit_bad_count_sat.py)
+          echo "checker-blob=$observed"
+          test "$observed" = "efe356acd0047eef8ae5645b2cb04ac2a493632d"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact SAT runtime
+        run: |
+          python -m pip install --disable-pip-version-check "python-sat==1.8.dev24"
+          python - <<'PY'
+          from pysat.solvers import Solver
+          for name in ('cadical195','glucose42'):
+              with Solver(name=name, bootstrap_with=[[1]]) as s:
+                  assert s.solve() is True
+              print('solver-ready', name)
+          PY
+      - name: Exact canonical and Good-representative coverage
+        shell: bash
+        run: |
+          set +e
+          form=${{ matrix.form }}
+          mkdir -p "artifacts/form${form}"
+          checker=external/tools/e677_order9_no_hit_bad_count_sat.py
+          common="--min-bad 3 --max-bad 3 --scan-bad3-structural --bad3-case ${form}"
+
+          python "$checker" $common --bad3-canonical-root-outcomes --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee "artifacts/form${form}/cadical_canonical.txt"
+          python "$checker" $common --bad3-good-product-reps-only --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee "artifacts/form${form}/cadical_good_reps.txt"
+          python "$checker" $common --bad3-canonical-root-outcomes --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee "artifacts/form${form}/glucose_canonical.txt"
+          python "$checker" $common --bad3-good-product-reps-only --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee "artifacts/form${form}/glucose_good_reps.txt"
+          exit 0
+      - name: Compile refinement-aware exact residual
+        run: |
+          FORM=${{ matrix.form }} python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+
+          form=int(os.environ['FORM'])
+          root=Path(f'artifacts/form{form}')
+          root_re=re.compile(r'root=\((\d+),(\d+)\)')
+
+          def rows(text):
+              return [x for x in text.splitlines() if f'bad3 case {form}/24 split ' in x]
+
+          def status(line):
+              if ': UNSAT;' in line: return 'UNSAT'
+              if ': SAT;' in line: return 'SAT'
+              if ': UNKNOWN;' in line: return 'UNKNOWN'
+              return 'OTHER'
+
+          out={}
+          all_closed=True
+          any_sat=False
+          for engine in ('cadical','glucose'):
+              canonical=rows((root/f'{engine}_canonical.txt').read_text())
+              good=rows((root/f'{engine}_good_reps.txt').read_text())
+              good_by_root={}
+              for line in good:
+                  m=root_re.search(line)
+                  if not m:
+                      raise SystemExit(f'{engine}: Good representative lacks root: {line}')
+                  good_by_root.setdefault(m.group(0), []).append(line)
+
+              uncovered=[]
+              covered_good_unknown=[]
+              for line in canonical:
+                  st=status(line)
+                  if st=='SAT':
+                      any_sat=True
+                      uncovered.append(line)
+                      continue
+                  if 'product=Good' not in line:
+                      if st!='UNSAT':
+                          uncovered.append(line)
+                      continue
+                  if st=='UNSAT':
+                      continue
+                  m=root_re.search(line)
+                  reps=[] if not m else good_by_root.get(m.group(0), [])
+                  if reps and all(status(x)=='UNSAT' for x in reps):
+                      covered_good_unknown.append({'parent':line,'representatives':reps})
+                  else:
+                      uncovered.append(line)
+
+              # The external checker states that residual relabelling is transitive
+              # on unnamed Good labels; these are the exhaustive representatives.
+              bad_good_reps=[x for x in good if status(x)!='UNSAT']
+              if bad_good_reps:
+                  uncovered.extend(bad_good_reps)
+                  if any(status(x)=='SAT' for x in bad_good_reps): any_sat=True
+
+              engine_closed=bool(canonical) and not uncovered
+              all_closed &= engine_closed
+              out[engine]={
+                  'canonical_total':len(canonical),
+                  'good_representative_total':len(good),
+                  'covered_parent_good_unknowns':covered_good_unknown,
+                  'uncovered':uncovered,
+                  'closed_under_refined_partition':engine_closed,
+              }
+
+          (root/'refined_summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          if any_sat:
+              print(f'ORDER9_FORM{form}_SAT_RESIDUAL_REQUIRES_INDEPENDENT_RECHECK')
+          elif all_closed:
+              print(f'ORDER9_FORM{form}_EXACTLY_EXCLUDED_BY_REFINEMENT_IN_TWO_ENGINES')
+          else:
+              print(f'ORDER9_FORM{form}_EXACT_RESIDUAL_RETAINED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: order9-form${{ matrix.form }}-refined
+          path: artifacts/form${{ matrix.form }}
