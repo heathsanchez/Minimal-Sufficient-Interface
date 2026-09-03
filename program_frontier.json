@@ -1,89 +1,28 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "programme": "verified-recursive-development",
   "branch": "recursive-discovery-compiler-v1",
   "authoritative": true,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process.",
-  "constitutional_loop": [
-    "PUSH",
-    "VERIFY",
-    "LOCALIZE_CONSEQUENCE",
-    "CHECK_SCOPE",
-    "CHECK_ATTACHMENT",
-    "ABLATE_CAUSE",
-    "RETAIN_MINIMALLY",
-    "REIFY_IF_COMPRESSIVE",
-    "CHANGE_FUTURE_SEARCH"
-  ],
-  "promotion_contract": [
-    "VERIFIED",
-    "ATTACHED",
-    "SCOPE_CORRECT",
-    "EQUALITY_COMPLETE",
-    "CAUSAL"
-  ],
-  "live_state_parent_sha": "04551938a5b111da951b25e8f655d47f45098850",
-  "mathematical_scope": "n=7 shifted phase frontier attached to normalized cyclic-P T6 PAIR-KERNEL; minimum nonlinear D curvature layer kappa=18",
+  "constitutional_loop": ["PUSH","VERIFY","LOCALIZE_CONSEQUENCE","CHECK_SCOPE","CHECK_ATTACHMENT","ABLATE_CAUSE","RETAIN_MINIMALLY","REIFY_IF_COMPRESSIVE","CHANGE_FUTURE_SEARCH"],
+  "promotion_contract": ["VERIFIED","ATTACHED","SCOPE_CORRECT","EQUALITY_COMPLETE","CAUSAL"],
+  "live_state_parent_sha": "14f0f19b82be9e7172252adaad51e8d716b7e495",
+  "mathematical_scope": "n=7 shifted phase frontier attached to normalized cyclic-P T6 PAIR-KERNEL; nonlinear D-curvature layers kappa=18 and kappa=22 excluded by necessary four-row projections",
   "promoted": [
-    {
-      "id": "phase_symbolic",
-      "claim": "The saturated shifted-row frontier admits the verified phase representation and symbolic phase law under its stated cyclic assumptions.",
-      "status": "PROMOTE"
-    },
-    {
-      "id": "phase_141",
-      "claim": "At n=7 the local phase/block construction reconstructs exactly 141 shifted saturated states.",
-      "status": "PROMOTE"
-    },
-    {
-      "id": "t6_four_row_annihilation",
-      "claim": "The source-backed four-row T6 PAIR-KERNEL projection rejects all 141 phase states for all 720 normalized A fixing zero and all four canonical minimum-curvature D representatives.",
-      "scope": "necessary four-row projection only",
-      "run_id": 33725970762,
-      "job_id": 100554886606,
-      "baseline": 141,
-      "survivors": 0,
-      "status": "PROMOTE"
-    },
-    {
-      "id": "kappa18_excluded",
-      "claim": "The complete nonlinear minimum-curvature layer kappa(D)=18, consisting of 294 labelled maps and losslessly represented by four gauge/scalar canonical D maps, admits no full seven-row completion because every completion would have to satisfy the rejected four-row projection.",
-      "scope": "kappa(D)=18 only; does not prove E677 -> E255",
-      "certificate": "phase_T6_min_curvature_exclusion_certificate.py",
-      "commit": "04551938a5b111da951b25e8f655d47f45098850",
-      "status": "PROMOTE"
-    }
+    {"id":"phase_symbolic","claim":"The saturated shifted-row frontier admits the verified phase representation and symbolic phase law under its stated cyclic assumptions.","status":"PROMOTE"},
+    {"id":"phase_141","claim":"At n=7 the local phase/block construction reconstructs exactly 141 shifted saturated states.","status":"PROMOTE"},
+    {"id":"t6_four_row_annihilation","claim":"The source-backed four-row T6 PAIR-KERNEL projection rejects all 141 phase states for all 720 normalized A fixing zero and all four canonical minimum-curvature D representatives.","scope":"necessary four-row projection only","run_id":33725970762,"job_id":100554886606,"baseline":141,"survivors":0,"status":"PROMOTE"},
+    {"id":"kappa18_excluded","kappa":18,"claim":"The complete nonlinear minimum-curvature layer kappa(D)=18, consisting of 294 labelled maps and losslessly represented by four valid upstream gauge/scalar canonical D maps, admits no full seven-row completion because every completion would have to satisfy the rejected four-row projection.","scope":"kappa(D)=18 only; does not prove E677 -> E255","labelled_maps":294,"certificate":"phase_T6_min_curvature_exclusion_certificate.py","commit":"04551938a5b111da951b25e8f655d47f45098850","status":"PROMOTE"},
+    {"id":"kappa22_excluded","kappa":22,"claim":"The complete nonlinear kappa(D)=22 layer is excluded by the source-backed necessary four-row T6 PAIR-KERNEL projection after exact output-translation normalization D -> D+c.","scope":"n=7 kappa(D)=22 layer; necessary four-row T6 projection only; does not prove E677 -> E255","labelled_maps":882,"normalized_maps":126,"normalized_D_phase_pairs":17766,"survivors":0,"normalization":"output translation D -> D+c; unique representative D(0)=0","run_id":33728222563,"job_id":100561993523,"artifact_id":9882811488,"commit":"14f0f19b82be9e7172252adaad51e8d716b7e495","status":"PROMOTE"}
   ],
   "parked": [
-    {
-      "id": "phase_C_component_theorem",
-      "commit": "b031c52b71a860ecceb28a60a60850eedab7eb98",
-      "reason": "Verified structural C-language theorem, but T6 attachment currently has higher information gain. Reattach if it constrains later curvature layers.",
-      "status": "PARK"
-    },
-    {
-      "id": "order9_three_bad_strict_surplus",
-      "reason": "24/24 normalized forms excluded in two engines; retained as finite evidence/regression, not current size-free route.",
-      "status": "PARK"
-    }
+    {"id":"phase_C_component_theorem","commit":"b031c52b71a860ecceb28a60a60850eedab7eb98","reason":"Verified structural C-language theorem, but T6 attachment currently has higher information gain. Reattach if it constrains later curvature layers.","status":"PARK"},
+    {"id":"order9_three_bad_strict_surplus","reason":"24/24 normalized forms excluded in two engines; retained as finite evidence/regression, not current size-free route.","status":"PARK"}
   ],
-  "negative_laws": [
-    "Good-row renewal plus unique fixer alone is insufficient.",
-    "Marked ancestry alone had zero causal contraction at the tested abstraction.",
-    "SHORT-block conclusions do not widen to SHORT/LONG without explicit scope verification.",
-    "Distinct symbolic names are not inequalities; equality completion is mandatory.",
-    "A verifier that was not executed cannot support promotion."
-  ],
-  "process_laws": [
-    "TRUE != ATTACHED != CONSEQUENTIAL",
-    "No scope widening without re-verification",
-    "No contradiction from partial algebra before equality completion",
-    "Every consequential result is classified PROMOTE/PARK/SUPERSEDE/REJECT/REQUIRE_ATTACHMENT",
-    "The repository frontier, not conversation memory, is authoritative"
-  ],
-  "live_residual": {
-    "type": "DERIVATION",
-    "text": "Compute the exact next attainable nonlinear D-curvature layer(s), quotient them by valid upstream gauge/symmetries, and test the cheapest four-row T6 PAIR-KERNEL attachment first. If four-row contraction disappears, escalate to relative-pair TRIANGLE-COCYCLE rather than raw seven-row search."
-  },
-  "next_process_test": "Require future experiment workflows to consume this frontier state and emit an explicit classified state transition with scope and evidence."
+  "negative_laws": ["Good-row renewal plus unique fixer alone is insufficient.","Marked ancestry alone had zero causal contraction at the tested abstraction.","SHORT-block conclusions do not widen to SHORT/LONG without explicit scope verification.","Distinct symbolic names are not inequalities; equality completion is mandatory.","A verifier that was not executed cannot support promotion."],
+  "process_laws": ["TRUE != ATTACHED != CONSEQUENTIAL","No scope widening without re-verification","No contradiction from partial algebra before equality completion","Every consequential result is classified PROMOTE/PARK/SUPERSEDE/REJECT/REQUIRE_ATTACHMENT","The repository frontier, not conversation memory, is authoritative","A frontier-driven experiment must consume the current frontier and emit one explicit proposed transition"],
+  "curvature_spectrum": {"18":294,"22":882,"24":1470,"26":1764,"30":588},
+  "live_residual": {"type":"DERIVATION","text":"Select the smallest nonlinear D-curvature layer in the verified spectrum not already promoted as excluded (currently kappa=24), normalize only by proved PAIR-KERNEL symmetries, and test the necessary four-row T6 PAIR-KERNEL projection. If survivors appear, compile exactly those survivors and attach relative-pair TRIANGLE-COCYCLE before any raw seven-row search."},
+  "last_transition": {"classification":"PROMOTE","result_id":"kappa22_excluded","run_id":33728222563,"job_id":100561993523,"consumed_frontier_commit":"cc0abc7f69509de6be5ffa768ba7767867e0ad20","experiment_commit":"14f0f19b82be9e7172252adaad51e8d716b7e495"},
+  "next_process_test": "Use a generic curvature-frontier probe that derives the next unclosed layer from this state rather than hard-coding a previous kappa; verify that it selects kappa=24 and emits the next classified transition without chat context."
 }

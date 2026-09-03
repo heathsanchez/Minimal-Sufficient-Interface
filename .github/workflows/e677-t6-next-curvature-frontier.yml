@@ -1,4 +1,4 @@
-name: E677 T6 next curvature frontier
+name: E677 T6 generic curvature frontier
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  next-curvature:
+  curvature-frontier:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -20,17 +20,20 @@ jobs:
           python-version: '3.12'
       - name: Validate authoritative frontier first
         run: python frontier_contract.py
-      - name: Compile frontier-driven math probe
-        run: python -m py_compile phase_T6_next_curvature_probe.py
-      - name: Derive and test next curvature layer
-        run: python phase_T6_next_curvature_probe.py
-      - name: Verify explicit state transition
+      - name: Compile generic frontier probe
+        run: python -m py_compile phase_T6_curvature_frontier_probe.py
+      - name: Select and test next unclosed curvature layer
+        run: python phase_T6_curvature_frontier_probe.py
+      - name: Verify explicit transition
         run: |
           python - <<'PY'
           import json
-          x=json.load(open('artifacts/phase_T6_next_curvature_probe.json'))
-          assert x['previous_excluded_kappa']==18
-          assert x['next_attainable_nonlinear_kappa']>18
+          f=json.load(open('program_frontier.json'))
+          x=json.load(open('artifacts/phase_T6_curvature_frontier_probe.json'))
+          closed=sorted(int(v['kappa']) for v in f['promoted'] if v.get('status')=='PROMOTE' and 'kappa' in v)
+          remaining=sorted(int(k) for k in f['curvature_spectrum'] if int(k) not in closed)
+          assert remaining and x['selected_kappa']==remaining[0]
+          assert x['consumed_frontier']['promoted_kappas']==closed
           assert x['normalization_coverage_exact']
           assert x['phase_states']==141
           assert x['A_domain']=='all 720 permutations of Z7 fixing 0'
@@ -38,16 +41,17 @@ jobs:
           assert x['full_seven_row_core_claimed'] is False
           assert x['e677_implication_solved_claimed'] is False
           assert x['proposed_transition']['classification'] in {'PROMOTE','REQUIRE_ATTACHMENT'}
-          print('NEXT_KAPPA=' + str(x['next_attainable_nonlinear_kappa']))
-          print('NEXT_KAPPA_LABELLED=' + str(x['labelled_maps_in_next_layer']))
-          print('NEXT_KAPPA_NORMALIZED=' + str(x['normalized_D_count']))
-          print('NEXT_KAPPA_SURVIVORS=' + str(x['surviving_pairs']))
-          print('NEXT_KAPPA_D_WITH_SURVIVOR=' + str(x['D_maps_with_survivor']))
-          print('NEXT_KAPPA_TRANSITION=' + x['proposed_transition']['classification'])
-          print('NEXT_KAPPA_RESIDUAL=' + x['proposed_transition']['residual'])
-          print('FRONTIER_DRIVEN_TRANSITION_VERIFIED')
+          print('GENERIC_SELECTED_KAPPA='+str(x['selected_kappa']))
+          print('GENERIC_LABELLED='+str(x['labelled_maps']))
+          print('GENERIC_NORMALIZED='+str(x['normalized_D_count']))
+          print('GENERIC_PAIRS='+str(x['normalized_D_phase_pairs']))
+          print('GENERIC_SURVIVORS='+str(x['surviving_pairs']))
+          print('GENERIC_D_WITH_SURVIVOR='+str(x['D_maps_with_survivor']))
+          print('GENERIC_TRANSITION='+x['proposed_transition']['classification'])
+          print('GENERIC_RESIDUAL='+x['proposed_transition']['residual'])
+          print('GENERIC_FRONTIER_TRANSITION_VERIFIED')
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: e677-t6-next-curvature-frontier
-          path: artifacts/phase_T6_next_curvature_probe.json
+          name: e677-t6-generic-curvature-frontier
+          path: artifacts/phase_T6_curvature_frontier_probe.json
