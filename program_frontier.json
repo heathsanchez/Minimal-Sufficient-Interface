@@ -22,15 +22,15 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9913502413,
+    "artifact_id": 9913711432,
     "classification": "PROMOTE",
-    "consumed_frontier_commit": "4d97f8c890e533e1724e6a3fb1804b2c6e21c5a6",
-    "job_id": 100821405636,
-    "result_id": "renewal_2cycle_impossibility",
-    "run_id": 33807515515
+    "consumed_frontier_commit": "4fc14a690e6b86ac434b5388a969348b834d5e19",
+    "job_id": 100823087680,
+    "result_id": "renewal_bcollapse",
+    "run_id": 33808030765
   },
   "live_residual": {
-    "text": "The length-2 renewal impossibility PROMOTEs to a length-independent B-collapse invariant: in an all-share (u,b) Good-row A/B renewal cycle, a B-transition at position i sets g_{i+1}=r_i, and with g_{i+1}=u this forces r_i=u, so >=2 B-transitions collapse r_i=r_j=u against distinct rows. Certify the B-collapse invariant (all-share cycles with >=2 B-transitions are UNSAT for every length, without injectivity), then determine whether the surviving all-A and single-B clean cycles close under the unique-fixer / short-block coupling.",
+    "text": "Two size-free renewal-cycle impossibilities are now PROMOTE: (1) length-2 cycles are impossible under left-row injectivity (all four words); (2) all-share cycles with >=2 B-transitions are impossible of any length without injectivity. The surviving clean-cycle space is all-A cycles of length >=3 and single-B cycles. Determine the next information-gaining step: either (a) close the surviving all-A and single-B cycles by coupling the unique-fixer cell of the repeated Good input u to the collision, or (b) verify whether the B-collapse already forces every collision-generated renewal strand to terminate or merge via the U=T+K conservation.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -317,6 +317,22 @@
         "BA",
         "BB"
       ]
+    },
+    {
+      "artifact_id": 9913711432,
+      "cases": 16,
+      "claim": "In a Good-row A/B renewal cycle of any length where every crossing shares the same (u,b) and has distinct rows, at least two B-transitions force a contradiction: a B-transition at position i sets g_{i+1}=r_i, and with g_{i+1}=u this forces r_i=u, so two B-transitions at i!=j give r_i=r_j=u against distinct rows. No injectivity, E677, shadow, carrier, or fixer axioms are used.",
+      "commit": "4fc14a690e6b86ac434b5388a969348b834d5e19",
+      "id": "renewal_bcollapse",
+      "job_id": 100823087680,
+      "n_range": [
+        2,
+        3,
+        4
+      ],
+      "run_id": 33808030765,
+      "scope": "all-share (u,b) renewal cycles; >=2 B-transitions; transition equations + distinct rows only; length-independent",
+      "status": "PROMOTE"
     }
   ],
   "promotion_contract": [
@@ -326,6 +342,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 15,
+  "schema_version": 16,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
