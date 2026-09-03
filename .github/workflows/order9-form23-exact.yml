@@ -1,0 +1,109 @@
+name: Order9 Form23 Exact
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+    paths:
+      - '.github/workflows/order9-form23-exact.yml'
+  workflow_dispatch:
+
+jobs:
+  form23:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen external verifier source
+        run: |
+          git clone --filter=blob:none https://github.com/Grisha-Pochuev/finite-magma-e677-to-e255.git external
+          git -C external checkout 5a205195a84eec54dbcb2fd766f0b2d1ded1831b
+          observed=$(git -C external hash-object tools/e677_order9_no_hit_bad_count_sat.py)
+          echo "checker-blob=$observed"
+          test "$observed" = "efe356acd0047eef8ae5645b2cb04ac2a493632d"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact SAT runtime
+        run: |
+          python -m pip install --disable-pip-version-check "python-sat==1.8.dev24"
+          python - <<'PY'
+          from pysat.solvers import Solver
+          for name in ('cadical195','glucose42'):
+              with Solver(name=name, bootstrap_with=[[1]]) as s:
+                  assert s.solve() is True
+              print('solver-ready', name)
+          PY
+      - name: Exact form23 coverage in two engines
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts/form23
+          checker=external/tools/e677_order9_no_hit_bad_count_sat.py
+          common="--min-bad 3 --max-bad 3 --scan-bad3-structural --bad3-case 23"
+
+          python "$checker" $common --bad3-canonical-root-outcomes --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee artifacts/form23/cadical_canonical.txt
+          echo ${PIPESTATUS[0]} > artifacts/form23/cadical_canonical.rc
+
+          python "$checker" $common --bad3-good-product-reps-only --solver cadical195 --conflict-budget 1000000 \
+            2>&1 | tee artifacts/form23/cadical_good_reps.txt
+          echo ${PIPESTATUS[0]} > artifacts/form23/cadical_good_reps.rc
+
+          python "$checker" $common --bad3-canonical-root-outcomes --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee artifacts/form23/glucose_canonical.txt
+          echo ${PIPESTATUS[0]} > artifacts/form23/glucose_canonical.rc
+
+          python "$checker" $common --bad3-good-product-reps-only --solver glucose42 --per-count-seconds 90 \
+            2>&1 | tee artifacts/form23/glucose_good_reps.txt
+          echo ${PIPESTATUS[0]} > artifacts/form23/glucose_good_reps.rc
+          exit 0
+      - name: Read exact residual
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path('artifacts/form23')
+          summary={}
+          any_sat=False
+          for engine in ('cadical','glucose'):
+              c=(root/f'{engine}_canonical.txt').read_text()
+              g=(root/f'{engine}_good_reps.txt').read_text()
+              crows=[line for line in c.splitlines() if 'bad3 case 23/24 split ' in line]
+              grows=[line for line in g.splitlines() if 'bad3 case 23/24 split ' in line]
+              if len(crows)!=9:
+                  raise SystemExit(f'{engine}: expected 9 canonical outcomes, got {len(crows)}')
+              if len(grows)!=2:
+                  raise SystemExit(f'{engine}: expected 2 Good representatives, got {len(grows)}')
+              sat=[line for line in [*crows,*grows] if ': SAT;' in line]
+              unsat=[line for line in crows if ': UNSAT;' in line]
+              unknown=[line for line in crows if ': UNKNOWN;' in line]
+              good_unsat=[line for line in grows if ': UNSAT;' in line]
+              good_unknown=[line for line in grows if ': UNKNOWN;' in line]
+              summary[engine]={
+                  'canonical_total':len(crows),
+                  'canonical_unsat':len(unsat),
+                  'canonical_unknown':unknown,
+                  'good_reps_total':len(grows),
+                  'good_reps_unsat':len(good_unsat),
+                  'good_reps_unknown':good_unknown,
+                  'sat':sat,
+                  'canonical_statuses':crows,
+                  'good_rep_statuses':grows,
+              }
+              any_sat |= bool(sat) or 'VERIFIED NO-HIT COUNTEREXAMPLE' in c or 'VERIFIED NO-HIT COUNTEREXAMPLE' in g
+          (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print(json.dumps({e:{k:v for k,v in d.items() if k not in ('canonical_statuses','good_rep_statuses')} for e,d in summary.items()},indent=2))
+          if any_sat:
+              print('FORM23_SAT_RESIDUAL_REQUIRES_INDEPENDENT_RECHECK')
+          elif all(d['canonical_unsat']==9 and d['good_reps_unsat']==2 for d in summary.values()):
+              print('ORDER9_FORM23_EXACTLY_EXCLUDED_IN_TWO_ENGINES')
+          else:
+              print('ORDER9_FORM23_EXACT_RESIDUAL_RETAINED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: order9-form23-exact
+          path: artifacts/form23
