@@ -33,6 +33,8 @@ def route(frontier: dict) -> str:
     if residual_type in {"ATTACHMENT", "REFRAME"} and "full_D_phase_frontier_closed" in promoted:
         # Most specific active size-free stage first. Later residuals retain
         # vocabulary from earlier stages, so broad keyword checks must follow.
+        if "b-collapse" in residual_text or "bcollapse" in residual_text or ("b-transition" in residual_text and "collapse" in residual_text):
+            return "SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE"
         if "unsat core" in residual_text and ("2-cycle" in residual_text or "length-2" in residual_text or "length 2" in residual_text):
             return "SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE"
         if ("fork" in residual_text or "reverse-lift" in residual_text) and "canonical" in residual_text:

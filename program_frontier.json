@@ -22,15 +22,15 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "artifact_id": 9912941711,
-    "classification": "PARK",
-    "consumed_frontier_commit": "8b6ac06e1b98ce64eab3dc5664ac323f01a8cb0c",
-    "job_id": 100816625104,
-    "result_id": "fork_reverse_lift_coupling_sat",
-    "run_id": 33806042627
+    "artifact_id": 9913502413,
+    "classification": "PROMOTE",
+    "consumed_frontier_commit": "4d97f8c890e533e1724e6a3fb1804b2c6e21c5a6",
+    "job_id": 100821405636,
+    "result_id": "renewal_2cycle_impossibility",
+    "run_id": 33807515515
   },
   "live_residual": {
-    "text": "Both the bad-target G-CROSS coupling and the FORK reverse-lift coupling remain SAT: the local two-cell trichotomy is satisfiable (matching the frozen source boundary). The repeated UNSAT signal in the bounded Good-row renewal probe is at cycle length 2 (words AA, AB, BA, BB all UNSAT) before the first length-3 SAT (AAA). Extract the length-2 UNSAT core to identify the source-backed invariant that kills 2-cycles but not 3-cycles; this is a small length-independent invariant candidate that must be read off the verifier (unsat core), not hand-derived.",
+    "text": "The length-2 renewal impossibility PROMOTEs to a length-independent B-collapse invariant: in an all-share (u,b) Good-row A/B renewal cycle, a B-transition at position i sets g_{i+1}=r_i, and with g_{i+1}=u this forces r_i=u, so >=2 B-transitions collapse r_i=r_j=u against distinct rows. Certify the B-collapse invariant (all-share cycles with >=2 B-transitions are UNSAT for every length, without injectivity), then determine whether the surviving all-A and single-B clean cycles close under the unique-fixer / short-block coupling.",
     "type": "REFRAME"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -51,7 +51,7 @@
     "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell.",
     "Attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target to the simultaneous Good-row A/B renewal network still leaves the bounded fragment SAT (same-cycle AAA); Good-row renewal plus one shared D-cell is insufficient without the FORK reverse-lift."
   ],
-  "next_process_test": "The router must select SIZE_FREE_RENEWAL_2CYCLE_CERTIFICATE only. Historical fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
+  "next_process_test": "The router must select SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE only. Historical 2-cycle, fork, bad-target-gcross, simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics.",
   "nonlinear_D_total": 4998,
   "parked": [
     {
@@ -295,6 +295,28 @@
       "labelled_D_total": 5040,
       "scope": "scoped phase-frontier closure only; cyclic-P/order-49 attachment is not global; does not prove E677 -> E255",
       "status": "PROMOTE"
+    },
+    {
+      "artifact_id": 9913502413,
+      "claim": "A length-2 Good-row A/B renewal cycle on two distinct crossings sharing (u,b) is UNSAT under left-row injectivity alone, for all four words AA/AB/BA/BB. The core is local (18/22/23/5 assertions): telescoping injectivity collapse for AA/AB/BA, direct r-collapse for BB. No E677, shadow, carrier, or fixer axioms are used.",
+      "commit": "4d97f8c890e533e1724e6a3fb1804b2c6e21c5a6",
+      "core_sizes": {
+        "AA": 18,
+        "AB": 22,
+        "BA": 23,
+        "BB": 5
+      },
+      "id": "renewal_2cycle_impossibility",
+      "job_id": 100821405636,
+      "run_id": 33807515515,
+      "scope": "length-2 clean renewal cycles on collision arms sharing (u,b); left-row injectivity only",
+      "status": "PROMOTE",
+      "words": [
+        "AA",
+        "AB",
+        "BA",
+        "BB"
+      ]
     }
   ],
   "promotion_contract": [
@@ -304,6 +326,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 14,
+  "schema_version": 15,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }

@@ -1,0 +1,59 @@
+name: E677 renewal B-collapse
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  renewal-bcollapse-certificate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        run: |
+          echo "BCOLLAPSE_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "BCOLLAPSE_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        run: pip install z3-solver
+      - name: Compile certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        run: python -m py_compile e677_renewal_bcollapse_certificate.py
+      - name: Run B-collapse certificate
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        run: python e677_renewal_bcollapse_certificate.py --out artifacts/e677_renewal_bcollapse_certificate.json --max-n 4
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_renewal_bcollapse_certificate.json'))
+          assert x['all_unsat'] is True
+          assert x['size_free_theorem_claimed'] is True
+          assert x['global_e677_implication_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['finite_domain_claimed'] is False
+          assert x['proposed_transition']['classification'] == 'PROMOTE'
+          for c in x['cases']:
+              assert c['result'] == 'unsat', (c['n'], c['word'])
+          print('BCOLLAPSE_ALL_UNSAT='+str(x['all_unsat']).lower())
+          print('BCOLLAPSE_CASES='+str(len(x['cases'])))
+          print('BCOLLAPSE_TRANSITION=PROMOTE')
+          print('BCOLLAPSE_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_RENEWAL_BCOLLAPSE_CERTIFICATE'
+        with:
+          name: e677-renewal-bcollapse
+          path: artifacts/e677_renewal_bcollapse_certificate.json
