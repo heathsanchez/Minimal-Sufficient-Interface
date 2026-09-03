@@ -3,6 +3,10 @@
 This is intentionally small: it does not decide mathematics, only whether a
 known experiment is applicable to the current residual. Non-applicable
 workflows must skip cleanly rather than fail after their version space is gone.
+
+Size-free work is deliberately stage-typed.  A broad SIZE_FREE_RENEWAL route
+reactivated already-exhausted historical probes, so the residual text now
+selects one precise experiment family instead of a whole research era.
 """
 from __future__ import annotations
 import argparse, json, os
@@ -10,7 +14,9 @@ import argparse, json, os
 
 def route(frontier: dict) -> str:
     promoted = {x.get("id") for x in frontier.get("promoted", []) if x.get("status") == "PROMOTE"}
-    residual_type = frontier["live_residual"]["type"]
+    residual = frontier["live_residual"]
+    residual_type = residual["type"]
+    residual_text = residual["text"].lower()
     closed_kappas = {int(x["kappa"]) for x in frontier.get("promoted", []) if x.get("status") == "PROMOTE" and "kappa" in x}
     spectrum = {int(k) for k in frontier.get("curvature_spectrum", {})}
 
@@ -18,8 +24,18 @@ def route(frontier: dict) -> str:
         return "CURVATURE"
     if residual_type == "VERIFICATION" and closed_kappas == spectrum and "affine_D_excluded" not in promoted:
         return "AFFINE_D"
+
     if residual_type in {"ATTACHMENT", "REFRAME"} and "full_D_phase_frontier_closed" in promoted:
-        return "SIZE_FREE_RENEWAL"
+        if "finite-model/ground consequence projection" in residual_text or (
+            "ground consequence" in residual_text and "bad-shadow" in residual_text
+        ):
+            return "SIZE_FREE_SHADOW_GROUND"
+        if "bad shadow" in residual_text or "bad-shadow" in residual_text:
+            return "SIZE_FREE_SHADOW_FIRST_ORDER"
+        if "simultaneous" in residual_text and "renewal" in residual_text:
+            return "SIZE_FREE_SIMULTANEOUS_RENEWAL"
+        return "SIZE_FREE_UNROUTED"
+
     return "UNROUTED"
 
 
