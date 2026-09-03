@@ -1,4 +1,4 @@
-"""Exact partial-system boundary for two marked Good-row renewal strands.
+r"""Exact partial-system boundary for two marked Good-row renewal strands.
 
 Source-backed constraints added beyond renewal_unique_fixer_boundary.py:
 - two distinct source rows r,s share one Good input u and one Bad target b;
