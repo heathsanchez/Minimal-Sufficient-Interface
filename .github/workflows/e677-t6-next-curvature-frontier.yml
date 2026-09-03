@@ -20,11 +20,20 @@ jobs:
           python-version: '3.12'
       - name: Validate authoritative frontier first
         run: python frontier_contract.py
+      - name: Route from authoritative residual
+        id: router
+        run: python frontier_router.py --github-output
+      - name: Record clean non-applicability
+        if: steps.router.outputs.route != 'CURVATURE'
+        run: echo "CURVATURE_WORKFLOW_SKIPPED_ROUTE=${{ steps.router.outputs.route }}"
       - name: Compile generic frontier probe
+        if: steps.router.outputs.route == 'CURVATURE'
         run: python -m py_compile phase_T6_curvature_frontier_probe.py
       - name: Select and test next unclosed curvature layer
+        if: steps.router.outputs.route == 'CURVATURE'
         run: python phase_T6_curvature_frontier_probe.py
       - name: Verify explicit transition
+        if: steps.router.outputs.route == 'CURVATURE'
         run: |
           python - <<'PY'
           import json
@@ -41,17 +50,10 @@ jobs:
           assert x['full_seven_row_core_claimed'] is False
           assert x['e677_implication_solved_claimed'] is False
           assert x['proposed_transition']['classification'] in {'PROMOTE','REQUIRE_ATTACHMENT'}
-          print('GENERIC_SELECTED_KAPPA='+str(x['selected_kappa']))
-          print('GENERIC_LABELLED='+str(x['labelled_maps']))
-          print('GENERIC_NORMALIZED='+str(x['normalized_D_count']))
-          print('GENERIC_PAIRS='+str(x['normalized_D_phase_pairs']))
-          print('GENERIC_SURVIVORS='+str(x['surviving_pairs']))
-          print('GENERIC_D_WITH_SURVIVOR='+str(x['D_maps_with_survivor']))
-          print('GENERIC_TRANSITION='+x['proposed_transition']['classification'])
-          print('GENERIC_RESIDUAL='+x['proposed_transition']['residual'])
           print('GENERIC_FRONTIER_TRANSITION_VERIFIED')
           PY
       - uses: actions/upload-artifact@v4
+        if: steps.router.outputs.route == 'CURVATURE'
         with:
           name: e677-t6-generic-curvature-frontier
           path: artifacts/phase_T6_curvature_frontier_probe.json

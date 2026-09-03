@@ -9,23 +9,27 @@ Promotion requires VERIFIED + ATTACHED + SCOPE-CORRECT + EQUALITY-COMPLETE + CAU
 
 ## Current promoted mathematical state
 - Exact shifted saturated n=7 phase frontier: 141 states.
-- Source-backed four-row T6 PAIR-KERNEL is attached to that frontier.
-- Exact nonlinear D-curvature spectrum: kappa={18,22,24,26,30}, counts {294,882,1470,1764,588}; total nonlinear D = 4,998.
-- Every nonlinear layer is now excluded by a necessary four-row T6 projection.
-- kappa=30 final nonlinear layer: run `33729377790`, job `100565598433`, artifact `9883235360`; 588 labelled -> 84 normalized D; 11,844 D/phase pairs; 0 survivors; PROMOTE.
-- Scope boundary: this is not yet E677 -> E255. The 42 affine D maps are the remaining D class.
+- Exact nonlinear D-curvature spectrum kappa={18,22,24,26,30}: all 4,998 nonlinear D permutations excluded by the necessary four-row T6 PAIR-KERNEL projection.
+- Remaining affine class: 42 labelled maps -> 6 exact output-translation representatives -> 846 D/phase pairs -> 0 survivors.
+- Affine verification: run `33729665828`, job `100566478774`, artifact `9883324075`.
+- Therefore all 5,040 permutations D have zero survivors inside the n=7 141-state shifted phase frontier under this necessary four-row T6 projection.
+- Scope boundary: this is a complete D-space closure only inside the stated phase representation. It is not E677 -> E255.
+
+## Attachment audit
+The upstream pinned source describes the isotope normalization as lossless only after entering the `order-49 cyclic branch` and says the most developed exact reduction `uses cyclic P`. It does not establish that every E677 counterexample must enter that branch. Therefore the 5,040-D result is promoted at its exact scope and the cyclic-P phase representation is PARKED rather than widened into a global theorem.
 
 ## Exact live residual
-Test the remaining 42 affine D permutations exactly under the same source-backed necessary four-row T6 PAIR-KERNEL projection. Output translation gives the exact six normalized maps D(x)=a*x. If affine also has zero survivors, compile a full 5,040-D coverage certificate and then audit the exact attachment from the 141-state phase frontier to the upstream counterexample reduction before any global implication claim.
+Return to the size-free E677 route. The highest-value residual is the simultaneous marked G-CROSS / renewal network: determine whether a clean marked A/B renewal cycle can coexist with unique Good fixers, using both Good-row and Bad-row renewal constraints. If all abstract clean cycles are impossible, extract a length-independent invariant. If a cycle survives, compile the witness and identify the exact missing global constraint.
 
 ## Process state
-The repository can now resume without conversation memory: it validates one authoritative frontier, selects the next experiment from that state, runs an external verifier, and emits a classified transition. The unchanged generic curvature probe automatically advanced 24 -> 26 -> 30 solely from frontier updates. Exhausting the nonlinear version space correctly changed the residual class from DERIVATION(curvature) to VERIFICATION(affine) instead of inventing another kappa.
+The repository now carries the target, promoted laws, parked branches, negative laws, one live residual, evidence IDs, and process laws. `frontier_router.py` routes experiments from that residual. Exhausted curvature/affine workflows must skip cleanly rather than fail. `frontier_transition_compiler.py` converts current frontier + verifier artifact into a stale-checked candidate transition without mutating the authoritative state.
 
-Remaining meta residual: applying verified proposed transitions back to the frontier is still a manual GitHub write. Next process improvement is a deterministic stale-safe transition compiler that turns current frontier + verified artifact into a candidate next-state file.
+A process failure was retained: after the nonlinear curvature space was exhausted, the old curvature workflow still triggered and failed because no kappa remained. This produced a new process law: an inapplicable experiment is a clean SKIP, not a mathematical failure.
 
 ## Parked verified dots
-- `b031c52b71a860ecceb28a60a60850eedab7eb98`: exact C-component theorem; parked while T6 has higher information gain.
+- Cyclic-P / 141-state phase frontier: all 5,040 D permutations closed; parked because global attachment is absent.
+- `b031c52b71a860ecceb28a60a60850eedab7eb98`: exact C-component theorem; reattach if useful.
 - Order-9 24/24 three-Bad strict-surplus closure; finite regression/evidence.
 
 ## Update rule
-Every consequential experiment must be classified PROMOTE / PARK / SUPERSEDE / REJECT / REQUIRE_ATTACHMENT, update exact evidence and scope, replace the single live residual, preserve negative laws, and reject stale transitions.
+Every consequential experiment must be classified PROMOTE / PARK / SUPERSEDE / REJECT / REQUIRE_ATTACHMENT, update exact evidence and scope, replace the single live residual, preserve negative laws, and reject stale transitions. Non-applicable workflows route to SKIP.
