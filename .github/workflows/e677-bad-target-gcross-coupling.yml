@@ -1,0 +1,60 @@
+name: E677 bad-target G-CROSS coupling
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  bad-target-gcross-coupling:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frontier contract
+        run: python frontier_contract.py
+      - name: Route current frontier
+        id: route
+        run: python frontier_router.py --github-output
+      - name: Skip non-applicable route
+        if: steps.route.outputs.route != 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        run: |
+          echo "GCROSS_COUPLING_SKIPPED_ROUTE=${{ steps.route.outputs.route }}"
+          echo "GCROSS_COUPLING_NOT_APPLICABLE"
+      - name: Install Z3
+        if: steps.route.outputs.route == 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        run: pip install z3-solver
+      - name: Compile probe
+        if: steps.route.outputs.route == 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        run: python -m py_compile e677_bad_target_gcross_coupling_probe.py
+      - name: Run bad-target G-CROSS coupling probe
+        if: steps.route.outputs.route == 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        run: python e677_bad_target_gcross_coupling_probe.py --out artifacts/e677_bad_target_gcross_coupling_probe.json --timeout-ms 30000
+      - name: Qualify transition
+        if: steps.route.outputs.route == 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/e677_bad_target_gcross_coupling_probe.json'))
+          assert x['finite_domain_claimed'] is False
+          assert x['finite_magma_claimed'] is False
+          assert x['counterexample_claimed'] is False
+          assert x['global_e677_implication_claimed'] is False
+          assert x['size_free_theorem_claimed'] is False
+          assert x['case_count'] == x['sat_count'] + x['unsat_count'] + x['unknown_count']
+          assert x['proposed_transition']['classification'] in {'PROMOTE','PARK','REQUIRE_ATTACHMENT'}
+          print('GCROSS_COUPLING_CASES='+str(x['case_count']))
+          print('GCROSS_COUPLING_SAT='+str(x['sat_count']))
+          print('GCROSS_COUPLING_UNSAT='+str(x['unsat_count']))
+          print('GCROSS_COUPLING_UNKNOWN='+str(x['unknown_count']))
+          print('GCROSS_COUPLING_TRANSITION='+x['proposed_transition']['classification'])
+          print('GCROSS_COUPLING_RESIDUAL='+x['proposed_transition']['residual'])
+          print('GCROSS_COUPLING_FRONTIER_TRANSITION_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: steps.route.outputs.route == 'SIZE_FREE_BAD_TARGET_GCROSS_COUPLING'
+        with:
+          name: e677-bad-target-gcross-coupling
+          path: artifacts/e677_bad_target_gcross_coupling_probe.json

@@ -1,42 +1,277 @@
 {
-  "schema_version": 11,
+  "schema_version": 12,
   "programme": "verified-recursive-development",
   "branch": "recursive-discovery-compiler-v1",
   "authoritative": true,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process.",
-  "constitutional_loop": ["PUSH","VERIFY","LOCALIZE_CONSEQUENCE","CHECK_SCOPE","CHECK_ATTACHMENT","ABLATE_CAUSE","RETAIN_MINIMALLY","REIFY_IF_COMPRESSIVE","CHANGE_FUTURE_SEARCH"],
-  "promotion_contract": ["VERIFIED","ATTACHED","SCOPE_CORRECT","EQUALITY_COMPLETE","CAUSAL"],
-  "live_state_parent_sha": "783bda3955ca175341f9f0d51b03b27b15899684",
+  "constitutional_loop": [
+    "PUSH",
+    "VERIFY",
+    "LOCALIZE_CONSEQUENCE",
+    "CHECK_SCOPE",
+    "CHECK_ATTACHMENT",
+    "ABLATE_CAUSE",
+    "RETAIN_MINIMALLY",
+    "REIFY_IF_COMPRESSIVE",
+    "CHANGE_FUTURE_SEARCH"
+  ],
+  "promotion_contract": [
+    "VERIFIED",
+    "ATTACHED",
+    "SCOPE_CORRECT",
+    "EQUALITY_COMPLETE",
+    "CAUSAL"
+  ],
+  "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
   "mathematical_scope": "The n=7 cyclic-P phase branch is parked after full 5,040-D closure because it is not globally attached. Active search is size-free under the source-backed ZERO-reuse/no-HIT Bad-shadow and marked renewal consequences.",
   "promoted": [
-    {"id":"phase_symbolic","claim":"The saturated shifted-row frontier admits the verified phase representation and symbolic phase law under its stated cyclic assumptions.","status":"PROMOTE"},
-    {"id":"phase_141","claim":"At n=7 the local phase/block construction reconstructs exactly 141 shifted saturated states.","status":"PROMOTE"},
-    {"id":"t6_four_row_annihilation","claim":"The source-backed four-row T6 PAIR-KERNEL projection rejects all 141 phase states for all 720 normalized A fixing zero and all four canonical minimum-curvature D representatives.","scope":"necessary four-row projection only","run_id":33725970762,"job_id":100554886606,"baseline":141,"survivors":0,"status":"PROMOTE"},
-    {"id":"kappa18_excluded","kappa":18,"claim":"The complete nonlinear minimum-curvature layer kappa(D)=18 is excluded from full completion by the necessary four-row T6 projection.","scope":"kappa(D)=18 only; does not prove E677 -> E255","labelled_maps":294,"commit":"04551938a5b111da951b25e8f655d47f45098850","status":"PROMOTE"},
-    {"id":"kappa22_excluded","kappa":22,"claim":"The complete nonlinear kappa(D)=22 layer is excluded by the necessary four-row T6 projection after exact output-translation normalization.","scope":"n=7 kappa(D)=22; four-row projection only; does not prove E677 -> E255","labelled_maps":882,"normalized_maps":126,"normalized_D_phase_pairs":17766,"survivors":0,"run_id":33728222563,"job_id":100561993523,"artifact_id":9882811488,"status":"PROMOTE"},
-    {"id":"kappa24_excluded","kappa":24,"claim":"The complete nonlinear kappa(D)=24 layer is excluded by the generic frontier-selected necessary four-row T6 projection.","scope":"n=7 kappa(D)=24; four-row projection only; does not prove E677 -> E255","labelled_maps":1470,"normalized_maps":210,"normalized_D_phase_pairs":29610,"survivors":0,"run_id":33728674193,"job_id":100563396140,"artifact_id":9882992540,"status":"PROMOTE"},
-    {"id":"kappa26_excluded","kappa":26,"claim":"The complete nonlinear kappa(D)=26 layer is excluded by the unchanged generic frontier-selected necessary four-row T6 projection.","scope":"n=7 kappa(D)=26; four-row projection only; does not prove E677 -> E255","labelled_maps":1764,"normalized_maps":252,"normalized_D_phase_pairs":35532,"survivors":0,"run_id":33729041404,"job_id":100564542120,"artifact_id":9883140162,"status":"PROMOTE"},
-    {"id":"kappa30_excluded","kappa":30,"claim":"The complete nonlinear kappa(D)=30 layer is excluded by the unchanged generic frontier-selected necessary four-row T6 projection.","scope":"n=7 kappa(D)=30; four-row projection only; does not prove E677 -> E255","labelled_maps":588,"normalized_maps":84,"normalized_D_phase_pairs":11844,"survivors":0,"run_id":33729377790,"job_id":100565598433,"artifact_id":9883235360,"status":"PROMOTE"},
-    {"id":"affine_D_excluded","claim":"All 42 affine D permutations are excluded by the same necessary four-row T6 PAIR-KERNEL projection after exact output-translation normalization to six D(x)=a*x representatives.","scope":"n=7 141-state shifted phase frontier; four-row T6 projection only","labelled_maps":42,"normalized_maps":6,"normalized_D_phase_pairs":846,"survivors":0,"run_id":33729665828,"job_id":100566478774,"artifact_id":9883324075,"status":"PROMOTE"},
-    {"id":"full_D_phase_frontier_closed","claim":"Across the 4,998 nonlinear and 42 affine permutations, all 5,040 D permutations have zero survivors in the n=7 141-state shifted phase frontier under the necessary four-row T6 PAIR-KERNEL projection.","scope":"scoped phase-frontier closure only; cyclic-P/order-49 attachment is not global; does not prove E677 -> E255","labelled_D_total":5040,"status":"PROMOTE"}
+    {
+      "id": "phase_symbolic",
+      "claim": "The saturated shifted-row frontier admits the verified phase representation and symbolic phase law under its stated cyclic assumptions.",
+      "status": "PROMOTE"
+    },
+    {
+      "id": "phase_141",
+      "claim": "At n=7 the local phase/block construction reconstructs exactly 141 shifted saturated states.",
+      "status": "PROMOTE"
+    },
+    {
+      "id": "t6_four_row_annihilation",
+      "claim": "The source-backed four-row T6 PAIR-KERNEL projection rejects all 141 phase states for all 720 normalized A fixing zero and all four canonical minimum-curvature D representatives.",
+      "scope": "necessary four-row projection only",
+      "run_id": 33725970762,
+      "job_id": 100554886606,
+      "baseline": 141,
+      "survivors": 0,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "kappa18_excluded",
+      "kappa": 18,
+      "claim": "The complete nonlinear minimum-curvature layer kappa(D)=18 is excluded from full completion by the necessary four-row T6 projection.",
+      "scope": "kappa(D)=18 only; does not prove E677 -> E255",
+      "labelled_maps": 294,
+      "commit": "04551938a5b111da951b25e8f655d47f45098850",
+      "status": "PROMOTE"
+    },
+    {
+      "id": "kappa22_excluded",
+      "kappa": 22,
+      "claim": "The complete nonlinear kappa(D)=22 layer is excluded by the necessary four-row T6 projection after exact output-translation normalization.",
+      "scope": "n=7 kappa(D)=22; four-row projection only; does not prove E677 -> E255",
+      "labelled_maps": 882,
+      "normalized_maps": 126,
+      "normalized_D_phase_pairs": 17766,
+      "survivors": 0,
+      "run_id": 33728222563,
+      "job_id": 100561993523,
+      "artifact_id": 9882811488,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "kappa24_excluded",
+      "kappa": 24,
+      "claim": "The complete nonlinear kappa(D)=24 layer is excluded by the generic frontier-selected necessary four-row T6 projection.",
+      "scope": "n=7 kappa(D)=24; four-row projection only; does not prove E677 -> E255",
+      "labelled_maps": 1470,
+      "normalized_maps": 210,
+      "normalized_D_phase_pairs": 29610,
+      "survivors": 0,
+      "run_id": 33728674193,
+      "job_id": 100563396140,
+      "artifact_id": 9882992540,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "kappa26_excluded",
+      "kappa": 26,
+      "claim": "The complete nonlinear kappa(D)=26 layer is excluded by the unchanged generic frontier-selected necessary four-row T6 projection.",
+      "scope": "n=7 kappa(D)=26; four-row projection only; does not prove E677 -> E255",
+      "labelled_maps": 1764,
+      "normalized_maps": 252,
+      "normalized_D_phase_pairs": 35532,
+      "survivors": 0,
+      "run_id": 33729041404,
+      "job_id": 100564542120,
+      "artifact_id": 9883140162,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "kappa30_excluded",
+      "kappa": 30,
+      "claim": "The complete nonlinear kappa(D)=30 layer is excluded by the unchanged generic frontier-selected necessary four-row T6 projection.",
+      "scope": "n=7 kappa(D)=30; four-row projection only; does not prove E677 -> E255",
+      "labelled_maps": 588,
+      "normalized_maps": 84,
+      "normalized_D_phase_pairs": 11844,
+      "survivors": 0,
+      "run_id": 33729377790,
+      "job_id": 100565598433,
+      "artifact_id": 9883235360,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "affine_D_excluded",
+      "claim": "All 42 affine D permutations are excluded by the same necessary four-row T6 PAIR-KERNEL projection after exact output-translation normalization to six D(x)=a*x representatives.",
+      "scope": "n=7 141-state shifted phase frontier; four-row T6 projection only",
+      "labelled_maps": 42,
+      "normalized_maps": 6,
+      "normalized_D_phase_pairs": 846,
+      "survivors": 0,
+      "run_id": 33729665828,
+      "job_id": 100566478774,
+      "artifact_id": 9883324075,
+      "status": "PROMOTE"
+    },
+    {
+      "id": "full_D_phase_frontier_closed",
+      "claim": "Across the 4,998 nonlinear and 42 affine permutations, all 5,040 D permutations have zero survivors in the n=7 141-state shifted phase frontier under the necessary four-row T6 PAIR-KERNEL projection.",
+      "scope": "scoped phase-frontier closure only; cyclic-P/order-49 attachment is not global; does not prove E677 -> E255",
+      "labelled_D_total": 5040,
+      "status": "PROMOTE"
+    }
   ],
   "parked": [
-    {"id":"phase_C_component_theorem","commit":"b031c52b71a860ecceb28a60a60850eedab7eb98","reason":"Verified structural C-language theorem; reattach if useful to a later symbolic proof.","status":"PARK"},
-    {"id":"order9_three_bad_strict_surplus","reason":"24/24 normalized forms excluded in two engines; finite evidence/regression, not current live route.","status":"PARK"},
-    {"id":"cyclic_P_phase_frontier","reason":"Exhausted across all 5,040 D permutations inside the 141-state phase representation. Upstream source establishes lossless normalization only within the order-49 cyclic branch, not that every counterexample enters that branch. Park rather than widen scope.","status":"PARK"},
-    {"id":"single_fork_single_gcross_ground_fragment","reason":"Exact partial uninterpreted model remains SAT with the first FORK, one canonical G-CROSS, named-row injectivity, and all 121 ground E677 instances on the 11 named elements. This is not a magma or counterexample; it proves only that one-mark locality is insufficient.","scope":"first FORK + one G-CROSS, source-backed equalities, colour separation, named left-injectivity, ground E677 only","run_id":33731581039,"job_id":100572498161,"artifact_id":9884044958,"status":"PARK"},
-    {"id":"single_fork_single_gcross_unique_fixer_attachment","reason":"The same one-mark partial model remains SAT after attaching the proved no-Bad-fixer law on every named row and all six named Bad inputs, in addition to all 121 ground E677 instances and named left-row injectivity. Single-mark locality is exhausted at this source-backed abstraction.","scope":"one FORK + one G-CROSS; 11 named rows; six named Bad inputs; 66 no-fixer inequalities; 121 ground E677 instances","run_id":33731849496,"job_id":100573361460,"artifact_id":9884161438,"status":"PARK"},
-    {"id":"linked_two_mark_locality","reason":"Both source-backed continuations at the second mark, ZIPPER and G-CROSS, remain SAT in the equality-complete linked q -> H(q)=h partial model with 361 ground E677 instances, 171 no-fixer inequalities, and named left-row injectivity. Two isolated marks are insufficient.","scope":"19 named elements; linked two-mark partial uninterpreted multiplication; ZIPPER and G-CROSS tested separately","run_id":33732177174,"job_id":100574409769,"artifact_id":9884282599,"status":"PARK"},
-    {"id":"shared_bad_shadow_first_order_timeout","reason":"The first-order shared Bad-shadow theory was actually run on both linked marked continuations. Z3 returned UNKNOWN by timeout for ZIPPER and GCROSS, so this run establishes no SAT/UNSAT mathematics. It only forces a verifier change while preserving the exact source-backed shadow axioms.","scope":"terminal ZERO-root equality + no-HIT first-order consequences with linked marked branches; no finiteness axiom","run_id":33732527066,"job_id":100575514843,"artifact_id":9884575060,"artifact_sha256":"db1d7c22bc27c6b29c9a2794f3728ecc37a8a16459ac9512c05e412cf919f9a2","status":"REQUIRE_ATTACHMENT"},
-    {"id":"shared_bad_shadow_ground_boundary","reason":"Both ZIPPER and G-CROSS survive the quantifier-free 19-name ground projection of the shared Bad-shadow theory. Each branch is SAT after 30,001 grounded source-backed constraints, so local shadow coupling alone does not close the marked fragment.","scope":"19 named linked q->H(q)=h terms; unrestricted uninterpreted universe; named-input ground projection only; not a finite-domain model or counterexample","commit":"783bda3955ca175341f9f0d51b03b27b15899684","run_id":33734591511,"job_id":100582079637,"artifact_id":9885238119,"artifact_sha256":"e84ebcd918b45360fd9e9d02ec1a1c68f1f598820281910cac202ee1e1408e59","zipper":"sat","gcross":"sat","ground_axioms_per_branch":30001,"status":"PARK"}
+    {
+      "id": "phase_C_component_theorem",
+      "commit": "b031c52b71a860ecceb28a60a60850eedab7eb98",
+      "reason": "Verified structural C-language theorem; reattach if useful to a later symbolic proof.",
+      "status": "PARK"
+    },
+    {
+      "id": "order9_three_bad_strict_surplus",
+      "reason": "24/24 normalized forms excluded in two engines; finite evidence/regression, not current live route.",
+      "status": "PARK"
+    },
+    {
+      "id": "cyclic_P_phase_frontier",
+      "reason": "Exhausted across all 5,040 D permutations inside the 141-state phase representation. Upstream source establishes lossless normalization only within the order-49 cyclic branch, not that every counterexample enters that branch. Park rather than widen scope.",
+      "status": "PARK"
+    },
+    {
+      "id": "single_fork_single_gcross_ground_fragment",
+      "reason": "Exact partial uninterpreted model remains SAT with the first FORK, one canonical G-CROSS, named-row injectivity, and all 121 ground E677 instances on the 11 named elements. This is not a magma or counterexample; it proves only that one-mark locality is insufficient.",
+      "scope": "first FORK + one G-CROSS, source-backed equalities, colour separation, named left-injectivity, ground E677 only",
+      "run_id": 33731581039,
+      "job_id": 100572498161,
+      "artifact_id": 9884044958,
+      "status": "PARK"
+    },
+    {
+      "id": "single_fork_single_gcross_unique_fixer_attachment",
+      "reason": "The same one-mark partial model remains SAT after attaching the proved no-Bad-fixer law on every named row and all six named Bad inputs, in addition to all 121 ground E677 instances and named left-row injectivity. Single-mark locality is exhausted at this source-backed abstraction.",
+      "scope": "one FORK + one G-CROSS; 11 named rows; six named Bad inputs; 66 no-fixer inequalities; 121 ground E677 instances",
+      "run_id": 33731849496,
+      "job_id": 100573361460,
+      "artifact_id": 9884161438,
+      "status": "PARK"
+    },
+    {
+      "id": "linked_two_mark_locality",
+      "reason": "Both source-backed continuations at the second mark, ZIPPER and G-CROSS, remain SAT in the equality-complete linked q -> H(q)=h partial model with 361 ground E677 instances, 171 no-fixer inequalities, and named left-row injectivity. Two isolated marks are insufficient.",
+      "scope": "19 named elements; linked two-mark partial uninterpreted multiplication; ZIPPER and G-CROSS tested separately",
+      "run_id": 33732177174,
+      "job_id": 100574409769,
+      "artifact_id": 9884282599,
+      "status": "PARK"
+    },
+    {
+      "id": "shared_bad_shadow_first_order_timeout",
+      "reason": "The first-order shared Bad-shadow theory was actually run on both linked marked continuations. Z3 returned UNKNOWN by timeout for ZIPPER and GCROSS, so this run establishes no SAT/UNSAT mathematics. It only forces a verifier change while preserving the exact source-backed shadow axioms.",
+      "scope": "terminal ZERO-root equality + no-HIT first-order consequences with linked marked branches; no finiteness axiom",
+      "run_id": 33732527066,
+      "job_id": 100575514843,
+      "artifact_id": 9884575060,
+      "artifact_sha256": "db1d7c22bc27c6b29c9a2794f3728ecc37a8a16459ac9512c05e412cf919f9a2",
+      "status": "REQUIRE_ATTACHMENT"
+    },
+    {
+      "id": "shared_bad_shadow_ground_boundary",
+      "reason": "Both ZIPPER and G-CROSS survive the quantifier-free 19-name ground projection of the shared Bad-shadow theory. Each branch is SAT after 30,001 grounded source-backed constraints, so local shadow coupling alone does not close the marked fragment.",
+      "scope": "19 named linked q->H(q)=h terms; unrestricted uninterpreted universe; named-input ground projection only; not a finite-domain model or counterexample",
+      "commit": "783bda3955ca175341f9f0d51b03b27b15899684",
+      "run_id": 33734591511,
+      "job_id": 100582079637,
+      "artifact_id": 9885238119,
+      "artifact_sha256": "e84ebcd918b45360fd9e9d02ec1a1c68f1f598820281910cac202ee1e1408e59",
+      "zipper": "sat",
+      "gcross": "sat",
+      "ground_axioms_per_branch": 30001,
+      "status": "PARK"
+    },
+    {
+      "id": "simultaneous_collision_renewal_sat",
+      "reason": "The bounded simultaneous Good-row A/B renewal probe short-circuited on a SAT witness (same-cycle word AAA, offset 1) even with the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws. The four smallest same-cycle cases (AA,AB,BA,BB) are UNSAT; the first length-3 case (AAA) is SAT, so Good-row-only simultaneous renewal is insufficient. This is a bounded consequence model, not a magma or counterexample.",
+      "scope": "same-cycle word AAA offset 1; 21 named terms; 10254 ground axioms; uninterpreted universe; no finite-domain axiom",
+      "run_id": 33736499249,
+      "job_id": 100588184545,
+      "artifact_id": 9885941161,
+      "commit": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
+      "smallest_sat_topology": "same",
+      "smallest_sat_word": "AAA",
+      "smallest_sat_offset": 1,
+      "unsat_cases": 4,
+      "sat_cases": 1,
+      "unknown_cases": 0,
+      "short_circuited": true,
+      "status": "PARK"
+    }
   ],
-  "negative_laws": ["Good-row renewal plus unique fixer alone is insufficient.","Marked ancestry alone had zero causal contraction at the tested abstraction.","SHORT-block conclusions do not widen to SHORT/LONG without explicit scope verification.","Distinct symbolic names are not inequalities; equality completion is mandatory.","A verifier that was not executed cannot support promotion.","Complete exclusion inside an unattached representation does not prove the global target.","An inapplicable experiment must SKIP, not fail, after its version space is exhausted.","A single source-backed FORK plus one G-CROSS, even with every ground E677 instance on its named fragment and named-row injectivity, is locally satisfiable in a partial uninterpreted model; single-mark locality is insufficient.","Attaching every named instance of the proved no-Bad-fixer law still leaves the one-FORK/one-G-CROSS partial model SAT; single-mark locality remains insufficient after unique-fixer attachment.","Two linked marks are still locally satisfiable in both second ZIPPER and second G-CROSS branches; adding a third isolated mark is suppressed.","Solver UNKNOWN caused by timeout is verifier-inconclusive and cannot be read as SAT, UNSAT, attachment, or obstruction.","The shared Bad-shadow quasigroup and exact unique Bad-carrier ground consequences remain satisfiable on both linked marked branches; isolated local shadow algebra is insufficient."],
-  "process_laws": ["TRUE != ATTACHED != CONSEQUENTIAL","No scope widening without re-verification","No contradiction from partial algebra before equality completion","Every consequential result is classified PROMOTE/PARK/SUPERSEDE/REJECT/REQUIRE_ATTACHMENT","The repository frontier, not conversation memory, is authoritative","A frontier-driven experiment must consume the current frontier and emit one explicit proposed transition","An unchanged generic experiment advancing after only a frontier-state update is positive evidence of process resumability","When a version space is exhausted, change residual class rather than continuing an empty search family","Attachment failure can require parking a verified representation and returning to a less-assumptive search space","Workflow applicability is routed from the authoritative residual; non-applicable experiments skip cleanly","Experiment gates and frontier router must share the same typed route vocabulary; raw residual labels are not workflow routes","A SAT partial consequence model is a negative boundary on the encoded locality, not evidence for a finite counterexample","Before representation growth, test whether an already-proved but unattached consequence resolves the residual more cheaply","Repeated SAT after one-mark and two-mark locality is evidence to change representation to a shared global coupling, not to append more local copies","A coarse route for an entire size-free era is still stale-search machinery: experiment eligibility must be typed to the current size-free stage.","When a stronger first-order representation times out, preserve its axioms and change verifier representation before changing the mathematics.","When the shared algebra itself survives, change the coupling being represented rather than adding more isolated copies of the same local mark."],
-  "curvature_spectrum": {"18":294,"22":882,"24":1470,"26":1764,"30":588},
+  "negative_laws": [
+    "Good-row renewal plus unique fixer alone is insufficient.",
+    "Marked ancestry alone had zero causal contraction at the tested abstraction.",
+    "SHORT-block conclusions do not widen to SHORT/LONG without explicit scope verification.",
+    "Distinct symbolic names are not inequalities; equality completion is mandatory.",
+    "A verifier that was not executed cannot support promotion.",
+    "Complete exclusion inside an unattached representation does not prove the global target.",
+    "An inapplicable experiment must SKIP, not fail, after its version space is exhausted.",
+    "A single source-backed FORK plus one G-CROSS, even with every ground E677 instance on its named fragment and named-row injectivity, is locally satisfiable in a partial uninterpreted model; single-mark locality is insufficient.",
+    "Attaching every named instance of the proved no-Bad-fixer law still leaves the one-FORK/one-G-CROSS partial model SAT; single-mark locality remains insufficient after unique-fixer attachment.",
+    "Two linked marks are still locally satisfiable in both second ZIPPER and second G-CROSS branches; adding a third isolated mark is suppressed.",
+    "Solver UNKNOWN caused by timeout is verifier-inconclusive and cannot be read as SAT, UNSAT, attachment, or obstruction.",
+    "The shared Bad-shadow quasigroup and exact unique Bad-carrier ground consequences remain satisfiable on both linked marked branches; isolated local shadow algebra is insufficient.",
+    "A bounded simultaneous Good-row A/B renewal network (same-cycle AAA) remains SAT even after attaching the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws; Good-row-only simultaneous renewal is insufficient without coupling the shared Bad target's canonical D-cell."
+  ],
+  "process_laws": [
+    "TRUE != ATTACHED != CONSEQUENTIAL",
+    "No scope widening without re-verification",
+    "No contradiction from partial algebra before equality completion",
+    "Every consequential result is classified PROMOTE/PARK/SUPERSEDE/REJECT/REQUIRE_ATTACHMENT",
+    "The repository frontier, not conversation memory, is authoritative",
+    "A frontier-driven experiment must consume the current frontier and emit one explicit proposed transition",
+    "An unchanged generic experiment advancing after only a frontier-state update is positive evidence of process resumability",
+    "When a version space is exhausted, change residual class rather than continuing an empty search family",
+    "Attachment failure can require parking a verified representation and returning to a less-assumptive search space",
+    "Workflow applicability is routed from the authoritative residual; non-applicable experiments skip cleanly",
+    "Experiment gates and frontier router must share the same typed route vocabulary; raw residual labels are not workflow routes",
+    "A SAT partial consequence model is a negative boundary on the encoded locality, not evidence for a finite counterexample",
+    "Before representation growth, test whether an already-proved but unattached consequence resolves the residual more cheaply",
+    "Repeated SAT after one-mark and two-mark locality is evidence to change representation to a shared global coupling, not to append more local copies",
+    "A coarse route for an entire size-free era is still stale-search machinery: experiment eligibility must be typed to the current size-free stage.",
+    "When a stronger first-order representation times out, preserve its axioms and change verifier representation before changing the mathematics.",
+    "When the shared algebra itself survives, change the coupling being represented rather than adding more isolated copies of the same local mark."
+  ],
+  "curvature_spectrum": {
+    "18": 294,
+    "22": 882,
+    "24": 1470,
+    "26": 1764,
+    "30": 588
+  },
   "nonlinear_D_total": 4998,
   "affine_D_total": 42,
   "full_D_total": 5040,
-  "live_residual": {"type":"REFRAME","text":"The exact ground Bad-shadow projection remains SAT on both linked marked continuations, so shared shadow algebra alone is insufficient. Test whether two distinct collision-generated Good-row E crossings sharing the same Good input u and Bad target b can simultaneously close into clean A/B renewal cycles while sharing the exact Bad-shadow quasigroup and unique Bad carriers, grounded E677, left-row injectivity, and unique-fixer/no-Bad-fixer obligations. Test same-cycle and distinct-cycle bounded words only as discovery. If SAT survives, dump the smallest witness and identify the first source-backed coexistence constraint absent from the representation rather than appending another local mark. If all bounded cases are UNSAT, extract and formalize a length-independent invariant before any size-free claim."},
-  "last_transition": {"classification":"PARK","result_id":"shared_bad_shadow_ground_boundary","run_id":33734591511,"job_id":100582079637,"artifact_id":9885238119,"consumed_frontier_commit":"783bda3955ca175341f9f0d51b03b27b15899684"},
-  "next_process_test": "The router must select SIZE_FREE_SIMULTANEOUS_RENEWAL only. Historical ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature, and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics."
+  "live_residual": {
+    "type": "REFRAME",
+    "text": "The bounded simultaneous Good-row A/B renewal network short-circuited on a SAT witness (same-cycle word AAA, offset 1) even with the shared Bad-shadow quasigroup, exact unique Bad carriers, grounded E677, left-row injectivity and unique/no-fixer laws. The represented abstraction couples two collision-generated Good-row E crossings but omits the canonical D-cell of the shared Bad target b. Attach, for the shared Bad target b, its source-backed canonical ZIPPER / marked G-CROSS dichotomy: e=D(b) Bad, t=sigma(b) Good, h=H(b)=e\\b Bad with e*h=b, z=t*e and z*t=h, with ZIPPER (z Bad => z=h, t=kappa(h), t*e=h) or G-CROSS (z Good => (z,t,h) in GxGxB). Test whether coupling the Good-row simultaneous renewal to the marked G-CROSS/ZIPPER of the shared Bad target closes the fragment. If SAT survives, dump the smallest witness and identify the first absent source-backed coexistence constraint rather than appending another isolated mark or widening the cycle length blindly."
+  },
+  "last_transition": {
+    "classification": "PARK",
+    "result_id": "simultaneous_collision_renewal_sat",
+    "run_id": 33736499249,
+    "job_id": 100588184545,
+    "artifact_id": 9885941161,
+    "consumed_frontier_commit": "87c1e3e41a1792fd173173b0895e47f7ffe4c367"
+  },
+  "next_process_test": "The router must select SIZE_FREE_BAD_TARGET_GCROSS_COUPLING only. Historical simultaneous-renewal, ground-shadow, first-order shadow, linked-two-mark, one-mark, curvature and affine workflows must be NOT_APPLICABLE and skip without executing stale mathematics."
 }
