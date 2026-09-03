@@ -1,0 +1,28 @@
+name: Programme frontier contract
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate authoritative frontier
+        run: |
+          python -m py_compile frontier_contract.py
+          python frontier_contract.py
+      - name: Require human-readable frontier
+        run: |
+          test -s PROGRAM_FRONTIER.md
+          grep -q "Exact live residual" PROGRAM_FRONTIER.md
+          grep -q "Update rule" PROGRAM_FRONTIER.md
