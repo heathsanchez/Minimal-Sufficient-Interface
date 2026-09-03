@@ -1,0 +1,21 @@
+name: Renewal Marked Pair Boundary
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v2-live-attachment]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile exact partial-system probe
+        run: python -m py_compile renewal_marked_pair_boundary.py
+      - name: Run shared-mark ancestry intervention and ablation
+        run: python renewal_marked_pair_boundary.py | tee renewal_marked_pair_boundary.log
+      - name: Verify machine-readable marker
+        run: grep -q 'RENEWAL_MARKED_PAIR_BOUNDARY_VERIFIED' renewal_marked_pair_boundary.log
