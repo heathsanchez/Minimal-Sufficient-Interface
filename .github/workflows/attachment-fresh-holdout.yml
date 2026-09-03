@@ -1,0 +1,19 @@
+name: Attachment Fresh Holdout
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v2-live-attachment]
+  workflow_dispatch:
+
+jobs:
+  holdout:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile holdout and frozen candidate
+        run: python -m py_compile developmental_operating_system.py developmental_operating_system_v2.py developmental_attachment_fresh_holdout.py
+      - name: Run untouched attachment holdout
+        run: python developmental_attachment_fresh_holdout.py
