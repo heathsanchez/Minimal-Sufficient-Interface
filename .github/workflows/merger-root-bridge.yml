@@ -1,0 +1,26 @@
+name: merger->root functional-graph bridge
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+  workflow_dispatch:
+
+jobs:
+  merger-root-bridge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install z3-solver
+      - run: python3 merger_to_root_certificate.py --out /tmp/merger_root_certificate.json --max-n 6
+      - name: Assert merger->root
+        run: |
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/merger_root_certificate.json"))
+          assert d["all_counter_assumptions_unsat"] is True
+          assert d["transition"] == "PROMOTE"
+          print("MERGER_TO_ROOT_BRIDGE_VERIFIED")
+          PY

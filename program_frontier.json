@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
+    "result_id": "shared_root_interface_compiled",
     "classification": "PROMOTE",
-    "consumed_frontier_commit": "b59942a",
-    "result_id": "mixed_tau_merger_forces_root"
+    "note": "merger->root bridge certified (domain-independent); finite k-bound SUPERSEDE; mixed + frozen routes compiled to shared root certificate."
   },
   "live_residual": {
-    "text": "The mixed escape PROMOTEs, and JOIN isolates the minimal finiteness consequence as indegree conservation: the tau-merger at (b,h) (indegree N(u,b)>=3) forces an indegree-0 root. Next and final object: send this mixed root through the frozen HIT/ZERO descent (Bad*Bad->Good, Good-row->Bad, or all-Bad ZERO) without reusing a collision charge, to force Bad = empty. This is the single remaining direct proof task named in the frozen diagonal-escape lemma (line 163-164).",
+    "text": "Both upstream routes now compile to the shared ROOT CERTIFICATE (a certified indegree-0 tau-root of type Bad*Bad->Good / Good-row->Bad / all-Bad ZERO, with non-reuse provenance). The single remaining obstruction: send this root through the HIT/ZERO descent (omega-root-equality: root equality + off-diagonal closure + Good-row SHORT forces D(B) in G, i.e. HIT; otherwise the strict extra-root branch Z_Omega>b must route through the tau component) WITHOUT recycling the collision charge. The G-CROSS network + simultaneous mixed E677 + first FORK must produce strict descent or HIT. Boundary-mine the smallest distinction separating roots that descend from roots that indefinitely evade descent.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -170,8 +170,8 @@
     },
     {
       "id": "allshare_fibre_finite_closure_lower_bound",
-      "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout)",
-      "status": "PARK"
+      "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout) SUPERSEDED by domain-independent merger->root bridge: finite k-bound is secondary now that size-free indegree-conservation gives the root.",
+      "status": "SUPERSEDE"
     }
   ],
   "process_laws": [
@@ -395,6 +395,16 @@
       "claim": "The tau map tau(r,w)=(r*w,(r*w)\\w) has a merger at the mixed state (b,h): indegree N(u,b)=n>=3 (the n collision arms all satisfy r_i*u=b and map to (b,h)). By indegree conservation (sum of indegrees over the finite state set equals its size, every state being the tau-image of exactly one state), some state has indegree 0. That indegree-0 root is the mixed analogue of the frozen coloured-boundary/ZERO root feeding the HIT/ZERO descent. Minimal finiteness consequence = pigeonhole/indegree conservation, NOT the full magma table.",
       "id": "mixed_tau_merger_forces_root",
       "status": "PROMOTE"
+    },
+    {
+      "id": "merger_to_root_bridge",
+      "status": "PROMOTE",
+      "claim": "Domain-independent: a total map on a finite set with a merger (some vertex indegree>1) has a root (some vertex indegree 0). Verified by Z3 for n=2..6 (counter-assumption UNSAT). This is the shared bridge both the mixed tau-merger and the frozen backward-component step consume."
+    },
+    {
+      "id": "shared_root_interface",
+      "status": "PROMOTE",
+      "claim": "Shared downstream input to the HIT/ZERO descent: a certified indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (the N(u,b)>=3 collision charge must not be recycled). Both upstream routes (mixed collision-fibre tau-merger; frozen diagonal-escape backward component) compile to exactly this interface."
     }
   ],
   "promotion_contract": [
@@ -404,6 +414,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 25,
+  "schema_version": 26,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
