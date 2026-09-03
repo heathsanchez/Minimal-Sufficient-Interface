@@ -14,19 +14,22 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile qualification sources
-        run: python -m py_compile developmental_operating_system.py developmental_operating_system_v2.py developmental_process_tournament.py developmental_process_tournament_v2.py renewal_unique_fixer_boundary.py renewal_marked_pair_boundary.py
+        run: python -m py_compile developmental_operating_system.py developmental_operating_system_v2.py developmental_process_tournament.py developmental_process_tournament_v2.py renewal_unique_fixer_boundary.py renewal_marked_pair_boundary.py renewal_block_scope_boundary.py
       - name: Re-run frozen baseline process tournament
         run: python developmental_process_tournament.py
       - name: Run attachment-aware matched process tournament
         run: python developmental_process_tournament_v2.py
-      - name: Verify unique-fixer renewal negative boundary
+      - name: Verify SHORT-only unique-fixer boundary
         run: python renewal_unique_fixer_boundary.py | tee renewal_unique_fixer_boundary.log
-      - name: Verify marked-pair renewal boundary
+      - name: Verify marked-pair SHORT-only boundary
         run: python renewal_marked_pair_boundary.py | tee renewal_marked_pair_boundary.log
+      - name: Verify general SHORT/LONG block scope ablation
+        run: python renewal_block_scope_boundary.py | tee renewal_block_scope_boundary.log
       - name: Verify promotion markers
         run: |
           grep -q 'DEVELOPMENTAL_PROCESS_TOURNAMENT_PASS' <(python developmental_process_tournament.py)
           grep -q 'ATTACHMENT_PROCESS_TOURNAMENT_PASS' <(python developmental_process_tournament_v2.py)
           grep -q 'RENEWAL_UNIQUE_FIXER_BOUNDARY_VERIFIED' renewal_unique_fixer_boundary.log
           grep -q 'RENEWAL_MARKED_PAIR_BOUNDARY_VERIFIED' renewal_marked_pair_boundary.log
-          echo PROCESS_AND_OBJECT_BOUNDARY_VERIFIED
+          grep -q 'RENEWAL_BLOCK_SCOPE_BOUNDARY_VERIFIED' renewal_block_scope_boundary.log
+          echo PROCESS_AND_OBJECT_SCOPE_BOUNDARY_VERIFIED
