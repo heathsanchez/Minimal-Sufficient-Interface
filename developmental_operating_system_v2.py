@@ -14,6 +14,8 @@ class AttachmentAwareDevelopmentalOS(DevelopmentalOperatingSystem):
         attachment_terms = (
             'attach', 'attachment', 'maps into the current frontier',
             'apply to the live frontier', 'live frontier', 'assumptions map',
+            'assumptions of the local result', 'assumptions have not yet been shown',
+            'shown to hold in the target reduction', 'hold in the target reduction',
             'lift the local theorem', 'local theorem to the global',
             'prove that this layer occurs', 'connect this theorem to',
         )
