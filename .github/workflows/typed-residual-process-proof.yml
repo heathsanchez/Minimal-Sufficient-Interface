@@ -1,0 +1,19 @@
+name: Typed Residual Process Proof
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v2-live-attachment]
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile typed residual protocol
+        run: python -m py_compile typed_residual_protocol.py typed_residual_process_tournament.py
+      - name: Run provenance-typed process tournament
+        run: python typed_residual_process_tournament.py
