@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py phase_C_component_theorem_certificate.py phase_block_size_theorem_certificate.py phase_AB_subset_counting_probe.py phase_141_orbit_certificate.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py phase_C_component_theorem_certificate.py phase_block_size_theorem_certificate.py phase_AB_subset_counting_probe.py phase_141_orbit_certificate.py phase_AB_ryser_certificate.py
       - name: Run causal process qualification
         run: python developmental_os_causal_qualification.py
       - name: Run matched outer process tournament
@@ -54,6 +54,8 @@ jobs:
         run: python phase_AB_subset_counting_probe.py
       - name: Certify 141 frontier by 13 rotation orbits
         run: python phase_141_orbit_certificate.py
+      - name: Certify A B full counts by Ryser orbit sums
+        run: python phase_AB_ryser_certificate.py
       - name: Run verified JOIN reify assembly with phase feedback
         run: python e677_verified_join_reify_run.py
       - name: Run cumulative developmental operating system
@@ -96,6 +98,11 @@ jobs:
           assert orb['rotation_orbit_count']==13 and orb['legal_colored_partition_count']==73
           assert orb['weighted_orbit_sum']==141 and orb['independent_completeness_exact']
           assert not orb['global_16146_state_enumeration_used_to_derive_certificate']
+          ry=json.load(open('artifacts/phase_AB_ryser_certificate.json'))
+          assert ry['all_counts_exact'] and not ry['permutation_enumeration_used_to_derive_counts']
+          assert ry['colors']['A']['ryser_permanent']==31 and ry['colors']['B']['ryser_permanent']==24
+          assert ry['colors']['A']['translation_orbit_count']==20 and ry['colors']['B']['translation_orbit_count']==20
+          assert ry['colors']['A']['independent_verifier_exact'] and ry['colors']['B']['independent_verifier_exact']
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
           assert len(j['candidates'])==3 and len(j['promoted'])==3
           assert j['residual'].startswith('Prove or refute the candidate arbitrary-n saturated phase theorem')
@@ -116,7 +123,9 @@ jobs:
           print('AB_B_COUNT_QUOTIENT=' + str(ab['colors']['B']['coarsest_tested_exact_quotient']))
           print('PHASE_141_ORBITS=' + str(orb['rotation_orbit_count']))
           print('PHASE_141_WEIGHTED_SUM=' + str(orb['weighted_orbit_sum']))
-          print('PHASE_141_RESIDUAL=' + orb['residual'])
+          print('AB_RYSER_A=' + str(ry['colors']['A']['ryser_permanent']))
+          print('AB_RYSER_B=' + str(ry['colors']['B']['ryser_permanent']))
+          print('AB_RYSER_RESIDUAL=' + ry['residual'])
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -139,3 +148,4 @@ jobs:
             artifacts/phase_block_size_theorem_certificate.json
             artifacts/phase_AB_subset_counting_probe.json
             artifacts/phase_141_orbit_certificate.json
+            artifacts/phase_AB_ryser_certificate.json
