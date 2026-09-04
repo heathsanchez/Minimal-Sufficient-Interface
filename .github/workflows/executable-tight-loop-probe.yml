@@ -35,3 +35,78 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ExecutableTightLoopPromotion.lean
+
+  mathgraph-benchmark:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Create identical micro-theorem source
+        run: |
+          cat > /tmp/LoopProbe.lean <<'EOF'
+          import Std
+          namespace LoopProbe
+          theorem forced_new_separator
+              {Obj Obs : Type} (p q : Obj) (B0 B1 : (Obj → Obs) → Prop)
+              (hcollapse : ∀ b, B0 b → b p = b q)
+              (hresolve : ∃ b, B1 b ∧ b p ≠ b q) :
+              ∃ b, B1 b ∧ ¬ B0 b ∧ b p ≠ b q := by
+            rcases hresolve with ⟨b, hB1, hsep⟩
+            exact ⟨b, hB1, (fun hB0 => hsep (hcollapse b hB0)), hsep⟩
+          end LoopProbe
+          EOF
+      - name: Benchmark ordinary Lean steady-state
+        run: |
+          lean /tmp/LoopProbe.lean >/dev/null
+          python3 - <<'PY'
+          import subprocess,time,statistics,json
+          xs=[]
+          for _ in range(30):
+              t=time.perf_counter(); subprocess.run(['lean','/tmp/LoopProbe.lean'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); xs.append(time.perf_counter()-t)
+          print('LEAN_SECONDS', json.dumps({'n':len(xs),'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
+          PY
+      - name: Install arena dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git /tmp/arena
+          cp /tmp/LoopProbe.lean /tmp/arena/tests/mathgraph-loop-probe.lean
+          cat > /tmp/arena/tests/mathgraph-loop-probe.yaml <<'EOF'
+          description: Same micro theorem used for the executable Lean loop benchmark.
+          leanfile: tests/mathgraph-loop-probe.lean
+          outcome: accept
+          export-decls:
+            - LoopProbe.forced_new_separator
+          EOF
+      - name: Measure Lean4Export cost
+        working-directory: /tmp/arena
+        run: |
+          python3 - <<'PY'
+          import subprocess,time
+          t=time.perf_counter(); subprocess.run(['uv','run','lka.py','build-test','mathgraph-loop-probe'],check=True); print('EXPORT_SECONDS',time.perf_counter()-t)
+          PY
+      - name: Build pinned Arena MathGraph checker
+        working-directory: /tmp/arena
+        run: |
+          python3 - <<'PY'
+          import subprocess,time
+          t=time.perf_counter(); subprocess.run(['uv','run','lka.py','build-checker','mathgraph'],check=True); print('MATHGRAPH_BUILD_SECONDS',time.perf_counter()-t)
+          PY
+      - name: Benchmark MathGraph verification path
+        working-directory: /tmp/arena
+        run: |
+          uv run lka.py run --checker mathgraph --test mathgraph-loop-probe
+          python3 - <<'PY'
+          import subprocess,time,statistics,json
+          xs=[]
+          for _ in range(20):
+              t=time.perf_counter(); subprocess.run(['uv','run','lka.py','run','--checker','mathgraph','--test','mathgraph-loop-probe'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); xs.append(time.perf_counter()-t)
+          print('MATHGRAPH_LKA_SECONDS', json.dumps({'n':len(xs),'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
+          PY
+      - name: Show arena result
+        working-directory: /tmp/arena
+        run: |
+          find _results -maxdepth 1 -type f -print -exec cat {} \; | tail -100
