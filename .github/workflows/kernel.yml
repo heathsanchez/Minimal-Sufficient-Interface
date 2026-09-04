@@ -91,4 +91,8 @@ jobs:
       - name: Check observational separation (general kernel)
         env:
           LEAN_PATH: lean
-        run: lean lean/ObservationalSeparation.lean
+        run: lean -o lean/ObservationalSeparation.olean lean/ObservationalSeparation.lean
+      - name: Check residual miner (executable search)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ResidualMiner.lean
