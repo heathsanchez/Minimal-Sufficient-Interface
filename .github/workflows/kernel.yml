@@ -112,3 +112,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/GenerativeTower.lean
+      - name: Check dependent universe (type-changing update)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/DependentUniverse.lean
