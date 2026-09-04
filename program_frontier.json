@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "shared_root_interface_compiled",
-    "classification": "PROMOTE",
-    "note": "merger->root bridge certified (domain-independent); finite k-bound SUPERSEDE; mixed + frozen routes compiled to shared root certificate."
+    "result_id": "extra_root_local_orbit_no_descent",
+    "classification": "PARK",
+    "mechanism": "corrected extra-root tau-orbit probe: sigma Bad SAT -> no local descent forcing"
   },
   "live_residual": {
-    "text": "Both upstream routes now compile to the shared ROOT CERTIFICATE (a certified indegree-0 tau-root of type Bad*Bad->Good / Good-row->Bad / all-Bad ZERO, with non-reuse provenance). The single remaining obstruction: send this root through the HIT/ZERO descent (omega-root-equality: root equality + off-diagonal closure + Good-row SHORT forces D(B) in G, i.e. HIT; otherwise the strict extra-root branch Z_Omega>b must route through the tau component) WITHOUT recycling the collision charge. The G-CROSS network + simultaneous mixed E677 + first FORK must produce strict descent or HIT. Boundary-mine the smallest distinction separating roots that descend from roots that indefinitely evade descent.",
+    "text": "Strict extra-root branch Z_Omega>b: route the certified indegree-0 tau-root through its genuine tau-component WITHOUT recycling the N(u,b)>=3 merger charge, forcing a strictly smaller D-cycle/depth or HIT. CORRECTED negative: the local tau-orbit of a type-1 extra root (kappa(x) Bad) does NOT force a coloured boundary (sigma(x) Bad is SAT); the descent is GLOBAL. The missing distinction is the non-recycling of the merger slot: the root's tau-component must terminate in a FRESH Bad state / coloured cell rather than re-entering (b,h). Boundary-mine that global distinction; local FORK/G-CROSS and extra-root-orbit probes are exhausted (PARKed) as they omit the non-recycling condition.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -172,6 +172,12 @@
       "id": "allshare_fibre_finite_closure_lower_bound",
       "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout) SUPERSEDED by domain-independent merger->root bridge: finite k-bound is secondary now that size-free indegree-conservation gives the root.",
       "status": "SUPERSEDE"
+    },
+    {
+      "id": "extra_root_local_orbit_no_descent",
+      "status": "PARK",
+      "reason": "Corrected boundary probe (removed accidental Good(sigma) assumption): for the type-1 extra root gamma_x=(x,kappa(x)) with kappa(x) Bad, the self-band sigma(x)=(x*x)*x, kappa(x)=x*sigma(x), x*kappa(x)=x, and the tau-orbit (x,kappa)->(x,sigma)->(kappa,w) with kappa*w=sigma. sigma(x) Bad is SAT (evade): the orbit can stay all-Bad and does NOT force a Bad*Bad->Good crossing. The descent therefore requires the GLOBAL non-recycling constraint (the extra roots tau-component re-entering the merger (b,h) / N(u,b)>=3 charge), NOT a local forcing. Local extra-root orbit alone is verifier-consistent with evasion.",
+      "commit": "b0c8914"
     }
   ],
   "process_laws": [
@@ -414,6 +420,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 28,
+  "schema_version": 29,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
