@@ -96,3 +96,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ResidualMiner.lean
+      - name: Check ontology extension (new domain)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/OntologyExtension.lean
