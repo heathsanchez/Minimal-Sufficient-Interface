@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "badbad_good_crossing_no_hit_propagation",
+    "result_id": "selfband_closure_and_row_relation_leave_db_free",
     "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "genuine Bad*Bad->Good crossing does not propagate to D-HIT; SHORT is the missing closure"
+    "mechanism": "9-element E677 closure + sigma(b) in renewal cycle both leave D(b) free -> inter-row propagation gap"
   },
   "live_residual": {
-    "text": "Mixed descent is blocked on the Good-row SHORT (Good*Bad subset Good), a global closure that E677 does not force. Boundary probe: a genuine Bad*Bad->Good crossing (b*s=r0, s pinned Bad, from E677(r0,b)) still leaves D(b)=sigma(b)*b free (Good and Bad both SAT). The frozen descent consumes the PROPAGATING invariant SHORT (assumption 4), not local witnesses; the mixed route supplies only local witnesses (r_i*b=r_{i+1}, b*s=r0). Minimal missing distinction: the closure from the single witness rows {r_i} to the D-HIT row sigma(b). Two remaining routes: (a) a source-backed NON-E677 constraint forcing SHORT (or sigma(b)*b in G), or (b) a FORMAL obstruction: E677 is a local identity and cannot force the global SHORT, closing the mixed Good-row route under E677 alone. Boundary-mine that obstruction: prove no E677-consequence forces sigma(b)*b in G, or find the first counterexample.",
+    "text": "Mixed route BLOCKED (not globally impossible): the D-HIT D(b)=sigma(b)*b in G requires the inter-row relation sigma(b) in renewal cycle {r_i}, which E677 does NOT force (sigma(b)=r0/r1/r2/u all SAT under 9-element E677 closure). The five prior negatives + this saturation all share one gap: E677 gives isolated cell identities, not inter-row propagation. Next: REPRESENTATION CHANGE from isolated cells to the smallest object expressing inter-row propagation (row-orbit / column cycle x|->x*b, or canonical-port ancestry), and test whether ANY source-backed relation forces sigma(b) into the renewal component. Alternatively seek a formal independence theorem: E677 + collision + renewal leaves sigma(b) free (a parametric countermodel family), which would close the mixed Good-row route as a route to E255.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -202,6 +202,12 @@
       "status": "PARK",
       "reason": "Boundary probe: renewal Good*Bad->Good + E677(r0,b)-forced seed b*s=r0 (s=r0*((b*r0)*b)) + pin s Bad (so b*s=r0 is a genuine Bad*Bad->Good crossing) + b self-band + E677(b,b). D(b)=sigma(b)*b colour NOT pre-asserted: Good(D(b)) SAT AND Bad(D(b)) SAT. So even a genuine Bad*Bad->Good crossing does NOT force the D-HIT D(b) in G. JOIN of negatives (transition escape, failed diagonal escape, failed root typing, single renewal cell, Bad-row seed): the frozen descent consumes the PROPAGATING invariant Good*Bad subset Good (SHORT, assumption (4)), while the mixed route supplies only LOCAL witnesses (single crossings). LOCAL WITNESS != PROPAGATING INVARIANT. E677 is a local 4-cell identity and does not force the global closure SHORT.",
       "commit": "e3563fc"
+    },
+    {
+      "id": "selfband_closure_and_row_relation_leave_db_free",
+      "status": "PARK",
+      "reason": "BOUNDARY SATURATION probe. 9-element E677 closure {r0,r1,r2,u,b,s(b),sigma(b),kappa(b),D(b)} (81 ordered pairs) + collision + renewal + self-band: D(b) in G and D(b) in B BOTH SAT (D(b) colour undetermined). Inter-row relation probe: sigma(b)=r0/r1/r2/u ALL SAT \u2014 the one inter-row relation that would directly force D(b) in G (sigma(b)=r_i => D(b)=r_i*b=r_{i+1} in G) is a POSSIBLE assignment, NOT forced. So the mixed route is blocked on an inter-row propagation (sigma(b) in the renewal cycle {r_i}) that E677 does not supply. BLOCKED/PARK, not globally impossible (obstruction discipline: no parametric countermodel or formal independence theorem yet).",
+      "commit": "0abf920"
     }
   ],
   "process_laws": [
@@ -444,6 +450,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 34,
+  "schema_version": 35,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
