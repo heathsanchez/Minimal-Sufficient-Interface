@@ -1,0 +1,32 @@
+name: Executable Lean Tight Loop Probe
+
+on:
+  push:
+    branches: [experiment/executable-lean-tight-loop]
+    paths:
+      - "lean/ExecutableTightLoopProbe.lean"
+      - ".github/workflows/executable-tight-loop-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build minimal dependency chain
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/ConstitutionalFailedFactorization.olean lean/ConstitutionalFailedFactorization.lean
+          lean -o lean/ConstitutionalRealizationAndRecursion.olean lean/ConstitutionalRealizationAndRecursion.lean
+          lean -o lean/GenuinePolicyReflexivity.olean lean/GenuinePolicyReflexivity.lean
+      - name: Execute probe
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ExecutableTightLoopProbe.lean
