@@ -108,3 +108,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/HeterogeneousChain.lean
+      - name: Check generative tower (nested domains)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/GenerativeTower.lean
