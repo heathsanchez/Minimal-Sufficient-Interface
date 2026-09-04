@@ -35,7 +35,7 @@ jobs:
           end LoopProbe
           EOF
           cat > /tmp/arena/tests/mathgraph-loop-probe.yaml <<'EOF'
-          description: Verified-prefix suffix profile.
+          description: Verified-prefix direct last-declaration profile.
           leanfile: tests/mathgraph-loop-probe.lean
           outcome: accept
           export-decls:
@@ -53,12 +53,12 @@ jobs:
           {"export_file_path":"/tmp/loop-valid.ndjson","use_stdin":false,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}
           EOF
           target/release/sokonanoda /tmp/valid.json >/dev/null
-      - name: Compare full replay with verified-prefix last-declaration check
+      - name: Compare full replay with direct verified-prefix last-declaration check
         run: |
           cd /tmp/mathgraph
           echo FULL_REPLAY
           target/release/sokonanoda --profile-repeat 10000 /tmp/valid.json
-          echo VERIFIED_PREFIX_LAST
+          echo VERIFIED_PREFIX_LAST_DIRECT
           target/release/sokonanoda --profile-last-repeat 10000 /tmp/valid.json
       - name: Construct invalid final theorem without changing prefix
         run: |
@@ -87,7 +87,7 @@ jobs:
           cat > /tmp/invalid.json <<'EOF'
           {"export_file_path":"/tmp/loop-invalid.ndjson","use_stdin":false,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}
           EOF
-      - name: Require full replay and suffix path to reject same corrupted final theorem
+      - name: Require full replay and direct suffix path to reject same corrupted final theorem
         run: |
           cd /tmp/mathgraph
           set +e
@@ -97,7 +97,7 @@ jobs:
           LAST=$?
           set -e
           echo "INVALID_FULL_EXIT=$FULL"
-          echo "INVALID_LAST_EXIT=$LAST"
+          echo "INVALID_LAST_DIRECT_EXIT=$LAST"
           echo "FULL_ERR=$(tail -1 /tmp/full.err)"
           echo "LAST_ERR=$(tail -1 /tmp/last.err)"
           test "$FULL" -ne 0
