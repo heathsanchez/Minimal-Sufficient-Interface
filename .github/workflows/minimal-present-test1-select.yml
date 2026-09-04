@@ -1,0 +1,30 @@
+name: Minimal Present Test 1 - mechanical selection
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - "experiments/convergence/select_minimal_present_test1_cases.py"
+      - ".github/workflows/minimal-present-test1-select.yml"
+  workflow_dispatch:
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify frozen controller bytes
+        run: |
+          test "$(sha256sum experiments/convergence/minimal_present_controller_v1.py | cut -d' ' -f1)" = "3d5571716f70c47ad795538f0401f0ee45ba1c66ef9ce7f8af8d832f072b35b8"
+      - name: Select historical cases mechanically
+        run: |
+          python experiments/convergence/select_minimal_present_test1_cases.py | tee /tmp/minimal-present-selected.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-present-test1-selected-cases
+          path: /tmp/minimal-present-selected.json
