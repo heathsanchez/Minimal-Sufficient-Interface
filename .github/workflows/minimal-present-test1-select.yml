@@ -1,5 +1,6 @@
 name: Minimal Present Test 1 - mechanical selection
 
+# Trigger-only revision after protocol/controller/scorer freeze. Selection semantics unchanged.
 on:
   push:
     branches: [recursive-discovery-compiler-v1]
