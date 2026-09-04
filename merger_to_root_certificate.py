@@ -1,14 +1,20 @@
-"""Functional-graph merger->root certificate (domain-independent).
+"""Functional-graph merger->root certificate (BOUNDED verification).
 
-Certifies the exact finite-graph fact both upstream routes use to produce a
-root: a total map on a finite set with a merger (some vertex of indegree > 1)
-must have a root (some vertex of indegree 0).  No E677 / magma / renewal
-vocabulary.  This is the pigeonhole instance consumed by the backward-component
-step of the frozen diagonal-escape lemma (eq. 8 -> root) and by the mixed
-collision-fibre tau-merger.
+BOUNDED evidence only: this script exhaustively verifies the fact for finite
+sizes n = 2..6. It is NOT a generic theorem for arbitrary finite sets.
 
-The general fact is classical (partition / pigeonhole); this script verifies it
-for representative finite sizes n so the bridge carries external evidence.
+The generic statement and its hand proof (indegree-count identity
+    Sigma_y |tau^{-1}(y)| = |S| )
+live in merger_to_root_generic_proof.md, and are classified
+REQUIRE_GENERIC_VERIFICATION (awaiting Lean kernel acceptance over an
+arbitrary [Fintype S] [Nonempty S]). Do not cite the n=2..6 run as a generic
+finite-functional-graph theorem.
+
+The fact: a total map on a finite set with a merger (some vertex indegree > 1)
+must have a root (some vertex indegree 0). No E677 / magma / renewal
+vocabulary. This is the pigeonhole instance consumed by the backward-component
+step of the frozen diagonal-escape lemma and by the mixed collision-fibre
+tau-merger.
 """
 
 import argparse

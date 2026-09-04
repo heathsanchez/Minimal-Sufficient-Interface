@@ -172,6 +172,12 @@
       "id": "allshare_fibre_finite_closure_lower_bound",
       "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout) SUPERSEDED by domain-independent merger->root bridge: finite k-bound is secondary now that size-free indegree-conservation gives the root.",
       "status": "SUPERSEDE"
+    },
+    {
+      "id": "merger_to_root_bridge",
+      "status": "PARK",
+      "commit": "a1321c1",
+      "reason": "BOUNDED Z3 evidence only (n=2..6, counter-assumption UNSAT). NOT a generic finite theorem: Z3 cannot express arbitrary [Fintype S]. Generic statement + hand proof (indegree-count identity Sigma_y |tau^-1(y)|=|S|) recorded in merger_to_root_generic_proof.md; REQUIRE_GENERIC_VERIFICATION awaiting Lean kernel acceptance over [Fintype S][Nonempty S]."
     }
   ],
   "process_laws": [
@@ -392,19 +398,14 @@
       "status": "PROMOTE"
     },
     {
-      "claim": "The tau map tau(r,w)=(r*w,(r*w)\\w) has a merger at the mixed state (b,h): indegree N(u,b)=n>=3 (the n collision arms all satisfy r_i*u=b and map to (b,h)). By indegree conservation (sum of indegrees over the finite state set equals its size, every state being the tau-image of exactly one state), some state has indegree 0. That indegree-0 root is the mixed analogue of the frozen coloured-boundary/ZERO root feeding the HIT/ZERO descent. Minimal finiteness consequence = pigeonhole/indegree conservation, NOT the full magma table.",
+      "claim": "MERGER VERIFIED: the tau map has a merger at (b,h), indegree N(u,b)=n>=3 (n collision arms r_i*u=b). The conclusion \"=> indegree-0 root\" DEPENDS on the generic merger->root bridge, which is REQUIRE_GENERIC_VERIFICATION (bounded Z3 n=2..6 only). So the root-conclusion is NOT yet kernel-certified.",
       "id": "mixed_tau_merger_forces_root",
       "status": "PROMOTE"
     },
     {
-      "id": "merger_to_root_bridge",
-      "status": "PROMOTE",
-      "claim": "Domain-independent: a total map on a finite set with a merger (some vertex indegree>1) has a root (some vertex indegree 0). Verified by Z3 for n=2..6 (counter-assumption UNSAT). This is the shared bridge both the mixed tau-merger and the frozen backward-component step consume."
-    },
-    {
       "id": "shared_root_interface",
       "status": "PROMOTE",
-      "claim": "Shared downstream input to the HIT/ZERO descent: a certified indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (the N(u,b)>=3 collision charge must not be recycled). Both upstream routes (mixed collision-fibre tau-merger; frozen diagonal-escape backward component) compile to exactly this interface."
+      "claim": "Shared downstream input to the HIT/ZERO descent: an indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (the N(u,b)>=3 collision charge). Root EXISTENCE is supplied by the merger->root bridge (REQUIRE_GENERIC_VERIFICATION) plus the verified merger; the interface itself is a compression/design object, not a theorem."
     }
   ],
   "promotion_contract": [
@@ -414,6 +415,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 26,
+  "schema_version": 27,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
