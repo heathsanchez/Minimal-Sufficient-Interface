@@ -84,3 +84,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ForcedKindGenesis.lean
+      - name: Check residual-induced role discovery (strong D2)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ResidualInducedRoleDiscovery.lean
