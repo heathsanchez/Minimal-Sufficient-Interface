@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "formal_independence_mixed_route",
+    "result_id": "lean_countermodel_blocked_by_closure_size",
     "classification": "PARK",
-    "mechanism": "parametric Z3 n=3,4,5 + structural freeness: D(b) free -> mixed route cannot force D-HIT"
+    "mechanism": "mixed route DOMAIN-BOUNDED; Lean cert blocked by closure size; colour-predicate freeness + arms-necessary finding"
   },
   "live_residual": {
-    "text": "MIXED GOOD-ROW ROUTE CLOSED (pending Lean kernel): the theory E677 + collision r_i*u=b + renewal r_i*b=r_{i+1} + self-band leaves D(b)=sigma(b)*b colour-free for n=3,4,5 (parametric Z3) and structurally for all n>=3 (D(b) is a free cell: no E677 identity constrains its colour). Hence the mixed route cannot derive D(b) in G (the D-HIT) and cannot reach E255. Remaining to reach criterion 4: a Lean-kernel proof of the freeness (the equation system does not determine sigma(b) or D(b)) \u2014 a parametric freeness theorem, not bounded Z3. This closes the mixed route as a route; the E677=>E255 programme must proceed via the frozen all-Bad route (HIT/ZERO descent) or a new representation, NOT the mixed Good-row collision fibre.",
+    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure (bounded Z3 n=3,4,5 + structural freeness; D(b) colour-free). Lean kernel certification blocked by E677-closure size (~228 elements). The freeness is colour-predicate-level: one magma + two colourings. The 5-element self-band fragment is UNSAT (arms necessary). SURVIVING ROUTE: the frozen all-Bad HIT/ZERO descent \u2014 the frozen source's named remaining direct proof task (route the three root types Bad*Bad->Good / Good-row->Bad / all-Bad ZERO through the HIT/ZERO descent without recycling the collision charge). Next: audit the exact frozen descent consumer obligation and identify the smallest unresolved bridge (local witness vs propagating invariant; what relational structure carries the propagation).",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -214,6 +214,12 @@
       "status": "PARK",
       "reason": "Formal-independence construction (route closure, pending Lean kernel). Parametric probe: for n=3,4,5 arms, the full self-band E677 closure (all ordered pairs on {r_i,u,b,s(b),sigma(b),kappa(b),D(b)}) + collision r_i*u=b + renewal r_i*b=r_{i+1} leaves D(b)=sigma(b)*b FREE: Good(D(b)) SAT and Bad(D(b)) SAT at every n. Structural freeness: D(b)=sigma(b)*b is a free cell \u2014 the self-band DEFINES it but no E677 identity constrains its colour (E677(b,sigma(b)) only relates D(b) to other cells). Parametric countermodel family {M_{n,c}}: for each n>=3 and colour c in {Good,Bad} there is a model of the theory with D(b)=c. CONSEQUENCE: the mixed Good-row representation (E677+collision+renewal+self-band) does NOT determine D(b), so it CANNOT derive the D-HIT D(b) in G \u2014 the mixed route is INSUFFICIENT to reach E255. This is a route-closure result (criterion 4) at BOUNDED + structural evidence, NOT yet Lean-kernel-certified.",
       "commit": "1a3f393"
+    },
+    {
+      "id": "lean_countermodel_blocked_by_closure_size",
+      "status": "PARK",
+      "reason": "Lean kernel certification of the mixed-route freeness is BLOCKED by countermodel size. Z3 model for the uninterpreted theory A_3 (collision+renewal+self-band+E677 on 9 named elements) has carrier size 228 (the E677 4-cell closure of 9 elements), dominated by a sink element. The finite-domain search for a minimal countermodel times out (full finite E677 table = original hard problem). KEY STRUCTURAL SIMPLIFICATION: the freeness is about the COLOUR PREDICATE, not the multiplication \u2014 a countermodel is ONE magma + TWO colourings of D(b) (Good(D(b)) flipped), not two magmas. SIDE-FINDING: the 5-element self-band fragment {b,s(b),sigma(b),kappa(b),D(b)} is UNSAT under E677 on 5x5 pairs \u2014 the arms r_i are NECESSARY to make E677 satisfiable, so the freeness is not a pure self-band free-cell fact. CLASSIFICATION: mixed route DOMAIN-BOUNDED (bounded Z3 n=3,4,5 + structural freeness), NOT Lean-kernel certified; parametric (all n>=3) not established.",
+      "commit": "962519e"
     }
   ],
   "process_laws": [
@@ -456,6 +462,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 36,
+  "schema_version": 37,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
