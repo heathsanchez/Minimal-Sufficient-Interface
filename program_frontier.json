@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "mixed_descent_route_a",
+    "result_id": "renewal_does_not_force_hit",
     "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "audit: full mixed E677 does not force Bad*Bad->Good; mixed descent must be derived directly"
+    "mechanism": "interface-by-consumption probe: renewal + E677 leaves D(b) free"
   },
   "live_residual": {
-    "text": "Mixed Good-row descent. The frozen all-Bad HIT/ZERO descent does NOT attach: full mixed E677 (all 25 pairs on the 3-arm fibre) leaves the Bad*Bad square s(b)=b*b free, so no Bad*Bad->Good HIT is forced. The mixed crossings are Good*Good->Bad (r_i*u=b, the N(u,b)=n>=3 collision) and Good*Bad->Good (r_i*b=r_{i+1}, the renewal cycle). These are NEW crossing types not covered by the frozen classification (17). Next: derive the mixed descent directly (route A) \u2014 show the Good*Good->Bad collision charge N(u,b)=n>=3, combined with the Good*Bad->Good renewal, forces a strictly smaller Bad D-cycle/depth or D(B) subset G, WITHOUT recycling the N(u,b) charge. The collision charge is the column merger x|->x*u merging n>=3 Good arms onto b; the renewal x|->x*b cycles the arms.",
+    "text": "Mixed descent needs a Good-Bad coupling NOT supplied by E677 or the collision. Interface-by-consumption answer: the HIT/ZERO descent consumes an extra root (Z_Omega>b) whose tau-routing forces D(B) subset G or a smaller Bad D-cycle; the mixed merger->root supplies the extra root, but its tau-orbit (r_i,b)->(r_{i+1},u)->(b,h)->... reaches only Good-row products (r_{i+1},b,h) and never the Bad self-band D(b)=sigma(b)*b. Full E677 + renewal + collision leave D(b)/sigma(b) free (SAT both ways). Minimal missing distinction: a constraint coupling the Good-row renewal cycle to the Bad D-cycle. Next: seek the FIRST source-backed Good-Bad coupling (e.g. E677(u,b)/E677(b,u) consequences on the mixed product b*u or u*b) that links the renewal orbit to D(b), or establish that no such coupling exists in E677 (a formal obstruction for the mixed route).",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -190,6 +190,12 @@
       "status": "PARK",
       "reason": "Source-grounded attachment audit. Frozen canonical-port classification (17): the all-Bad backward-component root is typed by (product colour) x (indegree structure): (1) product Good = Bad*Bad->Good crossing; (2) product Bad + full indegree 0 = ZERO; (3) product Bad + only Good-row predecessors = Good-row->Bad. A NON-all-Bad escaping state is ALREADY a coloured port exit (line 236-237). Mismatch set: frozen root product is Bad*Bad; mixed crossings are Good*Good->Bad (r_i*u=b) and Good*Bad->Good (r_i*b=r_{i+1}). Probe: 3-arm fibre + FULL E677 on all 25 ordered pairs among {r0,r1,r2,u,b} leaves s(b)=b*b FREE (Good/Bad/=u/=r0 all SAT). So the mixed Good-row crossings do NOT force a Bad*Bad->Good HIT via E677. The minimal bridge (Good-row crossing -> Bad*Bad->Good) is NOT available from E677.",
       "commit": "e0eed6f"
+    },
+    {
+      "id": "renewal_does_not_force_hit",
+      "status": "PARK",
+      "reason": "INTERFACE-BY-CONSUMPTION probe: the descent's smallest downstream consequence is D(b) in G (HIT); the frozen HIT cell D(x)=sigma(x)*x is itself a Good x Bad -> Good cell, same type as the renewal r_i*b=r_{i+1}. Probe: 3-arm fibre + renewal + collision + full E677 (all 25 pairs) + b-self-band (s(b)=b*b, sigma(b)=s(b)*b, kappa(b)=b*sigma(b), D(b)=sigma(b)*b, b*kappa(b)=b), with D(b) and sigma(b) colours NOT pre-asserted: Good(D(b)) SAT, Bad(D(b)) SAT, sigma(b) Good/Bad both SAT. So the Good*Bad->Good renewal does NOT force D(b) in G; the extra root's tau-orbit (r_i,b)->(r_{i+1},u)->(b,h)->... stays in the Good-row structure (products r_{i+1},b,h,...) and never reaches the Bad self-band D(b)=sigma(b)*b. The minimal missing bridge is a Good-Bad coupling that is NOT supplied by E677 or the collision.",
+      "commit": "c81ec65"
     }
   ],
   "process_laws": [
@@ -432,6 +438,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 32,
+  "schema_version": 33,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
