@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "transport_is_finite_global_inexpressible",
-    "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "mixed E677 transport has no teeth in uninterpreted sort; transport is finite-global (G8); next = finite-domain G-CROSS encoding"
+    "result_id": "finite_global_gcross_verifier_change",
+    "classification": "PARK",
+    "mechanism": "finite-domain verifier installed + baselines reproduced; G-CROSS branch re-confirmed UNKNOWN; z-colour is the causal variable"
   },
   "live_residual": {
-    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure (definitional Good/Bad; D(D(b))=D(b) free, n=3,4,5). Frozen all-Bad HIT/ZERO root-reuse residual: the G-CROSS network + first FORK must force a smaller D-cycle/HIT. VERIFIED this turn: the mixed E677 transport relation has NO TEETH in the uninterpreted sort (intermediate t*z completely free), so the transport is FINITE-GLOBAL (finite-magma consistency of the simultaneous mixed E677 across the G-CROSS network) and INEXPRESSIBLE in the uninterpreted encoding (G8). H1(simultaneity)/H2(firstness)/H3(provenance)/H4(shared-component)/H5(no-reuse) all require the FINITE-domain/bit-blasted SAT encoding. Frozen source finite audits: order-10/15 (K5 shadow + ZIPPER) UNSAT; order-20 G-CROSS branch UNKNOWN = the open case. NEXT: finite-domain/bit-blasted SAT encoding of the G-CROSS network simultaneous mixed E677 (order-20 equivalent), a VERIFIER CHANGE (uninterpreted -> finite-domain, pysat/Glucose-CaDiCaL), NOT more uninterpreted probing.",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse residual, now in FINITE-domain SAT (pysat/Glucose/CaDiCaL). Baselines reproduced: order-10 K5 UNSAT, order-15 ZIPPER UNSAT, base shell SAT. G-CROSS branch (order-20 four-layer) re-confirmed UNKNOWN. The causal variable is z=sigma(q)*D(q): Bad (ZIPPER) forces descent (UNSAT); Good (G-CROSS) is unresolved (UNKNOWN). NEXT: find the minimal finite-global relation that flips the G-CROSS branch \u2014 candidate = a specific mixed-E677 interaction / provenance / no-reuse coupling NOT captured by the fixed four-layer shell. This is the open case; the finite verifier is now in place to test it.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -226,6 +226,17 @@
       "status": "PARK",
       "reason": "SEMANTIC AUDIT (schema-37 correction). Good/Bad is DEFINITIONAL in this programme: D(x)=((x*x)*x)*x, Good(x) <-> D(x)=x, Bad(x) <-> D(x)!=x (Good = E255-holds-at-x). The schema-36/37 probes had used a FREE Good predicate. Definitional re-audit: A_n (E677 + collision r_i*u=b + renewal r_i*b=r_{i+1} + self-band + base D(r_i)=r_i, D(u)=u, D(b)!=b) with D(D(b))=D(b) [D(b) Good] is SAT and D(D(b))!=D(b) [D(b) Bad] is SAT, at n=3,4,5. => the mixed-route freeness SURVIVES definitionally: A_n does NOT force D(b) Good (D(D(b))=D(b)), so the mixed route cannot force the D-HIT. QUESTION-2 CORRECTION: the 5-element self-band fragment UNSAT was a CLOSED-CARRIER artifact (option A: no 5-element closed carrier), NOT arms-logically-necessary (option B). With fresh unnamed elements the self-band fragment is SAT (carrier 68). The earlier arms-necessary claim is REVISED/withdrawn.",
       "commit": "381d0d7"
+    },
+    {
+      "id": "finite_global_gcross_verifier_change",
+      "status": "PARK",
+      "reason": "VERIFIER CHANGE (uninterpreted -> finite-domain SAT via pysat/Glucose-CaDiCaL) to express the finite-global G-CROSS transport. BASELINES REPRODUCED: order-15 pure ZIPPER (equivariant-three-layer-zipper) UNSAT 0.42s Glucose (frozen (Z1)); order-15 base shell --skip-e677 SAT VERIFIED 0.056s (frozen (Z0)); order-10 terminal K5 (--blocks 1 --extra 5) UNSAT 38.6s CaDiCaL (frozen (19)). TARGET: order-20 four-layer G-CROSS branch (equivariant-four-layer) UNKNOWN (330s CaDiCaL, matching frozen (Z2) 600s UNKNOWN). The finite-global transport IS now askable; the G-CROSS branch is GENUINELY HARD, not slow. CAUSAL VARIABLE isolated: the mixed cell z=sigma(q)*D(q) \u2014 forced Bad (ZIPPER, 3-layer) => UNSAT (descent); allowed Good (G-CROSS, 4-layer) => UNKNOWN (unresolved). The minimal finite-global relation that flips the G-CROSS branch to descent is NOT yet identified; full simultaneity+provenance+shared-component+no-reuse are all already in the shell and it remains UNKNOWN.",
+      "commit": "9dd523d",
+      "run_ids": {
+        "order15_zipper_unsat": "local (Glucose42)",
+        "order10_k5_unsat": "local (CaDiCaL195)",
+        "order20_gcross_unknown": "local (CaDiCaL195 330s + Glucose42 background)"
+      }
     }
   ],
   "process_laws": [
@@ -468,6 +479,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 39,
+  "schema_version": 40,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
