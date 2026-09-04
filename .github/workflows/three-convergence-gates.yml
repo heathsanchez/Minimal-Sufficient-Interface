@@ -1,0 +1,41 @@
+name: Three convergence gates
+
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - '.github/workflows/three-convergence-gates.yml'
+      - 'tests/**'
+      - '*.py'
+  workflow_dispatch:
+
+jobs:
+  convergence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gate 1 — minimal present
+        run: |
+          python -m unittest -v \
+            tests.test_minimum_calculus_self_audit \
+            tests.test_consequential_single_chain
+      - name: Gate 2 — residual to genesis and new reach
+        run: |
+          python -m unittest -v \
+            tests.test_meta_interface_synthesis \
+            tests.test_recursive_developmental_compounding \
+            tests.test_blind_recursive_cross_grammar_genesis
+      - name: Gate 3 — same law up one level plus external transfer
+        run: |
+          python -m unittest -v \
+            tests.test_golden_law_meta_becoming \
+            tests.test_recursive_process_compounding \
+            tests.test_external_kernel_process_transfer
+      - name: Print decisive process reports
+        run: |
+          python recursive_process_compounding.py
+          python external_kernel_process_transfer.py
