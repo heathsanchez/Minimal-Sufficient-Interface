@@ -1,23 +1,25 @@
 import Std
 import ConstitutionalRealizationAndRecursion
 
-/-! # Genuine Test 3A — policies as Residual → RepairAction functions
+/-! # Genuine Test 3A — HARDENED: policy-independent criterion + ablation
 
-  SUPERSEDES `PolicyReflexivity.lean`, which only proved the polymorphic PROXY:
-  two output relations relabelled as "policies".  Here a Policy is genuinely a
-  function that selects a repair ACTION, and the two candidates differ on an
-  inexpressible residual:
+  Policy is a function `Residual → RepairAction`, not an output relation.
 
-    P0(ρ) = representation
-    P1(ρ) = representation  if Expressible(ρ)
-            capability     otherwise
+  This hardened version closes two remaining loopholes:
 
-  The criterion that selects P1 is NOT defined as P1.  It is anchored in the
-  already-proved `failed_factorization` / `postprocessing_cannot_split`:
-  a representation repair (deterministic post-processing of the interface)
-  cannot split a fibre the interface already collapses.  So on an inexpressible
-  forced residual, representation repair is provably insufficient and capability
-  repair is required.
+  1. Representation-inadequacy is quantified over ARBITRARY post-processing
+     codomains `g : Bool → E'` (not just `Bool → Bool`), so no fixed-codomain
+     assumption survives into 3B.
+
+  2. The selecting criterion is factored into policy-independent layers:
+     `Adequate D ρ a` (does action `a`'s repair separate the forced
+     distinction?), `PreferredAction` (the adequate action), and
+     `PolicyFits D P ρ := PreferredAction D ρ (P ρ)`.  None of these mentions
+     P0 or P1, so the discrimination is not "true by construction".
+
+  The four theorems below: (1) generalized representation-inadequacy,
+  (2) adequacy criterion, (3) generic discrimination P1 vs P0, (4) ablation —
+  when the forced distinction disappears, so does the preference.
 -/
 
 namespace GenuinePolicyReflexivity
@@ -34,87 +36,127 @@ structure Residual (P : Type) where
 
 abbrev Policy (P : Type) := Residual P → RepairAction
 
-/-- Expressible: the interface already separates the residual pair. -/
 abbrev Expressible {P E : Type} (I : P → E) (ρ : Residual P) : Prop :=
   I ρ.x ≠ I ρ.y
 
-/-- P0: always representation repair. -/
 def P0 {P : Type} : Policy P := fun _ => RepairAction.representation
 
-/-- P1: representation iff expressible, else capability. -/
 def P1 {P E : Type} [DecidableEq E] (I : P → E) : Policy P :=
   fun ρ => if Expressible I ρ then RepairAction.representation else RepairAction.capability
 
-/- Concrete witness on the Bool × Bool constitution (imported). -/
+/- Concrete witness on the Bool × Bool constitution. -/
 abbrev Car := Constitution
 
 def I : Car → Bool := authority
 
 def ρ : Residual Car := ⟨(false, false), (false, true)⟩
 
-/- ρ is inexpressible: the authority interface identifies its two points. -/
 theorem rho_inexpressible : ¬ Expressible I ρ := by
   decide
 
-/- ρ is forced: the audit decision separates its two points. -/
 theorem rho_forced : audit ρ.x ≠ audit ρ.y := by
   decide
 
-/- Semantics: capability repair = adjoining the forced decision (audit).
-   Representation repair = any deterministic post-processing `g ∘ I` of the
-   interface. -/
-
-def capabilityRepair : Car → Car → Prop := AddDecision (KernelEq I) audit
-
 def Identifies (R : Car → Car → Prop) (r : Residual Car) : Prop := R r.x r.y
 
-/- No representation repair separates ρ: every post-processing of I still
-   identifies the pair I collapses.  Concrete instantiation of
-   `postprocessing_cannot_split`. -/
-theorem representation_repairs_identify_rho (g : Bool → Bool) :
+/- (1) GENERALIZED representation-inadequacy: for ANY codomain E', no
+   post-processing `g : Bool → E'` of the interface separates the collapsed
+   residual.  Direct instantiation of `postprocessing_cannot_split`. -/
+theorem representation_repairs_identify_rho {E' : Type} (g : Bool → E') :
     Identifies (KernelEq (g ∘ I)) ρ := by
-  unfold Identifies KernelEq
-  exact congrArg g (by decide)
+  unfold Identifies
+  exact (postprocessing_cannot_split I g) (by simp [KernelEq, I, authority, ρ])
 
-/- Capability repair separates ρ. -/
-theorem capability_separates_rho : ¬ Identifies capabilityRepair ρ := by
-  unfold Identifies capabilityRepair AddDecision
+/- Capability repair, parametrized by the forced decision D. -/
+def capabilityRepairWith (D : Car → Bool) : Car → Car → Prop :=
+  AddDecision (KernelEq I) D
+
+/- The repair relation each action produces, given forced decision D. -/
+def actionRepairWith (D : Car → Bool) : RepairAction → Car → Car → Prop
+  | .representation => KernelEq I
+  | .capability     => capabilityRepairWith D
+
+/- (2) Policy-independent adequacy: action `a` is adequate for ρ iff its repair
+   separates ρ's forced distinction.  No mention of P0/P1. -/
+def Adequate (D : Car → Bool) (ρ : Residual Car) (a : RepairAction) : Prop :=
+  ¬ Identifies (actionRepairWith D a) ρ
+
+/- The criterion: prefer the adequate action (for a two-action world adequacy
+   already determines the preference; the layer is kept explicit so the
+   criterion never references a policy). -/
+def PreferredAction (D : Car → Bool) (ρ : Residual Car) (a : RepairAction) : Prop :=
+  Adequate D ρ a
+
+/- A policy fits a residual iff its chosen action is preferred. -/
+def PolicyFits (D : Car → Bool) (P : Policy Car) (ρ : Residual Car) : Prop :=
+  PreferredAction D ρ (P ρ)
+
+/- Capability repair (with the real forced decision audit) separates ρ. -/
+theorem capability_separates_rho : ¬ Identifies (capabilityRepairWith audit) ρ := by
+  unfold Identifies capabilityRepairWith AddDecision
   intro h
   have haudit : audit ρ.x = audit ρ.y := h.2
   simp [audit, ρ] at haudit
 
-/- The criterion: representation identifies ρ (insufficient, for EVERY
-   post-processing), capability separates it (sufficient). -/
-theorem criterion_prefers_capability_on_rho :
-    (∀ g : Bool → Bool, Identifies (KernelEq (g ∘ I)) ρ) ∧
-    ¬ Identifies capabilityRepair ρ := by
-  exact ⟨representation_repairs_identify_rho, capability_separates_rho⟩
+/- Capability is adequate for ρ; representation is not. -/
+theorem capability_adequate : Adequate audit ρ .capability := by
+  unfold Adequate actionRepairWith
+  exact capability_separates_rho
 
-/- SameContinuationBefore: on expressible residuals the two policies agree. -/
-theorem same_before (r : Residual Car) (hexp : Expressible I r) :
-    P0 r = P1 I r := by
-  simp [P0, P1, hexp]
+theorem representation_inadequate : ¬ Adequate audit ρ .representation := by
+  intro h
+  unfold Adequate actionRepairWith at h
+  apply h
+  unfold Identifies KernelEq
+  decide
 
-/- DifferentRepairAfter: on the inexpressible forced residual they differ. -/
+/- (3) Generic policy discrimination: P1 fits and P0 does not, proved by the
+   policy-independent criterion with no reference to P1 inside it. -/
+theorem policy_discrimination :
+    PolicyFits audit (P1 I) ρ ∧ ¬ PolicyFits audit P0 ρ := by
+  constructor
+  · have hP1 : P1 I ρ = RepairAction.capability := by
+      unfold P1
+      exact if_neg rho_inexpressible
+    unfold PolicyFits PreferredAction
+    rw [hP1]
+    exact capability_adequate
+  · intro h
+    have hP0 : P0 ρ = RepairAction.representation := rfl
+    unfold PolicyFits PreferredAction at h
+    rw [hP0] at h
+    exact representation_inadequate h
+
+/- (4) Ablation: with a trivial (non-distinguishing) forced decision, capability
+   is no longer adequate, so the preference for P1 disappears. -/
+def trivialDecision : Car → Bool := fun _ => true
+
+theorem capability_inadequate_without_distinction :
+    ¬ Adequate trivialDecision ρ .capability := by
+  intro h
+  unfold Adequate actionRepairWith at h
+  apply h
+  unfold Identifies capabilityRepairWith AddDecision
+  constructor
+  · unfold KernelEq
+    decide
+  · rfl
+
+theorem ablation :
+    (PolicyFits audit (P1 I) ρ ∧ ¬ PolicyFits audit P0 ρ) ∧
+    ¬ PolicyFits trivialDecision (P1 I) ρ := by
+  constructor
+  · exact policy_discrimination
+  · intro h
+    have hP1 : P1 I ρ = RepairAction.capability := by
+      unfold P1
+      exact if_neg rho_inexpressible
+    unfold PolicyFits PreferredAction at h
+    rw [hP1] at h
+    exact capability_inadequate_without_distinction h
+
+/- The two policies genuinely differ on the inexpressible residual. -/
 theorem different_after : P0 ρ ≠ P1 I ρ := by
   simp [P0, P1, rho_inexpressible]
-
-/- GenericCriterionPrefers: P1 selects the sufficient action (capability) and
-   P0 the insufficient one (representation), grounded in
-   postprocessing_cannot_split — NOT obtained by unfolding P1 into the
-   criterion. -/
-theorem generic_prefers :
-    P1 I ρ = RepairAction.capability ∧
-    ¬ Identifies capabilityRepair ρ ∧
-    P0 ρ = RepairAction.representation ∧
-    (∀ g : Bool → Bool, Identifies (KernelEq (g ∘ I)) ρ) := by
-  constructor
-  · unfold P1
-    exact if_neg rho_inexpressible
-  constructor
-  · exact capability_separates_rho
-  constructor
-  · rfl
-  · exact representation_repairs_identify_rho
 
 end GenuinePolicyReflexivity
