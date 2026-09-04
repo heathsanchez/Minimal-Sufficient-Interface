@@ -22,4 +22,4 @@ jobs:
         run: |
           lake update mathlib
           lake exe cache get
-          lake build MergerRoot
+          lake env lean MergerRoot.lean
