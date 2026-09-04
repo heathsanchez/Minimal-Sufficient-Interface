@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "mixed_root_type_undetermined",
+    "result_id": "mixed_diagonal_escape_not_forced",
     "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "corrected shared-root-interface: mixed root type not forced by local fibre"
+    "mechanism": "collision-fibre + E677(u,u) leaves sigma(u) free -> no diagonal escape transfer"
   },
   "live_residual": {
-    "text": "Strict extra-root descent Z_Omega>b is BLOCKED until the MIXED root type is determined. Corrections this turn: (a) the extra root local tau-orbit does NOT force a coloured boundary (sigma(x) Bad is SAT); (b) E677(u,u)/E677(b,b) self-instances alone do NOT force sigma(u)/sigma(b) outside U={u,b}; (c) frozen (h,b) is all-Bad so its root type comes from the canonical-port indegree classification, which has NO mixed analogue yet. Next: derive the mixed diagonal escape (the specific mixed nonperiodic state + mixed indegree classification) that determines the mixed root type, OR show the mixed collision cell r_i*u=b (Good-row->Bad, frozen type 2) directly feeds the HIT descent.",
+    "text": "The frozen diagonal-escape mechanism (h=sigma(a) notin U_a via E677(a,a)+periodic closure) does NOT transfer to the mixed collision fibre: E677(u,u)/E677(b,b), with or without the 3-arm collision fibre, leave sigma(u)/sigma(b) coincidences free (all SAT). The mixed escape (schema 22: no collision arm equals u) is a TRANSITION escape, not a diagonal escape. The mixed route therefore yields: (a) a Good-row->Bad coloured boundary (the collision cell r_i*u=b, frozen type 2), and (b) root EXISTENCE via the kernel-certified merger->root bridge, but (c) NO determined root TYPE (the mixed indegree classification is trivial: only the merger N(u,b)=n is forced). Next transition: determine whether the Good-row->Bad coloured boundary (r_i*u=b) alone suffices to feed the HIT/ZERO descent, or whether the mixed route requires a genuinely new descent distinct from the frozen all-Bad descent.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -182,7 +182,7 @@
     {
       "id": "diagonal_selfinstance_no_escape_alone",
       "status": "PARK",
-      "reason": "E677(u,u) and E677(b,b) self-instances + self-bands (sigma(u)=(u*u)*u, kappa(u)=u*sigma(u), sigma(b)=(b*b)*b, kappa(b)=b*sigma(b), u*kappa(u)=u, b*kappa(b)=b), with ONLY essential distinctness u!=b: sigma(u) in {u,b}, sigma(b) in {u,b}, and kappa(u)/kappa(b) colours are ALL SAT. The diagonal self-instance does NOT force sigma(u) or sigma(b) outside U={u,b}. The mixed escape therefore does NOT come from the bare diagonal self-instance; it comes from the collision-fibre hinge (schema 22).",
+      "reason": "E677(u,u)/E677(b,b) self-instances + self-bands, with ONLY u!=b distinctness: sigma(u), sigma(b), kappa(u), kappa(b) coincidences are ALL SAT (no escape forced). EXTENDED: adding the full 3-arm collision fibre (r_i*u=b, r_i*b=r_{i+1}, Good arms, Bad b) + E677(u,u) STILL does not force sigma(u) outside {u,b,r0} \u2014 sigma(u)=u, =b, =r0 all SAT. So the frozen diagonal-escape mechanism (h=sigma(a) notin U_a) does NOT transfer to the mixed structure. The mixed escape (schema 22: no arm equals u) is a TRANSITION escape (x*b avoids u), distinct from the frozen DIAGONAL escape, and does not by itself determine a root type.",
       "commit": "e2fbc01"
     }
   ],
@@ -426,6 +426,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 30,
+  "schema_version": 31,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
