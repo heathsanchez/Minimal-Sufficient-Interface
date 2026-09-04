@@ -32,42 +32,44 @@ theorem merger_forces_root {α : Type} [Fintype α] [DecidableEq α] (f : α →
     (∃ y : α, 1 < (Finset.univ.filter (fun x : α => f x = y)).card) →
     (∃ z : α, (Finset.univ.filter (fun x : α => f x = z)).card = 0) := by
   classical
+  let fiber (z : α) : Nat := (Finset.univ.filter (fun x : α => f x = z)).card
   intro ⟨y, hy⟩
   by_contra h
-  have hpos : ∀ z : α, 0 < (Finset.univ.filter (fun x : α => f x = z)).card := by
+  have hpos : ∀ z : α, 0 < fiber z := by
     intro z
     by_contra hz
-    exact h ⟨z, by omega⟩
-  have hsum : (Finset.univ.sum (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card)) =
-      Fintype.card α := sum_fiber_card f
+    exact h ⟨z, hz⟩
+  have hsum : (Finset.univ.sum fiber) = Fintype.card α := by
+    change (Finset.univ.sum (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card)) =
+      Fintype.card α
+    exact sum_fiber_card f
   have hsum_ge_erase : ((Finset.univ : Finset α).erase y).card ≤
-      ((Finset.univ : Finset α).erase y).sum
-        (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card) := by
+      ((Finset.univ : Finset α).erase y).sum fiber := by
     calc
       ((Finset.univ : Finset α).erase y).card
           = ((Finset.univ : Finset α).erase y).sum (fun _ : α => (1 : Nat)) := by
               rw [Finset.sum_const, Nat.nsmul_eq_mul, Nat.mul_one]
-      _ ≤ ((Finset.univ : Finset α).erase y).sum
-            (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card) := by
+      _ ≤ ((Finset.univ : Finset α).erase y).sum fiber := by
               refine Finset.sum_le_sum ?_
-              intro z hz
+              intro z _hz
               exact Nat.succ_le_of_lt (hpos z)
-  have hge : Fintype.card α + 1 ≤
-      (Finset.univ.sum (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card)) := by
+  have hdecomp : (Finset.univ.sum fiber) =
+      (∑ z in (Finset.univ : Finset α).erase y, fiber z) + fiber y := by
+    exact Finset.sum_erase_add
+      (s := (Finset.univ : Finset α)) (f := fiber) (Finset.mem_univ y)
+  have hge : Fintype.card α + 1 ≤ (Finset.univ.sum fiber) := by
+    rw [hdecomp]
     calc
       Fintype.card α + 1 = 2 + (Fintype.card α - 1) := by omega
-      _ ≤ (Finset.univ.filter (fun x : α => f x = y)).card +
-            ((Finset.univ : Finset α).erase y).sum
-              (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card) := by
-            refine Nat.add_le_add ?_ ?_
-            · exact Nat.succ_le_of_lt hy
-            · calc
-                Fintype.card α - 1 = ((Finset.univ : Finset α).erase y).card := by
-                    rw [Finset.card_erase_of_mem (Finset.mem_univ y), Finset.card_univ]
-                _ ≤ ((Finset.univ : Finset α).erase y).sum
-                      (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card) := hsum_ge_erase
-      _ = (Finset.univ.sum (fun z : α => (Finset.univ.filter (fun x : α => f x = z)).card)) := by
-            rw [← Finset.sum_erase_add (Finset.mem_univ y)]
+      _ ≤ fiber y + ((Finset.univ : Finset α).erase y).sum fiber := by
+          refine Nat.add_le_add ?_ ?_
+          · exact Nat.succ_le_of_lt hy
+          · calc
+              Fintype.card α - 1 = ((Finset.univ : Finset α).erase y).card := by
+                  rw [Finset.card_erase_of_mem (Finset.mem_univ y), Finset.card_univ]
+              _ ≤ ((Finset.univ : Finset α).erase y).sum fiber := hsum_ge_erase
+      _ = (∑ z in (Finset.univ : Finset α).erase y, fiber z) + fiber y := by
+          rw [Nat.add_comm]
   omega
 
 end MergerRoot
