@@ -116,3 +116,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/DependentUniverse.lean
+      - name: Check self-contained world (certified transition)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/SelfContainedWorld.lean
