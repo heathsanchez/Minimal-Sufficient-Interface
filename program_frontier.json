@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "selfband_closure_and_row_relation_leave_db_free",
-    "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "9-element E677 closure + sigma(b) in renewal cycle both leave D(b) free -> inter-row propagation gap"
+    "result_id": "formal_independence_mixed_route",
+    "classification": "PARK",
+    "mechanism": "parametric Z3 n=3,4,5 + structural freeness: D(b) free -> mixed route cannot force D-HIT"
   },
   "live_residual": {
-    "text": "Mixed route BLOCKED (not globally impossible): the D-HIT D(b)=sigma(b)*b in G requires the inter-row relation sigma(b) in renewal cycle {r_i}, which E677 does NOT force (sigma(b)=r0/r1/r2/u all SAT under 9-element E677 closure). The five prior negatives + this saturation all share one gap: E677 gives isolated cell identities, not inter-row propagation. Next: REPRESENTATION CHANGE from isolated cells to the smallest object expressing inter-row propagation (row-orbit / column cycle x|->x*b, or canonical-port ancestry), and test whether ANY source-backed relation forces sigma(b) into the renewal component. Alternatively seek a formal independence theorem: E677 + collision + renewal leaves sigma(b) free (a parametric countermodel family), which would close the mixed Good-row route as a route to E255.",
+    "text": "MIXED GOOD-ROW ROUTE CLOSED (pending Lean kernel): the theory E677 + collision r_i*u=b + renewal r_i*b=r_{i+1} + self-band leaves D(b)=sigma(b)*b colour-free for n=3,4,5 (parametric Z3) and structurally for all n>=3 (D(b) is a free cell: no E677 identity constrains its colour). Hence the mixed route cannot derive D(b) in G (the D-HIT) and cannot reach E255. Remaining to reach criterion 4: a Lean-kernel proof of the freeness (the equation system does not determine sigma(b) or D(b)) \u2014 a parametric freeness theorem, not bounded Z3. This closes the mixed route as a route; the E677=>E255 programme must proceed via the frozen all-Bad route (HIT/ZERO descent) or a new representation, NOT the mixed Good-row collision fibre.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -208,6 +208,12 @@
       "status": "PARK",
       "reason": "BOUNDARY SATURATION probe. 9-element E677 closure {r0,r1,r2,u,b,s(b),sigma(b),kappa(b),D(b)} (81 ordered pairs) + collision + renewal + self-band: D(b) in G and D(b) in B BOTH SAT (D(b) colour undetermined). Inter-row relation probe: sigma(b)=r0/r1/r2/u ALL SAT \u2014 the one inter-row relation that would directly force D(b) in G (sigma(b)=r_i => D(b)=r_i*b=r_{i+1} in G) is a POSSIBLE assignment, NOT forced. So the mixed route is blocked on an inter-row propagation (sigma(b) in the renewal cycle {r_i}) that E677 does not supply. BLOCKED/PARK, not globally impossible (obstruction discipline: no parametric countermodel or formal independence theorem yet).",
       "commit": "0abf920"
+    },
+    {
+      "id": "formal_independence_mixed_route",
+      "status": "PARK",
+      "reason": "Formal-independence construction (route closure, pending Lean kernel). Parametric probe: for n=3,4,5 arms, the full self-band E677 closure (all ordered pairs on {r_i,u,b,s(b),sigma(b),kappa(b),D(b)}) + collision r_i*u=b + renewal r_i*b=r_{i+1} leaves D(b)=sigma(b)*b FREE: Good(D(b)) SAT and Bad(D(b)) SAT at every n. Structural freeness: D(b)=sigma(b)*b is a free cell \u2014 the self-band DEFINES it but no E677 identity constrains its colour (E677(b,sigma(b)) only relates D(b) to other cells). Parametric countermodel family {M_{n,c}}: for each n>=3 and colour c in {Good,Bad} there is a model of the theory with D(b)=c. CONSEQUENCE: the mixed Good-row representation (E677+collision+renewal+self-band) does NOT determine D(b), so it CANNOT derive the D-HIT D(b) in G \u2014 the mixed route is INSUFFICIENT to reach E255. This is a route-closure result (criterion 4) at BOUNDED + structural evidence, NOT yet Lean-kernel-certified.",
+      "commit": "1a3f393"
     }
   ],
   "process_laws": [
@@ -450,6 +456,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 35,
+  "schema_version": 36,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
