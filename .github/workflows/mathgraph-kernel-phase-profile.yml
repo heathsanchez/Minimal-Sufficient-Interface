@@ -1,0 +1,76 @@
+name: MathGraph Kernel Phase Profile
+
+on:
+  push:
+    branches: [experiment/executable-lean-tight-loop]
+    paths: [".github/workflows/mathgraph-kernel-phase-profile.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare identical exported theorem
+        run: |
+          rustup component add llvm-tools-preview
+          PROFDATA="$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)"
+          sudo ln -sf "$PROFDATA" /usr/local/bin/llvm-profdata
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git /tmp/arena
+          cat > /tmp/arena/tests/mathgraph-loop-probe.lean <<'EOF'
+          import Std
+          namespace LoopProbe
+          theorem forced_new_separator
+              {Obj Obs : Type} (p q : Obj) (B0 B1 : (Obj → Obs) → Prop)
+              (hcollapse : ∀ b, B0 b → b p = b q)
+              (hresolve : ∃ b, B1 b ∧ b p ≠ b q) :
+              ∃ b, B1 b ∧ ¬ B0 b ∧ b p ≠ b q := by
+            rcases hresolve with ⟨b, hB1, hsep⟩
+            exact ⟨b, hB1, (fun hB0 => hsep (hcollapse b hB0)), hsep⟩
+          end LoopProbe
+          EOF
+          cat > /tmp/arena/tests/mathgraph-loop-probe.yaml <<'EOF'
+          description: Persistent MathGraph phase profile.
+          leanfile: tests/mathgraph-loop-probe.lean
+          outcome: accept
+          export-decls:
+            - LoopProbe.forced_new_separator
+          EOF
+          cd /tmp/arena
+          uv run lka.py build-test mathgraph-loop-probe
+          uv run lka.py build-test init-prelude
+      - name: Build experimental kernel and profile phases
+        run: |
+          git clone --depth 1 --branch experiment/incremental-ai-loop https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          cp /tmp/arena/_build/tests/mathgraph-loop-probe.ndjson /tmp/loop.ndjson
+          for T in 1 2 4; do
+            cat > /tmp/config-t${T}.json <<EOF
+          {"export_file_path":"/tmp/loop.ndjson","use_stdin":false,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":${T}}
+          EOF
+          done
+          cd /tmp/mathgraph
+          cargo build --release
+          for T in 1 2 4; do
+            echo "RELEASE_T${T}"
+            target/release/sokonanoda --profile-repeat 10000 /tmp/config-t${T}.json
+          done
+      - name: PGO build using Arena prelude and profile phases
+        run: |
+          cd /tmp/mathgraph
+          rm -rf pgo
+          mkdir pgo
+          RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release
+          cat > /tmp/pgo-train.json <<'EOF'
+          {"export_file_path":"/tmp/arena/_build/tests/init-prelude.ndjson","use_stdin":false,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          EOF
+          target/release/sokonanoda /tmp/pgo-train.json >/dev/null
+          llvm-profdata merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+          RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release
+          for T in 1 2 4; do
+            echo "PGO_T${T}"
+            target/release/sokonanoda --profile-repeat 10000 /tmp/config-t${T}.json
+          done
