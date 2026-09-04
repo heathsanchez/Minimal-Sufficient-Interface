@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "location_backbone_revises_sigma_exclusion",
+    "result_id": "gcross_location_partition_verified",
     "classification": "PARK",
-    "mechanism": "location matrix 13/15 UNKNOWN; sigma-exclusion over-claim revised; hardness is global E677 coherence, not location"
+    "mechanism": "15-way partition exact (all Bad UNSAT); G20 = 13 location cubes; cube-and-conquer launched"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse. PURE G-CROSS (all z Good) is the authoritative residual. Location backbone NEGATIVE: z_0 location is 13/15 UNKNOWN (only sigma d=0,1 excluded) \u2014 the hardness is NOT location-choice, it is the global E677 consistency. The location-CSP compression is inapplicable. NEXT: the residual is genuinely global; options are (a) a stronger verifier (cube-and-conquer / DRAT portfolio) on the pure-G-CROSS G20, or (b) a genuinely cross-cell relation mining (not unary location), or (c) accept G20 as the minimal separator and record the global argument as the open lemma. The z-colour + location layers have been fully mined; the residual is the raw global E677 coherence of the pure-G-CROSS network.",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse. PURE G-CROSS G20 reduces to 13 location cubes (z_0 in square{5..9}, sigma d=2,3,4, kappa{15..19}) by verified exact partition. Cube-and-conquer in flight. If any cube SAT -> finite survivor (verify against E677+shell). If all 13 UNSAT -> G20 UNSAT (complete bounded proof of the pure-G-CROSS shell). If cubes remain UNKNOWN -> recurse on the hard cubes with a second-level split (z_1 location / cross-cell relation).",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -280,6 +280,14 @@
       "status": "PARK",
       "reason": "SCOPE AUDIT + LOCATION MATRIX. REVISION of schema-44 claim: \"z NOTIN sigma-layer\" was OVER-CLAIMED. Exhaustive 15-cell location matrix (z_0 = L(q_d) for L in {square,sigma,kappa}, d in Z/5, order-20 shell, PySAT Glucose42, 30s/cell): sigma d=0 UNSAT (0.0s), sigma d=1 UNSAT (0.0s); ALL OTHER 13 cells UNKNOWN (square 5, sigma d=2,3,4, kappa all). So only z_0 != sigma(q_0) and z_0 != sigma(q_1) are PROVED; the rest of the sigma layer and all of square/kappa are UNRESOLVED. Aut(K5) has order 20 (AGL(1,5), 2-transitive) but the shell is only proved C5-equivariant, so offsets d=0..4 are NOT symmetry-identified \u2014 confirmed by the d=0,1 UNSAT vs d=2,3,4 UNKNOWN asymmetry. KEY NEGATIVE: the location backbone does NOT compress the residual \u2014 z_0 location is 13/15 UNKNOWN, so the pure-G-CROSS hardness is NOT a location-choice problem; it is the global E677 consistency itself. The location-CSP approach (STEP 7) is not applicable.",
       "commit": "e2384e2"
+    },
+    {
+      "id": "gcross_location_partition_verified",
+      "status": "PARK",
+      "reason": "PARTITION VERIFIED (STEP 1-2). In the free-z four-layer shell + full E677, z_0 = each of the 5 Bad values (0..4, including H(0)=3 ZIPPER) is UNSAT (0.0s each) \u2014 so the shell CAPTURES z-Bad => z=H(0) (frozen C7), and z_0 in Good (5..19) is forced. Hence the 15-way partition {s(q_d),sigma(q_d),kappa(q_d)}_d is EXACT: G20 <-> OR_{v in 5..19} [G20 & z_0=v]. With sigma d=0,1 already UNSAT, G20 reduces to 13 location cubes (z_0 in {5..9} square, {12,13,14} sigma d=2,3,4, {15..19} kappa). CUBE-AND-CONQUER launched (CaDiCaL+Glucose portfolio, 150s/cube) on the 13 cubes.",
+      "commit": "d2ef1e3",
+      "cubes": 13,
+      "partition": "15-way exact (5 Bad all UNSAT, z Good forced)"
     }
   ],
   "process_laws": [
@@ -522,6 +530,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 45,
+  "schema_version": 46,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
