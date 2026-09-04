@@ -70,6 +70,9 @@ jobs:
           PY
       - name: Install arena dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm
+          llvm-profdata --version
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git /tmp/arena
