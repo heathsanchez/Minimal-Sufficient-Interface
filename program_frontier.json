@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "pure_gcross_backbone_zipper_exclusion_and_sigma_exclusion",
+    "result_id": "location_backbone_revises_sigma_exclusion",
     "classification": "PARK",
-    "mechanism": "F20 |= z Good (rigorous); z_i notin sigma-layer (forced backbone); square-vs-kappa is hard core"
+    "mechanism": "location matrix 13/15 UNKNOWN; sigma-exclusion over-claim revised; hardness is global E677 coherence, not location"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse. PURE G-CROSS (all z Good) is the authoritative residual (F20 |= z Good, free-z = pure-G-CROSS). Backbone: z_i NOTIN sigma-layer (forced); z_i in {square, kappa}. NEXT: determine whether z_i in square-layer or kappa-layer (or both possible) \u2014 this is the hard core and needs a global/cross-cell argument or better encoding, not more local backbone probes (which now return UNKNOWN at the square/kappa boundary).",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse. PURE G-CROSS (all z Good) is the authoritative residual. Location backbone NEGATIVE: z_0 location is 13/15 UNKNOWN (only sigma d=0,1 excluded) \u2014 the hardness is NOT location-choice, it is the global E677 consistency. The location-CSP compression is inapplicable. NEXT: the residual is genuinely global; options are (a) a stronger verifier (cube-and-conquer / DRAT portfolio) on the pure-G-CROSS G20, or (b) a genuinely cross-cell relation mining (not unary location), or (c) accept G20 as the minimal separator and record the global argument as the open lemma. The z-colour + location layers have been fully mined; the residual is the raw global E677 coherence of the pure-G-CROSS network.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -274,6 +274,12 @@
       "status": "PARK",
       "reason": "SCOPE RIGOR + BACKBONE MINING. (1) EXHAUSTIVE z-colour case-split (all 8 C5-symmetry classes of the 2^5=32 assignments): every assignment with >=1 ZIPPER cell (z_i Bad) is UNSAT (fast); only all-G-CROSS (k=5, all z_i Good) is UNKNOWN. Hence at finite-shell scope F20 |= z_0 Good & ... & z_4 Good, and free-z F20 is equisatisfiable with pure-G-CROSS F20. The pure-G-CROSS (all z Good) is the AUTHORITATIVE residual (the only branch where a model can exist). (2) BACKBONE MINING (G20 + literal vs G20 + not-literal): z_0=sigma(q_0) UNSAT (0.0s), z_0=sigma(q_1) UNSAT (0.0s) => z_i NOTIN sigma-layer (z_i=sigma(q_j) forbidden for all j), forced. z_i in {square,kappa} is SLOW/UNKNOWN (the hard core). So the G-CROSS z=sigma(q)*D(q) is forced Good AND forced outside the sigma layer -> z_i in {square-layer, kappa-layer}. Next: pin z in square vs kappa (requires the global argument; currently hard).",
       "commit": "1970faf"
+    },
+    {
+      "id": "location_backbone_revises_sigma_exclusion",
+      "status": "PARK",
+      "reason": "SCOPE AUDIT + LOCATION MATRIX. REVISION of schema-44 claim: \"z NOTIN sigma-layer\" was OVER-CLAIMED. Exhaustive 15-cell location matrix (z_0 = L(q_d) for L in {square,sigma,kappa}, d in Z/5, order-20 shell, PySAT Glucose42, 30s/cell): sigma d=0 UNSAT (0.0s), sigma d=1 UNSAT (0.0s); ALL OTHER 13 cells UNKNOWN (square 5, sigma d=2,3,4, kappa all). So only z_0 != sigma(q_0) and z_0 != sigma(q_1) are PROVED; the rest of the sigma layer and all of square/kappa are UNRESOLVED. Aut(K5) has order 20 (AGL(1,5), 2-transitive) but the shell is only proved C5-equivariant, so offsets d=0..4 are NOT symmetry-identified \u2014 confirmed by the d=0,1 UNSAT vs d=2,3,4 UNKNOWN asymmetry. KEY NEGATIVE: the location backbone does NOT compress the residual \u2014 z_0 location is 13/15 UNKNOWN, so the pure-G-CROSS hardness is NOT a location-choice problem; it is the global E677 consistency itself. The location-CSP approach (STEP 7) is not applicable.",
+      "commit": "e2384e2"
     }
   ],
   "process_laws": [
@@ -516,6 +522,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 44,
+  "schema_version": 45,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
