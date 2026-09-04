@@ -104,3 +104,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/DevelopmentalChain.lean
+      - name: Check heterogeneous chain (kind tower)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/HeterogeneousChain.lean
