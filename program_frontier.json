@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "mixed_diagonal_escape_not_forced",
+    "result_id": "mixed_descent_route_a",
     "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "collision-fibre + E677(u,u) leaves sigma(u) free -> no diagonal escape transfer"
+    "mechanism": "audit: full mixed E677 does not force Bad*Bad->Good; mixed descent must be derived directly"
   },
   "live_residual": {
-    "text": "The frozen diagonal-escape mechanism (h=sigma(a) notin U_a via E677(a,a)+periodic closure) does NOT transfer to the mixed collision fibre: E677(u,u)/E677(b,b), with or without the 3-arm collision fibre, leave sigma(u)/sigma(b) coincidences free (all SAT). The mixed escape (schema 22: no collision arm equals u) is a TRANSITION escape, not a diagonal escape. The mixed route therefore yields: (a) a Good-row->Bad coloured boundary (the collision cell r_i*u=b, frozen type 2), and (b) root EXISTENCE via the kernel-certified merger->root bridge, but (c) NO determined root TYPE (the mixed indegree classification is trivial: only the merger N(u,b)=n is forced). Next transition: determine whether the Good-row->Bad coloured boundary (r_i*u=b) alone suffices to feed the HIT/ZERO descent, or whether the mixed route requires a genuinely new descent distinct from the frozen all-Bad descent.",
+    "text": "Mixed Good-row descent. The frozen all-Bad HIT/ZERO descent does NOT attach: full mixed E677 (all 25 pairs on the 3-arm fibre) leaves the Bad*Bad square s(b)=b*b free, so no Bad*Bad->Good HIT is forced. The mixed crossings are Good*Good->Bad (r_i*u=b, the N(u,b)=n>=3 collision) and Good*Bad->Good (r_i*b=r_{i+1}, the renewal cycle). These are NEW crossing types not covered by the frozen classification (17). Next: derive the mixed descent directly (route A) \u2014 show the Good*Good->Bad collision charge N(u,b)=n>=3, combined with the Good*Bad->Good renewal, forces a strictly smaller Bad D-cycle/depth or D(B) subset G, WITHOUT recycling the N(u,b) charge. The collision charge is the column merger x|->x*u merging n>=3 Good arms onto b; the renewal x|->x*b cycles the arms.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -184,6 +184,12 @@
       "status": "PARK",
       "reason": "E677(u,u)/E677(b,b) self-instances + self-bands, with ONLY u!=b distinctness: sigma(u), sigma(b), kappa(u), kappa(b) coincidences are ALL SAT (no escape forced). EXTENDED: adding the full 3-arm collision fibre (r_i*u=b, r_i*b=r_{i+1}, Good arms, Bad b) + E677(u,u) STILL does not force sigma(u) outside {u,b,r0} \u2014 sigma(u)=u, =b, =r0 all SAT. So the frozen diagonal-escape mechanism (h=sigma(a) notin U_a) does NOT transfer to the mixed structure. The mixed escape (schema 22: no arm equals u) is a TRANSITION escape (x*b avoids u), distinct from the frozen DIAGONAL escape, and does not by itself determine a root type.",
       "commit": "e2fbc01"
+    },
+    {
+      "id": "full_mixed_e677_no_badbad_good_bridge",
+      "status": "PARK",
+      "reason": "Source-grounded attachment audit. Frozen canonical-port classification (17): the all-Bad backward-component root is typed by (product colour) x (indegree structure): (1) product Good = Bad*Bad->Good crossing; (2) product Bad + full indegree 0 = ZERO; (3) product Bad + only Good-row predecessors = Good-row->Bad. A NON-all-Bad escaping state is ALREADY a coloured port exit (line 236-237). Mismatch set: frozen root product is Bad*Bad; mixed crossings are Good*Good->Bad (r_i*u=b) and Good*Bad->Good (r_i*b=r_{i+1}). Probe: 3-arm fibre + FULL E677 on all 25 ordered pairs among {r0,r1,r2,u,b} leaves s(b)=b*b FREE (Good/Bad/=u/=r0 all SAT). So the mixed Good-row crossings do NOT force a Bad*Bad->Good HIT via E677. The minimal bridge (Good-row crossing -> Bad*Bad->Good) is NOT available from E677.",
+      "commit": "e0eed6f"
     }
   ],
   "process_laws": [
@@ -426,6 +432,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 31,
+  "schema_version": 32,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
