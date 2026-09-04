@@ -39,3 +39,5 @@ jobs:
         run: |
           python recursive_process_compounding.py
           python external_kernel_process_transfer.py
+
+# Re-trigger after workflow registration so this gate runs on its own workflow.
