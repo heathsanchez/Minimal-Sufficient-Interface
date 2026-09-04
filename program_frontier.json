@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "renewal_does_not_force_hit",
+    "result_id": "badbad_good_crossing_no_hit_propagation",
     "classification": "REQUIRE_ATTACHMENT",
-    "mechanism": "interface-by-consumption probe: renewal + E677 leaves D(b) free"
+    "mechanism": "genuine Bad*Bad->Good crossing does not propagate to D-HIT; SHORT is the missing closure"
   },
   "live_residual": {
-    "text": "Mixed descent needs a Good-Bad coupling NOT supplied by E677 or the collision. Interface-by-consumption answer: the HIT/ZERO descent consumes an extra root (Z_Omega>b) whose tau-routing forces D(B) subset G or a smaller Bad D-cycle; the mixed merger->root supplies the extra root, but its tau-orbit (r_i,b)->(r_{i+1},u)->(b,h)->... reaches only Good-row products (r_{i+1},b,h) and never the Bad self-band D(b)=sigma(b)*b. Full E677 + renewal + collision leave D(b)/sigma(b) free (SAT both ways). Minimal missing distinction: a constraint coupling the Good-row renewal cycle to the Bad D-cycle. Next: seek the FIRST source-backed Good-Bad coupling (e.g. E677(u,b)/E677(b,u) consequences on the mixed product b*u or u*b) that links the renewal orbit to D(b), or establish that no such coupling exists in E677 (a formal obstruction for the mixed route).",
+    "text": "Mixed descent is blocked on the Good-row SHORT (Good*Bad subset Good), a global closure that E677 does not force. Boundary probe: a genuine Bad*Bad->Good crossing (b*s=r0, s pinned Bad, from E677(r0,b)) still leaves D(b)=sigma(b)*b free (Good and Bad both SAT). The frozen descent consumes the PROPAGATING invariant SHORT (assumption 4), not local witnesses; the mixed route supplies only local witnesses (r_i*b=r_{i+1}, b*s=r0). Minimal missing distinction: the closure from the single witness rows {r_i} to the D-HIT row sigma(b). Two remaining routes: (a) a source-backed NON-E677 constraint forcing SHORT (or sigma(b)*b in G), or (b) a FORMAL obstruction: E677 is a local identity and cannot force the global SHORT, closing the mixed Good-row route under E677 alone. Boundary-mine that obstruction: prove no E677-consequence forces sigma(b)*b in G, or find the first counterexample.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -196,6 +196,12 @@
       "status": "PARK",
       "reason": "INTERFACE-BY-CONSUMPTION probe: the descent's smallest downstream consequence is D(b) in G (HIT); the frozen HIT cell D(x)=sigma(x)*x is itself a Good x Bad -> Good cell, same type as the renewal r_i*b=r_{i+1}. Probe: 3-arm fibre + renewal + collision + full E677 (all 25 pairs) + b-self-band (s(b)=b*b, sigma(b)=s(b)*b, kappa(b)=b*sigma(b), D(b)=sigma(b)*b, b*kappa(b)=b), with D(b) and sigma(b) colours NOT pre-asserted: Good(D(b)) SAT, Bad(D(b)) SAT, sigma(b) Good/Bad both SAT. So the Good*Bad->Good renewal does NOT force D(b) in G; the extra root's tau-orbit (r_i,b)->(r_{i+1},u)->(b,h)->... stays in the Good-row structure (products r_{i+1},b,h,...) and never reaches the Bad self-band D(b)=sigma(b)*b. The minimal missing bridge is a Good-Bad coupling that is NOT supplied by E677 or the collision.",
       "commit": "c81ec65"
+    },
+    {
+      "id": "badbad_good_crossing_no_hit_propagation",
+      "status": "PARK",
+      "reason": "Boundary probe: renewal Good*Bad->Good + E677(r0,b)-forced seed b*s=r0 (s=r0*((b*r0)*b)) + pin s Bad (so b*s=r0 is a genuine Bad*Bad->Good crossing) + b self-band + E677(b,b). D(b)=sigma(b)*b colour NOT pre-asserted: Good(D(b)) SAT AND Bad(D(b)) SAT. So even a genuine Bad*Bad->Good crossing does NOT force the D-HIT D(b) in G. JOIN of negatives (transition escape, failed diagonal escape, failed root typing, single renewal cell, Bad-row seed): the frozen descent consumes the PROPAGATING invariant Good*Bad subset Good (SHORT, assumption (4)), while the mixed route supplies only LOCAL witnesses (single crossings). LOCAL WITNESS != PROPAGATING INVARIANT. E677 is a local 4-cell identity and does not force the global closure SHORT.",
+      "commit": "e3563fc"
     }
   ],
   "process_laws": [
@@ -438,6 +444,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 33,
+  "schema_version": 34,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
