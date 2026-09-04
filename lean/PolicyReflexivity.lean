@@ -1,7 +1,15 @@
 import Std
 import ConstitutionalRealizationAndRecursion
 
-/-! # Test 3A — the repair criterion selects between repair policies
+/-! # Test 3A — PROXY (superseded by `GenuinePolicyReflexivity.lean`)
+
+  ⚠️ This file proves only the POLYMORPHIC PROXY: `P0`, `P1` here are OUTPUT
+  RELATIONS `P → P → Prop` (`ConstitutionalRefinement I D` and
+  `AddDecision … Dstar`), not `Residual → RepairAction` policies.  It shows the
+  refinement criterion still holds when two relations are *called* "policies" —
+  a representation relabelling (outcome B), not genuine policy reflexivity.
+
+  See `GenuinePolicyReflexivity.lean` for the real Test 3A target.
 
   Already formalized (see the imported file):
   - a new protected decision strictly refines the canonical repair
