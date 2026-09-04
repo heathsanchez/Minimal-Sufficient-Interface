@@ -109,52 +109,70 @@ jobs:
           binary=root+'/target/release/sokonanoda'
           config=root+'/config.json'
           inp='/tmp/arena/_build/tests/mathgraph-loop-probe.ndjson'
-          assert os.path.exists(binary), binary
-          assert os.path.exists(config), config
-          assert os.path.exists(inp), inp
           def once():
               with open(inp,'rb') as f:
                   return subprocess.run([binary,config],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
-          r=once()
-          print('MATHGRAPH_DIRECT_EXIT',r.returncode)
-          if r.returncode != 0:
-              print(r.stderr.decode('utf-8','replace'))
-              raise SystemExit(r.returncode)
+          r=once(); print('MATHGRAPH_DIRECT_EXIT',r.returncode)
+          if r.returncode != 0: print(r.stderr.decode('utf-8','replace')); raise SystemExit(r.returncode)
           xs=[]
           for _ in range(100):
               t=time.perf_counter(); r=once(); xs.append(time.perf_counter()-t)
-              if r.returncode != 0:
-                  print(r.stderr.decode('utf-8','replace')); raise SystemExit(r.returncode)
+              if r.returncode != 0: raise SystemExit(r.returncode)
           print('MATHGRAPH_DIRECT_SECONDS', json.dumps({'n':len(xs),'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
           PY
       - name: Profile MathGraph parse check and thread overhead
         working-directory: /tmp/arena
         run: |
           python3 - <<'PY'
-          import subprocess,time,statistics,json,os
+          import subprocess,time,statistics,json
           root='/tmp/arena/_build/checkers/mathgraph/src'
-          binary=root+'/target/release/sokonanoda'
-          base_config=root+'/config.json'
-          inp='/tmp/arena/_build/tests/mathgraph-loop-probe.ndjson'
+          binary=root+'/target/release/sokonanoda'; base_config=root+'/config.json'; inp='/tmp/arena/_build/tests/mathgraph-loop-probe.ndjson'
           with open(base_config) as f: base=json.load(f)
           def bench(label,cfg,n=200):
               path=f'/tmp/{label}.json'
               with open(path,'w') as f: json.dump(cfg,f)
               def once():
-                  with open(inp,'rb') as src:
-                      return subprocess.run([binary,path],stdin=src,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  with open(inp,'rb') as src: return subprocess.run([binary,path],stdin=src,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
               r=once()
-              if r.returncode != 0:
-                  print(label,'EXIT',r.returncode,r.stderr.decode('utf-8','replace')); raise SystemExit(r.returncode)
+              if r.returncode != 0: print(r.stderr.decode()); raise SystemExit(r.returncode)
               xs=[]
               for _ in range(n):
                   t=time.perf_counter(); r=once(); xs.append(time.perf_counter()-t)
                   if r.returncode != 0: raise SystemExit(r.returncode)
               print(label, json.dumps({'n':n,'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
           for threads in (1,2,4):
-              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=False
-              bench(f'CHECK_T{threads}',cfg)
+              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=False; bench(f'CHECK_T{threads}',cfg)
           for threads in (1,4):
-              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=True
-              bench(f'PARSE_T{threads}',cfg)
+              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=True; bench(f'PARSE_T{threads}',cfg)
+          PY
+      - name: Benchmark experimental in-process kernel loop
+        working-directory: /tmp/arena
+        run: |
+          git clone --depth 1 --branch experiment/incremental-ai-loop https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph-ai-loop
+          cd /tmp/mathgraph-ai-loop
+          cargo build --release
+          cp /tmp/arena/_build/tests/mathgraph-loop-probe.ndjson /tmp/loop-probe.ndjson
+          cat > /tmp/loop-file-config.json <<'EOF'
+          {
+            "export_file_path": "/tmp/loop-probe.ndjson",
+            "use_stdin": false,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          EOF
+          python3 - <<'PY'
+          import subprocess,time,statistics,json
+          binary='/tmp/mathgraph-ai-loop/target/release/sokonanoda'; cfg='/tmp/loop-file-config.json'
+          xs=[]
+          for _ in range(100):
+              t=time.perf_counter(); r=subprocess.run([binary,cfg],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE); xs.append(time.perf_counter()-t)
+              if r.returncode: print(r.stderr.decode()); raise SystemExit(r.returncode)
+          print('EXPERIMENT_SPAWNED',json.dumps({'n':len(xs),'median':statistics.median(xs),'mean':statistics.mean(xs)}))
+          for n in (10,100,1000):
+              t=time.perf_counter(); r=subprocess.run([binary,'--repeat',str(n),cfg],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE); dt=time.perf_counter()-t
+              if r.returncode: print(r.stderr.decode()); raise SystemExit(r.returncode)
+              print('EXPERIMENT_IN_PROCESS',json.dumps({'n':n,'total':dt,'per_check':dt/n}))
           PY
