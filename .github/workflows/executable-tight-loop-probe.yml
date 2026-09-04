@@ -70,9 +70,12 @@ jobs:
           PY
       - name: Install arena dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y llvm
+          rustup component add llvm-tools-preview
+          PROFDATA="$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)"
+          test -x "$PROFDATA"
+          sudo ln -sf "$PROFDATA" /usr/local/bin/llvm-profdata
           llvm-profdata --version
+          rustc -vV
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git /tmp/arena
