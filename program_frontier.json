@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "semantic_audit_goodbad_definitional",
-    "classification": "PARK",
-    "mechanism": "definitional Good/Bad re-audit reproduces freeness; arms-necessary claim withdrawn"
+    "result_id": "transport_is_finite_global_inexpressible",
+    "classification": "REQUIRE_ATTACHMENT",
+    "mechanism": "mixed E677 transport has no teeth in uninterpreted sort; transport is finite-global (G8); next = finite-domain G-CROSS encoding"
   },
   "live_residual": {
-    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure, now under the CORRECT definitional Good/Bad (Good(x)<->D(x)=x). A_n leaves D(D(b))=D(b) free (both SAT n=3,4,5), so the mixed route cannot force D(b) Good (the D-HIT). The arms-necessary claim is withdrawn (5-element UNSAT was a closed-carrier artifact; self-band fragment SAT with fresh elements). SURVIVING ROUTE: frozen all-Bad HIT/ZERO descent (root-reuse statement remains open: G-CROSS + first FORK + simultaneous mixed E677 -> descent/HIT). Next: boundary-mine the root-reuse bridge on the frozen all-Bad route.",
+    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure (definitional Good/Bad; D(D(b))=D(b) free, n=3,4,5). Frozen all-Bad HIT/ZERO root-reuse residual: the G-CROSS network + first FORK must force a smaller D-cycle/HIT. VERIFIED this turn: the mixed E677 transport relation has NO TEETH in the uninterpreted sort (intermediate t*z completely free), so the transport is FINITE-GLOBAL (finite-magma consistency of the simultaneous mixed E677 across the G-CROSS network) and INEXPRESSIBLE in the uninterpreted encoding (G8). H1(simultaneity)/H2(firstness)/H3(provenance)/H4(shared-component)/H5(no-reuse) all require the FINITE-domain/bit-blasted SAT encoding. Frozen source finite audits: order-10/15 (K5 shadow + ZIPPER) UNSAT; order-20 G-CROSS branch UNKNOWN = the open case. NEXT: finite-domain/bit-blasted SAT encoding of the G-CROSS network simultaneous mixed E677 (order-20 equivalent), a VERIFIER CHANGE (uninterpreted -> finite-domain, pysat/Glucose-CaDiCaL), NOT more uninterpreted probing.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -468,6 +468,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 38,
+  "schema_version": 39,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
