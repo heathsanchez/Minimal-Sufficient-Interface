@@ -127,3 +127,34 @@ jobs:
                   print(r.stderr.decode('utf-8','replace')); raise SystemExit(r.returncode)
           print('MATHGRAPH_DIRECT_SECONDS', json.dumps({'n':len(xs),'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
           PY
+      - name: Profile MathGraph parse check and thread overhead
+        working-directory: /tmp/arena
+        run: |
+          python3 - <<'PY'
+          import subprocess,time,statistics,json,os
+          root='/tmp/arena/_build/checkers/mathgraph/src'
+          binary=root+'/target/release/sokonanoda'
+          base_config=root+'/config.json'
+          inp='/tmp/arena/_build/tests/mathgraph-loop-probe.ndjson'
+          with open(base_config) as f: base=json.load(f)
+          def bench(label,cfg,n=200):
+              path=f'/tmp/{label}.json'
+              with open(path,'w') as f: json.dump(cfg,f)
+              def once():
+                  with open(inp,'rb') as src:
+                      return subprocess.run([binary,path],stdin=src,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+              r=once()
+              if r.returncode != 0:
+                  print(label,'EXIT',r.returncode,r.stderr.decode('utf-8','replace')); raise SystemExit(r.returncode)
+              xs=[]
+              for _ in range(n):
+                  t=time.perf_counter(); r=once(); xs.append(time.perf_counter()-t)
+                  if r.returncode != 0: raise SystemExit(r.returncode)
+              print(label, json.dumps({'n':n,'median':statistics.median(xs),'mean':statistics.mean(xs),'min':min(xs),'max':max(xs)}))
+          for threads in (1,2,4):
+              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=False
+              bench(f'CHECK_T{threads}',cfg)
+          for threads in (1,4):
+              cfg=dict(base); cfg['num_threads']=threads; cfg['parse_only']=True
+              bench(f'PARSE_T{threads}',cfg)
+          PY
