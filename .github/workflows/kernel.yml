@@ -88,3 +88,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ResidualInducedRoleDiscovery.lean
+      - name: Check observational separation (general kernel)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ObservationalSeparation.lean
