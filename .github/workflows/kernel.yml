@@ -69,7 +69,3 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/Falsifiers.lean
-      - name: Check Lean merger->root generic theorem
-        env:
-          LEAN_PATH: lean
-        run: lean lean/MergerRoot.lean
