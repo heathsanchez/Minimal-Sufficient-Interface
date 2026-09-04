@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "finite_global_gcross_verifier_change",
+    "result_id": "zipper_minimal_pair_core_local",
     "classification": "PARK",
-    "mechanism": "finite-domain verifier installed + baselines reproduced; G-CROSS branch re-confirmed UNKNOWN; z-colour is the causal variable"
+    "mechanism": "ZIPPER descent local (19-pair first-cell core); G-CROSS branch global (UNKNOWN) \u2014 causal variable is z-colour"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse residual, now in FINITE-domain SAT (pysat/Glucose/CaDiCaL). Baselines reproduced: order-10 K5 UNSAT, order-15 ZIPPER UNSAT, base shell SAT. G-CROSS branch (order-20 four-layer) re-confirmed UNKNOWN. The causal variable is z=sigma(q)*D(q): Bad (ZIPPER) forces descent (UNSAT); Good (G-CROSS) is unresolved (UNKNOWN). NEXT: find the minimal finite-global relation that flips the G-CROSS branch \u2014 candidate = a specific mixed-E677 interaction / provenance / no-reuse coupling NOT captured by the fixed four-layer shell. This is the open case; the finite verifier is now in place to test it.",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse residual, in FINITE-domain SAT. ZIPPER descent is LOCAL (19-pair first-cell core: Bad 0 + square 5 + sigma 10). G-CROSS branch (z Good) has NO local descent (order-20 UNKNOWN both solvers) \u2014 its obstruction is GLOBAL coupling. NEXT: find the global coupling that would flip the G-CROSS network \u2014 candidate = the simultaneous interaction among the 5 G-CROSS cells' mixed E677 that the 19-pair local core generalizes to (the ZIPPER core is the local seed; the G-CROSS needs its network analogue).",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -237,6 +237,13 @@
         "order10_k5_unsat": "local (CaDiCaL195)",
         "order20_gcross_unknown": "local (CaDiCaL195 330s + Glucose42 background)"
       }
+    },
+    {
+      "id": "zipper_minimal_pair_core_local",
+      "status": "PARK",
+      "reason": "Minimal pair-core extraction (Z3->PySAT Glucose42, --minimize-pair-core) on the order-15 ZIPPER UNSAT. The descent is forced by 19 E677 pairs, ALL local to the FIRST canonical cell: rows 0 (Bad point), 5 (its square s(0)), 10 (its sigma sigma(0)); inputs {5..12} on row 0, {0..8} on row 5, {0,1,2} on row 10. So the ZIPPER descent is a LOCAL first-cell mixed-E677 interaction (firstness H2), NOT full simultaneity. Contrast: the G-CROSS branch (z=sigma(q)*D(q) Good) has NO local descent (order-20 UNKNOWN on both solvers), so the G-CROSS obstruction is a GLOBAL coupling, not a single cell. Causal variable sharpened: z Bad (ZIPPER) -> local 19-pair descent; z Good (G-CROSS) -> no local descent, global network UNKNOWN.",
+      "commit": "ab8c022",
+      "pair_core": "(0,5..12),(5,0..8),(10,0,1,2)"
     }
   ],
   "process_laws": [
@@ -479,6 +486,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 40,
+  "schema_version": 41,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
