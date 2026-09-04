@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "zipper_certificate_template_and_gcross_differential",
+    "result_id": "gcross_arity_zipper_driven",
     "classification": "PARK",
-    "mechanism": "ZIPPER descent = 19-pair core + z-Bad (local, equivariant, H2 refuted); G-CROSS loses z-Bad => global"
+    "mechanism": "descent is ZIPPER-driven (>=1 z-Bad UNSAT); pure G-CROSS (all z-Good) is the sole hard core"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse. CERTIFICATE TRANSFER resolved the ZIPPER sibling: descent = 19-pair minimal E677 core (5 essential roles) + z-Bad (ZIPPER closure z=sigma(q)*D(q)=H(q)). z Good (G-CROSS) => no LOCAL descent (SAT), so the G-CROSS obstruction is GLOBAL (order-20 UNKNOWN). NEXT: find the smallest GLOBAL coupling among the 5 G-CROSS cells that forces descent \u2014 the network analogue of the 19-pair local core + z-Bad edge, with z Good. The missing interaction is a cross-cell relation (sigma layer x kappa layer / G-CROSS crossing z*t=h) that the ZIPPER shell collapses and the G-CROSS shell separates.",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse. CERTIFICATE ARITY resolved: descent is ZIPPER-DRIVEN \u2014 any >=1 ZIPPER cell (z=sigma(q)*D(q)=H(q) Bad) forces UNSAT even mixed with G-CROSS cells (k=0..4 all UNSAT). The PURE G-CROSS configuration (all 5 cells z Good) is the single hard core (k=5 UNKNOWN, = frozen source order-20). The entire open problem reduces to: is the pure-G-CROSS four-layer shell (all z Good) SAT (counterexample) or UNSAT (descent)? NEXT: attack the pure-G-CROSS case directly \u2014 it is the only non-ZIPPER-decidable configuration, and it needs a non-local (global) argument or a better encoding (symmetry breaking / CDCL portfolio / smaller separator), NOT more z-colour forcing.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -253,6 +253,21 @@
       "core_size": 19,
       "roles": 5,
       "firstness": "REFUTED (equivariant)"
+    },
+    {
+      "id": "gcross_arity_zipper_driven",
+      "status": "PARK",
+      "reason": "MINIMAL CERTIFICATE ARITY (four-layer shell order-20, full E677, per-cell z-colour selector, PySAT Glucose42). Base shell (no E677) SAT (encoding sound). z-colour case-split (z=sigma(q)*D(q), exhaustive ZIPPER-Bad / G-CROSS-Good per frozen C7): k=0 (all ZIPPER) UNSAT; k=1 (1 G-CROSS + 4 ZIPPER) UNSAT; k=2,3,4 (>=1 ZIPPER) all UNSAT (fast, 0-38s); k=5 (all 5 G-CROSS, pure) UNKNOWN (hard >=170s); free-z (frozen order-20) UNKNOWN. => the descent is ZIPPER-DRIVEN: ANY single ZIPPER cell (z Bad) forces UNSAT even in MIXED configurations (contagious). The PURE G-CROSS configuration (all z Good, no ZIPPER) is the SINGLE irreducible hard core = the frozen source open problem. k* (G-CROSS cells needed for descent) is ill-posed: G-CROSS cells do NOT drive descent at any k<=5; the descent is a z-Bad (ZIPPER) phenomenon. Endpoint D: current encoding cannot decide the pure-G-CROSS (k=5) case.",
+      "commit": "33eefbe",
+      "arity_result": {
+        "k0_unsat": true,
+        "k1_unsat": true,
+        "k2_unsat": true,
+        "k3_unsat": true,
+        "k4_unsat": true,
+        "k5_unknown": true,
+        "base_sat": true
+      }
     }
   ],
   "process_laws": [
@@ -495,6 +510,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 42,
+  "schema_version": 43,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
