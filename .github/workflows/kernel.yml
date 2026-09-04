@@ -100,3 +100,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/OntologyExtension.lean
+      - name: Check developmental chain (3 generations)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/DevelopmentalChain.lean
