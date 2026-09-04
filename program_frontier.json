@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "lean_countermodel_blocked_by_closure_size",
+    "result_id": "semantic_audit_goodbad_definitional",
     "classification": "PARK",
-    "mechanism": "mixed route DOMAIN-BOUNDED; Lean cert blocked by closure size; colour-predicate freeness + arms-necessary finding"
+    "mechanism": "definitional Good/Bad re-audit reproduces freeness; arms-necessary claim withdrawn"
   },
   "live_residual": {
-    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure (bounded Z3 n=3,4,5 + structural freeness; D(b) colour-free). Lean kernel certification blocked by E677-closure size (~228 elements). The freeness is colour-predicate-level: one magma + two colourings. The 5-element self-band fragment is UNSAT (arms necessary). SURVIVING ROUTE: the frozen all-Bad HIT/ZERO descent \u2014 the frozen source's named remaining direct proof task (route the three root types Bad*Bad->Good / Good-row->Bad / all-Bad ZERO through the HIT/ZERO descent without recycling the collision charge). Next: audit the exact frozen descent consumer obligation and identify the smallest unresolved bridge (local witness vs propagating invariant; what relational structure carries the propagation).",
+    "text": "Mixed Good-row route: DOMAIN-BOUNDED closure, now under the CORRECT definitional Good/Bad (Good(x)<->D(x)=x). A_n leaves D(D(b))=D(b) free (both SAT n=3,4,5), so the mixed route cannot force D(b) Good (the D-HIT). The arms-necessary claim is withdrawn (5-element UNSAT was a closed-carrier artifact; self-band fragment SAT with fresh elements). SURVIVING ROUTE: frozen all-Bad HIT/ZERO descent (root-reuse statement remains open: G-CROSS + first FORK + simultaneous mixed E677 -> descent/HIT). Next: boundary-mine the root-reuse bridge on the frozen all-Bad route.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -220,6 +220,12 @@
       "status": "PARK",
       "reason": "Lean kernel certification of the mixed-route freeness is BLOCKED by countermodel size. Z3 model for the uninterpreted theory A_3 (collision+renewal+self-band+E677 on 9 named elements) has carrier size 228 (the E677 4-cell closure of 9 elements), dominated by a sink element. The finite-domain search for a minimal countermodel times out (full finite E677 table = original hard problem). KEY STRUCTURAL SIMPLIFICATION: the freeness is about the COLOUR PREDICATE, not the multiplication \u2014 a countermodel is ONE magma + TWO colourings of D(b) (Good(D(b)) flipped), not two magmas. SIDE-FINDING: the 5-element self-band fragment {b,s(b),sigma(b),kappa(b),D(b)} is UNSAT under E677 on 5x5 pairs \u2014 the arms r_i are NECESSARY to make E677 satisfiable, so the freeness is not a pure self-band free-cell fact. CLASSIFICATION: mixed route DOMAIN-BOUNDED (bounded Z3 n=3,4,5 + structural freeness), NOT Lean-kernel certified; parametric (all n>=3) not established.",
       "commit": "962519e"
+    },
+    {
+      "id": "semantic_audit_goodbad_definitional",
+      "status": "PARK",
+      "reason": "SEMANTIC AUDIT (schema-37 correction). Good/Bad is DEFINITIONAL in this programme: D(x)=((x*x)*x)*x, Good(x) <-> D(x)=x, Bad(x) <-> D(x)!=x (Good = E255-holds-at-x). The schema-36/37 probes had used a FREE Good predicate. Definitional re-audit: A_n (E677 + collision r_i*u=b + renewal r_i*b=r_{i+1} + self-band + base D(r_i)=r_i, D(u)=u, D(b)!=b) with D(D(b))=D(b) [D(b) Good] is SAT and D(D(b))!=D(b) [D(b) Bad] is SAT, at n=3,4,5. => the mixed-route freeness SURVIVES definitionally: A_n does NOT force D(b) Good (D(D(b))=D(b)), so the mixed route cannot force the D-HIT. QUESTION-2 CORRECTION: the 5-element self-band fragment UNSAT was a CLOSED-CARRIER artifact (option A: no 5-element closed carrier), NOT arms-logically-necessary (option B). With fresh unnamed elements the self-band fragment is SAT (carrier 68). The earlier arms-necessary claim is REVISED/withdrawn.",
+      "commit": "381d0d7"
     }
   ],
   "process_laws": [
@@ -462,6 +468,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 37,
+  "schema_version": 38,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
