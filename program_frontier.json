@@ -172,12 +172,6 @@
       "id": "allshare_fibre_finite_closure_lower_bound",
       "reason": "The all-A collision fibre plus self-band, escape (no arm = u), hinges and companion cells admits no finite E677 completion of size <= 8 (UNSAT); it requires >= 9 elements. bounded finite lower bound (k=6,7,8 UNSAT; k=9 UNKNOWN under Z3). local Z3 finite-closure probe; k=6/7/8 unsat, k=9 unknown (verifier timeout) SUPERSEDED by domain-independent merger->root bridge: finite k-bound is secondary now that size-free indegree-conservation gives the root.",
       "status": "SUPERSEDE"
-    },
-    {
-      "id": "merger_to_root_bridge",
-      "status": "PARK",
-      "commit": "a1321c1",
-      "reason": "BOUNDED Z3 evidence only (n=2..6, counter-assumption UNSAT). NOT a generic finite theorem: Z3 cannot express arbitrary [Fintype S]. Generic statement + hand proof (indegree-count identity Sigma_y |tau^-1(y)|=|S|) recorded in merger_to_root_generic_proof.md; REQUIRE_GENERIC_VERIFICATION awaiting Lean kernel acceptance over [Fintype S][Nonempty S]."
     }
   ],
   "process_laws": [
@@ -398,14 +392,19 @@
       "status": "PROMOTE"
     },
     {
-      "claim": "MERGER VERIFIED: the tau map has a merger at (b,h), indegree N(u,b)=n>=3 (n collision arms r_i*u=b). The conclusion \"=> indegree-0 root\" DEPENDS on the generic merger->root bridge, which is REQUIRE_GENERIC_VERIFICATION (bounded Z3 n=2..6 only). So the root-conclusion is NOT yet kernel-certified.",
+      "claim": "ATTACHED: tau map has a merger at (b,h), indegree N(u,b)=n>=3 (n collision arms r_i*u=b). By the now-kernel-certified merger->root bridge, this forces an indegree-0 root.",
       "id": "mixed_tau_merger_forces_root",
       "status": "PROMOTE"
     },
     {
       "id": "shared_root_interface",
       "status": "PROMOTE",
-      "claim": "Shared downstream input to the HIT/ZERO descent: an indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (the N(u,b)>=3 collision charge). Root EXISTENCE is supplied by the merger->root bridge (REQUIRE_GENERIC_VERIFICATION) plus the verified merger; the interface itself is a compression/design object, not a theorem."
+      "claim": "Shared downstream input to the HIT/ZERO descent: an indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (N(u,b)>=3 collision charge). Root EXISTENCE is now KERNEL-CERTIFIED: merger (verified) + merger->root bridge (Lean-verified) => root."
+    },
+    {
+      "id": "merger_to_root_bridge",
+      "status": "PROMOTE",
+      "claim": "GENERIC, KERNEL-CERTIFIED (Mathlib/Lean 4 v4.34.0-rc2, isolated lake subproject): for every finite type S and total f : S -> S, (exists y, 1 < |f^-1(y)|) -> (exists z, |f^-1(z)| = 0). Proved via the indegree-count identity Sigma_y |f^-1(y)| = |S| (Finset.card_eq_sum_card_fiberwise). Evidence: commit 4b43b189206a2e7c1ebce113955d9c8f0380f948, run 33823250647, job 100870297943, workflow \"Lean Mathlib verify merger->root\", conclusion success, no sorry/axiom."
     }
   ],
   "promotion_contract": [
@@ -415,6 +414,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 27,
+  "schema_version": 28,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
