@@ -79,4 +79,8 @@ jobs:
       - name: Check genuine policy reflexivity (Test 3A)
         env:
           LEAN_PATH: lean
-        run: lean lean/GenuinePolicyReflexivity.lean
+        run: lean -o lean/GenuinePolicyReflexivity.olean lean/GenuinePolicyReflexivity.lean
+      - name: Check forced kind genesis (Test 3B)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ForcedKindGenesis.lean
