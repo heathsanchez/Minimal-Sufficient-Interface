@@ -69,3 +69,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/Falsifiers.lean
+      - name: Check policy reflexivity (Test 3A)
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/ConstitutionalFailedFactorization.olean lean/ConstitutionalFailedFactorization.lean
+          lean -o lean/ConstitutionalRealizationAndRecursion.olean lean/ConstitutionalRealizationAndRecursion.lean
+          lean lean/PolicyReflexivity.lean
