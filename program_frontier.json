@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "gcross_arity_zipper_driven",
+    "result_id": "pure_gcross_backbone_zipper_exclusion_and_sigma_exclusion",
     "classification": "PARK",
-    "mechanism": "descent is ZIPPER-driven (>=1 z-Bad UNSAT); pure G-CROSS (all z-Good) is the sole hard core"
+    "mechanism": "F20 |= z Good (rigorous); z_i notin sigma-layer (forced backbone); square-vs-kappa is hard core"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse. CERTIFICATE ARITY resolved: descent is ZIPPER-DRIVEN \u2014 any >=1 ZIPPER cell (z=sigma(q)*D(q)=H(q) Bad) forces UNSAT even mixed with G-CROSS cells (k=0..4 all UNSAT). The PURE G-CROSS configuration (all 5 cells z Good) is the single hard core (k=5 UNKNOWN, = frozen source order-20). The entire open problem reduces to: is the pure-G-CROSS four-layer shell (all z Good) SAT (counterexample) or UNSAT (descent)? NEXT: attack the pure-G-CROSS case directly \u2014 it is the only non-ZIPPER-decidable configuration, and it needs a non-local (global) argument or a better encoding (symmetry breaking / CDCL portfolio / smaller separator), NOT more z-colour forcing.",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse. PURE G-CROSS (all z Good) is the authoritative residual (F20 |= z Good, free-z = pure-G-CROSS). Backbone: z_i NOTIN sigma-layer (forced); z_i in {square, kappa}. NEXT: determine whether z_i in square-layer or kappa-layer (or both possible) \u2014 this is the hard core and needs a global/cross-cell argument or better encoding, not more local backbone probes (which now return UNKNOWN at the square/kappa boundary).",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -268,6 +268,12 @@
         "k5_unknown": true,
         "base_sat": true
       }
+    },
+    {
+      "id": "pure_gcross_backbone_zipper_exclusion_and_sigma_exclusion",
+      "status": "PARK",
+      "reason": "SCOPE RIGOR + BACKBONE MINING. (1) EXHAUSTIVE z-colour case-split (all 8 C5-symmetry classes of the 2^5=32 assignments): every assignment with >=1 ZIPPER cell (z_i Bad) is UNSAT (fast); only all-G-CROSS (k=5, all z_i Good) is UNKNOWN. Hence at finite-shell scope F20 |= z_0 Good & ... & z_4 Good, and free-z F20 is equisatisfiable with pure-G-CROSS F20. The pure-G-CROSS (all z Good) is the AUTHORITATIVE residual (the only branch where a model can exist). (2) BACKBONE MINING (G20 + literal vs G20 + not-literal): z_0=sigma(q_0) UNSAT (0.0s), z_0=sigma(q_1) UNSAT (0.0s) => z_i NOTIN sigma-layer (z_i=sigma(q_j) forbidden for all j), forced. z_i in {square,kappa} is SLOW/UNKNOWN (the hard core). So the G-CROSS z=sigma(q)*D(q) is forced Good AND forced outside the sigma layer -> z_i in {square-layer, kappa-layer}. Next: pin z in square vs kappa (requires the global argument; currently hard).",
+      "commit": "1970faf"
     }
   ],
   "process_laws": [
@@ -510,6 +516,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 43,
+  "schema_version": 44,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
