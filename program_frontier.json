@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "extra_root_local_orbit_no_descent",
-    "classification": "PARK",
-    "mechanism": "corrected extra-root tau-orbit probe: sigma Bad SAT -> no local descent forcing"
+    "result_id": "mixed_root_type_undetermined",
+    "classification": "REQUIRE_ATTACHMENT",
+    "mechanism": "corrected shared-root-interface: mixed root type not forced by local fibre"
   },
   "live_residual": {
-    "text": "Strict extra-root branch Z_Omega>b: route the certified indegree-0 tau-root through its genuine tau-component WITHOUT recycling the N(u,b)>=3 merger charge, forcing a strictly smaller D-cycle/depth or HIT. CORRECTED negative: the local tau-orbit of a type-1 extra root (kappa(x) Bad) does NOT force a coloured boundary (sigma(x) Bad is SAT); the descent is GLOBAL. The missing distinction is the non-recycling of the merger slot: the root's tau-component must terminate in a FRESH Bad state / coloured cell rather than re-entering (b,h). Boundary-mine that global distinction; local FORK/G-CROSS and extra-root-orbit probes are exhausted (PARKed) as they omit the non-recycling condition.",
+    "text": "Strict extra-root descent Z_Omega>b is BLOCKED until the MIXED root type is determined. Corrections this turn: (a) the extra root local tau-orbit does NOT force a coloured boundary (sigma(x) Bad is SAT); (b) E677(u,u)/E677(b,b) self-instances alone do NOT force sigma(u)/sigma(b) outside U={u,b}; (c) frozen (h,b) is all-Bad so its root type comes from the canonical-port indegree classification, which has NO mixed analogue yet. Next: derive the mixed diagonal escape (the specific mixed nonperiodic state + mixed indegree classification) that determines the mixed root type, OR show the mixed collision cell r_i*u=b (Good-row->Bad, frozen type 2) directly feeds the HIT descent.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -178,6 +178,12 @@
       "status": "PARK",
       "reason": "Corrected boundary probe (removed accidental Good(sigma) assumption): for the type-1 extra root gamma_x=(x,kappa(x)) with kappa(x) Bad, the self-band sigma(x)=(x*x)*x, kappa(x)=x*sigma(x), x*kappa(x)=x, and the tau-orbit (x,kappa)->(x,sigma)->(kappa,w) with kappa*w=sigma. sigma(x) Bad is SAT (evade): the orbit can stay all-Bad and does NOT force a Bad*Bad->Good crossing. The descent therefore requires the GLOBAL non-recycling constraint (the extra roots tau-component re-entering the merger (b,h) / N(u,b)>=3 charge), NOT a local forcing. Local extra-root orbit alone is verifier-consistent with evasion.",
       "commit": "b0c8914"
+    },
+    {
+      "id": "diagonal_selfinstance_no_escape_alone",
+      "status": "PARK",
+      "reason": "E677(u,u) and E677(b,b) self-instances + self-bands (sigma(u)=(u*u)*u, kappa(u)=u*sigma(u), sigma(b)=(b*b)*b, kappa(b)=b*sigma(b), u*kappa(u)=u, b*kappa(b)=b), with ONLY essential distinctness u!=b: sigma(u) in {u,b}, sigma(b) in {u,b}, and kappa(u)/kappa(b) colours are ALL SAT. The diagonal self-instance does NOT force sigma(u) or sigma(b) outside U={u,b}. The mixed escape therefore does NOT come from the bare diagonal self-instance; it comes from the collision-fibre hinge (schema 22).",
+      "commit": "e2fbc01"
     }
   ],
   "process_laws": [
@@ -404,8 +410,8 @@
     },
     {
       "id": "shared_root_interface",
-      "status": "PROMOTE",
-      "claim": "Shared downstream input to the HIT/ZERO descent: an indegree-0 tau-root (v,y) with N(v*y,v)=0, typed by colour (Bad*Bad->Good, Good-row->Bad, all-Bad ZERO), carrying non-reuse provenance (N(u,b)>=3 collision charge). Root EXISTENCE is now KERNEL-CERTIFIED: merger (verified) + merger->root bridge (Lean-verified) => root."
+      "status": "PARK",
+      "claim": "REVISED (was PROMOTE): the frozen all-Bad route and the mixed route do NOT currently converge on a single typed root. Frozen (h,b) is ALL-BAD (line 131); its backward tree root is typed via the canonical-port indegree classification. The mixed route (collision fibre) yields only root EXISTENCE via the kernel-certified merger->root bridge; its root LOCATION and TYPE are not determined by the local fibre (indegree accounting: merger (b,h) has indegree n>=3, arms (r_i,u) have indegree N(b,r_i)>=1, the root may be any orbit state). Mixed root type must be determined before the frozen HIT/ZERO descent applies."
     },
     {
       "id": "merger_to_root_bridge",
@@ -420,6 +426,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 29,
+  "schema_version": 30,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
