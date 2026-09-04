@@ -22,12 +22,12 @@
   },
   "full_D_total": 5040,
   "last_transition": {
-    "result_id": "zipper_minimal_pair_core_local",
+    "result_id": "zipper_certificate_template_and_gcross_differential",
     "classification": "PARK",
-    "mechanism": "ZIPPER descent local (19-pair first-cell core); G-CROSS branch global (UNKNOWN) \u2014 causal variable is z-colour"
+    "mechanism": "ZIPPER descent = 19-pair core + z-Bad (local, equivariant, H2 refuted); G-CROSS loses z-Bad => global"
   },
   "live_residual": {
-    "text": "Frozen all-Bad HIT/ZERO root-reuse residual, in FINITE-domain SAT. ZIPPER descent is LOCAL (19-pair first-cell core: Bad 0 + square 5 + sigma 10). G-CROSS branch (z Good) has NO local descent (order-20 UNKNOWN both solvers) \u2014 its obstruction is GLOBAL coupling. NEXT: find the global coupling that would flip the G-CROSS network \u2014 candidate = the simultaneous interaction among the 5 G-CROSS cells' mixed E677 that the 19-pair local core generalizes to (the ZIPPER core is the local seed; the G-CROSS needs its network analogue).",
+    "text": "Frozen all-Bad HIT/ZERO root-reuse. CERTIFICATE TRANSFER resolved the ZIPPER sibling: descent = 19-pair minimal E677 core (5 essential roles) + z-Bad (ZIPPER closure z=sigma(q)*D(q)=H(q)). z Good (G-CROSS) => no LOCAL descent (SAT), so the G-CROSS obstruction is GLOBAL (order-20 UNKNOWN). NEXT: find the smallest GLOBAL coupling among the 5 G-CROSS cells that forces descent \u2014 the network analogue of the 19-pair local core + z-Bad edge, with z Good. The missing interaction is a cross-cell relation (sigma layer x kappa layer / G-CROSS crossing z*t=h) that the ZIPPER shell collapses and the G-CROSS shell separates.",
     "type": "ATTACHMENT"
   },
   "live_state_parent_sha": "87c1e3e41a1792fd173173b0895e47f7ffe4c367",
@@ -244,6 +244,15 @@
       "reason": "Minimal pair-core extraction (Z3->PySAT Glucose42, --minimize-pair-core) on the order-15 ZIPPER UNSAT. The descent is forced by 19 E677 pairs, ALL local to the FIRST canonical cell: rows 0 (Bad point), 5 (its square s(0)), 10 (its sigma sigma(0)); inputs {5..12} on row 0, {0..8} on row 5, {0,1,2} on row 10. So the ZIPPER descent is a LOCAL first-cell mixed-E677 interaction (firstness H2), NOT full simultaneity. Contrast: the G-CROSS branch (z=sigma(q)*D(q) Good) has NO local descent (order-20 UNKNOWN on both solvers), so the G-CROSS obstruction is a GLOBAL coupling, not a single cell. Causal variable sharpened: z Bad (ZIPPER) -> local 19-pair descent; z Good (G-CROSS) -> no local descent, global network UNKNOWN.",
       "commit": "ab8c022",
       "pair_core": "(0,5..12),(5,0..8),(10,0,1,2)"
+    },
+    {
+      "id": "zipper_certificate_template_and_gcross_differential",
+      "status": "PARK",
+      "reason": "CERTIFICATE-TRANSFER result (finite SAT, PySAT Glucose42). The ZIPPER descent certificate is characterized: (1) minimal core = exactly 19 E677 pairs (greedy deletion confirms minimal), split into 5 ESSENTIAL role groups \u2014 E677(q, squares), E677(q, sigma), E677(s(q), Bad), E677(s(q), squares), E677(sigma(q), Bad) \u2014 all jointly necessary, no single group suffices; (2) EQUIVARIANT: the shifted core (image under the K5 automorphism) is also UNSAT, so the FIRST cell is naming/symmetry, NOT causal firstness => H2 (firstness) REFUTED. (3) THE ESSENTIAL CONSUMER EDGE is the ZIPPER closure z=sigma(q)*D(q)=H(q) Bad: shell minus that fix + 19-pair core is SAT; + z Bad is UNSAT; + z Good (G-CROSS) is SAT. => certificate_ZIPPER = 19-pair joint core + z Bad. certificate_GCROSS loses the z-Bad edge, so the local 19-pair core does NOT force descent when z is Good. ZIPPER descent is LOCAL; G-CROSS branch has NO local descent (z Good consistent), so its descent (if any) requires GLOBAL coupling across the G-CROSS network (order-20 UNKNOWN). Differential named: the z-Bad (ZIPPER-closure) edge is the missing semantic interaction.",
+      "commit": "0f85ce5",
+      "core_size": 19,
+      "roles": 5,
+      "firstness": "REFUTED (equivariant)"
     }
   ],
   "process_laws": [
@@ -486,6 +495,6 @@
     "EQUALITY_COMPLETE",
     "CAUSAL"
   ],
-  "schema_version": 41,
+  "schema_version": 42,
   "target": "Advance E677 -> E255 while improving and externally qualifying the developmental solving process."
 }
