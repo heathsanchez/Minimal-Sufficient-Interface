@@ -132,3 +132,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/SelfHosting.lean
+      - name: Check full-language self-hosting (branching, reconvergence, MSI)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/FullLangSelfHosting.lean
