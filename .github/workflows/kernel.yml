@@ -204,3 +204,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target6Result.lean
+      - name: Check paired quotient refinement (sort discriminator)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/QuotientRefinement.lean
