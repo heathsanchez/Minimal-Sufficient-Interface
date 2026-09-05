@@ -152,3 +152,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/Closure.lean
+      - name: Check frozen induction falsification target (residual-derived generalization)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/InductionFalsification/Phase2to4.lean
