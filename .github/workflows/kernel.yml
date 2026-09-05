@@ -156,3 +156,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/InductionFalsification/Phase2to4.lean
+      - name: Check generic lemma-schema synthesis (reverse calibration, frozen)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/GenericLemmaSynthesis.lean
