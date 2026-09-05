@@ -172,3 +172,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/MetaDevelopment.lean
+      - name: Check frozen signature-generic falsification target 3
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target3Result.lean
