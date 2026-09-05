@@ -128,3 +128,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/CtorGenesis.lean
+      - name: Check self-hosting generator evolution
+        env:
+          LEAN_PATH: lean
+        run: lean lean/SelfHosting.lean
