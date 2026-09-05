@@ -160,3 +160,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/GenericLemmaSynthesis.lean
+      - name: Check frozen lemma-synthesis falsification target 2
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target2Result.lean
