@@ -176,3 +176,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target3Result.lean
+      - name: Check prospective hidden-concreteness prediction
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ProspectivePrediction.lean
