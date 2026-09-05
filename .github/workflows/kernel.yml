@@ -144,3 +144,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ContextGenesis.lean
+      - name: Check domain-generic developmental kernel (role derivation + convergence)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/DomainGenericKernel.lean
