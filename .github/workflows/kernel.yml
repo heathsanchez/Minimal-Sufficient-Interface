@@ -188,3 +188,11 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target4Result.lean
+      - name: Check search policy as developmental state
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/SearchPolicy.lean
+      - name: Check prospective meta prediction target 5
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ProspectivePrediction2.lean
