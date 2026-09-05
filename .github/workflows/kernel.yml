@@ -148,3 +148,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/DomainGenericKernel.lean
+      - name: Check necessity, equivalence, certified cross-domain transition
+        env:
+          LEAN_PATH: lean
+        run: lean lean/Closure.lean
