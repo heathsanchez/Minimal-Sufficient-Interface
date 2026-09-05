@@ -120,3 +120,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/SelfContainedWorld.lean
+      - name: Check residual-derived repair synthesis
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ResidualSynthesis.lean
