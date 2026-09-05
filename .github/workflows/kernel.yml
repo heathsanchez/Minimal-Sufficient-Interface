@@ -136,3 +136,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/FullLangSelfHosting.lean
+      - name: Check unified developmental transition (completeness boundary)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/UnifiedStep.lean
