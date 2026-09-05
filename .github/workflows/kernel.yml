@@ -164,3 +164,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target2Result.lean
+      - name: Check signature-generic typed term calculus
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/SignatureGenericTerm.lean
