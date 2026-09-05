@@ -212,3 +212,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target7Result.lean
+      - name: Check operator refinement (operator discriminator)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/OperatorRefinement.lean
