@@ -180,3 +180,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/ProspectivePrediction.lean
+      - name: Check signature-generic candidate-construction algebra
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/CandidateGrammar.lean
