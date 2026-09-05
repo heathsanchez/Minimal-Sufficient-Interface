@@ -196,3 +196,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/ProspectivePrediction2.lean
+      - name: Check frozen control-parametric falsification target 5
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target5Result.lean
