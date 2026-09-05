@@ -140,3 +140,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/UnifiedStep.lean
+      - name: Check residual-induced context calculus
+        env:
+          LEAN_PATH: lean
+        run: lean lean/ContextGenesis.lean
