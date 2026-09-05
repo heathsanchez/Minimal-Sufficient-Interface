@@ -220,3 +220,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target8Result.lean
+      - name: Check position refinement (path discriminator)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/PositionRefinement.lean
