@@ -184,3 +184,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/CandidateGrammar.lean
+      - name: Check frozen prospective falsification target 4
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target4Result.lean
