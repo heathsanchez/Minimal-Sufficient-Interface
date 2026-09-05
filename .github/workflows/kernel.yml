@@ -200,3 +200,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target5Result.lean
+      - name: Check feature-extractor collapse (target 6)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target6Result.lean
