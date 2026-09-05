@@ -124,3 +124,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/ResidualSynthesis.lean
+      - name: Check constructor-language genesis
+        env:
+          LEAN_PATH: lean
+        run: lean lean/CtorGenesis.lean
