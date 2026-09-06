@@ -1,0 +1,153 @@
+name: ARC seed capability discovery v2
+
+on:
+  push:
+    branches:
+      - experiment/arc-seed-discovery-v2
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout MSI experiment branch
+        uses: actions/checkout@v4
+
+      - name: Checkout independent ARC-AGI-3 ls20 solver at frozen release
+        run: |
+          git clone --depth 1 --branch phase9-complete https://github.com/zzZYHarold/arc-agi-3-ls20-agent.git /tmp/ls20
+          cd /tmp/ls20
+          test "$(git rev-parse HEAD)" = "c2ae4f02bf8e5098f3fbd28787ffd84a09c74071"
+
+      - name: Install frozen solver dependencies
+        run: |
+          python3 -m venv /tmp/ls20/.venv
+          /tmp/ls20/.venv/bin/python -m pip install --upgrade pip
+          /tmp/ls20/.venv/bin/pip install -r /tmp/ls20/requirements.txt
+
+      - name: Force public ARC endpoint
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/ls20/src/ls20/env.py')
+          s = p.read_text()
+          old = 'operation_mode=OperationMode.OFFLINE,'
+          new = 'operation_mode=OperationMode.NORMAL,'
+          assert old in s
+          p.write_text(s.replace(old, new, 1))
+          PY
+          rm -rf /tmp/ls20/environment_files /tmp/ls20/recordings
+
+      - name: Blind minimal capability discovery on real ls20
+        run: |
+          cd /tmp/ls20
+          PYTHONPATH=src:. .venv/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.evaluate_phase9_ablations import _solve, BASE_CONFIG
+
+          # Preregistered candidate set. The controller is not given an order.
+          CAPS = {
+              'causal': 'enable_causal_planner',
+              'relational': 'enable_phase8_options',
+              'composition': 'enable_phase9_projected_composition',
+          }
+
+          # Everything except the three target capabilities remains identical to the frozen solver.
+          config = dict(BASE_CONFIG)
+          for flag in CAPS.values():
+              config[flag] = False
+
+          def run(label, cfg):
+              result = _solve(0, cfg)
+              row = {
+                  'label': label,
+                  'levels_completed': result.levels_completed,
+                  'success': result.success,
+                  'total_actions': result.total_actions,
+                  'failure_reason': result.failure_reason,
+                  'game_over': result.game_over,
+              }
+              print(json.dumps(row, sort_keys=True), flush=True)
+              return row
+
+          trace = []
+          baseline = run('start_none', config)
+          trace.append({'round': 0, 'baseline': baseline, 'retained': []})
+          current_levels = baseline['levels_completed']
+          retained = []
+          remaining = set(CAPS)
+
+          round_no = 1
+          while remaining and current_levels < 7:
+              trials = []
+              for cap in sorted(remaining):
+                  trial_cfg = dict(config)
+                  trial_cfg[CAPS[cap]] = True
+                  row = run(f'round{round_no}_add_{cap}', trial_cfg)
+                  row['capability'] = cap
+                  row['delta_levels'] = row['levels_completed'] - current_levels
+                  trials.append(row)
+
+              # Verifier-only retention rule: maximize strictly positive reachable-level gain.
+              # Tie-break is fewer total actions, then lexical name for determinism.
+              improving = [r for r in trials if r['delta_levels'] > 0]
+              if not improving:
+                  trace.append({'round': round_no, 'trials': trials, 'decision': 'NO_IMPROVING_REPAIR', 'retained': list(retained)})
+                  break
+              improving.sort(key=lambda r: (-r['delta_levels'], r['total_actions'], r['capability']))
+              winner = improving[0]
+              cap = winner['capability']
+              config[CAPS[cap]] = True
+              retained.append(cap)
+              remaining.remove(cap)
+              old_levels = current_levels
+              current_levels = winner['levels_completed']
+              trace.append({
+                  'round': round_no,
+                  'baseline_levels': old_levels,
+                  'trials': trials,
+                  'winner': winner,
+                  'retained': list(retained),
+              })
+              round_no += 1
+
+          final = run('final_retained', config)
+          discovered_order = retained
+          strict_monotone = all(
+              step.get('winner', {}).get('delta_levels', 0) > 0
+              for step in trace if step.get('winner') is not None
+          )
+          report = {
+              'seed': 0,
+              'candidate_capabilities': sorted(CAPS),
+              'order_was_not_supplied': True,
+              'discovered_order': discovered_order,
+              'start_levels': baseline['levels_completed'],
+              'final_levels': final['levels_completed'],
+              'final_success': final['success'],
+              'strict_monotone_retention': strict_monotone,
+              'trace': trace,
+              'claim_boundary': 'This tests verifier-guided selection and minimal retention from a fixed candidate capability set on public ls20 seed 0. It does not test synthesis of new code from scratch or generalization to unseen ARC environments.',
+          }
+          report['seed_discovery_pass'] = (
+              final['levels_completed'] == 7
+              and final['success']
+              and len(discovered_order) >= 1
+              and strict_monotone
+          )
+
+          out = Path('/tmp/arc-seed-discovery-v2')
+          out.mkdir(parents=True, exist_ok=True)
+          (out / 'SEED_DISCOVERY_RESULT.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(report, indent=2, sort_keys=True), flush=True)
+          if not report['seed_discovery_pass']:
+              raise SystemExit(2)
+          PY
+
+      - name: Upload discovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc-seed-discovery-v2
+          path: /tmp/arc-seed-discovery-v2
