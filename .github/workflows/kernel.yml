@@ -224,3 +224,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/PositionRefinement.lean
+      - name: Check quotient adequacy witness (target 9)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target9Result.lean
