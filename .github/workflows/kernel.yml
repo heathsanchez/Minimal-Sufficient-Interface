@@ -272,3 +272,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/RepairSynthesis.lean
+      - name: Check end-to-end developmental-kernel test (fresh collapse + replay)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/EndToEnd.lean
