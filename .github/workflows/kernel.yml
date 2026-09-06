@@ -276,3 +276,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/EndToEnd.lean
+      - name: Check certified repair-language insufficiency + enlargement
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/LanguageEnlargement.lean
