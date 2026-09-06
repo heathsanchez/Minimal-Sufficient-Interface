@@ -240,3 +240,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target11Result.lean
+      - name: Check composition repair (multi-diff + generic fill_compose)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/CompositionRepair.lean
