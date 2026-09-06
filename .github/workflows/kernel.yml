@@ -228,3 +228,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target9Result.lean
+      - name: Check relational residual (one-hole context reuse)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/RelationalResidual.lean
