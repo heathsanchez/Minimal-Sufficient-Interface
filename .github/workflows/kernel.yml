@@ -300,3 +300,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/OntologyInsufficiency.lean
+      - name: Check class-level symmetry failure (swap obstruction derives ontology class)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/SymmetryClass.lean
