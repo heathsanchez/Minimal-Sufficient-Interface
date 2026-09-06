@@ -1,0 +1,87 @@
+name: ARC seed transfer v1
+
+on:
+  push:
+    branches:
+      - experiment/arc-seed-transfer-v1
+  workflow_dispatch:
+
+jobs:
+  arc-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout MSI experiment branch
+        uses: actions/checkout@v4
+
+      - name: Checkout independent ARC-AGI-3 ls20 solver at frozen release
+        run: |
+          git clone --depth 1 --branch phase9-complete https://github.com/zzZYHarold/arc-agi-3-ls20-agent.git /tmp/ls20
+          cd /tmp/ls20
+          test "$(git rev-parse HEAD)" = "c2ae4f02bf8e5098f3fbd28787ffd84a09c74071"
+
+      - name: Install frozen solver dependencies
+        run: |
+          python3 -m venv /tmp/ls20/.venv
+          /tmp/ls20/.venv/bin/python -m pip install --upgrade pip
+          /tmp/ls20/.venv/bin/pip install -r /tmp/ls20/requirements.txt
+
+      - name: Convert frozen solver from local replay to public anonymous ARC endpoint
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/ls20/src/ls20/env.py')
+          s = p.read_text()
+          old = 'operation_mode=OperationMode.OFFLINE,'
+          new = 'operation_mode=OperationMode.NORMAL,'
+          assert old in s
+          p.write_text(s.replace(old, new, 1))
+          PY
+          rm -rf /tmp/ls20/environment_files /tmp/ls20/recordings
+
+      - name: Run causal / relational / composition ablations on real ls20
+        env:
+          ARC_API_KEY: ""
+        run: |
+          cd /tmp/ls20
+          PYTHONPATH=src:. .venv/bin/python scripts/evaluate_phase9_ablations.py \
+            --seeds 0 \
+            --variants full no_causal_planner no_phase8_relational_options no_phase9_projected_composition \
+            --output-dir /tmp/arc-seed-transfer
+
+      - name: Evaluate seed-transfer prediction
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('/tmp/arc-seed-transfer/phase9i_ablation_report.json')
+          r = json.loads(p.read_text())
+          by = {x['variant']: x for x in r['variant_summaries']}
+          required = ['full','no_causal_planner','no_phase8_relational_options','no_phase9_projected_composition']
+          assert all(k in by for k in required), by.keys()
+          result = {
+            'full': by['full'],
+            'no_causal_planner': by['no_causal_planner'],
+            'no_relational_layer': by['no_phase8_relational_options'],
+            'no_composition': by['no_phase9_projected_composition'],
+            'prediction': {
+              'full_succeeds': by['full']['success_count'] == 1,
+              'causal_ablation_hurts': by['no_causal_planner']['mean_levels_completed'] < by['full']['mean_levels_completed'],
+              'relational_ablation_hurts': by['no_phase8_relational_options']['mean_levels_completed'] < by['full']['mean_levels_completed'],
+              'composition_ablation_hurts': by['no_phase9_projected_composition']['mean_levels_completed'] < by['full']['mean_levels_completed'],
+            }
+          }
+          result['seed_transfer_pass'] = all(result['prediction'].values())
+          Path('/tmp/arc-seed-transfer/SEED_TRANSFER_RESULT.json').write_text(json.dumps(result, indent=2, sort_keys=True)+'\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          if not result['seed_transfer_pass']:
+              raise SystemExit(2)
+          PY
+
+      - name: Upload transfer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc-seed-transfer-v1
+          path: /tmp/arc-seed-transfer
+          if-no-files-found: warn
