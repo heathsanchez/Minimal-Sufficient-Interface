@@ -236,3 +236,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target10Result.lean
+      - name: Check multi-diff boundary (target 11)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target11Result.lean
