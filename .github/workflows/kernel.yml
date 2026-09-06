@@ -268,3 +268,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/AdequacyTester.lean
+      - name: Check automated minimal-repair synthesis
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/RepairSynthesis.lean
