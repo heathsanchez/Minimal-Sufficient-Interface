@@ -260,3 +260,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/DomainTransfer.lean
+      - name: Check multi-sort transfer (heterogeneous Expr/Bool)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/MultiSortTransfer.lean
