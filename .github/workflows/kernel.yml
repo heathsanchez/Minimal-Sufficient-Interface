@@ -264,3 +264,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/MultiSortTransfer.lean
+      - name: Check automated quotient-adequacy tester
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/AdequacyTester.lean
