@@ -280,3 +280,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/LanguageEnlargement.lean
+      - name: Check candidate-constructor genesis (derived discriminator)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/CandidateGenesis.lean
