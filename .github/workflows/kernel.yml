@@ -292,3 +292,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/GrammarGrowthInsufficiency.lean
+      - name: Check constraint-derived regime expansion (relational generated)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/RegimeExpansion.lean
