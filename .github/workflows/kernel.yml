@@ -296,3 +296,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/RegimeExpansion.lean
+      - name: Check certified ontology insufficiency (Ω_t={eq,neq} inadequate, ordering forced)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/OntologyInsufficiency.lean
