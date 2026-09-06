@@ -63,11 +63,11 @@ jobs:
               result = _solve(0, cfg)
               row = {
                   'label': label,
-                  'levels_completed': result.levels_completed,
-                  'success': result.success,
-                  'total_actions': result.total_actions,
-                  'failure_reason': result.failure_reason,
-                  'game_over': result.game_over,
+                  'levels_completed': int(result.final_levels_completed),
+                  'success': bool(result.success),
+                  'total_actions': int(result.total_actions),
+                  'failure_reason': None if result.success else result.reason,
+                  'game_over': bool(result.reason == 'game_over' or any(a.result.reason == 'game_over' for a in result.level_archives)),
               }
               print(json.dumps(row, sort_keys=True), flush=True)
               return row
@@ -147,7 +147,9 @@ jobs:
           PY
 
       - name: Upload discovery evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: arc-seed-discovery-v2
           path: /tmp/arc-seed-discovery-v2
+          if-no-files-found: warn
