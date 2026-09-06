@@ -288,3 +288,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/GrammarInsufficiency.lean
+      - name: Check grammar-growth insufficiency (Γ_t inadequate, relational obs)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/GrammarGrowthInsufficiency.lean
