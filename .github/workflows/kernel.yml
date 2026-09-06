@@ -232,3 +232,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/RelationalResidual.lean
+      - name: Check one-hole adequacy (target 10)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/Target10Result.lean
