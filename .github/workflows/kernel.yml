@@ -284,3 +284,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/CandidateGenesis.lean
+      - name: Check certified generator-grammar insufficiency (composition)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/GrammarInsufficiency.lean
