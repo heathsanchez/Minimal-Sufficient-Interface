@@ -248,3 +248,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target12Result.lean
+      - name: Check source-axis repair (directed diff)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/SourceRepair.lean
