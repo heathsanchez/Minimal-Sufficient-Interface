@@ -256,3 +256,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/Target13Result.lean
+      - name: Check domain transfer (frozen directed residual, unary domain)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/DomainTransfer.lean
