@@ -70,6 +70,8 @@ jobs:
         run: python e677_developmental_os_run.py
       - name: Run promotion acceptance integration (evidence computed from verifier, forged/missing/scope-widening rejected)
         run: python promotion_acceptance_integration.py | tee promotion_acceptance_integration.log
+      - name: Run authenticated promotion transition through the typed OS (forged/missing/failed/scope-widening/unattached/preservation-break rejected)
+        run: PYTHONPATH=. python tests/test_typed_os_authenticated_promotion.py | tee typed_os_authenticated_promotion.log
       - name: Verify machine-readable state
         run: |
           python - <<'PY'
