@@ -320,3 +320,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/ResidualBindingGenesis.lean
+      - name: Check controller selection (derives constraint, selects bind, genuine ablation)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ControllerSelection.lean
