@@ -324,3 +324,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/ControllerSelection.lean
+      - name: Check promotion acceptance (certificate + scope + attachment + preservation required)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/PromotionAcceptance.lean
