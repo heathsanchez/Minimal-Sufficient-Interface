@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - gate1-v1-v2-integration
+      - gate2-live-integration-8ed9730
       - recursive-discovery-compiler-v1
       - recursive-discovery-compiler-v2-live-attachment
   workflow_dispatch:
+    branches:
+      - gate2-live-integration-8ed9730
 
 permissions:
   contents: read
