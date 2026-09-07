@@ -304,3 +304,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/SymmetryClass.lean
+      - name: Check composed transition soundness (construction + preservation + attachment)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/TransitionSoundness.lean
