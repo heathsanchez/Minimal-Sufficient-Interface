@@ -316,3 +316,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/GeneratorClosure.lean
+      - name: Check residual-conditioned parameter binding (generator binds z from residual)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ResidualBindingGenesis.lean
