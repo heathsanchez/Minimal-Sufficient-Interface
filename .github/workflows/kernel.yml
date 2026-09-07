@@ -308,3 +308,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/TransitionSoundness.lean
+      - name: Check constructor-genesis negative control (order-free substrate unrepairable)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ConstructorGenesisControl.lean
