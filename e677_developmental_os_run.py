@@ -2,14 +2,19 @@
 
 Later verifier-earned consequences strictly outrank older residuals.
 
-CHANGE (live Gate 2 integration): the run now goes through
+CHANGE (live Gate 2 integration): the run routes promotion through
 ``TypedDevelopmentalOperatingSystem`` with a frozen authority derived from the
 existing externally-verified E677 certificate artifacts.  The strongest
-verified residual result (currently the T6 relative-phase theorem) is promoted
-as-is (scope preserved), and a forged/local-only witness is rejected by the
-same gate.  The typed OS computes the four obligations (verdict/attachment/scope/
+verified residual result is promoted as-is (scope preserved), and a forged /
+unrelated-witness / scope-widening / Boolean-bypass attempt is rejected by the
+gate.  The typed OS computes the four obligations (verdict/attachment/scope/
 preservation) from the frozen authority + actual provenance/state;
 caller-supplied Boolean fields never authorize promotion.
+
+The authority derives the capability's evidence identity from the strongest
+verified result's actual residual witness (the highest-index residual node in
+the provenance graph), not a hard-coded index, and verifies the
+source-to-witness relationship at validation time.
 
 This does NOT change the E677 mathematical theorem.  No four-row 141-state
 result is re-labelled as a T6 solution.  No E677=>E255 claim is made.
@@ -40,43 +45,92 @@ def strongest_verified_residual(join_state):
     return join_state['residual'], {'source': 'join-state'}
 
 
+def resolved_residual_witnesses(state):
+    """The residual witness ids actually present in the provenance graph."""
+    return {p['id'] for p in state.provenance_graph
+            if p['kind'] in ('residual-envelope', 'typed-residual', 'residual', 'verified-success')}
+
+
 # ---------------------------------------------------------------------------
 # Frozen authority: the OS invokes this callable; it never trusts a caller bool.
 # The authority is derived from the existing externally-verified certificate
 # artifacts — it does not introduce a new verifier.
 def mk_verifier(join_state):
-    strongest = strongest_verified_residual(join_state)
-    strongest_source = strongest[1]['source']
+    residual, prov = strongest_verified_residual(join_state)
+    strongest_source = prov['source']
 
     def authority(state, capability):
-        # Only the strongest verified residual's backing capability is admitted
-        # by the external-verifier gate.  Its provenance is checked separately by
-        # the typed OS (attachment obligation); this predicate answers only the
-        # authority verdict and is informed by (not relaxed by) the strongest
-        # verified source.
-        _ = strongest_source
-        return capability.id == 'cap:strongest-residual' and capability.scope == 'current-task'
+        if capability.id != 'cap:strongest-residual' or capability.scope != 'current-task':
+            return False
+        # 1. The capability's provenance must reference a residual witness that is
+        #    present in the current provenance graph.
+        present = resolved_residual_witnesses(state)
+        cap_provenance = set(capability.provenance)
+        referenced_present = cap_provenance & present
+        if not referenced_present:
+            return False
+        # 2. That witness must be the genuine strongest residual witness: the
+        #    highest-index residual-kind node in the graph.  An unrelated
+        #    witness (lower index / different source) cannot authorize promotion.
+        residual_nodes = [
+            (p['id'], p.get('evidence', {}).get('index'))
+            for p in state.provenance_graph
+            if p.get('kind') == 'residual' and p.get('id') in present
+        ]
+        if not residual_nodes:
+            return False
+        strongest_idx = max((idx for _, idx in residual_nodes if idx is not None), default=-1)
+        strongest_witness = {wid for wid, idx in residual_nodes if idx == strongest_idx}
+        if not (referenced_present & strongest_witness):
+            return False
+        # 3. The strongest verified source must be reachable (routing-decision
+        #    node carrying prov with 'source' must exist).
+        source_reachable = any(
+            p.get('evidence', {}).get('source') == strongest_source
+            for p in state.provenance_graph
+        )
+        return source_reachable
 
     return authority
 
 
-def promote_strongest(state, os):
+def promote_strongest(state, os, prov):
     """Promote the strongest verified residual through the typed gate.
 
-    Returns the Capability that was promoted.  Raises if the gate rejects.
+    The capability's evidence provenance is derived from the actual strongest
+    verified residual witness in the provenance graph — the highest-index
+    residual node, which corresponds to the strongest verified result's
+    residual.  Not hard-coded to residual:0.
+
+    ATOMIC: the candidate is staged then validated; on rejection the install is
+    rolled back so the retained capability state is unchanged.
     """
-    prov = {'source': 'controller:strongest-residual'}
-    # Provenance references the actual strongest verified residual witness
-    # (residual:0 per strongest_residual ordering), not an envelope Boolean.
-    provenance = ('residual:0', 'controller:strongest-residual')
+    # Derive evidence provenance from the actual strongest residual witness
+    # (highest-index residual node), not a hard-coded index.
+    residual_nodes = [
+        (p['id'], p.get('evidence', {}).get('index'))
+        for p in state.provenance_graph
+        if p.get('kind') == 'residual'
+    ]
+    if residual_nodes:
+        strongest_idx = max((idx for _, idx in residual_nodes if idx is not None), default=-1)
+        cap_prov = tuple(wid for wid, idx in residual_nodes if idx == strongest_idx)
+    else:
+        cap_prov = ()
     cap = Capability(
         'cap:strongest-residual', 'current-task',
-        ('strongest-residual',), 1.0, provenance,
+        ('strongest-residual',), 1.0, cap_prov,
     )
-    state.installed_capabilities.append(cap)
-    # promote_global COMPUTES verdict/attachment/scope/preservation from the frozen
-    # authority + actual state; it never reads attachment_certificate.
-    return cap, os.promote_global(state, cap.id)
+    # ATOMIC: stage then validate; roll back on rejection so a failed promotion
+    # does not leave a capability installed.
+    pre_installed = list(state.installed_capabilities)
+    try:
+        state.installed_capabilities.append(cap)
+        promoted_id = os.promote_global(state, cap.id)
+    except RuntimeError:
+        state.installed_capabilities[:] = pre_installed
+        raise
+    return cap, promoted_id
 
 
 def main():
@@ -101,7 +155,7 @@ def main():
     state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
 
     # Promote the strongest verified residual through the authenticated gate.
-    promoted_cap, promoted_id = promote_strongest(state, os)
+    promoted_cap, promoted_id = promote_strongest(state, os, prov)
 
     out = asdict(state)
     out['strongest_residual_provenance'] = prov
@@ -111,6 +165,7 @@ def main():
         'promoted_id': promoted_id,
         'verdict': 'executed+passed via frozen authority on verified certificate artifacts',
         'scope': promoted_cap.scope,
+        'provenance': list(promoted_cap.provenance),
         'preserves': [c.id for c in state.installed_capabilities],
     }
     Path('artifacts').mkdir(exist_ok=True)

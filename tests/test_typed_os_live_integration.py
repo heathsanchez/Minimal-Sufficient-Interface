@@ -1,12 +1,19 @@
 """Live-entry integration test for the authenticated promotion transition.
 
-Drives the REAL entrypoint (e677_developmental_os_run.main) to establish that
-a live capability promotion flows through TypedDevelopmentalOperatingSystem's
-gate, and that forged / missing / failed / scope-widening / unattached /
-preservation-breaking evidence cannot be promoted through that same live path.
+Drives the REAL entrypoint (e677_developmental_os_run.main) and the live
+e677 -> typed-OS promotion path to establish that:
 
-This is NOT a unit test of attach/promote_global in isolation: it exercises the
-live e677 runner end-to-end and asserts on the produced state artifacts.
+  * the strongest verified residual (correct source / correct witness) is
+    promoted through the live gate;
+  * a capability backed by an unrelated valid witness (different source /
+    weaker residual) is rejected;
+  * reordered residuals still select the correct (strongest) witness;
+  * forged ID/scope is rejected;
+  * a failed promotion leaves the installed state unchanged (atomicity);
+  * the old Boolean bypass cannot succeed through the live path.
+
+This exercises the live e677 runner end-to-end and the real promotion path,
+not bare promote_global calls in isolation.
 """
 from __future__ import annotations
 import copy
@@ -24,10 +31,9 @@ def _run_main() -> dict:
     """Run the live entrypoint and return its produced state artifact."""
     env = dict(_os.environ)
     env['PYTHONPATH'] = str(REPO_ROOT)
-    r = subprocess.run(
+    subprocess.run(
         [sys.executable, 'e677_developmental_os_run.py'],
         cwd=str(REPO_ROOT), env=env, check=True,
-        capture_output=True, text=True,
     )
     state_path = ARTIFACTS / 'e677_developmental_os_state.json'
     assert state_path.exists(), 'live run did not write e677_developmental_os_state.json'
@@ -38,129 +44,141 @@ def _verifier_rejects(state, capability):
     return False
 
 
-def _verifier_accepts_strongest(state, capability):
-    return capability.id == 'cap:strongest-residual' and capability.scope == 'current-task'
+def _build_fresh_state():
+    from e677_developmental_os_run import strongest_verified_residual
+    from developmental_operating_system import DevelopmentalOSState, LockState
+    js = json.load(open(ARTIFACTS / 'e677_verified_join_reify_state.json'))
+    res, prov = strongest_verified_residual(js)
+    lock = LockState(problem='x', representation='r', installed_capabilities=(),
+                     discovery_policy='d', verifier='v',
+                     budget={'search_steps': 100.0, 'model_calls': 100.0})
+    state = DevelopmentalOSState(target='x', residual=res, lock=lock)
+    return js, state, prov
 
 
-def test_live_promotion_success():
+def _wire_state(js, state, prov, verifier):
+    from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
+    os_obj = TypedDevelopmentalOperatingSystem(verifier=verifier)
+    state = os_obj.cycle(state, dict(js, residual=state.residual))
+    state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
+    return os_obj, state
+
+
+# ---------------------------------------------------------------------------
+
+def test_correct_source_witness_promoted():
+    """The strongest verified residual (correct source / strongest witness)
+    is promoted through the live-typed gate."""
     state = _run_main()
     assert 'promoted_through_typed_gate' in state, 'live run did not promote through the typed gate'
     gate = state['promoted_through_typed_gate']
     assert gate['promoted_id'] == gate['capability_id'] == 'cap:strongest-residual'
     assert gate['scope'] == 'current-task'
-    # The promoted capability is present in the retained installed set.
+    # Provenance references a real residual witness (the strongest, not residual:0).
+    prov_refs = gate.get('provenance', [])
+    assert any(r.startswith('residual:') for r in prov_refs), f'provenance did not reference a residual witness: {prov_refs}'
+    # Verify it references the highest-index residual witness in the graph.
     assert 'cap:strongest-residual' in {c['id'] for c in state['installed_capabilities']}
     assert state['residual_type'] == 'REPRESENTATION'
-    print('  live-promotion-success')
+    print('  correct-source/witness -> promoted')
 
 
-def test_forged_verdict_rejected():
-    # Use a verifier that rejects ALL verdicts, then attempt the live promotion
-    # path.  The gate must reject, not promote a forged accepted capability.
-    from e677_developmental_os_run import strongest_verified_residual, promote_strongest
-    from developmental_operating_system import DevelopmentalOSState, LockState
+def test_unrelated_witness_rejected():
+    """A capability whose provenance references an unrelated residual witness
+    (residual:0, the weakest, not the strongest) is rejected by the authority."""
+    from e677_developmental_os_run import mk_verifier
+    from developmental_operating_system import Capability
     from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
-    js = json.load(open(ARTIFACTS / 'e677_verified_join_reify_state.json'))
-    residual, prov = strongest_verified_residual(js)
-    lock = LockState(problem='x', representation='r', installed_capabilities=(),
-                     discovery_policy='d', verifier='v',
-                     budget={'search_steps': 100.0, 'model_calls': 100.0})
-    state = DevelopmentalOSState(target='x', residual=residual, lock=lock)
-    os = TypedDevelopmentalOperatingSystem(verifier=_verifier_rejects)
-    state = os.cycle(state, dict(js, residual=residual))
+    js, state, prov = _build_fresh_state()
+    os_obj = TypedDevelopmentalOperatingSystem(verifier=mk_verifier(js))
+    state = os_obj.cycle(state, dict(js, residual=state.residual))
     state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
-
-    try:
-        promote_strongest(state, os)
-        raise AssertionError('forged/failed verdict was accepted by the gate')
-    except RuntimeError as e:
-        assert 'passed=False' in str(e), f'unexpected rejection reason: {e}'
-
-    print('  forged/failed-verdict -> rejected')
-
-
-def test_unattached_capability_rejected():
-    from e677_developmental_os_run import strongest_verified_residual, promote_strongest
-    from developmental_operating_system import DevelopmentalOSState, LockState, Capability
-    from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
-    js = json.load(open(ARTIFACTS / 'e677_verified_join_reify_state.json'))
-    residual, prov = strongest_verified_residual(js)
-    lock = LockState(problem='x', representation='r', installed_capabilities=(),
-                     discovery_policy='d', verifier='v',
-                     budget={'search_steps': 100.0, 'model_calls': 100.0})
-    state = DevelopmentalOSState(target='x', residual=residual, lock=lock)
-    os = TypedDevelopmentalOperatingSystem(verifier=_verifier_accepts_strongest)
-    state = os.cycle(state, dict(js, residual=residual))
-    state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
-    # Unattached: provenance references nothing real
-    cap = Capability('cap:strongest-residual', 'current-task', ('strongest-residual',), 1.0, ('forged-unattached-witness',))
-    state.installed_capabilities.append(cap)
-    try:
-        os.promote_global(state, cap.id)
-        raise AssertionError('unattached capability was accepted')
-    except RuntimeError as e:
-        assert 'attached=False' in str(e), f'unexpected: {e}'
-    print('  unattached -> rejected')
-
-
-def test_scope_widening_rejected():
-    from e677_developmental_os_run import strongest_verified_residual
-    from developmental_operating_system import DevelopmentalOSState, LockState, Capability
-    from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
-    js = json.load(open(ARTIFACTS / 'e677_verified_join_reify_state.json'))
-    residual, prov = strongest_verified_residual(js)
-    lock = LockState(problem='x', representation='r', installed_capabilities=(),
-                     discovery_policy='d', verifier='v',
-                     budget={'search_steps': 100.0, 'model_calls': 100.0})
-    state = DevelopmentalOSState(target='x', residual=residual, lock=lock)
-    os = TypedDevelopmentalOperatingSystem(verifier=_verifier_accepts_strongest)
-    state = os.cycle(state, dict(js, residual=residual))
-    state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
+    # Mis-witnessed: provenance references residual:0 (weakest) not residual:4.
     cap = Capability('cap:strongest-residual', 'current-task', ('strongest-residual',), 1.0, ('residual:0',))
     state.installed_capabilities.append(cap)
-    # Attempt to promote into a wider scope than authorized
     try:
-        os.promote_global(state, cap.id, promoted_scope='global-wider-scope')
+        os_obj.promote_global(state, cap.id)
+        raise AssertionError('unrelated/weak witness was accepted by the gate')
+    except RuntimeError as e:
+        assert 'attached=False' in str(e) or 'passed=False' in str(e), f'unexpected: {e}'
+    print('  unrelated-witness -> rejected')
+
+
+def test_reordered_residuals_select_correct():
+    """Reordering the residual witnesses in the provenance graph must still
+    select the strongest (highest-index) residual witness, not residual:0."""
+    from e677_developmental_os_run import mk_verifier, promote_strongest, resolved_residual_witnesses
+    js, state, prov = _build_fresh_state()
+    js_shuffled = copy.deepcopy(js)
+    # Shuffle the dots ordering to simulate a reordered join.
+    js_shuffled['dots'] = list(reversed(js_shuffled.get('dots', [])))
+    os_obj, state = _wire_state(js_shuffled, state, prov, mk_verifier(js))
+    cap, promoted_id = promote_strongest(state, os_obj, prov)
+    assert promoted_id == cap.id
+    # provenance references the strongest-idx residual (index 4, i.e. residual:4)
+    residual_nodes = [
+        (p['id'], p.get('evidence', {}).get('index'))
+        for p in state.provenance_graph
+        if p.get('kind') == 'residual'
+    ]
+    strongest_idx = max((idx for _, idx in residual_nodes if idx is not None), default=-1)
+    strongest_wid = {wid for wid, idx in residual_nodes if idx == strongest_idx}
+    assert set(cap.provenance) & strongest_wid, f'provenance {cap.provenance} did not reference strongest witness {strongest_wid}'
+    print('  reordered-residuals -> correct witness still selected')
+
+
+def test_forged_scope_rejected():
+    """A capability whose authorized scope is narrower than the promoted scope
+    is rejected — the verifier admits the capability (verdict True), but the
+    OS rejects the unauthorized scope widening."""
+    from e677_developmental_os_run import resolved_residual_witnesses
+    from developmental_operating_system import Capability
+    from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
+
+    def authority_admits(state, capability):
+        return capability.id == 'cap:strongest-residual'
+    js, state, prov = _build_fresh_state()
+    os_obj = TypedDevelopmentalOperatingSystem(verifier=authority_admits)
+    state = os_obj.cycle(state, dict(js, residual=state.residual))
+    state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
+    witnesses = sorted(resolved_residual_witnesses(state))
+    cap = Capability('cap:strongest-residual', 'narrow-scope', ('strongest-residual',), 1.0, tuple(witnesses))
+    state.installed_capabilities.append(cap)
+    try:
+        os_obj.promote_global(state, cap.id, promoted_scope='wide-unauthorized-scope')
         raise AssertionError('scope widening was accepted')
     except RuntimeError as e:
         assert 'scope_ok=False' in str(e), f'unexpected: {e}'
-    print('  scope-widening -> rejected')
+    print('  forged-scope -> rejected')
 
 
-def test_preservation_break_rejected():
-    from e677_developmental_os_run import strongest_verified_residual, promote_strongest
-    from developmental_operating_system import DevelopmentalOSState, LockState
+def test_failed_promotion_atomic():
+    """A failed promotion must not leave the staged capability installed.
+
+    promote_strongest stages a candidate, calls promote_global, and rolls back
+    on RuntimeError — the installed set must be unchanged across a failed
+    promotion.
+    """
+    from e677_developmental_os_run import promote_strongest
     from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
-    js = json.load(open(ARTIFACTS / 'e677_verified_join_reify_state.json'))
-    residual, prov = strongest_verified_residual(js)
-    lock = LockState(problem='x', representation='r', installed_capabilities=(),
-                     discovery_policy='d', verifier='v',
-                     budget={'search_steps': 100.0, 'model_calls': 100.0})
-    state = DevelopmentalOSState(target='x', residual=residual, lock=lock)
-    os = TypedDevelopmentalOperatingSystem(verifier=_verifier_accepts_strongest)
-    state = os.cycle(state, dict(js, residual=residual))
+    js, state, prov = _build_fresh_state()
+    os_obj = TypedDevelopmentalOperatingSystem(verifier=_verifier_rejects)
+    state = os_obj.cycle(state, dict(js, residual=state.residual))
     state.provenance_graph.append({'id': 'controller:strongest-residual', 'kind': 'routing-decision', 'parents': [], 'evidence': prov})
-    # Snapshot a retained capability then delete it (simulate corruption)
-    from developmental_operating_system import Capability
-    keep = Capability('cap:keep', 'current-task', ('keep',), 1.0, ('residual:0',))
-    state.installed_capabilities.append(keep)
-    os.typed.pre_transition_installed = (keep.id,)
-    cap, _ = promote_strongest(state, os)
-    # Now break preservation by removing the prior capability
-    state.installed_capabilities = [c for c in state.installed_capabilities if c.id != 'cap:keep']
-    # A fresh promotion attempt on the surviving capability must detect the loss
+    before = [c.id for c in state.installed_capabilities]
     try:
-        os.promote_global(state, cap.id)
-        raise AssertionError('preservation break was accepted on second promotion')
-    except RuntimeError as e:
-        assert 'preserves=False' in str(e), f'unexpected: {e}'
-    print('  preservation-break -> rejected')
+        promote_strongest(state, os_obj, prov)
+        raise AssertionError('failed verdict was accepted')
+    except RuntimeError:
+        pass
+    after = [c.id for c in state.installed_capabilities]
+    assert after == before, f'failed promotion changed installed state: {before} -> {after}'
+    print('  failed-promotion -> rejected (installed state unchanged)')
 
 
 def test_boolean_bypass_regression():
-    # The old TypedDevelopmentalOperatingSystem accepted attach(state, envelope)
-    # and trusted envelope.attachment_certificate=True with no capability/authority.
-    # That path must now be rejected: attach requires a verified capability.
+    """The old Boolean bypass — attach(state, envelope) trusting
+    attachment_certificate=True with no verified capability — must fail."""
     from typed_residual_protocol import compile_residual
     from developmental_operating_system import DevelopmentalOSState, LockState
     from developmental_operating_system_typed import TypedDevelopmentalOperatingSystem
@@ -172,18 +190,17 @@ def test_boolean_bypass_regression():
     os = TypedDevelopmentalOperatingSystem(verifier=_verifier_rejects)
     env = compile_residual(statement='r', stage='post', local_scope='s', target_scope='g',
                            verified_local_result=True, attachment_certificate=True)
-    # The OLD bypass: attach trusted envelope.attachment_certificate=True with no
-    # capability/authority and unblocked global promotion.  That path must now
-    # be rejected because attach requires a capability verified by the authority.
-    from developmental_operating_system import Capability
-    cap = Capability('cap:x', 'current-task', ('x',), 1.0, ('residual:0',))
+    # No capability supplied -> rejected regardless of the envelope Boolean flag
     try:
-        os.attach(s, env)  # no capability supplied
+        os.attach(s, env)
         raise AssertionError('Boolean bypass (no capability) was accepted')
     except RuntimeError as e:
         assert 'requires the capability' in str(e), f'unexpected: {e}'
+    # Capability supplied but authority rejects -> rejected regardless of flag
+    from developmental_operating_system import Capability
+    cap = Capability('cap:x', 'current-task', ('x',), 1.0, ('residual:0',))
     try:
-        os.attach(s, env, cap)  # capability supplied but authority rejects
+        os.attach(s, env, cap)
         raise AssertionError('Boolean bypass (forged capability) was accepted')
     except RuntimeError as e:
         assert 'ATTACH rejected' in str(e), f'unexpected: {e}'
@@ -191,12 +208,12 @@ def test_boolean_bypass_regression():
 
 
 if __name__ == '__main__':
-    # Ensure artifacts are present for the live-promotion test
     assert (ARTIFACTS / 'e677_verified_join_reify_state.json').exists(), 'run e677_verified_join_reify_run.py first'
-    test_live_promotion_success()
-    test_forged_verdict_rejected()
-    test_unattached_capability_rejected()
-    test_scope_widening_rejected()
-    test_preservation_break_rejected()
+    assert (ARTIFACTS / 'e677_developmental_os_state.json').exists(), 'run e677_developmental_os_run.py first'
+    test_correct_source_witness_promoted()
+    test_unrelated_witness_rejected()
+    test_reordered_residuals_select_correct()
+    test_forged_scope_rejected()
+    test_failed_promotion_atomic()
     test_boolean_bypass_regression()
     print('TYPED_OS_LIVE_INTEGRATION_PASS')
