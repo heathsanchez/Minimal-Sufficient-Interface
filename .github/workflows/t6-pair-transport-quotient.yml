@@ -1,0 +1,51 @@
+name: T6 Pair Transport Quotient
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pair-quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile chain
+        run: python -m py_compile phase_cross_order_generalization_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py e677_live_frontier_attachment_probe.py t6_relative_phase_theorem_certificate.py t6_phase_consequence_probe.py t6_pair_transport_quotient_probe.py
+      - name: Rebuild verifier prerequisites
+        run: |
+          python phase_cross_order_generalization_probe.py
+          python phase_symbolic_theorem_certificate.py
+          python phase_block_feasibility_probe.py
+          python e677_live_frontier_attachment_probe.py
+          python t6_relative_phase_theorem_certificate.py
+          python t6_phase_consequence_probe.py
+      - name: Classify exact pair transport quotient
+        run: python t6_pair_transport_quotient_probe.py
+      - name: Verify pair quotient result
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('artifacts/t6_pair_transport_quotient_probe.json'))
+          assert x['normalized_A_count']==720
+          assert x['row_pair_cases']==4*720*21
+          assert set(x['legal_relative_permutations_by_offset'])==set(map(str,range(1,7)))
+          assert x['pair_local_verdict'] in {'OBSTRUCTION','PHASE_RESTRICTION','PERMISSIVE'}
+          print('T6_PAIR_TRANSPORT_QUOTIENT_VERIFIED')
+          print('PAIR_LOCAL_VERDICT=' + x['pair_local_verdict'])
+          print('IMPOSSIBLE_PAIR_CASES=' + str(x['impossible_pair_cases']))
+          print('PHASE_RESTRICTED_PAIR_CASES=' + str(x['phase_restricted_pair_cases']))
+          print('NEXT_RESIDUAL=' + x['residual'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t6-pair-transport-quotient
+          path: artifacts/t6_pair_transport_quotient_probe.json

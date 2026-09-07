@@ -3,7 +3,9 @@ name: Recursive discovery compiler
 on:
   push:
     branches:
+      - gate1-v1-v2-integration
       - recursive-discovery-compiler-v1
+      - recursive-discovery-compiler-v2-live-attachment
   workflow_dispatch:
 
 permissions:
@@ -19,7 +21,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile Python sources
-        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py phase_C_component_theorem_certificate.py phase_block_size_theorem_certificate.py phase_AB_subset_counting_probe.py phase_141_orbit_certificate.py phase_AB_ryser_certificate.py phase_141_structural_certificate.py
+        run: python -m py_compile recursive_discovery_compiler.py verified_join_reify.py developmental_operating_system.py developmental_os_causal_qualification.py developmental_process_tournament.py model_worker_backend.py e677_recursive_discovery_run.py e677_recursive_discovery_run_v5.py e677_verified_join_reify_run.py e677_developmental_os_run.py e677_live_frontier_attachment_probe.py t6_relative_phase_theorem_certificate.py four_row_total13_ablation.py column_symbol_cycle_probe.py partition_derangement_probe.py shifted_realizability_quotient_probe.py phase_invariant_derivation_probe.py phase_unary_theorem_certificate.py phase_cross_order_generalization_probe.py phase_pair_responsibility_probe.py phase_symbolic_theorem_certificate.py phase_block_feasibility_probe.py phase_C_component_theorem_certificate.py phase_block_size_theorem_certificate.py phase_AB_subset_counting_probe.py phase_141_orbit_certificate.py phase_AB_ryser_certificate.py phase_141_structural_certificate.py
       - name: Run causal process qualification
         run: python developmental_os_causal_qualification.py
       - name: Run matched outer process tournament
@@ -58,6 +60,10 @@ jobs:
         run: python phase_AB_ryser_certificate.py
       - name: Certify fully structural 141 count
         run: python phase_141_structural_certificate.py
+      - name: Gate attachment to the live E677 T6 frontier
+        run: python e677_live_frontier_attachment_probe.py
+      - name: Derive exact live T6 relative phase theorem
+        run: python t6_relative_phase_theorem_certificate.py
       - name: Run verified JOIN reify assembly with phase feedback
         run: python e677_verified_join_reify_run.py
       - name: Run cumulative developmental operating system
@@ -109,14 +115,21 @@ jobs:
           assert not st['local_permutation_enumeration_used_to_derive_141']
           assert not st['global_state_enumeration_used_to_derive_141']
           assert st['independent_prior_orbit_certificate_exact'] and st['independent_global_enumeration_exact'] and st['independent_full_ryser_certificate_exact']
+          attach=json.load(open('artifacts/e677_live_frontier_attachment_probe.json'))
+          assert attach['attachment_status']=='MECHANISM_ONLY' and attach['mechanism_attachment_verified']
+          rel=json.load(open('artifacts/t6_relative_phase_theorem_certificate.json'))
+          assert rel['direct_live_phase_attachment_verified']
+          assert rel['finite_replay_pair_cases'] > 0
           j=json.load(open('artifacts/e677_verified_join_reify_state.json'))
           assert len(j['candidates'])==3 and len(j['promoted'])==3
           o=json.load(open('artifacts/e677_developmental_os_state.json'))
-          assert o['residual_type']=='DERIVATION'
-          actions=[x['id'] for x in o['action_queue']]
-          assert 'act:derive' in actions and actions[0]=='act:derive' and not o['process_residuals']
+          assert o['strongest_residual_provenance']['source']=='t6-relative-phase-theorem'
+          assert o['residual'].startswith('Join the pair-specific forbidden phases')
+          assert not o['process_residuals']
           print('RECURSIVE_DISCOVERY_COMPILER_VERIFIED')
-          print('DEVELOPMENTAL_OS_VERIFIED')
+          print('LIVE_T6_RELATIVE_PHASE_THEOREM_VERIFIED')
+          print('STRONGEST_RESIDUAL_ROUTING_VERIFIED')
+          print('T6_PHASE_RESIDUAL=' + rel['residual'])
           print('PHASE_SYMBOLIC_N_GE_4=' + str(sym['symbolic_complete_n_ge_4']))
           print('PHASE_141_WEIGHTED_SUM=' + str(orb['weighted_orbit_sum']))
           print('AB_RYSER_A=' + str(ry['colors']['A']['ryser_permanent']))
@@ -126,11 +139,13 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: e677-recursive-discovery-state
+          name: e677-recursive-discovery-state-integrated
           path: |
             artifacts/e677_recursive_discovery_state.json
             artifacts/e677_verified_join_reify_state.json
             artifacts/e677_developmental_os_state.json
+            artifacts/e677_live_frontier_attachment_probe.json
+            artifacts/t6_relative_phase_theorem_certificate.json
             artifacts/four_row_total13_ablation.json
             artifacts/column_symbol_cycle_probe.json
             artifacts/partition_derangement_probe.json

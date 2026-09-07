@@ -1,0 +1,40 @@
+name: T6 Z Kernel Exact
+
+on:
+  push:
+    branches:
+      - recursive-discovery-compiler-v2-live-attachment
+    paths:
+      - 't6_z_kernel_exact_solver.py'
+      - '.github/workflows/t6-z-kernel-exact.yml'
+  workflow_dispatch:
+
+jobs:
+  solve-extreme-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact SMT backend
+        run: python -m pip install --disable-pip-version-check z3-solver==4.15.3.0
+      - name: Solve all 40 extreme image-obstruction cases
+        run: python t6_z_kernel_exact_solver.py --all-extreme --timeout-ms 30000
+      - name: Show compact result
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('artifacts/t6_z_kernel_exact_solver.json'))
+          print({k:p[k] for k in ('cases','sat','unsat','unknown')})
+          assert p['cases']==40
+          assert p['unknown']==0, 'UNKNOWN is not a promotable scientific result'
+          for r in p['results']:
+              if r['status']=='sat': assert r.get('pure_python_recheck') is True
+          print('T6_Z_KERNEL_EXTREME_FRONTIER_VERIFIED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t6-z-kernel-exact
+          path: artifacts/t6_z_kernel_exact_solver.json
