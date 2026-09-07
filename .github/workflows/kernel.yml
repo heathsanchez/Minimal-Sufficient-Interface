@@ -312,3 +312,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/ConstructorGenesisControl.lean
+      - name: Check generator closure (symmetric fragment closes; const x is minimal enabling primitive)
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/GeneratorClosure.lean
