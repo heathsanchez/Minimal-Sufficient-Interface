@@ -110,7 +110,12 @@ class DevelopmentalOperatingSystem:
     def ingest_verified_join_state(self, state: DevelopmentalOSState, join_state: dict[str, Any]) -> None:
         """A fact may be both a law and a boundary: truth and consequence are distinct axes."""
         for d in join_state.get('dots', []):
-            kind, did, ev = d.get('kind', ''), d['id'], d.get('evidence', {})
+            kind, did, ev = d.get('kind', ''), d['id'], dict(d.get('evidence', {}))
+            # Preserve the residual's statement identity at ingestion so that the
+            # promotion authority can bind a capability's witness to the verified
+            # result's actual residual by evidence identity, not by index ordering.
+            if kind == 'residual' and 'statement' in d:
+                ev['statement'] = d['statement']
             state.provenance_graph.append({'id': did, 'kind': kind, 'parents': d.get('parents', []), 'evidence': ev})
             if kind in {'verified-success','promoted-concept','verified-low-leverage','verified-frontier'}:
                 state.lawbook.append(Law('law:'+did, d['statement'], 'current-task', tuple(d.get('tags',())), tuple(d.get('parents',())), ev))
