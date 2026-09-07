@@ -109,7 +109,7 @@ class TypedDevelopmentalOperatingSystem(DevelopmentalOperatingSystem):
     def _residual_witness_ids(self, state):
         return {
             p['id'] for p in state.provenance_graph
-            if p['kind'] in ('residual-envelope', 'typed-residual', 'residual')
+            if p['kind'] in ('residual-envelope', 'typed-residual', 'residual', 'verified-success')
         }
 
     def _compute_verdict(self, state, capability: Capability, promoted_scope: str) -> Verdict:
