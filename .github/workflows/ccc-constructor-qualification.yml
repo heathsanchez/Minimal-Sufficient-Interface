@@ -1,0 +1,33 @@
+name: CCC constructor qualification
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - 'lean/LemmaSynthesis/ConstructorRealization.lean'
+      - 'tests/ccc_realization_qualification.py'
+      - '.github/workflows/ccc-constructor-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run ten bounded realization tests
+        run: python tests/ccc_realization_qualification.py
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check construction, minimality, and impossibility
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/ConstructorRealization.lean
+      - name: Replay established symmetry-class theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/SymmetryClass.lean
