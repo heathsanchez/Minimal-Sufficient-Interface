@@ -1,0 +1,53 @@
+{
+  "all_unsat": true,
+  "cases": [
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "AAB"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "ABA"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "BAA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "AAAB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "AABA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "ABAA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BAAA"
+    }
+  ],
+  "classification_complete": "all-share clean cycles exist only as all-A length >=3",
+  "consumed_frontier_schema": 17,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PROMOTE",
+    "residual": "Verified: the all-share (u,b) clean renewal cycle space is fully classified. Length-2 (injectivity), >=2 B (transition equations), and single-B (injectivity+E677 or +no-fixer) are all impossible; only all-A length>=3 survives. The all-A tau-companion cycle is the exact residual; determine the global mechanism (tau-cycle canonical port / D-descent / fork charge) that eliminates it, since local renewal lemmas are now exhausted."
+  },
+  "scope": "all-share (u,b) renewal cycles; exactly one B-transition; left-row injectivity + global E677 identity; uninterpreted universe",
+  "size_free_theorem_claimed": true,
+  "theorem": "A single-B all-share (u,b) renewal cycle of length >=3 is UNSAT under left-row injectivity plus global E677 (equivalently injectivity plus no-fixer)."
+}

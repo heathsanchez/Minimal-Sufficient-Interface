@@ -1,0 +1,67 @@
+{
+  "causal_read": {
+    "full": "unsat by structural certificate",
+    "permutations_only": "sat by same witness",
+    "without_no_triple": "sat by explicit shifted witness",
+    "without_shifted": "unsat by same structural certificate"
+  },
+  "claim": "For four permutation rows with no three rows agreeing in a column, total pair agreement cannot equal 2n-1.",
+  "n": 7,
+  "n7_consequence": "total pair agreement 13 is impossible",
+  "no_triple_used_in_proof": true,
+  "proof_certificate": {
+    "column_vectors_checked": 7,
+    "contradiction": true,
+    "deficient_symbol_occurrence_vectors_checked": 105,
+    "derived_min_deficient_columns": 2,
+    "required_deficient_columns_at_target": 1,
+    "target": 13
+  },
+  "shifted_constraints_used_in_proof": false,
+  "witness_without_no_triple": {
+    "checks": {
+      "all_rows_permutations": true,
+      "no_triple": false,
+      "shifted_disagreement": true,
+      "total_pair_agreement": 13
+    },
+    "rows": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        1,
+        2,
+        6,
+        4,
+        5,
+        3
+      ],
+      [
+        3,
+        1,
+        5,
+        6,
+        0,
+        4,
+        2
+      ],
+      [
+        6,
+        1,
+        2,
+        4,
+        5,
+        3,
+        0
+      ]
+    ]
+  }
+}

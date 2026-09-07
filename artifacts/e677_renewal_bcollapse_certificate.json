@@ -1,0 +1,97 @@
+{
+  "all_unsat": true,
+  "cases": [
+    {
+      "n": 2,
+      "result": "unsat",
+      "word": "BB"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "ABB"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "BAB"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "BBA"
+    },
+    {
+      "n": 3,
+      "result": "unsat",
+      "word": "BBB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "AABB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "ABAB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "ABBA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "ABBB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BAAB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BABA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BABB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BBAA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BBAB"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BBBA"
+    },
+    {
+      "n": 4,
+      "result": "unsat",
+      "word": "BBBB"
+    }
+  ],
+  "consumed_frontier_schema": 15,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PROMOTE",
+    "residual": "Verified: all-share renewal cycles with >=2 B-transitions are impossible of any length (B at position i forces r_i = u, so two B's collapse r_i = r_j = u). Remaining: cycles with <=1 B transition (all-A and single-B). The all-A 2-cycle collapses via telescoping injectivity but the all-A 3-cycle survives; determine whether a single B plus the unique-fixer/short-block coupling closes the remaining all-A and single-B clean cycles."
+  },
+  "scope": "all-share (u,b) renewal cycles; >=2 B-transitions; transition equations + distinct rows only (no injectivity, no E677/shadow/carrier/fixer axioms)",
+  "size_free_theorem_claimed": true,
+  "theorem": "An all-share (u,b) Good-row A/B renewal cycle with >=2 B-transitions is UNSAT, of any length, without injectivity (B at position i forces r_i = u)."
+}

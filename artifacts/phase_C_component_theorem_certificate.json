@@ -1,0 +1,133 @@
+{
+  "all_replays_exact": true,
+  "cross_order_exhaustive_replay_n4_to_n10": {
+    "10": {
+      "base_cycle_length": 10,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "10": 1,
+        "2": 10,
+        "4": 35,
+        "6": 50,
+        "8": 25
+      },
+      "gcd_n_3": 1,
+      "mismatch_count": 0
+    },
+    "4": {
+      "base_cycle_length": 4,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 4,
+        "4": 1
+      },
+      "gcd_n_3": 1,
+      "mismatch_count": 0
+    },
+    "5": {
+      "base_cycle_length": 5,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 5,
+        "4": 5,
+        "5": 1
+      },
+      "gcd_n_3": 1,
+      "mismatch_count": 0
+    },
+    "6": {
+      "base_cycle_length": 2,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 3,
+        "4": 3,
+        "6": 1
+      },
+      "gcd_n_3": 3,
+      "mismatch_count": 0
+    },
+    "7": {
+      "base_cycle_length": 7,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 7,
+        "4": 14,
+        "6": 7,
+        "7": 1
+      },
+      "gcd_n_3": 1,
+      "mismatch_count": 0
+    },
+    "8": {
+      "base_cycle_length": 8,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 8,
+        "4": 20,
+        "6": 16,
+        "8": 1
+      },
+      "gcd_n_3": 1,
+      "mismatch_count": 0
+    },
+    "9": {
+      "base_cycle_length": 3,
+      "exact": true,
+      "feasible_subset_counts_by_size": {
+        "0": 1,
+        "2": 9,
+        "3": 3,
+        "4": 27,
+        "5": 18,
+        "6": 30,
+        "7": 27,
+        "8": 9,
+        "9": 1
+      },
+      "gcd_n_3": 3,
+      "mismatch_count": 0
+    }
+  },
+  "n7_corollary": "At n=7 the +/-3 graph is one 7-cycle. Hence every proper legal C block is a disjoint union of even paths and therefore has even cardinality; the only odd legal C block is the whole 7-cycle. Thus C-block sizes are exactly 0,2,4,6,7.",
+  "n7_feasible_sizes": [
+    0,
+    2,
+    4,
+    6,
+    7
+  ],
+  "n7_feasible_subset_counts_by_size": {
+    "0": 1,
+    "2": 7,
+    "4": 14,
+    "6": 7,
+    "7": 1
+  },
+  "residual": "Join the exact C-component theorem with the A/B derangement block constraints and the disjoint size equation |A|+|B|+|C|=7. Derive the strongest non-enumerative restriction on feasible ordered block-size triples and test whether it reconstructs the phase-block frontier before any state enumeration.",
+  "structural_proof": {
+    "counting": [
+      "Even path: unique perfect matching, hence exactly one directed bijection.",
+      "Full 2-cycle: the two +/-3 neighbours coincide, giving one bijection.",
+      "Full odd cycle length >=3: no perfect matching, only the two directed rotations.",
+      "Full even cycle length >=4: two directed rotations plus the two perfect matchings."
+    ],
+    "necessity": [
+      "A legal sigma is a directed cycle cover of the induced +/-3 graph.",
+      "Every proper induced component of a base cycle is a path.",
+      "A path has a cycle cover only by disjoint 2-cycles, hence only at even order.",
+      "A component equal to an entire base cycle admits the directed base-cycle covers."
+    ],
+    "sufficiency": [
+      "Pair consecutive vertices on each even path; use both directions on each matched edge.",
+      "On each full base cycle use a directed rotation; this is fixed-point-free for n>=4.",
+      "Components are disjoint, so the local covers combine to a bijection of S."
+    ]
+  },
+  "theorem": "For n>=4, a subset S of Z/n admits a fixed-point-free permutation using only displacements +/-3 iff every component of the induced +/-3 graph on S is an even path or an entire +/-3 base cycle. The number of legal permutations factors over components: 1 per even path; for a full cycle, 1 at length 2, 2 at odd length >=3, and 4 at even length >=4."
+}

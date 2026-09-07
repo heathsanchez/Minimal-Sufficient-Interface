@@ -1,0 +1,23 @@
+{
+  "agreement_corollary": "For each target s, {t,u} is an agreement edge iff sigma_tu has the corresponding fixed point x=U_t^{-1}(s); edge multiplicity across targets equals |Fix(sigma_tu)|.",
+  "direct_live_phase_attachment_verified": true,
+  "finite_replay_pair_cases": 295136,
+  "old_four_row_block_assumptions_required": false,
+  "residual": "Join the pair-specific forbidden phases, fixed-point edge multiplicities, and triangle cocycle. Derive the smallest invariant of the 21 relative permutations that restricts the fourteen-edge uniform matching multigraph beyond uncolored degrees/profiles; test the two affine triangle types {0,1,2} and {0,1,3} first, then lift any separator globally.",
+  "symbolic_derivation": {
+    "agreement_edge": [
+      "U_t^{-1}(s)=U_u^{-1}(s)=x iff U_t(x)=U_u(x)=s",
+      "applying U_u^{-1} gives sigma_tu(x)=x",
+      "hence colored agreement targets are in bijection with fixed points of sigma_tu"
+    ],
+    "cocycle": "sigma_tv = sigma_uv o sigma_tu because U_v^{-1}U_t=(U_v^{-1}U_u)(U_u^{-1}U_t)",
+    "forward": [
+      "write x=T-t, so T-u=x+(t-u)",
+      "a shifted equality is U_t(x)=U_u(x+(t-u))",
+      "apply U_u^{-1}: sigma_tu(x)=x+(t-u)",
+      "therefore shifted inequality for every T is exactly exclusion of displacement t-u for sigma_tu"
+    ]
+  },
+  "theorem": "For every n>=2 and t!=u, shifted pair-Latin inequality U_t(T-t)!=U_u(T-u) for all T iff relative permutation sigma_tu=U_u^{-1}oU_t avoids displacement t-u at every x.",
+  "triangle_cocycle": "sigma_tv = sigma_uv o sigma_tu"
+}

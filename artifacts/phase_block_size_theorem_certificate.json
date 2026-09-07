@@ -1,0 +1,297 @@
+{
+  "A_allowed_intersection_negative": [],
+  "causal_core": {
+    "A_orientation_asymmetry": "size 2 would force a transposition and hence both d and -d allowed; A allowed {4,5,6} has empty intersection with its negative {1,2,3}",
+    "B_size2_witness": "0<->2 uses displacements +2 and -2=5, both B-allowed",
+    "C_component_theorem": "At n=7 the +/-3 graph is one 7-cycle. Hence every proper legal C block is a disjoint union of even paths and therefore has even cardinality; the only odd legal C block is the whole 7-cycle. Thus C-block sizes are exactly 0,2,4,6,7.",
+    "fixed_point_free": "excludes size 1 for every nonempty color block",
+    "partition_equation": "|A|+|B|+|C|=7"
+  },
+  "explicit_AB_sufficiency_witnesses": {
+    "A": {
+      "0": {
+        "domain": [],
+        "images": [],
+        "valid": true
+      },
+      "3": {
+        "domain": [
+          0,
+          1,
+          4
+        ],
+        "images": [
+          4,
+          0,
+          1
+        ],
+        "valid": true
+      },
+      "4": {
+        "domain": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "images": [
+          4,
+          0,
+          1,
+          2
+        ],
+        "valid": true
+      },
+      "5": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "images": [
+          4,
+          0,
+          1,
+          2,
+          3
+        ],
+        "valid": true
+      },
+      "6": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "images": [
+          4,
+          5,
+          0,
+          1,
+          2,
+          3
+        ],
+        "valid": true
+      },
+      "7": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "images": [
+          4,
+          0,
+          6,
+          1,
+          2,
+          3,
+          5
+        ],
+        "valid": true
+      }
+    },
+    "B": {
+      "0": {
+        "domain": [],
+        "images": [],
+        "valid": true
+      },
+      "2": {
+        "domain": [
+          0,
+          2
+        ],
+        "images": [
+          2,
+          0
+        ],
+        "valid": true
+      },
+      "3": {
+        "domain": [
+          0,
+          2,
+          4
+        ],
+        "images": [
+          4,
+          0,
+          2
+        ],
+        "valid": true
+      },
+      "4": {
+        "domain": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "images": [
+          2,
+          3,
+          0,
+          1
+        ],
+        "valid": true
+      },
+      "5": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "images": [
+          2,
+          3,
+          4,
+          0,
+          1
+        ],
+        "valid": true
+      },
+      "6": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "images": [
+          2,
+          3,
+          4,
+          5,
+          1,
+          0
+        ],
+        "valid": true
+      },
+      "7": {
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "images": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          0,
+          1
+        ],
+        "valid": true
+      }
+    }
+  },
+  "independent_state_probe_sizes_exact": true,
+  "independent_state_probe_triples_exact": true,
+  "observed_frontier_state_count": 141,
+  "residual": "The 11 size triples are now explained without state enumeration. Lift the local component/matching method from sizes to exact counts: derive the 141 shifted states as a symbolic sum over the 11 triples, identifying which A/B subset languages still require a counting lemma.",
+  "state_enumeration_used_to_derive_theorem": false,
+  "symbolic_feasible_ordered_size_triple_count": 11,
+  "symbolic_feasible_ordered_size_triples": [
+    [
+      0,
+      0,
+      7
+    ],
+    [
+      0,
+      3,
+      4
+    ],
+    [
+      0,
+      5,
+      2
+    ],
+    [
+      0,
+      7,
+      0
+    ],
+    [
+      3,
+      0,
+      4
+    ],
+    [
+      3,
+      2,
+      2
+    ],
+    [
+      3,
+      4,
+      0
+    ],
+    [
+      4,
+      3,
+      0
+    ],
+    [
+      5,
+      0,
+      2
+    ],
+    [
+      5,
+      2,
+      0
+    ],
+    [
+      7,
+      0,
+      0
+    ]
+  ],
+  "symbolic_feasible_sizes": {
+    "A": [
+      0,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "B": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "C": [
+      0,
+      2,
+      4,
+      6,
+      7
+    ]
+  },
+  "theorem": "At n=7 under the saturated symbolic phase language, A-block sizes are exactly {0,3,4,5,6,7}, B-block sizes exactly {0,2,3,4,5,6,7}, and C-block sizes exactly {0,2,4,6,7}. Consequently the feasible ordered size triples are exactly the 11 solutions of a+b+c=7 drawn from those three sets."
+}

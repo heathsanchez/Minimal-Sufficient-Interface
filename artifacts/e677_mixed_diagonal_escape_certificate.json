@@ -1,0 +1,25 @@
+{
+  "arm_eq_u_result": "unsat",
+  "consumed_frontier_schema": 21,
+  "core_size": 7,
+  "core_uses_heavy_axioms": false,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PROMOTE",
+    "residual": "Mixed diagonal-escape established: the collision fibre is not row-invariant (r*b != u, else hinge h=b Good=Bad). Attach to the finite-backward-root machinery: the fibre's tau image {b} U {r_i,u} contains the state (b,h) whose tau-successor (u, u\\h) is the canonical mixed nonperiodic state; verify its backward component terminates in a coloured boundary or ZERO root."
+  },
+  "size_free_theorem_claimed": true,
+  "theorem": "In the all-A collision fibre F={r:r*u=b}, no arm equals the Good input u (r_i=u UNSAT): the A-transition forces the Good hinge h to equal the Bad target b. Hence L_r(U_r)=U_r is impossible, so the fibre is not row-invariant (canonical escape: r*b forced outside U_r={u,b}).",
+  "unsat_core": [
+    "n0bB",
+    "n0hG",
+    "n0zq",
+    "n0zr",
+    "r0_eq_u",
+    "sh1",
+    "t0A"
+  ]
+}

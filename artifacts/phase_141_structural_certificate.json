@@ -1,0 +1,372 @@
+{
+  "claim": "At n=7 the 141 shifted saturated states are the structural weighted sum over 13 translation-orbit representatives, with A/B factors computed by induced Ryser permanents and C factors by the +/-3 component theorem.",
+  "derivation_stack": [
+    "symbolic phase displacement exclusions",
+    "13 colored-partition translation-orbit representatives",
+    "Ryser inclusion-exclusion for every induced A/B permanent",
+    "exact C +/-3 component counting theorem",
+    "translation orbit multiplicity",
+    "weighted sum = 141"
+  ],
+  "global_state_enumeration_used_to_derive_141": false,
+  "independent_full_ryser_certificate_exact": true,
+  "independent_global_enumeration_exact": true,
+  "independent_prior_orbit_certificate_exact": true,
+  "local_permutation_enumeration_used_to_derive_141": false,
+  "local_ryser_evaluations": 26,
+  "local_ryser_subset_terms": 473,
+  "orbit_count": 13,
+  "orbit_rows": [
+    {
+      "A": [],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 1,
+      "B": [],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 1,
+      "C": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "C_component_count": 2,
+      "contribution": 2,
+      "local_factor_product": 2,
+      "orbit_size": 1,
+      "size_triple": [
+        0,
+        0,
+        7
+      ]
+    },
+    {
+      "A": [],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 1,
+      "B": [
+        0,
+        2,
+        4
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 8,
+      "C": [
+        1,
+        3,
+        5,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        0,
+        3,
+        4
+      ]
+    },
+    {
+      "A": [],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 1,
+      "B": [
+        0,
+        1,
+        2,
+        4,
+        5
+      ],
+      "B_ryser_permanent": 2,
+      "B_ryser_term_count": 32,
+      "C": [
+        3,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 14,
+      "local_factor_product": 2,
+      "orbit_size": 7,
+      "size_triple": [
+        0,
+        5,
+        2
+      ]
+    },
+    {
+      "A": [],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 1,
+      "B": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "B_ryser_permanent": 24,
+      "B_ryser_term_count": 128,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 24,
+      "local_factor_product": 24,
+      "orbit_size": 1,
+      "size_triple": [
+        0,
+        7,
+        0
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        4
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 8,
+      "B": [],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 1,
+      "C": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        3,
+        0,
+        4
+      ]
+    },
+    {
+      "A": [
+        0,
+        2,
+        4
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 8,
+      "B": [],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 1,
+      "C": [
+        1,
+        3,
+        5,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        3,
+        0,
+        4
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        4
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 8,
+      "B": [
+        3,
+        5
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 4,
+      "C": [
+        2,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        3,
+        2,
+        2
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        4
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 8,
+      "B": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 16,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        3,
+        4,
+        0
+      ]
+    },
+    {
+      "A": [
+        0,
+        2,
+        4
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 8,
+      "B": [
+        1,
+        3,
+        5,
+        6
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 16,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        3,
+        4,
+        0
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        3,
+        5
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 16,
+      "B": [
+        2,
+        4,
+        6
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 8,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        4,
+        3,
+        0
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        2,
+        4,
+        5
+      ],
+      "A_ryser_permanent": 2,
+      "A_ryser_term_count": 32,
+      "B": [],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 1,
+      "C": [
+        3,
+        6
+      ],
+      "C_component_count": 1,
+      "contribution": 14,
+      "local_factor_product": 2,
+      "orbit_size": 7,
+      "size_triple": [
+        5,
+        0,
+        2
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        2,
+        3,
+        5
+      ],
+      "A_ryser_permanent": 1,
+      "A_ryser_term_count": 32,
+      "B": [
+        4,
+        6
+      ],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 4,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 7,
+      "local_factor_product": 1,
+      "orbit_size": 7,
+      "size_triple": [
+        5,
+        2,
+        0
+      ]
+    },
+    {
+      "A": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "A_ryser_permanent": 31,
+      "A_ryser_term_count": 128,
+      "B": [],
+      "B_ryser_permanent": 1,
+      "B_ryser_term_count": 1,
+      "C": [],
+      "C_component_count": 1,
+      "contribution": 31,
+      "local_factor_product": 31,
+      "orbit_size": 1,
+      "size_triple": [
+        7,
+        0,
+        0
+      ]
+    }
+  ],
+  "residual": "The n=7 shifted frontier count is now structural rather than enumerative. The next consequential question is attachment: join this 141-state structural classification back to the E677->E255 magma equations and determine which phase/orbit class is killed by the first source-backed mixed constraint. Do not refine the counting representation further unless attachment exposes a new residual.",
+  "structural_weighted_sum": 141
+}

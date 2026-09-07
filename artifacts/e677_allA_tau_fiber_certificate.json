@@ -1,0 +1,17 @@
+{
+  "N_u_b_ge_3": true,
+  "allA_cycle_n": 3,
+  "allA_cycle_sat": true,
+  "collision_fiber_size_n_sat": true,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PROMOTE",
+    "residual": "Attachment verified: the all-A tau-companion cycle is a x->x*b cycle on the collision fiber, tau-collapsing to (b,b\\u) with N(u,b)=n>=3. This is the canonical-port occurrence surplus. Next: route this surplus through the frozen diagonal-escape / ZERO-root machinery to force a coloured boundary, i.e. test whether the x*b cycle plus the diagonal self-instance E677(b,b) forces a nonperiodic state."
+  },
+  "size_free_theorem_claimed": true,
+  "theorem": "the surviving all-A all-share Good-row cycle is a cycle of x->x*b on the collision fiber F={r:r*u=b}; tau collapses F to the single state (b,b\\u), so N(u,b)=n>=3 (the canonical-port occurrence surplus).",
+  "x_times_b_cycle_and_tau_fiber_sat": true
+}

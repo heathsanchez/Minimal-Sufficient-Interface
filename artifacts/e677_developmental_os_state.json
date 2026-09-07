@@ -1,0 +1,1589 @@
+{
+  "action_history": [],
+  "action_queue": [
+    {
+      "cost": 1.4,
+      "expected_information": 3.5,
+      "expected_upside": 3.5,
+      "id": "act:reframe",
+      "mode": "REFRAME",
+      "question": "Construct the smallest representation change demanded by the certified residual.",
+      "residual_types": [
+        "REPRESENTATION"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    },
+    {
+      "cost": 1.3,
+      "expected_information": 3.0,
+      "expected_upside": 3.0,
+      "id": "act:contrast-join",
+      "mode": "JOIN",
+      "question": "Join near-matched successes and failures/boundaries to isolate the smallest consequential distinction.",
+      "residual_types": [
+        "REPRESENTATION",
+        "OBSERVABLE",
+        "UNKNOWN"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    },
+    {
+      "cost": 1.0,
+      "expected_information": 2.0,
+      "expected_upside": 2.5,
+      "id": "act:trajectory",
+      "mode": "JOIN",
+      "question": "Compress repeated residual transitions into a developmental macro.",
+      "residual_types": [
+        "REPRESENTATION",
+        "SEARCH",
+        "UNKNOWN"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    },
+    {
+      "cost": 1.0,
+      "expected_information": 3.0,
+      "expected_upside": 1.0,
+      "id": "act:discriminate",
+      "mode": "PROBE",
+      "question": "Find the cheapest observation separating the live residual explanations.",
+      "residual_types": [
+        "OBSERVABLE",
+        "REPRESENTATION",
+        "UNKNOWN"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    },
+    {
+      "cost": 1.2,
+      "expected_information": 2.5,
+      "expected_upside": 2.0,
+      "id": "act:negative-join",
+      "mode": "JOIN",
+      "question": "Join verified failures/boundaries to extract the common obstruction.",
+      "residual_types": [
+        "REPRESENTATION",
+        "SEARCH",
+        "UNKNOWN"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    },
+    {
+      "cost": 1.0,
+      "expected_information": 1.0,
+      "expected_upside": 2.0,
+      "id": "act:push",
+      "mode": "PUSH",
+      "question": "Push the strongest currently active capability against the residual.",
+      "residual_types": [
+        "SEARCH",
+        "OPERATOR",
+        "COMPOSITION"
+      ],
+      "risk": 0.0,
+      "suppressed_by": [],
+      "trigger_ids": [
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "frontier:partition-derangement",
+        "law:phase-unary-exact",
+        "trajectory:quotient->phase-law",
+        "promoted:join:partition-derangement-state:r",
+        "promoted:join:phase-is-missing-variable:r",
+        "promoted:join:trajectory-refinement-law:r"
+      ]
+    }
+  ],
+  "active_capabilities": [
+    "cap:DerangementPhase"
+  ],
+  "installed_capabilities": [
+    {
+      "activation": [
+        "state-representation"
+      ],
+      "cost": 1.0,
+      "id": "cap:PartitionDerangementState",
+      "provenance": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "trajectory:3->4",
+        "residual:4",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation"
+      ],
+      "scope": "current-task"
+    },
+    {
+      "activation": [
+        "derived-coordinate"
+      ],
+      "cost": 1.0,
+      "id": "cap:DerangementPhase",
+      "provenance": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "residual:4",
+        "g4:column-symbol-cycle-representation",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ],
+      "scope": "current-task"
+    },
+    {
+      "activation": [
+        "search-policy"
+      ],
+      "cost": 1.0,
+      "id": "cap:ArrangementPreservingRefinement",
+      "provenance": [
+        "law:phase-unary-exact",
+        "trajectory:3->4",
+        "residual:4",
+        "g0:local-parity-classification",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation",
+        "trajectory:2->3",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "trajectory:0->1",
+        "trajectory:1->2",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ],
+      "scope": "current-task"
+    },
+    {
+      "activation": [
+        "strongest-residual"
+      ],
+      "cost": 1.0,
+      "id": "cap:strongest-residual",
+      "provenance": [
+        "residual:0",
+        "controller:strongest-residual"
+      ],
+      "scope": "current-task"
+    }
+  ],
+  "lawbook": [
+    {
+      "activation": [
+        "classification",
+        "e677-local",
+        "low-leverage"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "consequence": {
+          "consequence": "Verified but low leverage.",
+          "consequential": false,
+          "next_residual": "Find a stronger local graph invariant.",
+          "score": 0
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "enumerated": 5040
+          },
+          "reason": "exhaustive S7 enumeration"
+        }
+      },
+      "id": "law:g0:local-parity-classification",
+      "scope": "current-task",
+      "statement": "Every permutation of 7 points with exactly 5 fixed points is odd.; Every permutation of 7 points with exactly 4 fixed points is even."
+    },
+    {
+      "activation": [
+        "classification",
+        "e677-local",
+        "positive-evidence"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote exact forbidden three-row agreement profiles.",
+          "consequential": true,
+          "next_residual": "Classify four-row weighted agreement graphs under the triangle restrictions.",
+          "score": 2
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "S7": 5040,
+            "admissible_pairs": 854498
+          },
+          "reason": "independent exhaustive enumeration"
+        }
+      },
+      "id": "law:g1:three-row-agreement-classification",
+      "scope": "current-task",
+      "statement": "Among sum-7 profiles, only (7,0,0), (5,2,0), (4,3,0), and (3,2,2) occur."
+    },
+    {
+      "activation": [
+        "proof-and-ablation",
+        "e677-local",
+        "positive-evidence"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote representation-independent four-row near-maximum exclusion.",
+          "consequential": true,
+          "next_residual": "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints.",
+          "score": 3
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "certificate": {
+              "column_vectors_checked": 7,
+              "contradiction": true,
+              "deficient_symbol_occurrence_vectors_checked": 105,
+              "derived_min_deficient_columns": 2,
+              "required_deficient_columns_at_target": 1,
+              "target": 13
+            },
+            "necessity_witness_checks": {
+              "all_rows_permutations": true,
+              "no_triple": false,
+              "shifted_disagreement": true,
+              "total_pair_agreement": 13
+            }
+          },
+          "reason": "independent counting certificate plus causal witness"
+        }
+      },
+      "id": "law:g2:four-row-near-maximum-exclusion",
+      "scope": "current-task",
+      "statement": "Four permutation rows with no triple column agreement cannot have total pair agreement 2n-1."
+    },
+    {
+      "activation": [
+        "synthesis",
+        "e677-local",
+        "positive-evidence"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "consequence": {
+          "consequence": "Compile three-row classifications with four-row saturation: total-14 K4 profiles collapse to equal opposite-edge pairs and exactly four types.",
+          "consequential": true,
+          "next_residual": "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction.",
+          "score": 4
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "canonical_profiles": 4,
+            "labeled_profiles": 18
+          },
+          "reason": "independent finite K4 enumeration and equation check"
+        }
+      },
+      "id": "law:g3:saturated-k4-profile-classification",
+      "scope": "current-task",
+      "statement": "At total K4 edge weight 14, all four triangle sums equal 7.; The four triangle equations force opposite K4 edges to have equal weights.; Up to vertex relabeling only four saturated profiles survive: opposite-edge types (7,0,0), (5,2,0), (4,3,0), and (3,2,2)."
+    },
+    {
+      "activation": [
+        "representation-change",
+        "e677-local",
+        "positive-evidence"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote the column-symbol equality-incidence representation: saturated states are unions of monochromatic alternating even cycles, compressing the coarse frontier to nine cycle signatures.",
+          "consequential": true,
+          "next_residual": "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component.",
+          "score": 5
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "cycle_signature_counts": {
+              "3-2-2": 1,
+              "4-3-0": 2,
+              "5-2-0": 2,
+              "7-0-0": 4
+            },
+            "matching_assignments_checked": 36
+          },
+          "reason": "independent finite incidence/cycle certificate"
+        }
+      },
+      "id": "law:g4:column-symbol-cycle-representation",
+      "scope": "current-task",
+      "statement": "At total agreement 2n, every column and every symbol has equality-incidence degree exactly 2.; The equality-incidence graph is bipartite 2-regular, hence a disjoint union of even cycles.; Every connected component has one complementary-row-pair matching color and its two row-pair labels alternate around the cycle.; For n=7 and the four saturated profiles, only nine color-cycle signatures remain."
+    },
+    {
+      "activation": [
+        "partition",
+        "derangement",
+        "shift",
+        "phase",
+        "saturated",
+        "frontier"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "shifted_cycle_signatures_by_ordered_sizes": {
+          "(0, 0, 7)": [
+            "((), (), (7,))"
+          ],
+          "(0, 3, 4)": [
+            "((), (3,), (2, 2))"
+          ],
+          "(0, 5, 2)": [
+            "((), (5,), (2,))"
+          ],
+          "(0, 7, 0)": [
+            "((), (2, 2, 3), ())",
+            "((), (7,), ())"
+          ],
+          "(3, 0, 4)": [
+            "((3,), (), (2, 2))"
+          ],
+          "(3, 2, 2)": [
+            "((3,), (2,), (2,))"
+          ],
+          "(3, 4, 0)": [
+            "((3,), (2, 2), ())",
+            "((3,), (4,), ())"
+          ],
+          "(4, 3, 0)": [
+            "((4,), (3,), ())"
+          ],
+          "(5, 0, 2)": [
+            "((5,), (), (2,))"
+          ],
+          "(5, 2, 0)": [
+            "((5,), (2,), ())"
+          ],
+          "(7, 0, 0)": [
+            "((3, 4), (), ())",
+            "((7,), (), ())"
+          ]
+        },
+        "shifted_profile_counts": {
+          "(0, 0, 7, 7, 0, 0)": 2,
+          "(0, 3, 4, 4, 3, 0)": 7,
+          "(0, 5, 2, 2, 5, 0)": 14,
+          "(0, 7, 0, 0, 7, 0)": 24,
+          "(3, 0, 4, 4, 0, 3)": 14,
+          "(3, 2, 2, 2, 2, 3)": 7,
+          "(3, 4, 0, 0, 4, 3)": 14,
+          "(4, 3, 0, 0, 3, 4)": 7,
+          "(5, 0, 2, 2, 0, 5)": 14,
+          "(5, 2, 0, 0, 2, 5)": 7,
+          "(7, 0, 0, 0, 0, 7)": 31
+        },
+        "shifted_saturated_states": 141,
+        "total_saturated_states": 16146
+      },
+      "id": "law:frontier:partition-derangement",
+      "scope": "current-task",
+      "statement": "At saturated total agreement 14, exact enumeration represents each state by an ordered three-color partition plus one fixed-point-free permutation on each color block; shifted constraints retain survivors."
+    },
+    {
+      "activation": [
+        "phase",
+        "exact-classifier",
+        "finite-n7",
+        "irredundant",
+        "representation"
+      ],
+      "cost": 1.0,
+      "dependencies": [],
+      "evidence": {
+        "allowed_displacements": {
+          "A": [
+            4,
+            5,
+            6
+          ],
+          "B": [
+            2,
+            4,
+            5
+          ],
+          "C": [
+            3,
+            4
+          ]
+        },
+        "forbidden_atoms": [
+          [
+            "A",
+            1
+          ],
+          [
+            "A",
+            2
+          ],
+          [
+            "A",
+            3
+          ],
+          [
+            "B",
+            1
+          ],
+          [
+            "B",
+            3
+          ],
+          [
+            "B",
+            6
+          ],
+          [
+            "C",
+            1
+          ],
+          [
+            "C",
+            2
+          ],
+          [
+            "C",
+            5
+          ],
+          [
+            "C",
+            6
+          ]
+        ],
+        "shifted_states": 141,
+        "single_atom_ablations": {
+          "A:1": {
+            "false_negatives": 0,
+            "false_positives": 204,
+            "necessary": true
+          },
+          "A:2": {
+            "false_negatives": 0,
+            "false_positives": 218,
+            "necessary": true
+          },
+          "A:3": {
+            "false_negatives": 0,
+            "false_positives": 246,
+            "necessary": true
+          },
+          "B:1": {
+            "false_negatives": 0,
+            "false_positives": 169,
+            "necessary": true
+          },
+          "B:3": {
+            "false_negatives": 0,
+            "false_positives": 260,
+            "necessary": true
+          },
+          "B:6": {
+            "false_negatives": 0,
+            "false_positives": 176,
+            "necessary": true
+          },
+          "C:1": {
+            "false_negatives": 0,
+            "false_positives": 50,
+            "necessary": true
+          },
+          "C:2": {
+            "false_negatives": 0,
+            "false_positives": 57,
+            "necessary": true
+          },
+          "C:5": {
+            "false_negatives": 0,
+            "false_positives": 57,
+            "necessary": true
+          },
+          "C:6": {
+            "false_negatives": 0,
+            "false_positives": 50,
+            "necessary": true
+          }
+        },
+        "total_states": 16146
+      },
+      "id": "law:law:phase-unary-exact",
+      "scope": "current-task",
+      "statement": "On the complete n=7 saturated 16,146-state universe, shifted realizability is equivalent to avoiding ten color-displacement atoms in derangement phase support; the unary rule is irredundant."
+    },
+    {
+      "activation": [
+        "state-representation",
+        "common-mechanism",
+        "reified"
+      ],
+      "cost": 1.0,
+      "dependencies": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "trajectory:3->4",
+        "residual:4",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation"
+      ],
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "size3_derangements": 2
+          },
+          "reason": "removing action collapses compatible realizations"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "oriented_shifted_profiles": 11,
+            "shifted_saturated_states": 141
+          },
+          "reason": "exact frontier confirms reconstruction and shifted evaluation",
+          "residual_after": "Use the independently certified phase law rather than retaining full state."
+        }
+      },
+      "id": "law:promoted:join:partition-derangement-state:r",
+      "scope": "current-task",
+      "statement": "PartitionDerangementState: The cycle summary, exact frontier, and phase law are quotients of an ordered color partition together with within-block derangements."
+    },
+    {
+      "activation": [
+        "derived-coordinate",
+        "contrast",
+        "reified"
+      ],
+      "cost": 1.0,
+      "dependencies": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "residual:4",
+        "g4:column-symbol-cycle-representation",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ],
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "single_atom_ablations": {
+              "A:1": {
+                "false_negatives": 0,
+                "false_positives": 204,
+                "necessary": true
+              },
+              "A:2": {
+                "false_negatives": 0,
+                "false_positives": 218,
+                "necessary": true
+              },
+              "A:3": {
+                "false_negatives": 0,
+                "false_positives": 246,
+                "necessary": true
+              },
+              "B:1": {
+                "false_negatives": 0,
+                "false_positives": 169,
+                "necessary": true
+              },
+              "B:3": {
+                "false_negatives": 0,
+                "false_positives": 260,
+                "necessary": true
+              },
+              "B:6": {
+                "false_negatives": 0,
+                "false_positives": 176,
+                "necessary": true
+              },
+              "C:1": {
+                "false_negatives": 0,
+                "false_positives": 50,
+                "necessary": true
+              },
+              "C:2": {
+                "false_negatives": 0,
+                "false_positives": 57,
+                "necessary": true
+              },
+              "C:5": {
+                "false_negatives": 0,
+                "false_positives": 57,
+                "necessary": true
+              },
+              "C:6": {
+                "false_negatives": 0,
+                "false_positives": 50,
+                "necessary": true
+              }
+            }
+          },
+          "reason": "dropping any forbidden phase atom admits a false positive"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "forbidden_atoms": [
+              [
+                "A",
+                1
+              ],
+              [
+                "A",
+                2
+              ],
+              [
+                "A",
+                3
+              ],
+              [
+                "B",
+                1
+              ],
+              [
+                "B",
+                3
+              ],
+              [
+                "B",
+                6
+              ],
+              [
+                "C",
+                1
+              ],
+              [
+                "C",
+                2
+              ],
+              [
+                "C",
+                5
+              ],
+              [
+                "C",
+                6
+              ]
+            ],
+            "shifted": 141,
+            "states": 16146
+          },
+          "reason": "phase support exactly and irredundantly decides shifted realizability",
+          "residual_after": "Derive the exact phase law symbolically from shifted inequalities."
+        }
+      },
+      "id": "law:promoted:join:phase-is-missing-variable:r",
+      "scope": "current-task",
+      "statement": "DerangementPhase: Aggregate topology is insufficient, while phase support is exact on the saturated frontier; the consequential missing variable is cyclic derangement displacement."
+    },
+    {
+      "activation": [
+        "search-policy",
+        "trajectory",
+        "reified"
+      ],
+      "cost": 1.0,
+      "dependencies": [
+        "law:phase-unary-exact",
+        "trajectory:3->4",
+        "residual:4",
+        "g0:local-parity-classification",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation",
+        "trajectory:2->3",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "trajectory:0->1",
+        "trajectory:1->2",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ],
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "shifted_cycle_signatures": 14,
+            "shifted_states": 141
+          },
+          "reason": "aggregate cycle signature collapses distinct shifted states"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "shifted_cycle_signatures": 14,
+            "shifted_states": 141
+          },
+          "reason": "aggregate cycle summaries strictly collapse shifted states",
+          "residual_after": "Use phase law as the minimal verified refinement currently known."
+        }
+      },
+      "id": "law:promoted:join:trajectory-refinement-law:r",
+      "scope": "current-task",
+      "statement": "ArrangementPreservingRefinement: Verified residual transitions repeatedly force only the minimum arrangement information needed; once phase is added, full state collapses to an exact unary law."
+    }
+  ],
+  "lock": {
+    "budget": {
+      "model_calls": 100.0,
+      "search_steps": 1000.0,
+      "verifier_seconds": 900.0
+    },
+    "constitution": [
+      "external-verification",
+      "target-fidelity",
+      "provenance",
+      "honest-terminal-states",
+      "bounded-resources"
+    ],
+    "discovery_policy": "PUSH > VERIFY > READ CONSEQUENCE > RETAIN MINIMALLY > CHANGE FUTURE SEARCH; attachment required for global promotion",
+    "installed_capabilities": [],
+    "problem": "Resolve finite E677 -> E255 implication or certify scoped obstruction/counterexample.",
+    "representation": "verified recursive discovery + JOIN/REIFY + live-frontier attachment",
+    "verifier": "external exact finite certificates / Lean / independent checks"
+  },
+  "macros": [
+    {
+      "consequence": "Use repeated residual->representation transitions as a reusable developmental procedure.",
+      "id": "macro:residual-driven-representation-escalation",
+      "pattern": [
+        "verified residual",
+        "retrieve evidence",
+        "JOIN",
+        "reify",
+        "verify"
+      ],
+      "support": [
+        "trajectory:0->1",
+        "trajectory:1->2",
+        "trajectory:2->3",
+        "trajectory:3->4",
+        "trajectory:quotient->phase-law"
+      ]
+    }
+  ],
+  "obstruction_atlas": [
+    {
+      "certificate": {
+        "consequence": {
+          "consequence": "Verified but low leverage.",
+          "consequential": false,
+          "next_residual": "Find a stronger local graph invariant.",
+          "score": 0
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "enumerated": 5040
+          },
+          "reason": "exhaustive S7 enumeration"
+        }
+      },
+      "id": "obs:low-leverage:g0:local-parity-classification",
+      "reason": "verified true but non-consequential under the current residual",
+      "route": "Every permutation of 7 points with exactly 5 fixed points is odd.; Every permutation of 7 points with exactly 4 fixed points is even.",
+      "rules_out": [
+        "repeat-low-leverage-route"
+      ],
+      "scope": "process-route"
+    },
+    {
+      "certificate": {
+        "shifted_cycle_signatures_by_ordered_sizes": {
+          "(0, 0, 7)": [
+            "((), (), (7,))"
+          ],
+          "(0, 3, 4)": [
+            "((), (3,), (2, 2))"
+          ],
+          "(0, 5, 2)": [
+            "((), (5,), (2,))"
+          ],
+          "(0, 7, 0)": [
+            "((), (2, 2, 3), ())",
+            "((), (7,), ())"
+          ],
+          "(3, 0, 4)": [
+            "((3,), (), (2, 2))"
+          ],
+          "(3, 2, 2)": [
+            "((3,), (2,), (2,))"
+          ],
+          "(3, 4, 0)": [
+            "((3,), (2, 2), ())",
+            "((3,), (4,), ())"
+          ],
+          "(4, 3, 0)": [
+            "((4,), (3,), ())"
+          ],
+          "(5, 0, 2)": [
+            "((5,), (), (2,))"
+          ],
+          "(5, 2, 0)": [
+            "((5,), (2,), ())"
+          ],
+          "(7, 0, 0)": [
+            "((3, 4), (), ())",
+            "((7,), (), ())"
+          ]
+        },
+        "shifted_profile_counts": {
+          "(0, 0, 7, 7, 0, 0)": 2,
+          "(0, 3, 4, 4, 3, 0)": 7,
+          "(0, 5, 2, 2, 5, 0)": 14,
+          "(0, 7, 0, 0, 7, 0)": 24,
+          "(3, 0, 4, 4, 0, 3)": 14,
+          "(3, 2, 2, 2, 2, 3)": 7,
+          "(3, 4, 0, 0, 4, 3)": 14,
+          "(4, 3, 0, 0, 3, 4)": 7,
+          "(5, 0, 2, 2, 0, 5)": 14,
+          "(5, 2, 0, 0, 2, 5)": 7,
+          "(7, 0, 0, 0, 0, 7)": 31
+        },
+        "shifted_saturated_states": 141,
+        "total_saturated_states": 16146
+      },
+      "id": "obs:frontier:frontier:partition-derangement",
+      "reason": "verified frontier remains nonempty under the current route",
+      "route": "At saturated total agreement 14, exact enumeration represents each state by an ordered three-color partition plus one fixed-point-free permutation on each color block; shifted constraints retain survivors.",
+      "rules_out": [
+        "coarse-frontier-only"
+      ],
+      "scope": "current-representation"
+    }
+  ],
+  "process_residuals": [],
+  "promoted_through_typed_gate": {
+    "capability_id": "cap:strongest-residual",
+    "preserves": [
+      "cap:PartitionDerangementState",
+      "cap:DerangementPhase",
+      "cap:ArrangementPreservingRefinement",
+      "cap:strongest-residual"
+    ],
+    "promoted_id": "cap:strongest-residual",
+    "scope": "current-task",
+    "verdict": "executed+passed via frozen authority on verified certificate artifacts"
+  },
+  "provenance_graph": [
+    {
+      "evidence": {
+        "consequence": {
+          "consequence": "Verified but low leverage.",
+          "consequential": false,
+          "next_residual": "Find a stronger local graph invariant.",
+          "score": 0
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "enumerated": 5040
+          },
+          "reason": "exhaustive S7 enumeration"
+        }
+      },
+      "id": "g0:local-parity-classification",
+      "kind": "verified-low-leverage",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote exact forbidden three-row agreement profiles.",
+          "consequential": true,
+          "next_residual": "Classify four-row weighted agreement graphs under the triangle restrictions.",
+          "score": 2
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "S7": 5040,
+            "admissible_pairs": 854498
+          },
+          "reason": "independent exhaustive enumeration"
+        }
+      },
+      "id": "g1:three-row-agreement-classification",
+      "kind": "verified-success",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote representation-independent four-row near-maximum exclusion.",
+          "consequential": true,
+          "next_residual": "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints.",
+          "score": 3
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "certificate": {
+              "column_vectors_checked": 7,
+              "contradiction": true,
+              "deficient_symbol_occurrence_vectors_checked": 105,
+              "derived_min_deficient_columns": 2,
+              "required_deficient_columns_at_target": 1,
+              "target": 13
+            },
+            "necessity_witness_checks": {
+              "all_rows_permutations": true,
+              "no_triple": false,
+              "shifted_disagreement": true,
+              "total_pair_agreement": 13
+            }
+          },
+          "reason": "independent counting certificate plus causal witness"
+        }
+      },
+      "id": "g2:four-row-near-maximum-exclusion",
+      "kind": "verified-success",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "consequence": {
+          "consequence": "Compile three-row classifications with four-row saturation: total-14 K4 profiles collapse to equal opposite-edge pairs and exactly four types.",
+          "consequential": true,
+          "next_residual": "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction.",
+          "score": 4
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "canonical_profiles": 4,
+            "labeled_profiles": 18
+          },
+          "reason": "independent finite K4 enumeration and equation check"
+        }
+      },
+      "id": "g3:saturated-k4-profile-classification",
+      "kind": "verified-success",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "consequence": {
+          "consequence": "Promote the column-symbol equality-incidence representation: saturated states are unions of monochromatic alternating even cycles, compressing the coarse frontier to nine cycle signatures.",
+          "consequential": true,
+          "next_residual": "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component.",
+          "score": 5
+        },
+        "verification": {
+          "accepted": true,
+          "evidence": {
+            "cycle_signature_counts": {
+              "3-2-2": 1,
+              "4-3-0": 2,
+              "5-2-0": 2,
+              "7-0-0": 4
+            },
+            "matching_assignments_checked": 36
+          },
+          "reason": "independent finite incidence/cycle certificate"
+        }
+      },
+      "id": "g4:column-symbol-cycle-representation",
+      "kind": "verified-success",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "index": 0
+      },
+      "id": "residual:0",
+      "kind": "residual",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "index": 1
+      },
+      "id": "residual:1",
+      "kind": "residual",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "index": 2
+      },
+      "id": "residual:2",
+      "kind": "residual",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "index": 3
+      },
+      "id": "residual:3",
+      "kind": "residual",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "index": 4
+      },
+      "id": "residual:4",
+      "kind": "residual",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "from_index": 0,
+        "to_index": 1
+      },
+      "id": "trajectory:0->1",
+      "kind": "trajectory",
+      "parents": [
+        "residual:0",
+        "residual:1"
+      ]
+    },
+    {
+      "evidence": {
+        "from_index": 1,
+        "to_index": 2
+      },
+      "id": "trajectory:1->2",
+      "kind": "trajectory",
+      "parents": [
+        "residual:1",
+        "residual:2"
+      ]
+    },
+    {
+      "evidence": {
+        "from_index": 2,
+        "to_index": 3
+      },
+      "id": "trajectory:2->3",
+      "kind": "trajectory",
+      "parents": [
+        "residual:2",
+        "residual:3"
+      ]
+    },
+    {
+      "evidence": {
+        "from_index": 3,
+        "to_index": 4
+      },
+      "id": "trajectory:3->4",
+      "kind": "trajectory",
+      "parents": [
+        "residual:3",
+        "residual:4"
+      ]
+    },
+    {
+      "evidence": {
+        "shifted_cycle_signatures_by_ordered_sizes": {
+          "(0, 0, 7)": [
+            "((), (), (7,))"
+          ],
+          "(0, 3, 4)": [
+            "((), (3,), (2, 2))"
+          ],
+          "(0, 5, 2)": [
+            "((), (5,), (2,))"
+          ],
+          "(0, 7, 0)": [
+            "((), (2, 2, 3), ())",
+            "((), (7,), ())"
+          ],
+          "(3, 0, 4)": [
+            "((3,), (), (2, 2))"
+          ],
+          "(3, 2, 2)": [
+            "((3,), (2,), (2,))"
+          ],
+          "(3, 4, 0)": [
+            "((3,), (2, 2), ())",
+            "((3,), (4,), ())"
+          ],
+          "(4, 3, 0)": [
+            "((4,), (3,), ())"
+          ],
+          "(5, 0, 2)": [
+            "((5,), (), (2,))"
+          ],
+          "(5, 2, 0)": [
+            "((5,), (2,), ())"
+          ],
+          "(7, 0, 0)": [
+            "((3, 4), (), ())",
+            "((7,), (), ())"
+          ]
+        },
+        "shifted_profile_counts": {
+          "(0, 0, 7, 7, 0, 0)": 2,
+          "(0, 3, 4, 4, 3, 0)": 7,
+          "(0, 5, 2, 2, 5, 0)": 14,
+          "(0, 7, 0, 0, 7, 0)": 24,
+          "(3, 0, 4, 4, 0, 3)": 14,
+          "(3, 2, 2, 2, 2, 3)": 7,
+          "(3, 4, 0, 0, 4, 3)": 14,
+          "(4, 3, 0, 0, 3, 4)": 7,
+          "(5, 0, 2, 2, 0, 5)": 14,
+          "(5, 2, 0, 0, 2, 5)": 7,
+          "(7, 0, 0, 0, 0, 7)": 31
+        },
+        "shifted_saturated_states": 141,
+        "total_saturated_states": 16146
+      },
+      "id": "frontier:partition-derangement",
+      "kind": "verified-frontier",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "allowed_displacements": {
+          "A": [
+            4,
+            5,
+            6
+          ],
+          "B": [
+            2,
+            4,
+            5
+          ],
+          "C": [
+            3,
+            4
+          ]
+        },
+        "forbidden_atoms": [
+          [
+            "A",
+            1
+          ],
+          [
+            "A",
+            2
+          ],
+          [
+            "A",
+            3
+          ],
+          [
+            "B",
+            1
+          ],
+          [
+            "B",
+            3
+          ],
+          [
+            "B",
+            6
+          ],
+          [
+            "C",
+            1
+          ],
+          [
+            "C",
+            2
+          ],
+          [
+            "C",
+            5
+          ],
+          [
+            "C",
+            6
+          ]
+        ],
+        "shifted_states": 141,
+        "single_atom_ablations": {
+          "A:1": {
+            "false_negatives": 0,
+            "false_positives": 204,
+            "necessary": true
+          },
+          "A:2": {
+            "false_negatives": 0,
+            "false_positives": 218,
+            "necessary": true
+          },
+          "A:3": {
+            "false_negatives": 0,
+            "false_positives": 246,
+            "necessary": true
+          },
+          "B:1": {
+            "false_negatives": 0,
+            "false_positives": 169,
+            "necessary": true
+          },
+          "B:3": {
+            "false_negatives": 0,
+            "false_positives": 260,
+            "necessary": true
+          },
+          "B:6": {
+            "false_negatives": 0,
+            "false_positives": 176,
+            "necessary": true
+          },
+          "C:1": {
+            "false_negatives": 0,
+            "false_positives": 50,
+            "necessary": true
+          },
+          "C:2": {
+            "false_negatives": 0,
+            "false_positives": 57,
+            "necessary": true
+          },
+          "C:5": {
+            "false_negatives": 0,
+            "false_positives": 57,
+            "necessary": true
+          },
+          "C:6": {
+            "false_negatives": 0,
+            "false_positives": 50,
+            "necessary": true
+          }
+        },
+        "total_states": 16146
+      },
+      "id": "law:phase-unary-exact",
+      "kind": "verified-success",
+      "parents": []
+    },
+    {
+      "evidence": {
+        "from": "smallest quotient preserving shifted realizability",
+        "to": "exact unary phase law"
+      },
+      "id": "trajectory:quotient->phase-law",
+      "kind": "trajectory",
+      "parents": [
+        "frontier:partition-derangement",
+        "law:phase-unary-exact"
+      ]
+    },
+    {
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "size3_derangements": 2
+          },
+          "reason": "removing action collapses compatible realizations"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "oriented_shifted_profiles": 11,
+            "shifted_saturated_states": 141
+          },
+          "reason": "exact frontier confirms reconstruction and shifted evaluation",
+          "residual_after": "Use the independently certified phase law rather than retaining full state."
+        }
+      },
+      "id": "promoted:join:partition-derangement-state:r",
+      "kind": "promoted-concept",
+      "parents": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "trajectory:3->4",
+        "residual:4",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation"
+      ]
+    },
+    {
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "single_atom_ablations": {
+              "A:1": {
+                "false_negatives": 0,
+                "false_positives": 204,
+                "necessary": true
+              },
+              "A:2": {
+                "false_negatives": 0,
+                "false_positives": 218,
+                "necessary": true
+              },
+              "A:3": {
+                "false_negatives": 0,
+                "false_positives": 246,
+                "necessary": true
+              },
+              "B:1": {
+                "false_negatives": 0,
+                "false_positives": 169,
+                "necessary": true
+              },
+              "B:3": {
+                "false_negatives": 0,
+                "false_positives": 260,
+                "necessary": true
+              },
+              "B:6": {
+                "false_negatives": 0,
+                "false_positives": 176,
+                "necessary": true
+              },
+              "C:1": {
+                "false_negatives": 0,
+                "false_positives": 50,
+                "necessary": true
+              },
+              "C:2": {
+                "false_negatives": 0,
+                "false_positives": 57,
+                "necessary": true
+              },
+              "C:5": {
+                "false_negatives": 0,
+                "false_positives": 57,
+                "necessary": true
+              },
+              "C:6": {
+                "false_negatives": 0,
+                "false_positives": 50,
+                "necessary": true
+              }
+            }
+          },
+          "reason": "dropping any forbidden phase atom admits a false positive"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "forbidden_atoms": [
+              [
+                "A",
+                1
+              ],
+              [
+                "A",
+                2
+              ],
+              [
+                "A",
+                3
+              ],
+              [
+                "B",
+                1
+              ],
+              [
+                "B",
+                3
+              ],
+              [
+                "B",
+                6
+              ],
+              [
+                "C",
+                1
+              ],
+              [
+                "C",
+                2
+              ],
+              [
+                "C",
+                5
+              ],
+              [
+                "C",
+                6
+              ]
+            ],
+            "shifted": 141,
+            "states": 16146
+          },
+          "reason": "phase support exactly and irredundantly decides shifted realizability",
+          "residual_after": "Derive the exact phase law symbolically from shifted inequalities."
+        }
+      },
+      "id": "promoted:join:phase-is-missing-variable:r",
+      "kind": "promoted-concept",
+      "parents": [
+        "law:phase-unary-exact",
+        "frontier:partition-derangement",
+        "residual:4",
+        "g4:column-symbol-cycle-representation",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ]
+    },
+    {
+      "evidence": {
+        "ablation": {
+          "causal": true,
+          "evidence": {
+            "shifted_cycle_signatures": 14,
+            "shifted_states": 141
+          },
+          "reason": "aggregate cycle signature collapses distinct shifted states"
+        },
+        "test": {
+          "accepted": true,
+          "consequential": true,
+          "evidence": {
+            "shifted_cycle_signatures": 14,
+            "shifted_states": 141
+          },
+          "reason": "aggregate cycle summaries strictly collapse shifted states",
+          "residual_after": "Use phase law as the minimal verified refinement currently known."
+        }
+      },
+      "id": "promoted:join:trajectory-refinement-law:r",
+      "kind": "promoted-concept",
+      "parents": [
+        "law:phase-unary-exact",
+        "trajectory:3->4",
+        "residual:4",
+        "g0:local-parity-classification",
+        "trajectory:quotient->phase-law",
+        "g4:column-symbol-cycle-representation",
+        "trajectory:2->3",
+        "g3:saturated-k4-profile-classification",
+        "residual:3",
+        "trajectory:0->1",
+        "trajectory:1->2",
+        "g1:three-row-agreement-classification",
+        "g2:four-row-near-maximum-exclusion",
+        "residual:0",
+        "residual:1",
+        "residual:2"
+      ]
+    },
+    {
+      "evidence": {
+        "source": "t6-relative-phase-theorem"
+      },
+      "id": "controller:strongest-residual",
+      "kind": "routing-decision",
+      "parents": []
+    }
+  ],
+  "remaining_budget": {
+    "model_calls": 100.0,
+    "search_steps": 1000.0,
+    "verifier_seconds": 900.0
+  },
+  "residual": "Join the pair-specific forbidden phases, fixed-point edge multiplicities, and triangle cocycle. Derive the smallest invariant of the 21 relative permutations that restricts the fourteen-edge uniform matching multigraph beyond uncolored degrees/profiles; test the two affine triangle types {0,1,2} and {0,1,3} first, then lift any separator globally.",
+  "residual_type": "REPRESENTATION",
+  "residual_type_scores": {
+    "COMPOSITION": 1,
+    "DERIVATION": 1,
+    "INFRA": 0,
+    "OBSERVABLE": 0,
+    "OPERATOR": 0,
+    "REPRESENTATION": 2,
+    "SCOPE": 0,
+    "SEARCH": 0,
+    "VERIFIER": 0
+  },
+  "state_sha256": "dcb301384d89700bdbefc41b8154bd3a16d520063cdc49095302774ff07fb912",
+  "strongest_residual_provenance": {
+    "source": "t6-relative-phase-theorem"
+  },
+  "target": "Resolve finite E677 -> E255 implication or certify scoped obstruction/counterexample."
+}

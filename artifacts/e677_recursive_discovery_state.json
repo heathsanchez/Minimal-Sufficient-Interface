@@ -1,0 +1,1231 @@
+{
+  "generations": [
+    {
+      "consequence": {
+        "consequence": "Verified but low leverage.",
+        "consequential": false,
+        "next_residual": "Find a stronger local graph invariant.",
+        "score": 0
+      },
+      "event_sha256": "c0bac99f925123370bcd56f470e4a51105ca721b7930395e9c5d3fa05509ff2b",
+      "generation": 0,
+      "packet": {
+        "constraints": [
+          "Use exact finite enumeration or equivalent proof."
+        ],
+        "facts": [
+          "Work in S_7."
+        ],
+        "id": "local-parity-classification",
+        "question": "Classify permutation sign as a function of fixed-point multiplicity on seven symbols, especially 4 and 5.",
+        "role": "classification",
+        "verifier_id": "parity"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "enumerated": 5040
+        },
+        "reason": "exhaustive S7 enumeration"
+      },
+      "worker": {
+        "answer": {
+          "0": [
+            0,
+            1
+          ],
+          "1": [
+            0,
+            1
+          ],
+          "2": [
+            0,
+            1
+          ],
+          "3": [
+            0,
+            1
+          ],
+          "4": [
+            0
+          ],
+          "5": [
+            1
+          ],
+          "7": [
+            0
+          ]
+        },
+        "claims": [
+          "Every permutation of 7 points with exactly 5 fixed points is odd.",
+          "Every permutation of 7 points with exactly 4 fixed points is even."
+        ],
+        "packet_id": "local-parity-classification"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Promote exact forbidden three-row agreement profiles.",
+        "consequential": true,
+        "next_residual": "Classify four-row weighted agreement graphs under the triangle restrictions.",
+        "score": 2
+      },
+      "event_sha256": "e7a587ca906fba9cc5c31b55a1f43fae61ddb9a6fe20b747478d790c4bbfcb48",
+      "generation": 1,
+      "packet": {
+        "constraints": [
+          "No i has U0(i)=U1(i)=U2(i).",
+          "Return complete finite classification."
+        ],
+        "facts": [
+          "Normalize U0(i)=i.",
+          "U1(i) != i+1 mod 7.",
+          "U2(i) != i+2 mod 7.",
+          "U2(i) != U1(i+1 mod 7)."
+        ],
+        "id": "three-row-agreement-classification",
+        "question": "Classify sorted pairwise agreement multiplicities for three permutations on seven symbols under the supplied shifted-disagreement constraints and no common triple agreement.",
+        "role": "classification",
+        "verifier_id": "triple"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "S7": 5040,
+          "admissible_pairs": 854498
+        },
+        "reason": "independent exhaustive enumeration"
+      },
+      "worker": {
+        "answer": {
+          "admissible_pairs": 854498,
+          "possible_sorted_triples": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0,
+              0
+            ],
+            [
+              2,
+              1,
+              0
+            ],
+            [
+              2,
+              1,
+              1
+            ],
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              2,
+              2,
+              1
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              3,
+              1,
+              0
+            ],
+            [
+              3,
+              1,
+              1
+            ],
+            [
+              3,
+              2,
+              0
+            ],
+            [
+              3,
+              2,
+              1
+            ],
+            [
+              3,
+              2,
+              2
+            ],
+            [
+              3,
+              3,
+              0
+            ],
+            [
+              4,
+              0,
+              0
+            ],
+            [
+              4,
+              1,
+              0
+            ],
+            [
+              4,
+              1,
+              1
+            ],
+            [
+              4,
+              2,
+              0
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              5,
+              0,
+              0
+            ],
+            [
+              5,
+              1,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              7,
+              0,
+              0
+            ]
+          ],
+          "sum7_possible": [
+            [
+              3,
+              2,
+              2
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              7,
+              0,
+              0
+            ]
+          ]
+        },
+        "claims": [
+          "Among sum-7 profiles, only (7,0,0), (5,2,0), (4,3,0), and (3,2,2) occur."
+        ],
+        "packet_id": "three-row-agreement-classification"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Promote representation-independent four-row near-maximum exclusion.",
+        "consequential": true,
+        "next_residual": "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints.",
+        "score": 3
+      },
+      "event_sha256": "201576b2b9569ce0550130bf62489cf876641c2f297bfe7b92d8b89a82689803",
+      "generation": 2,
+      "packet": {
+        "constraints": [
+          "Seek a human-checkable invariant."
+        ],
+        "facts": [
+          "Each row is a permutation.",
+          "No column contains the same symbol in three or four rows."
+        ],
+        "id": "four-row-near-maximum-exclusion",
+        "question": "For four permutation rows on seven symbols with no three rows equal in a column, decide whether total pairwise row agreement can equal 13. Identify the minimal structural cause.",
+        "role": "proof-and-ablation",
+        "verifier_id": "four-row"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "certificate": {
+            "column_vectors_checked": 7,
+            "contradiction": true,
+            "deficient_symbol_occurrence_vectors_checked": 105,
+            "derived_min_deficient_columns": 2,
+            "required_deficient_columns_at_target": 1,
+            "target": 13
+          },
+          "necessity_witness_checks": {
+            "all_rows_permutations": true,
+            "no_triple": false,
+            "shifted_disagreement": true,
+            "total_pair_agreement": 13
+          }
+        },
+        "reason": "independent counting certificate plus causal witness"
+      },
+      "worker": {
+        "answer": {
+          "certificate": {
+            "column_vectors_checked": 7,
+            "contradiction": true,
+            "deficient_symbol_occurrence_vectors_checked": 105,
+            "derived_min_deficient_columns": 2,
+            "required_deficient_columns_at_target": 1,
+            "target": 13
+          },
+          "necessity_witness_checks": {
+            "all_rows_permutations": true,
+            "no_triple": false,
+            "shifted_disagreement": true,
+            "total_pair_agreement": 13
+          },
+          "no_triple_is_necessary": true,
+          "shifted_constraints_used": false
+        },
+        "claims": [
+          "Four permutation rows with no triple column agreement cannot have total pair agreement 2n-1."
+        ],
+        "packet_id": "four-row-near-maximum-exclusion"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Compile three-row classifications with four-row saturation: total-14 K4 profiles collapse to equal opposite-edge pairs and exactly four types.",
+        "consequential": true,
+        "next_residual": "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction.",
+        "score": 4
+      },
+      "event_sha256": "5839aef27bbd01851b185c3ea3a19a64c53c005aef80756ff06e87de08375806",
+      "generation": 3,
+      "packet": {
+        "constraints": [
+          "Do not use any hidden algebraic context.",
+          "Return a complete finite classification."
+        ],
+        "facts": [
+          "There are four triangles and each K4 edge lies in exactly two triangles."
+        ],
+        "id": "saturated-k4-profile-classification",
+        "question": "Classify nonnegative integer edge weights on K4 with total weight 14, every triangle of weight at most 7, and every weight-7 triangle having sorted edge type in {(7,0,0),(5,2,0),(4,3,0),(3,2,2)}. Classify up to vertex relabeling and derive any linear equalities forced on opposite edges.",
+        "role": "synthesis",
+        "verifier_id": "k4"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "canonical_profiles": 4,
+          "labeled_profiles": 18
+        },
+        "reason": "independent finite K4 enumeration and equation check"
+      },
+      "worker": {
+        "answer": {
+          "all_triangles_saturate": true,
+          "canonical_profiles": [
+            [
+              0,
+              0,
+              7,
+              7,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              5,
+              5,
+              2,
+              0
+            ],
+            [
+              0,
+              3,
+              4,
+              4,
+              3,
+              0
+            ],
+            [
+              2,
+              2,
+              3,
+              3,
+              2,
+              2
+            ]
+          ],
+          "opposite_edges_equal": true,
+          "opposite_pair_types": [
+            [
+              7,
+              0,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              3,
+              2,
+              2
+            ]
+          ],
+          "raw_labeled_profiles": 18
+        },
+        "claims": [
+          "At total K4 edge weight 14, all four triangle sums equal 7.",
+          "The four triangle equations force opposite K4 edges to have equal weights.",
+          "Up to vertex relabeling only four saturated profiles survive: opposite-edge types (7,0,0), (5,2,0), (4,3,0), and (3,2,2)."
+        ],
+        "packet_id": "saturated-k4-profile-classification"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Promote the column-symbol equality-incidence representation: saturated states are unions of monochromatic alternating even cycles, compressing the coarse frontier to nine cycle signatures.",
+        "consequential": true,
+        "next_residual": "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component.",
+        "score": 5
+      },
+      "event_sha256": "8c1280f43b7ec52e078429d56538b76b666496ccf7df2d5ea42dd1db4656b37f",
+      "generation": 4,
+      "packet": {
+        "constraints": [
+          "Retain enough information to distinguish arrangements that have identical six aggregate pair counts.",
+          "Derive component structure exactly; do not infer a hidden global objective."
+        ],
+        "facts": [
+          "Each column contributes at most two pair-equality events.",
+          "Each symbol occurs once in each of four permutation rows and contributes at most two pair-equality events.",
+          "At total 14, the aggregate opposite-edge types are (7,0,0), (5,2,0), (4,3,0), or (3,2,2)."
+        ],
+        "id": "column-symbol-cycle-representation",
+        "question": "Four permutation rows on seven symbols have no triple column equality and total pair agreement 14. Construct the smallest lossless representation of all equality events that retains both column and symbol incidence. Classify the resulting component structures for opposite-edge profile types (7,0,0), (5,2,0), (4,3,0), and (3,2,2).",
+        "role": "representation-change",
+        "verifier_id": "cycle-representation"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "cycle_signature_counts": {
+            "3-2-2": 1,
+            "4-3-0": 2,
+            "5-2-0": 2,
+            "7-0-0": 4
+          },
+          "matching_assignments_checked": 36
+        },
+        "reason": "independent finite incidence/cycle certificate"
+      },
+      "worker": {
+        "answer": {
+          "derived": {
+            "bipartite_2_regular": true,
+            "column_degree_2": true,
+            "component_single_matching_color": true,
+            "even_cycle_components": true,
+            "labels_alternate_complements": true,
+            "symbol_degree_2": true
+          },
+          "matching_assignments_checked": 36,
+          "n": 7,
+          "occurrence_counts": {
+            "0": 35,
+            "1": 105,
+            "2": 21
+          },
+          "profiles": {
+            "3-2-2": {
+              "count": 1,
+              "signatures": [
+                [
+                  [
+                    6
+                  ],
+                  [
+                    4
+                  ],
+                  [
+                    4
+                  ]
+                ]
+              ]
+            },
+            "4-3-0": {
+              "count": 2,
+              "signatures": [
+                [
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    6
+                  ],
+                  []
+                ],
+                [
+                  [
+                    8
+                  ],
+                  [
+                    6
+                  ],
+                  []
+                ]
+              ]
+            },
+            "5-2-0": {
+              "count": 2,
+              "signatures": [
+                [
+                  [
+                    4,
+                    6
+                  ],
+                  [
+                    4
+                  ],
+                  []
+                ],
+                [
+                  [
+                    10
+                  ],
+                  [
+                    4
+                  ],
+                  []
+                ]
+              ]
+            },
+            "7-0-0": {
+              "count": 4,
+              "signatures": [
+                [
+                  [
+                    4,
+                    4,
+                    6
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    4,
+                    10
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    6,
+                    8
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    14
+                  ],
+                  [],
+                  []
+                ]
+              ]
+            }
+          },
+          "total": 14
+        },
+        "claims": [
+          "At total agreement 2n, every column and every symbol has equality-incidence degree exactly 2.",
+          "The equality-incidence graph is bipartite 2-regular, hence a disjoint union of even cycles.",
+          "Every connected component has one complementary-row-pair matching color and its two row-pair labels alternate around the cycle.",
+          "For n=7 and the four saturated profiles, only nine color-cycle signatures remain."
+        ],
+        "packet_id": "column-symbol-cycle-representation"
+      }
+    }
+  ],
+  "global_target": "Resolve the finite E677 -> E255 implication or produce a verified obstruction/counterexample.",
+  "graph": [
+    {
+      "from": "three-row-agreement-classification",
+      "relation": "Promote exact forbidden three-row agreement profiles.",
+      "to": "Classify four-row weighted agreement graphs under the triangle restrictions."
+    },
+    {
+      "from": "four-row-near-maximum-exclusion",
+      "relation": "Promote representation-independent four-row near-maximum exclusion.",
+      "to": "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints."
+    },
+    {
+      "from": "saturated-k4-profile-classification",
+      "relation": "Compile three-row classifications with four-row saturation: total-14 K4 profiles collapse to equal opposite-edge pairs and exactly four types.",
+      "to": "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction."
+    },
+    {
+      "from": "column-symbol-cycle-representation",
+      "relation": "Promote the column-symbol equality-incidence representation: saturated states are unions of monochromatic alternating even cycles, compressing the coarse frontier to nine cycle signatures.",
+      "to": "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component."
+    }
+  ],
+  "low_leverage": [
+    {
+      "consequence": {
+        "consequence": "Verified but low leverage.",
+        "consequential": false,
+        "next_residual": "Find a stronger local graph invariant.",
+        "score": 0
+      },
+      "event_sha256": "c0bac99f925123370bcd56f470e4a51105ca721b7930395e9c5d3fa05509ff2b",
+      "generation": 0,
+      "packet": {
+        "constraints": [
+          "Use exact finite enumeration or equivalent proof."
+        ],
+        "facts": [
+          "Work in S_7."
+        ],
+        "id": "local-parity-classification",
+        "question": "Classify permutation sign as a function of fixed-point multiplicity on seven symbols, especially 4 and 5.",
+        "role": "classification",
+        "verifier_id": "parity"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "enumerated": 5040
+        },
+        "reason": "exhaustive S7 enumeration"
+      },
+      "worker": {
+        "answer": {
+          "0": [
+            0,
+            1
+          ],
+          "1": [
+            0,
+            1
+          ],
+          "2": [
+            0,
+            1
+          ],
+          "3": [
+            0,
+            1
+          ],
+          "4": [
+            0
+          ],
+          "5": [
+            1
+          ],
+          "7": [
+            0
+          ]
+        },
+        "claims": [
+          "Every permutation of 7 points with exactly 5 fixed points is odd.",
+          "Every permutation of 7 points with exactly 4 fixed points is even."
+        ],
+        "packet_id": "local-parity-classification"
+      }
+    }
+  ],
+  "rejected": [],
+  "residuals": [
+    "Find a stronger local graph invariant.",
+    "Classify four-row weighted agreement graphs under the triangle restrictions.",
+    "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints.",
+    "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction.",
+    "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component."
+  ],
+  "state_sha256": "6e33d3197c7f62ad7b79e9f10fb5e3e17dfe2652a43e4a6018d30a86282980b2",
+  "terminal": "UNKNOWN",
+  "verified": [
+    {
+      "consequence": {
+        "consequence": "Promote exact forbidden three-row agreement profiles.",
+        "consequential": true,
+        "next_residual": "Classify four-row weighted agreement graphs under the triangle restrictions.",
+        "score": 2
+      },
+      "event_sha256": "e7a587ca906fba9cc5c31b55a1f43fae61ddb9a6fe20b747478d790c4bbfcb48",
+      "generation": 1,
+      "packet": {
+        "constraints": [
+          "No i has U0(i)=U1(i)=U2(i).",
+          "Return complete finite classification."
+        ],
+        "facts": [
+          "Normalize U0(i)=i.",
+          "U1(i) != i+1 mod 7.",
+          "U2(i) != i+2 mod 7.",
+          "U2(i) != U1(i+1 mod 7)."
+        ],
+        "id": "three-row-agreement-classification",
+        "question": "Classify sorted pairwise agreement multiplicities for three permutations on seven symbols under the supplied shifted-disagreement constraints and no common triple agreement.",
+        "role": "classification",
+        "verifier_id": "triple"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "S7": 5040,
+          "admissible_pairs": 854498
+        },
+        "reason": "independent exhaustive enumeration"
+      },
+      "worker": {
+        "answer": {
+          "admissible_pairs": 854498,
+          "possible_sorted_triples": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0,
+              0
+            ],
+            [
+              2,
+              1,
+              0
+            ],
+            [
+              2,
+              1,
+              1
+            ],
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              2,
+              2,
+              1
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              3,
+              1,
+              0
+            ],
+            [
+              3,
+              1,
+              1
+            ],
+            [
+              3,
+              2,
+              0
+            ],
+            [
+              3,
+              2,
+              1
+            ],
+            [
+              3,
+              2,
+              2
+            ],
+            [
+              3,
+              3,
+              0
+            ],
+            [
+              4,
+              0,
+              0
+            ],
+            [
+              4,
+              1,
+              0
+            ],
+            [
+              4,
+              1,
+              1
+            ],
+            [
+              4,
+              2,
+              0
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              5,
+              0,
+              0
+            ],
+            [
+              5,
+              1,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              7,
+              0,
+              0
+            ]
+          ],
+          "sum7_possible": [
+            [
+              3,
+              2,
+              2
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              7,
+              0,
+              0
+            ]
+          ]
+        },
+        "claims": [
+          "Among sum-7 profiles, only (7,0,0), (5,2,0), (4,3,0), and (3,2,2) occur."
+        ],
+        "packet_id": "three-row-agreement-classification"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Promote representation-independent four-row near-maximum exclusion.",
+        "consequential": true,
+        "next_residual": "Classify the full six-edge four-row agreement profile under permutation balance + no-triple, then intersect with triangle constraints.",
+        "score": 3
+      },
+      "event_sha256": "201576b2b9569ce0550130bf62489cf876641c2f297bfe7b92d8b89a82689803",
+      "generation": 2,
+      "packet": {
+        "constraints": [
+          "Seek a human-checkable invariant."
+        ],
+        "facts": [
+          "Each row is a permutation.",
+          "No column contains the same symbol in three or four rows."
+        ],
+        "id": "four-row-near-maximum-exclusion",
+        "question": "For four permutation rows on seven symbols with no three rows equal in a column, decide whether total pairwise row agreement can equal 13. Identify the minimal structural cause.",
+        "role": "proof-and-ablation",
+        "verifier_id": "four-row"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "certificate": {
+            "column_vectors_checked": 7,
+            "contradiction": true,
+            "deficient_symbol_occurrence_vectors_checked": 105,
+            "derived_min_deficient_columns": 2,
+            "required_deficient_columns_at_target": 1,
+            "target": 13
+          },
+          "necessity_witness_checks": {
+            "all_rows_permutations": true,
+            "no_triple": false,
+            "shifted_disagreement": true,
+            "total_pair_agreement": 13
+          }
+        },
+        "reason": "independent counting certificate plus causal witness"
+      },
+      "worker": {
+        "answer": {
+          "certificate": {
+            "column_vectors_checked": 7,
+            "contradiction": true,
+            "deficient_symbol_occurrence_vectors_checked": 105,
+            "derived_min_deficient_columns": 2,
+            "required_deficient_columns_at_target": 1,
+            "target": 13
+          },
+          "necessity_witness_checks": {
+            "all_rows_permutations": true,
+            "no_triple": false,
+            "shifted_disagreement": true,
+            "total_pair_agreement": 13
+          },
+          "no_triple_is_necessary": true,
+          "shifted_constraints_used": false
+        },
+        "claims": [
+          "Four permutation rows with no triple column agreement cannot have total pair agreement 2n-1."
+        ],
+        "packet_id": "four-row-near-maximum-exclusion"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Compile three-row classifications with four-row saturation: total-14 K4 profiles collapse to equal opposite-edge pairs and exactly four types.",
+        "consequential": true,
+        "next_residual": "Test every orientation of the four surviving total-14 profile types against the full shifted-disagreement constraints; for each eliminated type extract the smallest human-checkable obstruction.",
+        "score": 4
+      },
+      "event_sha256": "5839aef27bbd01851b185c3ea3a19a64c53c005aef80756ff06e87de08375806",
+      "generation": 3,
+      "packet": {
+        "constraints": [
+          "Do not use any hidden algebraic context.",
+          "Return a complete finite classification."
+        ],
+        "facts": [
+          "There are four triangles and each K4 edge lies in exactly two triangles."
+        ],
+        "id": "saturated-k4-profile-classification",
+        "question": "Classify nonnegative integer edge weights on K4 with total weight 14, every triangle of weight at most 7, and every weight-7 triangle having sorted edge type in {(7,0,0),(5,2,0),(4,3,0),(3,2,2)}. Classify up to vertex relabeling and derive any linear equalities forced on opposite edges.",
+        "role": "synthesis",
+        "verifier_id": "k4"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "canonical_profiles": 4,
+          "labeled_profiles": 18
+        },
+        "reason": "independent finite K4 enumeration and equation check"
+      },
+      "worker": {
+        "answer": {
+          "all_triangles_saturate": true,
+          "canonical_profiles": [
+            [
+              0,
+              0,
+              7,
+              7,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              5,
+              5,
+              2,
+              0
+            ],
+            [
+              0,
+              3,
+              4,
+              4,
+              3,
+              0
+            ],
+            [
+              2,
+              2,
+              3,
+              3,
+              2,
+              2
+            ]
+          ],
+          "opposite_edges_equal": true,
+          "opposite_pair_types": [
+            [
+              7,
+              0,
+              0
+            ],
+            [
+              5,
+              2,
+              0
+            ],
+            [
+              4,
+              3,
+              0
+            ],
+            [
+              3,
+              2,
+              2
+            ]
+          ],
+          "raw_labeled_profiles": 18
+        },
+        "claims": [
+          "At total K4 edge weight 14, all four triangle sums equal 7.",
+          "The four triangle equations force opposite K4 edges to have equal weights.",
+          "Up to vertex relabeling only four saturated profiles survive: opposite-edge types (7,0,0), (5,2,0), (4,3,0), and (3,2,2)."
+        ],
+        "packet_id": "saturated-k4-profile-classification"
+      }
+    },
+    {
+      "consequence": {
+        "consequence": "Promote the column-symbol equality-incidence representation: saturated states are unions of monochromatic alternating even cycles, compressing the coarse frontier to nine cycle signatures.",
+        "consequential": true,
+        "next_residual": "For each of the nine cycle signatures, determine realizability under the shifted row-pair constraints. If signatures still fail to separate survivors, attach the minimal missing variable: cyclic column offset / shift phase along each alternating component.",
+        "score": 5
+      },
+      "event_sha256": "8c1280f43b7ec52e078429d56538b76b666496ccf7df2d5ea42dd1db4656b37f",
+      "generation": 4,
+      "packet": {
+        "constraints": [
+          "Retain enough information to distinguish arrangements that have identical six aggregate pair counts.",
+          "Derive component structure exactly; do not infer a hidden global objective."
+        ],
+        "facts": [
+          "Each column contributes at most two pair-equality events.",
+          "Each symbol occurs once in each of four permutation rows and contributes at most two pair-equality events.",
+          "At total 14, the aggregate opposite-edge types are (7,0,0), (5,2,0), (4,3,0), or (3,2,2)."
+        ],
+        "id": "column-symbol-cycle-representation",
+        "question": "Four permutation rows on seven symbols have no triple column equality and total pair agreement 14. Construct the smallest lossless representation of all equality events that retains both column and symbol incidence. Classify the resulting component structures for opposite-edge profile types (7,0,0), (5,2,0), (4,3,0), and (3,2,2).",
+        "role": "representation-change",
+        "verifier_id": "cycle-representation"
+      },
+      "verification": {
+        "accepted": true,
+        "evidence": {
+          "cycle_signature_counts": {
+            "3-2-2": 1,
+            "4-3-0": 2,
+            "5-2-0": 2,
+            "7-0-0": 4
+          },
+          "matching_assignments_checked": 36
+        },
+        "reason": "independent finite incidence/cycle certificate"
+      },
+      "worker": {
+        "answer": {
+          "derived": {
+            "bipartite_2_regular": true,
+            "column_degree_2": true,
+            "component_single_matching_color": true,
+            "even_cycle_components": true,
+            "labels_alternate_complements": true,
+            "symbol_degree_2": true
+          },
+          "matching_assignments_checked": 36,
+          "n": 7,
+          "occurrence_counts": {
+            "0": 35,
+            "1": 105,
+            "2": 21
+          },
+          "profiles": {
+            "3-2-2": {
+              "count": 1,
+              "signatures": [
+                [
+                  [
+                    6
+                  ],
+                  [
+                    4
+                  ],
+                  [
+                    4
+                  ]
+                ]
+              ]
+            },
+            "4-3-0": {
+              "count": 2,
+              "signatures": [
+                [
+                  [
+                    4,
+                    4
+                  ],
+                  [
+                    6
+                  ],
+                  []
+                ],
+                [
+                  [
+                    8
+                  ],
+                  [
+                    6
+                  ],
+                  []
+                ]
+              ]
+            },
+            "5-2-0": {
+              "count": 2,
+              "signatures": [
+                [
+                  [
+                    4,
+                    6
+                  ],
+                  [
+                    4
+                  ],
+                  []
+                ],
+                [
+                  [
+                    10
+                  ],
+                  [
+                    4
+                  ],
+                  []
+                ]
+              ]
+            },
+            "7-0-0": {
+              "count": 4,
+              "signatures": [
+                [
+                  [
+                    4,
+                    4,
+                    6
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    4,
+                    10
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    6,
+                    8
+                  ],
+                  [],
+                  []
+                ],
+                [
+                  [
+                    14
+                  ],
+                  [],
+                  []
+                ]
+              ]
+            }
+          },
+          "total": 14
+        },
+        "claims": [
+          "At total agreement 2n, every column and every symbol has equality-incidence degree exactly 2.",
+          "The equality-incidence graph is bipartite 2-regular, hence a disjoint union of even cycles.",
+          "Every connected component has one complementary-row-pair matching color and its two row-pair labels alternate around the cycle.",
+          "For n=7 and the four saturated profiles, only nine color-cycle signatures remain."
+        ],
+        "packet_id": "column-symbol-cycle-representation"
+      }
+    }
+  ]
+}

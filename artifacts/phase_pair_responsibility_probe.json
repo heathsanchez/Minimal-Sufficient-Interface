@@ -1,0 +1,575 @@
+{
+  "all_formula_matches": true,
+  "all_symbolic_cores_stable_n6_to_n8": true,
+  "orders": [
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:2": [
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ],
+          [
+            "03"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ],
+          [
+            "03"
+          ],
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 3,
+      "shifted_states": 0,
+      "total_states": 6
+    },
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "A:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:3": [
+          [
+            "03"
+          ],
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "C:3": [
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 4,
+      "shifted_states": 1,
+      "total_states": 45
+    },
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "A:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:4": [
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ]
+        ],
+        "C:3": [
+          [
+            "13"
+          ]
+        ],
+        "C:4": [
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 5,
+      "shifted_states": 2,
+      "total_states": 252
+    },
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "A:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:5": [
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ]
+        ],
+        "C:4": [
+          [
+            "13"
+          ]
+        ],
+        "C:5": [
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 6,
+      "shifted_states": 23,
+      "total_states": 1935
+    },
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "A:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:6": [
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ]
+        ],
+        "C:5": [
+          [
+            "13"
+          ]
+        ],
+        "C:6": [
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 7,
+      "shifted_states": 141,
+      "total_states": 16146
+    },
+    {
+      "forbidden_formula": {
+        "A": [
+          "+1",
+          "+2",
+          "+3"
+        ],
+        "B": [
+          "+1",
+          "+3",
+          "-1"
+        ],
+        "C": [
+          "+1",
+          "+2",
+          "-2",
+          "-1"
+        ]
+      },
+      "formula_matches_empirical": true,
+      "minimal_pair_cores": {
+        "A:1": [
+          [
+            "12"
+          ]
+        ],
+        "A:2": [
+          [
+            "02"
+          ],
+          [
+            "13"
+          ]
+        ],
+        "A:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:1": [
+          [
+            "01"
+          ],
+          [
+            "23"
+          ]
+        ],
+        "B:3": [
+          [
+            "03"
+          ]
+        ],
+        "B:7": [
+          [
+            "12"
+          ]
+        ],
+        "C:1": [
+          [
+            "01"
+          ]
+        ],
+        "C:2": [
+          [
+            "02"
+          ]
+        ],
+        "C:6": [
+          [
+            "13"
+          ]
+        ],
+        "C:7": [
+          [
+            "23"
+          ]
+        ]
+      },
+      "n": 8,
+      "shifted_states": 1981,
+      "total_states": 153657
+    }
+  ],
+  "residual": "Use the stable minimal row-pair cores to derive each modular displacement exclusion locally; then prove their conjunction is equivalent to all six shifted pair constraints for saturated partition-derangement states.",
+  "stable_symbolic_cores": {
+    "A:+1": {
+      "cores": [
+        [
+          "12"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "A:+2": {
+      "cores": [
+        [
+          "02"
+        ],
+        [
+          "13"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "A:+3": {
+      "cores": [
+        [
+          "03"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "B:+1": {
+      "cores": [
+        [
+          "01"
+        ],
+        [
+          "23"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "B:+3": {
+      "cores": [
+        [
+          "03"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "B:-1": {
+      "cores": [
+        [
+          "12"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "C:+1": {
+      "cores": [
+        [
+          "01"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "C:+2": {
+      "cores": [
+        [
+          "02"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "C:-1": {
+      "cores": [
+        [
+          "23"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    },
+    "C:-2": {
+      "cores": [
+        [
+          "13"
+        ]
+      ],
+      "same_minimal_cores_n6_to_n8": true
+    }
+  }
+}

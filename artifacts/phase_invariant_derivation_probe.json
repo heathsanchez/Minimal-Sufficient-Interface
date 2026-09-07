@@ -1,0 +1,130 @@
+{
+  "binary_forbidden_pair_count": 125,
+  "greedy_exact_negative_cover": true,
+  "greedy_predicate_count": 10,
+  "greedy_predicates": [
+    [
+      "absent",
+      [
+        "A",
+        1
+      ]
+    ],
+    [
+      "absent",
+      [
+        "B",
+        3
+      ]
+    ],
+    [
+      "absent",
+      [
+        "C",
+        2
+      ]
+    ],
+    [
+      "absent",
+      [
+        "A",
+        3
+      ]
+    ],
+    [
+      "absent",
+      [
+        "B",
+        1
+      ]
+    ],
+    [
+      "absent",
+      [
+        "C",
+        6
+      ]
+    ],
+    [
+      "absent",
+      [
+        "A",
+        2
+      ]
+    ],
+    [
+      "absent",
+      [
+        "B",
+        6
+      ]
+    ],
+    [
+      "absent",
+      [
+        "C",
+        1
+      ]
+    ],
+    [
+      "absent",
+      [
+        "C",
+        5
+      ]
+    ]
+  ],
+  "nonshifted": 16005,
+  "phase_bits": 18,
+  "residual": "Formalize the exact unary/binary phase predicate as the finite n=7 shifted-realizability invariant.",
+  "shifted": 141,
+  "states": 16146,
+  "unary_false_negative_states": 0,
+  "unary_false_positive_states": 0,
+  "unary_forbidden": [
+    [
+      "A",
+      1
+    ],
+    [
+      "A",
+      2
+    ],
+    [
+      "A",
+      3
+    ],
+    [
+      "B",
+      1
+    ],
+    [
+      "B",
+      3
+    ],
+    [
+      "B",
+      6
+    ],
+    [
+      "C",
+      1
+    ],
+    [
+      "C",
+      2
+    ],
+    [
+      "C",
+      5
+    ],
+    [
+      "C",
+      6
+    ]
+  ],
+  "unary_plus_binary_exact": true,
+  "unary_plus_binary_false_negative_states": 0,
+  "unary_plus_binary_false_positive_states": 0,
+  "uncovered_negative_phase_patterns": 0
+}

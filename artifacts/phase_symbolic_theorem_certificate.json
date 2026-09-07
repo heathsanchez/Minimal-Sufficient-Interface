@@ -1,0 +1,200 @@
+{
+  "assumptions": [
+    "cyclic indices mod n",
+    "n>=4 for symbolic proof",
+    "disjoint A/B/C partition",
+    "saturated row reconstruction",
+    "each sigma_c is a fixed-point-free permutation of its color block"
+  ],
+  "color_separation_lemma": {
+    "id/id": "equality forces i=j; impossible for n>=4 since shifted delta is 1,2,or3",
+    "id/sig": "i=sigma_c(j) forces i into color c, hence same color and displacement -delta",
+    "sig/id": "sigma_c(i)=j forces j into color c, hence same color and displacement +delta",
+    "sig/sig": "equal outputs lie in both color blocks, hence same color; injectivity then forces i=j, impossible"
+  },
+  "constructive_witnesses": {
+    "A:1": {
+      "mode": "same",
+      "pair": [
+        1,
+        2
+      ]
+    },
+    "A:2": {
+      "mode": "same",
+      "pair": [
+        0,
+        2
+      ]
+    },
+    "A:3": {
+      "mode": "same",
+      "pair": [
+        0,
+        3
+      ]
+    },
+    "B:-1": {
+      "mode": "image",
+      "pair": [
+        1,
+        2
+      ]
+    },
+    "B:1": {
+      "mode": "same",
+      "pair": [
+        0,
+        1
+      ]
+    },
+    "B:3": {
+      "mode": "same",
+      "pair": [
+        0,
+        3
+      ]
+    },
+    "C:-1": {
+      "mode": "image",
+      "pair": [
+        2,
+        3
+      ]
+    },
+    "C:-2": {
+      "mode": "image",
+      "pair": [
+        1,
+        3
+      ]
+    },
+    "C:1": {
+      "mode": "same",
+      "pair": [
+        0,
+        1
+      ]
+    },
+    "C:2": {
+      "mode": "same",
+      "pair": [
+        0,
+        2
+      ]
+    }
+  },
+  "finite_replay_orders_3_to_8": {},
+  "forbidden_union": [
+    [
+      "A",
+      1
+    ],
+    [
+      "A",
+      2
+    ],
+    [
+      "A",
+      3
+    ],
+    [
+      "B",
+      -1
+    ],
+    [
+      "B",
+      1
+    ],
+    [
+      "B",
+      3
+    ],
+    [
+      "C",
+      -2
+    ],
+    [
+      "C",
+      -1
+    ],
+    [
+      "C",
+      1
+    ],
+    [
+      "C",
+      2
+    ]
+  ],
+  "n3_status": "degenerate delta=3 case; formula separately verified by exhaustive finite replay, not covered by the n>=4 symbolic proof",
+  "pair_table": {
+    "01": [
+      [
+        "B",
+        1
+      ],
+      [
+        "C",
+        1
+      ]
+    ],
+    "02": [
+      [
+        "A",
+        2
+      ],
+      [
+        "C",
+        2
+      ]
+    ],
+    "03": [
+      [
+        "A",
+        3
+      ],
+      [
+        "B",
+        3
+      ]
+    ],
+    "12": [
+      [
+        "A",
+        1
+      ],
+      [
+        "B",
+        -1
+      ]
+    ],
+    "13": [
+      [
+        "A",
+        2
+      ],
+      [
+        "C",
+        -2
+      ]
+    ],
+    "23": [
+      [
+        "B",
+        1
+      ],
+      [
+        "C",
+        -1
+      ]
+    ]
+  },
+  "residual": "Replace the six shifted inequalities by the arbitrary-n local phase exclusions on the saturated frontier and determine the strongest new structural consequence for the E677-to-E255 obstruction.",
+  "symbolic_complete_n_ge_4": true,
+  "symbolic_moduli_witness_checked": [
+    4,
+    32
+  ],
+  "theorem_n_ge_4": "For every cyclic order n>=4, on a saturated partition-derangement state, all six shifted row-pair inequalities hold iff every A-phase avoids {+1,+2,+3}, every B-phase avoids {+1,+3,-1}, and every C-phase avoids {+1,+2,-2,-1}, modulo n; zero phase is already excluded by fixed-point-freeness."
+}

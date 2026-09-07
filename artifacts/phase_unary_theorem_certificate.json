@@ -1,0 +1,133 @@
+{
+  "all_allowed_atoms_realized_by_shifted_states": true,
+  "allowed_displacements": {
+    "A": [
+      4,
+      5,
+      6
+    ],
+    "B": [
+      2,
+      4,
+      5
+    ],
+    "C": [
+      3,
+      4
+    ]
+  },
+  "false_negatives": 0,
+  "false_positives": 0,
+  "forbidden_atom_occurrences": {
+    "A:1": 4551,
+    "A:2": 4551,
+    "A:3": 4551,
+    "B:1": 4551,
+    "B:3": 4551,
+    "B:6": 4551,
+    "C:1": 4551,
+    "C:2": 4551,
+    "C:5": 4551,
+    "C:6": 4551
+  },
+  "forbidden_atoms": [
+    [
+      "A",
+      1
+    ],
+    [
+      "A",
+      2
+    ],
+    [
+      "A",
+      3
+    ],
+    [
+      "B",
+      1
+    ],
+    [
+      "B",
+      3
+    ],
+    [
+      "B",
+      6
+    ],
+    [
+      "C",
+      1
+    ],
+    [
+      "C",
+      2
+    ],
+    [
+      "C",
+      5
+    ],
+    [
+      "C",
+      6
+    ]
+  ],
+  "n": 7,
+  "residual": "Derive the ten forbidden displacement sets from the six shifted row-pair inequalities symbolically, then feed this theorem back into the recursive compiler as a promoted law/capability.",
+  "shifted_states": 141,
+  "single_atom_ablations": {
+    "A:1": {
+      "false_negatives": 0,
+      "false_positives": 204,
+      "necessary": true
+    },
+    "A:2": {
+      "false_negatives": 0,
+      "false_positives": 218,
+      "necessary": true
+    },
+    "A:3": {
+      "false_negatives": 0,
+      "false_positives": 246,
+      "necessary": true
+    },
+    "B:1": {
+      "false_negatives": 0,
+      "false_positives": 169,
+      "necessary": true
+    },
+    "B:3": {
+      "false_negatives": 0,
+      "false_positives": 260,
+      "necessary": true
+    },
+    "B:6": {
+      "false_negatives": 0,
+      "false_positives": 176,
+      "necessary": true
+    },
+    "C:1": {
+      "false_negatives": 0,
+      "false_positives": 50,
+      "necessary": true
+    },
+    "C:2": {
+      "false_negatives": 0,
+      "false_positives": 57,
+      "necessary": true
+    },
+    "C:5": {
+      "false_negatives": 0,
+      "false_positives": 57,
+      "necessary": true
+    },
+    "C:6": {
+      "false_negatives": 0,
+      "false_positives": 50,
+      "necessary": true
+    }
+  },
+  "theorem": "shifted_ok iff phase support avoids the ten forbidden color-displacement atoms",
+  "total_states": 16146,
+  "unary_irredundant": true
+}

@@ -1,0 +1,24 @@
+{
+  "attachment_status": "MECHANISM_ONLY",
+  "direct_theorem_attachment_verified": false,
+  "live_frontier": "E677 cyclic-P T6 seven-row relative-permutation / uniform matching boundary",
+  "mechanism_attachment_verified": true,
+  "missing_source_assumptions_at_live_frontier": [
+    "four_row_saturated_reconstruction",
+    "partition_into_three_local_roles",
+    "within_role_fixed_point_free_actions"
+  ],
+  "residual": "Derive or refute a seven-row T6 phase-labelled relative-permutation edge law directly from the pair-kernel equivalence, triangle cocycle, and shifted-row inequality.  The law must retain cyclic displacement/orientation on each colored agreement edge and must imply a named restriction on the fourteen-edge uniform matching multigraph stronger than uncolored degree/profile invariants.  Do not import the four-row A/B/C theorem unless its missing partition/action assumptions are independently derived.",
+  "shared_structural_ingredients": [
+    "cyclic_indices",
+    "permutation_rows",
+    "shifted_row_inequalities"
+  ],
+  "source_local_frontier_reconstruction_n7": 141,
+  "source_symbolic_complete": true,
+  "source_theorem": "arbitrary-n saturated four-row unary phase theorem",
+  "suppressed_claims": [
+    "the four-row A/B/C phase exclusions solve the seven-row T6 frontier",
+    "the 141-state n=7 saturated frontier is the live E677 minimum-counterexample frontier"
+  ]
+}

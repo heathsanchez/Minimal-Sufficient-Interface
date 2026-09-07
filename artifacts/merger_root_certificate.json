@@ -1,0 +1,14 @@
+{
+  "certificate": "merger_to_root",
+  "theorem": "finite set + total map + (some vertex indegree>1) => (some vertex indegree 0)",
+  "domain_independent": true,
+  "results": {
+    "n=2": "unsat",
+    "n=3": "unsat",
+    "n=4": "unsat",
+    "n=5": "unsat",
+    "n=6": "unsat"
+  },
+  "all_counter_assumptions_unsat": true,
+  "transition": "PROMOTE"
+}

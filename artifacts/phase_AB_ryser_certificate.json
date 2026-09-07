@@ -1,0 +1,1070 @@
+{
+  "all_counts_exact": true,
+  "colors": {
+    "A": {
+      "allowed_displacements": [
+        4,
+        5,
+        6
+      ],
+      "degree_signature_aggregate": {
+        "(0, (0, 0, 0, 0, 0, 0, 0))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 1
+        },
+        "(1, (0, 0, 0, 0, 1, 1, 1))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(2, (0, 0, 0, 1, 1, 2, 2))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(2, (0, 0, 1, 1, 1, 1, 2))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(2, (0, 1, 1, 1, 1, 1, 1))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(3, (0, 0, 1, 1, 2, 2, 3))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(3, (0, 1, 1, 1, 2, 2, 2))": {
+          "contribution": 0,
+          "orbit_count": 2,
+          "total_orbit_size": 14
+        },
+        "(3, (1, 1, 1, 1, 1, 2, 2))": {
+          "contribution": 56,
+          "orbit_count": 2,
+          "total_orbit_size": 14
+        },
+        "(4, (0, 1, 1, 2, 2, 3, 3))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(4, (1, 1, 1, 2, 2, 2, 3))": {
+          "contribution": -336,
+          "orbit_count": 2,
+          "total_orbit_size": 14
+        },
+        "(4, (1, 1, 2, 2, 2, 2, 2))": {
+          "contribution": -448,
+          "orbit_count": 2,
+          "total_orbit_size": 14
+        },
+        "(5, (1, 1, 2, 2, 3, 3, 3))": {
+          "contribution": 756,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(5, (1, 2, 2, 2, 2, 3, 3))": {
+          "contribution": 1008,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(5, (2, 2, 2, 2, 2, 2, 3))": {
+          "contribution": 1344,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(6, (2, 2, 2, 3, 3, 3, 3))": {
+          "contribution": -4536,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(7, (3, 3, 3, 3, 3, 3, 3))": {
+          "contribution": 2187,
+          "orbit_count": 1,
+          "total_orbit_size": 1
+        }
+      },
+      "degree_signature_class_count": 16,
+      "independent_bruteforce_permanent": 31,
+      "independent_verifier_exact": true,
+      "ryser_orbit_table": [
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 1,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [],
+          "subset_size": 0
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0
+          ],
+          "subset_size": 1
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            0,
+            1,
+            1,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            2
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            3
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            1,
+            1,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            3
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 28,
+          "orbit_size": 7,
+          "representative_summand": 4,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2
+          ],
+          "row_degree_product": 4,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            4
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            5
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 28,
+          "orbit_size": 7,
+          "representative_summand": 4,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2
+          ],
+          "row_degree_product": 4,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            2,
+            4
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            2,
+            2,
+            3,
+            3
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            4
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            5
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -224,
+          "orbit_size": 7,
+          "representative_summand": -32,
+          "row_degree_multiset": [
+            1,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 32,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -224,
+          "orbit_size": 7,
+          "representative_summand": -32,
+          "row_degree_multiset": [
+            1,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 32,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": 756,
+          "orbit_size": 7,
+          "representative_summand": 108,
+          "row_degree_multiset": [
+            1,
+            1,
+            2,
+            2,
+            3,
+            3,
+            3
+          ],
+          "row_degree_product": 108,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": 1008,
+          "orbit_size": 7,
+          "representative_summand": 144,
+          "row_degree_multiset": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3
+          ],
+          "row_degree_product": 144,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": 1344,
+          "orbit_size": 7,
+          "representative_summand": 192,
+          "row_degree_multiset": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 192,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": -4536,
+          "orbit_size": 7,
+          "representative_summand": -648,
+          "row_degree_multiset": [
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3
+          ],
+          "row_degree_product": 648,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "subset_size": 6
+        },
+        {
+          "orbit_contribution": 2187,
+          "orbit_size": 1,
+          "representative_summand": 2187,
+          "row_degree_multiset": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "row_degree_product": 2187,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "subset_size": 7
+        }
+      ],
+      "ryser_permanent": 31,
+      "translation_orbit_count": 20
+    },
+    "B": {
+      "allowed_displacements": [
+        2,
+        4,
+        5
+      ],
+      "degree_signature_aggregate": {
+        "(0, (0, 0, 0, 0, 0, 0, 0))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 1
+        },
+        "(1, (0, 0, 0, 0, 1, 1, 1))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(2, (0, 0, 1, 1, 1, 1, 2))": {
+          "contribution": 0,
+          "orbit_count": 3,
+          "total_orbit_size": 21
+        },
+        "(3, (0, 1, 1, 1, 2, 2, 2))": {
+          "contribution": 0,
+          "orbit_count": 4,
+          "total_orbit_size": 28
+        },
+        "(3, (1, 1, 1, 1, 1, 1, 3))": {
+          "contribution": 21,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(4, (0, 2, 2, 2, 2, 2, 2))": {
+          "contribution": 0,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(4, (1, 1, 1, 2, 2, 2, 3))": {
+          "contribution": -672,
+          "orbit_count": 4,
+          "total_orbit_size": 28
+        },
+        "(5, (1, 2, 2, 2, 2, 3, 3))": {
+          "contribution": 3024,
+          "orbit_count": 3,
+          "total_orbit_size": 21
+        },
+        "(6, (2, 2, 2, 3, 3, 3, 3))": {
+          "contribution": -4536,
+          "orbit_count": 1,
+          "total_orbit_size": 7
+        },
+        "(7, (3, 3, 3, 3, 3, 3, 3))": {
+          "contribution": 2187,
+          "orbit_count": 1,
+          "total_orbit_size": 1
+        }
+      },
+      "degree_signature_class_count": 10,
+      "independent_bruteforce_permanent": 24,
+      "independent_verifier_exact": true,
+      "ryser_orbit_table": [
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 1,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [],
+          "subset_size": 0
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0
+          ],
+          "subset_size": 1
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            2
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            3
+          ],
+          "subset_size": 2
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            3
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            4
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 21,
+          "orbit_size": 7,
+          "representative_summand": 3,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            3
+          ],
+          "row_degree_product": 3,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            5
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            2,
+            4
+          ],
+          "subset_size": 3
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": 0,
+          "orbit_size": 7,
+          "representative_summand": 0,
+          "row_degree_multiset": [
+            0,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "row_degree_product": 0,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            4
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            5
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            3,
+            4
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": -168,
+          "orbit_size": 7,
+          "representative_summand": -24,
+          "row_degree_multiset": [
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "row_degree_product": 24,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            3,
+            5
+          ],
+          "subset_size": 4
+        },
+        {
+          "orbit_contribution": 1008,
+          "orbit_size": 7,
+          "representative_summand": 144,
+          "row_degree_multiset": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3
+          ],
+          "row_degree_product": 144,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": 1008,
+          "orbit_size": 7,
+          "representative_summand": 144,
+          "row_degree_multiset": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3
+          ],
+          "row_degree_product": 144,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": 1008,
+          "orbit_size": 7,
+          "representative_summand": 144,
+          "row_degree_multiset": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            3,
+            3
+          ],
+          "row_degree_product": 144,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ],
+          "subset_size": 5
+        },
+        {
+          "orbit_contribution": -4536,
+          "orbit_size": 7,
+          "representative_summand": -648,
+          "row_degree_multiset": [
+            2,
+            2,
+            2,
+            3,
+            3,
+            3,
+            3
+          ],
+          "row_degree_product": 648,
+          "ryser_sign": -1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "subset_size": 6
+        },
+        {
+          "orbit_contribution": 2187,
+          "orbit_size": 1,
+          "representative_summand": 2187,
+          "row_degree_multiset": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ],
+          "row_degree_product": 2187,
+          "ryser_sign": 1,
+          "subset_rep": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "subset_size": 7
+        }
+      ],
+      "ryser_permanent": 24,
+      "translation_orbit_count": 20
+    }
+  },
+  "identity": "per(M)=sum_{S subset Z_7} (-1)^(7-|S|) product_x |(x+D) intersect S|",
+  "n": 7,
+  "permutation_enumeration_used_to_derive_counts": false,
+  "residual": "Replace every local permutation enumeration in the 13-orbit 141 certificate with a Ryser/degree-signature calculation.  If the weighted sum remains 141, the entire shifted frontier count is derived from phase laws, component structure, translation symmetry, and inclusion-exclusion, with global enumeration only as an independent verifier.",
+  "translation_quotient_claim": "For a circulant M the Ryser summand is translation invariant, so the 128 subsets collapse to 20 Z_7 translation orbits."
+}

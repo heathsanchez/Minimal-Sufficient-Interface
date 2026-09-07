@@ -1,0 +1,133 @@
+{
+  "all_words_unsat": true,
+  "bounded_length_2_only": true,
+  "cases": [
+    {
+      "core": [
+        "distinct_r",
+        "inj_b0_h0_h1",
+        "inj_w0_r0_r1",
+        "n0_bh",
+        "n0_rz",
+        "n0_wr",
+        "n0_zr",
+        "n1_bh",
+        "n1_rz",
+        "n1_wr",
+        "n1_zr",
+        "share_g0",
+        "share_g1",
+        "t0_b",
+        "t0_g",
+        "t0_r",
+        "t1_g",
+        "t1_r"
+      ],
+      "core_size": 18,
+      "injectivity_instances": [
+        "inj_b0_h0_h1",
+        "inj_w0_r0_r1"
+      ],
+      "result": "unsat",
+      "word": "AA"
+    },
+    {
+      "core": [
+        "distinct_r",
+        "inj_b0_h0_w1",
+        "inj_g1_z1_r0",
+        "inj_w0_r0_h0",
+        "inj_z0_h0_b1",
+        "inj_z0_r0_r1",
+        "n0_bh",
+        "n0_rz",
+        "n0_wr",
+        "n0_zq",
+        "n0_zr",
+        "n1_rb",
+        "n1_rz",
+        "n1_wr",
+        "share_g0",
+        "share_g1",
+        "t0_b",
+        "t0_g",
+        "t0_r",
+        "t1_b",
+        "t1_g",
+        "t1_r"
+      ],
+      "core_size": 22,
+      "injectivity_instances": [
+        "inj_b0_h0_w1",
+        "inj_g1_z1_r0",
+        "inj_w0_r0_h0",
+        "inj_z0_h0_b1",
+        "inj_z0_r0_r1"
+      ],
+      "result": "unsat",
+      "word": "AB"
+    },
+    {
+      "core": [
+        "distinct_r",
+        "inj_b1_h0_h1",
+        "inj_g1_z0_w0",
+        "inj_q1_b1_h1",
+        "inj_r0_r0_r1",
+        "inj_w1_h0_r1",
+        "n0_bh",
+        "n0_rb",
+        "n0_rg",
+        "n0_rz",
+        "n1_bh",
+        "n1_rg",
+        "n1_rz",
+        "n1_wr",
+        "n1_zq",
+        "n1_zr",
+        "share_g0",
+        "share_g1",
+        "t0_g",
+        "t0_r",
+        "t1_b",
+        "t1_g",
+        "t1_r"
+      ],
+      "core_size": 23,
+      "injectivity_instances": [
+        "inj_b1_h0_h1",
+        "inj_g1_z0_w0",
+        "inj_q1_b1_h1",
+        "inj_r0_r0_r1",
+        "inj_w1_h0_r1"
+      ],
+      "result": "unsat",
+      "word": "BA"
+    },
+    {
+      "core": [
+        "distinct_r",
+        "share_g0",
+        "share_g1",
+        "t0_g",
+        "t1_g"
+      ],
+      "core_size": 5,
+      "injectivity_instances": [],
+      "result": "unsat",
+      "word": "BB"
+    }
+  ],
+  "consumed_frontier_schema": 14,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PROMOTE",
+    "residual": "Verified: no length-2 Good-row A/B renewal cycle on two collision arms sharing (u,b) exists under left-row injectivity (core is local: telescoping injectivity collapse for AA/AB/BA, direct r-collapse for BB). Lift to a length-independent claim: test whether the same telescoping mechanism forces any clean renewal cycle on collision marks to terminate or merge."
+  },
+  "scope": "length-2 clean renewal cycles on collision arms sharing (u,b); left-row injectivity only (no E677/shadow/carrier/fixer axioms); uninterpreted universe",
+  "size_free_theorem_claimed": true,
+  "theorem": "A length-2 Good-row A/B renewal cycle on two distinct crossings sharing (u,b) is impossible under left-row injectivity alone (all four words UNSAT)."
+}

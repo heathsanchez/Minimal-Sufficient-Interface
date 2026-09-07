@@ -1,0 +1,139 @@
+{
+  "case_count": 5,
+  "cases": [
+    {
+      "bad_role_terms": 2,
+      "ground_axioms": 3184,
+      "named_terms": 14,
+      "offset": 1,
+      "reason_unknown": "",
+      "result": "unsat",
+      "topology": "same",
+      "word": "AA"
+    },
+    {
+      "bad_role_terms": 3,
+      "ground_axioms": 3286,
+      "named_terms": 14,
+      "offset": 1,
+      "reason_unknown": "",
+      "result": "unsat",
+      "topology": "same",
+      "word": "AB"
+    },
+    {
+      "bad_role_terms": 3,
+      "ground_axioms": 3286,
+      "named_terms": 14,
+      "offset": 1,
+      "reason_unknown": "",
+      "result": "unsat",
+      "topology": "same",
+      "word": "BA"
+    },
+    {
+      "bad_role_terms": 4,
+      "ground_axioms": 3452,
+      "named_terms": 14,
+      "offset": 1,
+      "reason_unknown": "",
+      "result": "unsat",
+      "topology": "same",
+      "word": "BB"
+    },
+    {
+      "bad_role_terms": 3,
+      "crossings": [
+        {
+          "b": "USR!val!2",
+          "g": "USR!val!1",
+          "h": "USR!val!179",
+          "q": "USR!val!1",
+          "r": "USR!val!10",
+          "w": "USR!val!65",
+          "z": "USR!val!0"
+        },
+        {
+          "b": "USR!val!2",
+          "g": "USR!val!1",
+          "h": "USR!val!179",
+          "q": "USR!val!3",
+          "r": "USR!val!0",
+          "w": "USR!val!211",
+          "z": "USR!val!150"
+        },
+        {
+          "b": "USR!val!2",
+          "g": "USR!val!3",
+          "h": "USR!val!275",
+          "q": "USR!val!1",
+          "r": "USR!val!150",
+          "w": "USR!val!307",
+          "z": "USR!val!10"
+        }
+      ],
+      "ground_axioms": 10254,
+      "named_terms": 21,
+      "offset": 1,
+      "reason_unknown": "",
+      "result": "sat",
+      "topology": "same",
+      "word": "AAA"
+    }
+  ],
+  "consumed_frontier_schema": 12,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "full_matrix_exhausted": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PARK",
+    "residual": "The bounded Good-row simultaneous renewal network remains SAT even after attaching the canonical ZIPPER/G-CROSS D-cell of the shared Bad target. Inspect the smallest witness and identify the first absent source-backed coexistence constraint; do not append another isolated mark or widen cycle length blindly."
+  },
+  "sat_count": 1,
+  "scope": "bounded clean Good-row A/B renewal coexistence for two collision-generated E crossings sharing (u,b), plus the canonical ZIPPER/G-CROSS D-cell of the shared Bad target b; uninterpreted universe; no finite-domain axiom",
+  "short_circuited_on_sat": true,
+  "size_free_theorem_claimed": false,
+  "smallest_sat": {
+    "bad_role_terms": 3,
+    "crossings": [
+      {
+        "b": "USR!val!2",
+        "g": "USR!val!1",
+        "h": "USR!val!179",
+        "q": "USR!val!1",
+        "r": "USR!val!10",
+        "w": "USR!val!65",
+        "z": "USR!val!0"
+      },
+      {
+        "b": "USR!val!2",
+        "g": "USR!val!1",
+        "h": "USR!val!179",
+        "q": "USR!val!3",
+        "r": "USR!val!0",
+        "w": "USR!val!211",
+        "z": "USR!val!150"
+      },
+      {
+        "b": "USR!val!2",
+        "g": "USR!val!3",
+        "h": "USR!val!275",
+        "q": "USR!val!1",
+        "r": "USR!val!150",
+        "w": "USR!val!307",
+        "z": "USR!val!10"
+      }
+    ],
+    "ground_axioms": 10254,
+    "named_terms": 21,
+    "offset": 1,
+    "reason_unknown": "",
+    "result": "sat",
+    "topology": "same",
+    "word": "AAA"
+  },
+  "unknown_count": 0,
+  "unsat_count": 4
+}

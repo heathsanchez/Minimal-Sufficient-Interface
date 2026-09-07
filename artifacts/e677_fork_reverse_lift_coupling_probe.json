@@ -1,0 +1,36 @@
+{
+  "case": {
+    "bad_terms": 5,
+    "good_terms": 6,
+    "ground_axioms": 3051,
+    "model": {
+      "e": "USR!val!111",
+      "ex": "USR!val!2",
+      "h": "USR!val!148",
+      "kq": "USR!val!370",
+      "kx": "USR!val!330",
+      "q": "USR!val!0",
+      "sq": "USR!val!225",
+      "sx": "USR!val!186",
+      "t": "USR!val!298",
+      "tx": "USR!val!1",
+      "x": "USR!val!5",
+      "z": "USR!val!446",
+      "zx": "USR!val!407"
+    },
+    "named_terms": 13,
+    "reason_unknown": "",
+    "result": "sat"
+  },
+  "consumed_frontier_schema": 13,
+  "counterexample_claimed": false,
+  "finite_domain_claimed": false,
+  "finite_magma_claimed": false,
+  "global_e677_implication_claimed": false,
+  "proposed_transition": {
+    "classification": "PARK",
+    "residual": "The FORK reverse-lift coupling of x and q=H(x) (D(q)!=x) with both canonical ZIPPER/G-CROSS D-cells remains SAT under the full source-backed ground theory. Dump the smallest witness and identify the first absent source-backed coexistence constraint; do not append another isolated mark or widen bounds blindly."
+  },
+  "scope": "bounded FORK reverse-lift coupling of two canonical ZIPPER/G-CROSS D-cells (x and q=H(x), D(q)!=x) under ZERO-reuse/no-HIT ground consequences; uninterpreted universe; no finite-domain axiom",
+  "size_free_theorem_claimed": false
+}
