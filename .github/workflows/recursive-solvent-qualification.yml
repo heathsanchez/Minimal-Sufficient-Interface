@@ -1,0 +1,26 @@
+name: Recursive solvent qualification
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - 'tests/recursive_solvent_test.py'
+      - '.github/workflows/recursive-solvent-qualification.yml'
+      - 'lean/LemmaSynthesis/ConstructorRealization.lean'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify recursive development, transfer, and ablations
+        run: python tests/recursive_solvent_test.py
+      - name: Replay constructor realization and impossibility proofs
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          LEAN_PATH=lean lean lean/LemmaSynthesis/ConstructorRealization.lean
