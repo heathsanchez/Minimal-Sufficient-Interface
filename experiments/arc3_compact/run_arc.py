@@ -1,4 +1,4 @@
-"""Run the compact controller through the official ARC-AGI Toolkit.
+"""Run bounded controllers through the official ARC-AGI Toolkit.
 
 The public SDK is the only game interface. No game source or hidden state is
 passed to the controller. Offline fixtures are integration tests, not scores
@@ -6,8 +6,10 @@ on the ARC-AGI-3 competition. Online mode is not competition mode.
 """
 import argparse
 import json
+from hashlib import sha256
 from pathlib import Path
 from compact_agent import Controller, run_episode
+from developmental_agent import run_developmental_episode
 
 
 def simple_action_ids(action_space):
@@ -35,6 +37,7 @@ def main():
     p.add_argument('--environments-dir', default='environment_files')
     p.add_argument('--max-actions', type=int, default=120)
     p.add_argument('--probe-limit', type=int, default=32)
+    p.add_argument('--controller', choices=('repeat','motion','motion-ablated'), default='motion')
     p.add_argument('--output', default='arc3-result.json')
     p.add_argument('--trace', default=None)
     args = p.parse_args()
@@ -45,7 +48,9 @@ def main():
     if env is None:
         raise RuntimeError('ARC environment unavailable: ' + args.game)
     actions = simple_action_ids(env.action_space)
-    trace = [observation_record(env.observation_space)] if args.trace else None
+    initial = observation_record(env.observation_space)
+    initial_sha256 = sha256(json.dumps(initial, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    trace = [initial] if args.trace else None
     class Adapter:
         @property
         def observation_space(self): return env.observation_space
@@ -59,12 +64,17 @@ def main():
             if trace is not None and frame is not None:
                 trace.append(observation_record(frame, 'reset'))
             return frame
-    controller = Controller(actions, args.probe_limit)
-    result = run_episode(Adapter(), controller, args.max_actions)
+    adapter = Adapter()
+    if args.controller == 'repeat':
+        result = run_episode(adapter, Controller(actions, args.probe_limit), args.max_actions)
+    else:
+        result = run_developmental_episode(adapter, actions, args.max_actions,
+                                           retain_operators=args.controller == 'motion')
     scorecard = arcade.close_scorecard()
     result.update({'game': args.game, 'mode': 'online' if args.online else 'offline',
+                   'initial_observation_sha256': initial_sha256,
                    'scorecard': scorecard.model_dump(mode='json') if hasattr(scorecard, 'model_dump') else str(scorecard),
-                   'method': 'bounded-repeat-macro-v1', 'model_provider': None})
+                   'method': args.controller, 'model_provider': None})
     Path(args.output).write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + '\n')
     if trace is not None:
         Path(args.trace).write_text(json.dumps(trace, separators=(',', ':')) + '\n')
