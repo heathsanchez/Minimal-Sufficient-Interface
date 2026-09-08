@@ -6,7 +6,7 @@ on:
       - 'experiments/convergence/finite_consequence.py'
       - 'experiments/arc3_consequence/**'
       - 'lean/LemmaSynthesis/AdequacyTester.lean'
-      - 'lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean'
+      - 'lean/LemmaSynthesis/ConsequenceFactorization.lean'
       - 'tests/test_consequence.py'
       - '.github/workflows/arc3-consequence-kernel.yml'
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
             --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
             --lean /tmp/ARC3ConsequenceCertificate.lean \
             --report /tmp/recorded_replay.json
-          echo '45022aa3c5995f8638e960d887540a9dd310b68dd7621f192aefd0df06789c3f  /tmp/ARC3ConsequenceCertificate.lean' | sha256sum -c -
+          echo '0d2c79f97f3d647864ae608b241e994a5335020e91ab53cff54bcb2b818c3ae0  /tmp/ARC3ConsequenceCertificate.lean' | sha256sum -c -
           cmp /tmp/recorded_replay.json experiments/arc3_consequence/recorded_replay.json
           echo 'CONSEQUENCE_SOURCE_REPLAY=PASS'
       - name: Install pinned Lean toolchain
@@ -61,7 +61,8 @@ jobs:
         run: |
           set -euo pipefail
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/AdequacyTester.olean lean/LemmaSynthesis/AdequacyTester.lean
-          LEAN_PATH=lean lean -DmaxRecDepth=8192 -DmaxHeartbeats=2000000 /tmp/ARC3ConsequenceCertificate.lean
+          LEAN_PATH=lean lean -o lean/LemmaSynthesis/ConsequenceFactorization.olean lean/LemmaSynthesis/ConsequenceFactorization.lean
+          LEAN_PATH=lean lean -DmaxRecDepth=4096 -DmaxHeartbeats=2000000 /tmp/ARC3ConsequenceCertificate.lean
           echo 'ARC3_CONSEQUENCE_LEAN=PASS'
       - uses: actions/checkout@v4
         with:
