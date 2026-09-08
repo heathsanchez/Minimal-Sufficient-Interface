@@ -8,7 +8,7 @@
   "full_replay_residual_pairs": 1,
   "holdout_residual_pairs": 0,
   "holdout_rows": 66,
-  "lean_sha256": "45022aa3c5995f8638e960d887540a9dd310b68dd7621f192aefd0df06789c3f",
+  "lean_sha256": "0d2c79f97f3d647864ae608b241e994a5335020e91ab53cff54bcb2b818c3ae0",
   "model_calls": 0,
   "rows": 113,
   "scope": "first public level, recorded action/outcome pairs only",
