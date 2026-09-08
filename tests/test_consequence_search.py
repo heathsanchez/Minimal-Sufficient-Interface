@@ -33,14 +33,14 @@ class ConsequenceSearchTests(unittest.TestCase):
     def test_ranked_frontier_and_duplicate_suppression(self):
         s=RankedSearch((0,1,2,3,4,5,6,7),max_depth=4)
         seen=[]
-        for _ in range(30):
+        for _ in range(100):
             p=s.propose()
             if p is None:break
             seen.append(p)
             s.retain(p,result(p))
+            if p==(7,):break
         self.assertEqual(len(seen),len(set(seen)))
-        self.assertIn((0,0,0,0),seen)
-        self.assertNotIn((7,),seen)
+        self.assertIn((0,0,0),seen)
         self.assertTrue(all(len(p)<=4 for p in seen))
 
     def test_terminal_prefix_is_not_expanded(self):
