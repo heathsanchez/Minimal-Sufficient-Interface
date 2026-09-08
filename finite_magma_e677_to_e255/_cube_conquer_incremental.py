@@ -44,7 +44,7 @@ def solve_incremental(s, assumptions, seconds):
             reason = "timeout"
         else:
             reason = "unknown"
-    except Exception:
+    except Exception as exc:
         if timer_fired[0]:
             reason = "timeout"
         else:
@@ -97,12 +97,15 @@ for v in CUBES:
 
 s.delete()
 
-# Compare against frozen baseline
+# Compare against frozen baseline (REQUIRED — do NOT invent baseline results)
+baseline_path = "finite_magma_e677_to_e255/_cube_results.json"
 try:
-    with open("finite_magma_e677_to_e255/_cube_results.json") as f:
+    with open(baseline_path) as f:
         baseline = json.load(f)
 except FileNotFoundError:
-    baseline = {"solved": {str(v): {"status": "UNKNOWN", "time": 90.2, "layer": LAYER[v]} for v in CUBES}}
+    raise FileNotFoundError(
+        f"Baseline {baseline_path} required for comparison; refusing to invent."
+    )
 
 improved = []
 for v in CUBES:
