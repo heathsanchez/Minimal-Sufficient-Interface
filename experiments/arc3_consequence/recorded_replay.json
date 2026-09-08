@@ -1,0 +1,17 @@
+{
+  "after": 0,
+  "before": 40,
+  "competition_score": null,
+  "features": [
+    "count:0:11"
+  ],
+  "full_replay_residual_pairs": 1,
+  "holdout_residual_pairs": 0,
+  "holdout_rows": 66,
+  "lean_sha256": "da2ebb9434cd41d2b9ff9a66bff3702f694feef5365a3ac386f22cedb7630c4e",
+  "model_calls": 0,
+  "rows": 113,
+  "scope": "first public level, recorded action/outcome pairs only",
+  "source_sha256": "4e8ed8f20fac3303a22009b190e90100ee4e867d8f3e520cdf60bf6896a68d83",
+  "status": "FINITE_REPLAY_CERTIFIED"
+}

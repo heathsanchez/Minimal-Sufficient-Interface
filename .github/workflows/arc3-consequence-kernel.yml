@@ -1,0 +1,109 @@
+name: ARC3 consequence kernel qualification
+on:
+  push:
+    branches: [experiment/arc3-consequence-kernel-v1]
+    paths:
+      - 'experiments/convergence/finite_consequence.py'
+      - 'experiments/arc3_consequence/**'
+      - 'lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean'
+      - 'tests/test_consequence.py'
+      - '.github/workflows/arc3-consequence-kernel.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Restore frozen public evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p experiments/arc3_consequence/observations
+          gh run download 34178374253 --repo heathsanchez/Minimal-Sufficient-Interface --name arc3-motion-result --dir experiments/arc3_consequence/observations
+          echo '4e8ed8f20fac3303a22009b190e90100ee4e867d8f3e520cdf60bf6896a68d83  experiments/arc3_consequence/observations/arc3-motion-observations.json' | sha256sum -c -
+      - name: Test finite development and recursive procedure qualification
+        env:
+          ARC3_TRACE_PATH: experiments/arc3_consequence/observations/arc3-motion-observations.json
+        run: |
+          python -m unittest discover -s tests -p test_consequence.py -v
+          echo 'FINITE_DEVELOPMENT_TESTS=PASS'
+      - name: Replay pinned evidence and generated Lean source
+        run: |
+          python experiments/arc3_consequence/replay.py \
+            --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
+            --lean /tmp/ARC3ConsequenceCertificate.lean \
+            --report /tmp/recorded_replay.json
+          cmp /tmp/ARC3ConsequenceCertificate.lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
+          cmp /tmp/recorded_replay.json experiments/arc3_consequence/recorded_replay.json
+          echo 'CONSEQUENCE_SOURCE_REPLAY=PASS'
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version
+      - name: Check existing adequacy kernel and finite certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean -o lean/LemmaSynthesis/AdequacyTester.olean lean/LemmaSynthesis/AdequacyTester.lean
+          LEAN_PATH=lean lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
+          echo 'ARC3_CONSEQUENCE_LEAN=PASS'
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Exercise public SDK on its offline test game
+        run: |
+          python experiments/arc3_consequence/run_arc.py \
+            --game bt11-fd9df0622a1a \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --max-actions 120 --output arc3-consequence-offline.json
+          echo 'ARC3_CONSEQUENCE_SDK=PASS'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-consequence-qualification
+          path: |
+            arc3-consequence-offline.json
+            /tmp/recorded_replay.json
+          if-no-files-found: ignore
+  public-online-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Run bounded public game using consequence controller
+        env:
+          ARC_API_KEY: ${{ secrets.ARC_API_KEY }}
+        run: |
+          python experiments/arc3_consequence/run_arc.py \
+            --online --game ls20 --max-actions 300 \
+            --output arc3-consequence-online.json --trace arc3-consequence-trace.json
+          echo 'ARC3_CONSEQUENCE_ONLINE=COMPLETED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-consequence-online
+          path: |
+            arc3-consequence-online.json
+            arc3-consequence-trace.json
+          if-no-files-found: ignore

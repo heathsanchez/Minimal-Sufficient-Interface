@@ -1,0 +1,9 @@
+# Consequence-kernel ARC adapter
+
+This experiment instantiates the existing `AdequacyTester` / quotient-refinement mechanism. Its protected consequence is public level progress and terminal state. A bounded generic grammar over public arrays and histories supplies possible realizations; it does not predeclare a player, movement, goal, or timer. The Python kernel is a finite executable instance, and the generated Lean certificate imports the existing formal adequacy tester. These are not claims of unrestricted language genesis.
+
+The frozen public replay uses the first 113 transitions of a recorded `ls20` episode. Its generated refinement removes 40 conflicting pairs on that table. The next 66 transitions have zero internal conflicts, but the combined table still has one conflicting pair. The certificate is therefore deliberately restricted to the training table. This is not a competition score, a causal proof, or evidence that the learned feature generalizes.
+
+The same finite kernel also refines the context used to select learned action programs. Successful programs are candidates only. A separate matched-start qualification tests one-deletion candidates on training and held-out environments, checks progress before action cost, retains the evidence and installs only a measured improvement. Synthetic transfer and ablation do not establish public-game performance. Qualification costs must be counted when estimating net savings.
+
+Run `python -m unittest discover -s tests -p test_consequence.py -v` and `python experiments/arc3_consequence/replay.py --trace <public-trace.json> --lean <generated.lean> --report <report.json>`. The CI workflow restores the pinned public artifact, checks its hash, replays the generated source, checks it with Lean 4.24.0, and exercises the official SDK. Online evaluation is separate from Kaggle competition mode.
