@@ -1,0 +1,61 @@
+name: Grammar genesis qualification
+on:
+  push:
+    branches: [experiment/grammar-genesis-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run bounded synthesis, ablation and forgery tests
+        run: python -m unittest discover -s tests -p grammar_genesis_test.py -v
+      - name: Independently replay certificates and committed Lean source
+        run: |
+          python - <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tests')
+          import grammar_genesis_test as g
+          from verify_grammar_genesis import check
+          baseline = Path('lean/LemmaSynthesis/OpenDevelopment.lean').read_bytes()
+          assert hashlib.sha256(baseline).hexdigest() == g.BASELINE_SHA256, 'Verified baseline changed'
+          actual = Path('lean/LemmaSynthesis/GrammarGenesis.lean').read_bytes()
+          assert actual == g.lean_source().encode(), 'Generated Lean differs from committed source'
+          assert b'\nsorry' not in actual and b'\nadmit' not in actual
+          report = g.report()
+          assert check(report, report['acquisition_table'], report['heldout_table'])
+          assert hashlib.sha256(actual).hexdigest() == report['lean_sha256']
+          Path('artifacts').mkdir(exist_ok=True)
+          Path('artifacts/grammar-genesis.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          print('SOURCE_REPLAY=PASS')
+          print('INDEPENDENT_REPLAY=PASS')
+          print('LEAN_SHA256=' + report['lean_sha256'])
+          print('GRAMMAR_GENESIS_RESULT=' + json.dumps(report, sort_keys=True))
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel-check grammar acquisition, transfer and all old-program obstructions
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean lean/LemmaSynthesis/GrammarGenesis.lean
+          echo 'GRAMMAR_GENESIS_LEAN=PASS'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: grammar-genesis-evidence
+          path: artifacts/grammar-genesis.json
+          if-no-files-found: warn
