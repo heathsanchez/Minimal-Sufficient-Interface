@@ -1,0 +1,71 @@
+name: ARC3 feedback small v2
+on:
+  push:
+    branches: [experiment/arc3-closed-feedback-v1]
+    paths:
+      - 'experiments/arc3_consequence/closed_feedback_v2.py'
+      - 'tests/test_closed_feedback_v2.py'
+      - '.github/workflows/arc3-feedback-small-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and run small regressions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+              'experiments/arc3_consequence/closed_feedback_v2.py': '0cd1b462e37efdea8433bb2638caeb23560fb4d5d8b8348c5330fcb575670cdc',
+              'tests/test_closed_feedback_v2.py': '20c28993ef381935ad797b42147238bc098161917d7fb5dd2cefc9d78bbbf786',
+          }
+          for name, sha in expected.items():
+              assert hashlib.sha256(Path(name).read_bytes()).hexdigest() == sha, name
+          print('SOURCE_REPLAY=PASS')
+          PY
+          python -m unittest discover -s tests -p test_closed_feedback.py -v
+          python -m unittest discover -s tests -p test_closed_feedback_v2.py -v
+      - name: Record matched small ablation
+        run: |
+          python - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'experiments/arc3_consequence')
+          sys.path.insert(0, 'tests')
+          from closed_feedback_v2 import develop
+          from test_closed_feedback_v2 import CounterWorld
+          bounds = dict(budget=4, max_depth=4, max_training_actions=25, max_episodes=25)
+          arms = {}
+          for name, feedback in (('ablation', False), ('feedback', True)):
+              r = develop(lambda: CounterWorld(4), (0, 1), feedback=feedback, **bounds)
+              result = r.get('result', {})
+              arms[name] = {
+                  'status': r['status'], 'training_actions': r['training_actions'],
+                  'training_episodes': r['training_episodes'],
+                  'installed_options': r['development']['options'],
+                  'option_sources': [o['source'] for o in r['development']['installed_options']],
+                  'verified_win': r['status'] == 'VERIFIED_WIN' and result.get('state') == 'WIN',
+                  'program': result.get('executed'), 'pending_proofs': r['pending_proofs'],
+              }
+          improved = arms['feedback']['verified_win'] and not arms['ablation']['verified_win']
+          assert improved and arms['feedback']['training_actions'] < arms['ablation']['training_actions']
+          assert all(a['training_actions'] <= 25 and a['training_episodes'] <= 25 for a in arms.values())
+          out = {'status': 'COMPARABLE', 'scientific_status': 'BOUNDED_SYNTHETIC_IMPROVEMENT',
+                 'bounds': bounds, 'arms': arms, 'model_calls': 0, 'competition_submission': False}
+          Path('arc3-feedback-small-v2.json').write_text(json.dumps(out, indent=2, sort_keys=True) + '\n')
+          print('FEEDBACK_SMALL_V2=' + json.dumps(out, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-feedback-small-v2
+          path: arc3-feedback-small-v2.json
+          if-no-files-found: warn
