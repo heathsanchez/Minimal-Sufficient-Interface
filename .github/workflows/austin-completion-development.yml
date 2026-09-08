@@ -1,0 +1,49 @@
+name: Austin completion development
+on:
+  push:
+    paths:
+      - 'experiments/austin_completion_development.py'
+      - 'tests/test_austin_completion_development.py'
+      - 'lean/LemmaSynthesis/AustinCompletionDevelopment.lean'
+      - '.github/workflows/austin-completion-development.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run bounded residual and installation tests
+        run: python -m unittest tests.test_austin_completion_development -v
+      - name: Generate and replay Lean source
+        run: |
+          python - <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          sys.path.insert(0, 'experiments')
+          import austin_completion_development as d
+          actual = d.lean_source().encode()
+          target = Path('lean/LemmaSynthesis/AustinCompletionDevelopment.lean')
+          target.parent.mkdir(parents=True, exist_ok=True)
+          if target.exists():
+              assert target.read_bytes() == actual, 'Generated Lean differs from committed proof'
+          else:
+              target.write_bytes(actual)
+          assert target.read_bytes() == actual
+          print('SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        run: |
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Check generated critical-pair equalities
+        run: |
+          LEAN_PATH=lean lean lean/LemmaSynthesis/AustinCompletionDevelopment.lean
+          echo 'AUSTIN_COMPLETION_LEAN=PASS'
