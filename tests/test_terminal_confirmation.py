@@ -2,6 +2,7 @@
 import sys,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'experiments'/'arc3_consequence'))
+from agent import observation
 from finite_consequence import digest
 from terminal_confirmation import confirm
 
@@ -23,7 +24,7 @@ class Finalize:
 def checkpoint(prefix,win=True):
     e=Finalize(win)
     for a in prefix:e.step(a)
-    return digest(e.observation_space)
+    return digest(observation(e.observation_space))
 
 class TerminalConfirmationTests(unittest.TestCase):
     def test_progress_is_not_a_terminal_certificate(self):
