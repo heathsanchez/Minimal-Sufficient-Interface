@@ -43,7 +43,8 @@ jobs:
             --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
             --lean /tmp/ARC3ConsequenceCertificate.lean \
             --report /tmp/recorded_replay.json
-          cmp /tmp/ARC3ConsequenceCertificate.lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
+          sha256sum /tmp/ARC3ConsequenceCertificate.lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
+          diff -u lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean /tmp/ARC3ConsequenceCertificate.lean
           cmp /tmp/recorded_replay.json experiments/arc3_consequence/recorded_replay.json
           echo 'CONSEQUENCE_SOURCE_REPLAY=PASS'
       - name: Install pinned Lean toolchain
@@ -80,8 +81,10 @@ jobs:
           path: |
             arc3-consequence-offline.json
             /tmp/recorded_replay.json
+            /tmp/ARC3ConsequenceCertificate.lean
           if-no-files-found: ignore
   public-online-probe:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
