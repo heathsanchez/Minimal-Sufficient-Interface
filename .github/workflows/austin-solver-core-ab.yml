@@ -27,7 +27,22 @@ jobs:
           git -C /tmp/stage2 checkout "$STAGE2_SHA"
           test "$(git -C /tmp/stage2 rev-parse HEAD)" = "$STAGE2_SHA"
           cd /tmp/stage2
-          python experiments/mathgraph/build_projection_closure_schematic.py --base submissions/mathgraph/solver.py --output /tmp/solver.py
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'experiments/mathgraph')
+          import build_behavioural_future_specialist as b
+          source = Path('submissions/mathgraph/solver.py').read_text()
+          if b.MARKER in source:
+              old = b.FALLBACK + b.INSERT_BEFORE
+              assert source.count(old) == 1, 'Cannot identify exact original fallback'
+              assert source.count(b.CALL + b.CALL_BEFORE) == 1, 'Cannot identify exact original call'
+              source = source.replace(old, b.INSERT_BEFORE, 1)
+              source = source.replace(b.CALL + b.CALL_BEFORE, b.CALL_BEFORE, 1)
+          Path('/tmp/pre_behavioural.py').write_text(source)
+          print('PRE_INTEGRATION_SOURCE_RECOVERED=PASS')
+          PY
+          python experiments/mathgraph/build_projection_closure_schematic.py --base /tmp/pre_behavioural.py --output /tmp/solver.py
           python - <<'PY'
           from pathlib import Path
           p = Path('/tmp/solver.py'); s = p.read_text()
@@ -41,7 +56,7 @@ jobs:
           python - <<'PY'
           import hashlib, os
           from pathlib import Path
-          p = Path('/tmp/solver.py'); data = p.read_bytes()
+          data = Path('/tmp/solver.py').read_bytes()
           actual = hashlib.sha256(data).hexdigest()
           print('FROZEN_SOLVER_SHA256=' + actual)
           print('FROZEN_SOLVER_BYTES=' + str(len(data)))
