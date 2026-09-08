@@ -4,12 +4,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'experiments'))
 import austin_completion_development as d
 from austin_capability_installation import DevelopmentState, develop as acquire, obligation, law40909
-from austin_critical_pair_residual import e40909_seed, e11116_seed, promote40909, promote11116
+from austin_critical_pair_residual import V, e40909_seed, e11116_seed, promote40909, promote11116
 
 class CompletionDevelopmentTests(unittest.TestCase):
     def test_generic_promotion(self):
-        self.assertEqual(d.promote(e40909_seed()), promote40909(e40909_seed()))
-        self.assertEqual(d.promote(e11116_seed()), promote11116(e11116_seed()))
+        self.assertEqual(d.promote(e40909_seed()), promote40909(e40909_seed(), V('w')))
+        self.assertEqual(d.promote(e11116_seed()), promote11116(e11116_seed(), V('w')))
 
     def test_promoted_residuals(self):
         for seed in (e40909_seed(), e11116_seed()):
