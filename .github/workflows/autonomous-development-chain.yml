@@ -7,6 +7,9 @@ on:
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
       - 'experiments/mathgraph/recursive_obligation_synthesis.py'
       - 'lean/LemmaSynthesis/RecursiveObligationGenesis.lean'
+      - 'experiments/mathgraph/proof_carrying_obligation.py'
+      - 'experiments/mathgraph/proof_carrying_lean.py'
+      - 'tests/test_proof_carrying_obligation.py'
       - '.github/workflows/autonomous-development-chain.yml'
   pull_request:
     paths:
@@ -14,6 +17,9 @@ on:
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
       - 'experiments/mathgraph/recursive_obligation_synthesis.py'
       - 'lean/LemmaSynthesis/RecursiveObligationGenesis.lean'
+      - 'experiments/mathgraph/proof_carrying_obligation.py'
+      - 'experiments/mathgraph/proof_carrying_lean.py'
+      - 'tests/test_proof_carrying_obligation.py'
       - '.github/workflows/autonomous-development-chain.yml'
 
 permissions:
@@ -32,6 +38,14 @@ jobs:
         run: python -m unittest tests.test_autonomous_development_chain -v
       - name: Blind recursive Austin obligation synthesis
         run: python experiments/mathgraph/recursive_obligation_synthesis.py
+      - name: Proof-carrying compiler and negative certificates
+        run: python -m unittest tests.test_proof_carrying_obligation -v
+      - name: Generate and verify pinned proof source
+        run: |
+          python -m experiments.mathgraph.proof_carrying_lean --write
+          python -m experiments.mathgraph.proof_carrying_lean
+          printf '%s  %s\n' f150b6b2c37a4fcc6ab76a6eed6e1b97a0f28f6b7d93ed0756ad5dacbf7a4e55 lean/LemmaSynthesis/ProofCarryingObligation.lean | sha256sum -c -
+          echo SOURCE_HASH=PASS
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
@@ -40,3 +54,14 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/LemmaSynthesis/RecursiveObligationGenesis.lean
+      - name: Kernel-check proof-carrying derivations
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean lean/LemmaSynthesis/ProofCarryingObligation.lean
+          echo PROOF_CARRYING_LEAN=PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-carrying-lean-source
+          path: lean/LemmaSynthesis/ProofCarryingObligation.lean
