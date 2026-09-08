@@ -66,14 +66,18 @@ theorem law40909_promotes
     (h : Law40909 G) (b : Branch G) (z : G) (hb : Holds b) :
     Holds (promote40909 b z) := by
   dsimp [Holds, promote40909]
-  simpa [hb] using h b.p b.A z
+  have hsource := h b.p b.A z
+  rw [hb] at hsource
+  exact hsource
 
 /-- E11116 semantically forces its recursive branch constructor. -/
 theorem law11116_promotes
     (h : Law11116 G) (b : Branch G) (y : G) (hb : Holds b) :
     Holds (promote11116 b y) := by
   dsimp [Holds, promote11116]
-  simpa [hb] using h b.p y b.A
+  have hsource := h b.p y b.A
+  rw [hb] at hsource
+  exact hsource
 
 /-- Iterate E40909 promotion along an arbitrary stream of fresh parameters. -/
 def iter40909 (b : Branch G) (zs : Nat → G) : Nat → Branch G
