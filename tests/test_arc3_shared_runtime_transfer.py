@@ -1,5 +1,6 @@
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -120,6 +121,9 @@ class SharedRuntimeTransferTests(unittest.TestCase):
                     )
 
     def test_generated_gate_kernel_checks(self):
+        lean = shutil.which("lean")
+        if lean is None:
+            self.skipTest("Lean is qualified in the dedicated ARC3 workflow")
         source = render_lean_gate(
             cold_levels=0,
             candidate_levels=1,
@@ -135,7 +139,7 @@ class SharedRuntimeTransferTests(unittest.TestCase):
                 "LEAN_PATH", str(Path(__file__).resolve().parents[1] / "lean")
             )
             completed = subprocess.run(
-                ["lean", str(certificate)], text=True, capture_output=True, env=env
+                [lean, str(certificate)], text=True, capture_output=True, env=env
             )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertIn("ARC3_SHARED_GATE_PASS", completed.stdout)
