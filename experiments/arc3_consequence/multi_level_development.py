@@ -1,9 +1,8 @@
-"""Source-blind, bounded multi-level development through the public interface.
+"""Source-blind bounded multi-level development through the public interface.
 
-Every stage starts from a fresh environment and replays the previously witnessed
-prefix. Prior successful suffixes are candidate options, never assumed rules.
-Only an observed level increment promotes a program. Failed and inconclusive
-experiments remain evidence. No hidden state, game-specific labels, or solutions.
+Each stage replays the previously witnessed prefix from a fresh environment.
+Prior successful suffixes are candidate options, never assumed rules. Only an
+observed level increment promotes a program. No hidden state or game solutions.
 """
 from collections import deque
 from dataclasses import dataclass, field
@@ -12,8 +11,9 @@ from finite_consequence import digest
 from restart_development import RestartDevelopment
 
 
-def execute_stage(env, prefix, suffix, target, budget, checkpoint=None):
-    """Replay a certified prefix, then test a suffix for the next level."""
+def execute_stage(env, prefix, suffix, target, budget, checkpoint=None,
+                  stop_at_progress=True):
+    """Replay a certified prefix, then test a suffix or a complete deployment."""
     prefix, suffix = tuple(prefix), tuple(suffix)
     frame = env.observation_space
     if frame is None:
@@ -23,11 +23,10 @@ def execute_stage(env, prefix, suffix, target, budget, checkpoint=None):
     def result(status, point=None):
         final = observation(frame)
         return {'status': status, 'initial_sha256': digest(initial),
-                'checkpoint_sha256': point, 'actions': len(trace),
-                'progress': max(0, final['levels_completed'] - target),
-                'levels_completed': final['levels_completed'],
-                'state': final['state'], 'terminal': terminal(final),
-                'executed': tuple(x[0] for x in trace),
+                'checkpoint_sha256': point, 'final_sha256': digest(final),
+                'actions': len(trace), 'progress': max(0, final['levels_completed'] - target),
+                'levels_completed': final['levels_completed'], 'state': final['state'],
+                'terminal': terminal(final), 'executed': tuple(x[0] for x in trace),
                 'trace_sha256': digest(trace)}
     for action in prefix:
         if len(trace) >= budget:
@@ -54,7 +53,7 @@ def execute_stage(env, prefix, suffix, target, budget, checkpoint=None):
             raise RuntimeError('Missing external observation')
         after = observation(frame)
         trace.append((action, after['levels_completed'], after['state']))
-        if after['levels_completed'] > target:
+        if stop_at_progress and after['levels_completed'] > target:
             break
     return result('PROGRESS_WITNESSED' if observation(frame)['levels_completed'] > target else 'OBSERVED', point)
 
@@ -89,7 +88,7 @@ def discover_levels(factory, actions, budget=120, max_episodes=512,
     while len(d.stages) < max_levels:
         target = len(d.stages)
         search = RestartDevelopment(d.actions, max_depth=max_depth)
-        # Transfer is a hypothesis: try previously successful programs first.
+        # Transfer is a hypothesis: test previously successful programs first.
         seeds = [tuple(o) for o in reversed(d.options) if len(o) <= max_depth]
         search.frontier = deque(dict.fromkeys(seeds + list(search.frontier)))
         advanced = False
@@ -109,11 +108,10 @@ def discover_levels(factory, actions, budget=120, max_episodes=512,
             if result['initial_sha256'] != d.initial_sha256 or result['status'] in ('INCONCLUSIVE_PREFIX_MISMATCH', 'PREFIX_TERMINATED'):
                 d.status = 'INCONCLUSIVE_UNMATCHED_START_OR_PREFIX'
                 return d
-            record = {'target': target, 'suffix': suffix, 'status': result['status'],
-                      'actions': result['actions'], 'progress': result['progress'],
-                      'terminal': result['terminal'], 'trace_sha256': result['trace_sha256']}
-            d.evidence.append(record)
-            # An exhausted experiment is not a valid nonterminal search prefix.
+            d.evidence.append({'target': target, 'suffix': suffix,
+                               'status': result['status'], 'actions': result['actions'],
+                               'progress': result['progress'], 'terminal': result['terminal'],
+                               'trace_sha256': result['trace_sha256']})
             if result['status'] == 'BUDGET_EXHAUSTED':
                 d.status = 'TRAINING_BOUND_EXHAUSTED'
                 return d
@@ -125,20 +123,16 @@ def discover_levels(factory, actions, budget=120, max_episodes=512,
                 if observed_suffix not in d.options:
                     d.options.append(observed_suffix)
                 d.prefix += observed_suffix
+                d.checkpoint = result['final_sha256']
                 d.stages.append({'level': target + 1, 'suffix': observed_suffix,
                                  'prefix': d.prefix, 'actions': result['actions'],
                                  'trace_sha256': result['trace_sha256'],
-                                 'checkpoint_sha256': None})
-                # Obtain the next checkpoint from the same external observation,
-                # not from a guessed transition or a hidden-state accessor.
-                d.checkpoint = None
+                                 'checkpoint_sha256': d.checkpoint})
                 advanced = True
                 break
         if not advanced:
             d.status = 'NO_PROGRESS_WITHIN_BOUND'
             return d
-        # Exact replay establishes the state from which the next stage starts.
-        # The next candidate run checks its own prefix and target before expansion.
         if d.training_episodes >= max_episodes or d.training_actions >= max_training_actions:
             d.status = 'TRAINING_BOUND_EXHAUSTED'
             return d
@@ -150,9 +144,9 @@ def compare_levels(factory, actions, budget=120, max_episodes=512,
                    max_depth=8, max_training_actions=3000, max_levels=5):
     d = discover_levels(factory, actions, budget, max_episodes, max_depth,
                         max_training_actions, max_levels)
-    # Both deployments are fresh. Training actions are reported separately.
-    cold = execute_stage(factory(), (), tuple(actions) * ((budget + len(actions) - 1)//len(actions)), 0, budget)
-    warm = execute_stage(factory(), (), d.prefix, 0, budget)
+    # Both deployments are fresh; the ablation uses the same primitive alphabet.
+    cold = execute_stage(factory(), (), tuple(actions) * ((budget + len(actions) - 1)//len(actions)), 0, budget, stop_at_progress=False)
+    warm = execute_stage(factory(), (), d.prefix, 0, budget, stop_at_progress=False)
     matched = cold['initial_sha256'] == warm['initial_sha256'] == d.initial_sha256
     better = warm['levels_completed'] > cold['levels_completed'] or (
         warm['levels_completed'] == cold['levels_completed'] > 0 and warm['actions'] < cold['actions'])
