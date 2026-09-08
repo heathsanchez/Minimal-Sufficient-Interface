@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/AdequacyTester.olean lean/LemmaSynthesis/AdequacyTester.lean
-          LEAN_PATH=lean lean /tmp/ARC3ConsequenceCertificate.lean
+          LEAN_PATH=lean lean -DmaxRecDepth=8192 -DmaxHeartbeats=2000000 /tmp/ARC3ConsequenceCertificate.lean
           echo 'ARC3_CONSEQUENCE_LEAN=PASS'
       - uses: actions/checkout@v4
         with:
