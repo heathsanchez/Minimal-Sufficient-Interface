@@ -51,17 +51,19 @@ jobs:
           python-version: '3.12'
       - name: Install official ARC toolkit
         run: python -m pip install arc-agi==0.9.9
-      - name: Attempt bounded anonymous public game
+      - name: Capture bounded public observations
         env:
           ARC_API_KEY: ${{ secrets.ARC_API_KEY }}
         run: |
           python experiments/arc3_compact/run_arc.py \
-            --online --game ls20 --max-actions 120 --probe-limit 24 \
-            --output arc3-online-result.json
+            --online --game ls20 --max-actions 16 --probe-limit 4 \
+            --output arc3-online-result.json --trace arc3-observations.json
           echo 'ARC3_ONLINE=COMPLETED'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: arc3-online-result
-          path: arc3-online-result.json
+          path: |
+            arc3-online-result.json
+            arc3-observations.json
           if-no-files-found: ignore
