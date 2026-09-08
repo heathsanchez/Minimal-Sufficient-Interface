@@ -18,6 +18,11 @@ import closed_feedback_v2 as F
 
 RESIDUAL_RUN = 34277495372
 RESIDUAL_SHA256 = '9c0ae1e1efbd4cbe269e7b619370a65c579bc25f2a7a83c980800763c2572197'
+RESIDUAL_PROMOTIONS = (
+    '48a308246a67c30611599f5585686ebae836fd9b3e13ad44cd93026c417f0849',
+    '6cc6e738431d17fc682aaf019e9fd921d6275dd4393aa8d67abb2cde22eb975b',
+    '2ae328ae72912eb1d08b2f6da04659e5f51060e1125df81588a54ee855b1901d',
+)
 
 
 def separator_programs(source, report, transfer, evidence, residual, actions, bound=16):
@@ -38,16 +43,16 @@ def separator_programs(source, report, transfer, evidence, residual, actions, bo
             or len(residual.get('accepted', ())) != len(stages)
             or residual.get('warm') != transfer['warm']):
         raise ValueError('Unqualified residual source')
-    # Independent replays can have different evidence/certificate identities.
-    # Preserve the protected consequence, and require a gate record in each run.
-    for old, new in zip(transfer['accepted'], residual['accepted']):
+    # Replays may have different certificate identities. Compare protected
+    # consequences, but pin the actual identities from this immutable run.
+    for i, (old, new) in enumerate(zip(transfer['accepted'], residual['accepted'])):
         for key in ('level', 'prefix', 'suffix', 'checkpoint_sha256'):
             if old.get(key) != new.get(key):
                 raise ValueError('Archived protected consequence changed')
-        if not old.get('promotion') or not new.get('promotion') or not old.get('gate_source_sha256') or not new.get('gate_source_sha256'):
-            raise ValueError('Missing archived promotion evidence')
-    # The prior experiment extended the old alphabet using public pixels.
-    # Verify that constructor, rather than silently treating it as an old action.
+        if (not old.get('promotion') or not old.get('gate_source_sha256')
+                or new.get('promotion') != RESIDUAL_PROMOTIONS[i]
+                or not new.get('gate_source_sha256')):
+            raise ValueError('Residual promotion identity mismatch')
     alphabet = set(map(F.atom, actions))
     alphabet.update(P.component_actions(entry, entry['available_actions']))
     groups = {}
