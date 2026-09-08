@@ -1,0 +1,105 @@
+name: ARC3 observation residual probe
+on:
+  push:
+    branches: [experiment/unified-arc3-multilevel-v1]
+    paths:
+      - 'experiments/unified_development/arc3_observation_probe.py'
+      - 'experiments/unified_development/test_arc3_observation_probe.py'
+      - '.github/workflows/unified-arc3-observation-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare exact immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-shared-transfer
+          run-id: 34240189934
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: source-evidence
+      - name: Run small observation and refusal regressions
+        env:
+          MSI_FROZEN_DIR: ${{ github.workspace }}/frozen-src
+        run: |
+          python -m py_compile experiments/unified_development/arc3_observation_probe.py
+          python -m unittest discover -s experiments/unified_development -p test_arc3_observation_probe.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_multilevel_transfer.py -v
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Capture public bt33 consequences and independently replay selected witness
+        run: |
+          python experiments/unified_development/arc3_observation_probe.py \
+            --source-evidence source-evidence/arc3-shared-transfer.json \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --output arc3-observation-probe.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-observation-probe.json').read_text())
+          s=json.loads(Path('source-evidence/arc3-shared-transfer.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=320 and r['training_episodes']<=32
+          assert r['grounded_actions']==256
+          assert r['initial_sha256']==s['initial_sha256']
+          assert r['source_commit']==s['source_commit']
+          assert r['source_run']==34240189934
+          assert r['status'] in ('VERIFIED_WIN','PROGRESS_WITNESSED','OBSERVED_RESIDUAL','NO_OBSERVATION_CHANGE_WITHIN_BOUND','TRAINING_BOUND_EXHAUSTED','INCONCLUSIVE_REPLAY','INCONCLUSIVE_PREFIX_MISMATCH','INCONCLUSIVE_VERIFIER','NO_MEASURED_IMPROVEMENT')
+          assert r['installed_options']==len(r['accepted'])
+          for a in r['accepted']:
+              assert a['promotion'] and a['gate_source_sha256']
+          if r['status'] not in ('INCONCLUSIVE_REPLAY','INCONCLUSIVE_PREFIX_MISMATCH','INCONCLUSIVE_VERIFIER') and r['accepted']:
+              assert r['levels_witnessed']>=1
+          if r['status']=='OBSERVED_RESIDUAL':
+              assert r['selected_probe']['replay_confirmed']
+              assert r['selected_probe']['novel_observations']>0
+          if r['status'] in ('VERIFIED_WIN','PROGRESS_WITNESSED'):
+              assert len(r['accepted'])>=2 and r['levels_witnessed']>1
+          if r['terminal_win'] or r['status']=='VERIFIED_WIN':
+              assert r['warm']['state']=='WIN'
+          print('ARC3_OBSERVATION_QUALIFICATION='+json.dumps({
+              'status':r['status'],'training_actions':r['training_actions'],
+              'training_episodes':r['training_episodes'],
+              'levels_witnessed':r['levels_witnessed'],
+              'installed_options':r['installed_options'],
+              'terminal_win':r['terminal_win'],
+              'probes':len(r['traces']),
+              'changed_probes':sum(t['novel_observations']>0 for t in r['traces'])},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-observation-probe
+          path: |
+            arc3-observation-probe.json
+            observation-gate/
+          if-no-files-found: warn
