@@ -14,55 +14,33 @@ jobs:
     env:
       PYTHONHASHSEED: '0'
       STAGE2_SHA: 10f49d22f4030c3925aa5b2633ed73fd10a78cff
-      FROZEN_SHA256: 42c96092bad4b03ce13ab80df927675b65ab65225bff1d971ff328949a6ef7f4
+      SOURCE_BLOB: 05aa1c7d1d301d6d178b5ff9e1364cd41fe7fd3c
+      ARCHIVED_SHA256: 42c96092bad4b03ce13ab80df927675b65ab65225bff1d971ff328949a6ef7f4
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Reconstruct exact frozen solver
+      - name: Pin actual repository source, not archived candidate
         run: |
           set -euo pipefail
           git clone --filter=blob:none https://github.com/heathsanchez/equational-theories-lean-stage2.git /tmp/stage2
           git -C /tmp/stage2 checkout "$STAGE2_SHA"
           test "$(git -C /tmp/stage2 rev-parse HEAD)" = "$STAGE2_SHA"
-          cd /tmp/stage2
-          python - <<'PY'
-          import sys
-          from pathlib import Path
-          sys.path.insert(0, 'experiments/mathgraph')
-          import build_behavioural_future_specialist as b
-          source = Path('submissions/mathgraph/solver.py').read_text()
-          if b.MARKER in source:
-              old = b.FALLBACK + b.INSERT_BEFORE
-              assert source.count(old) == 1, 'Cannot identify exact original fallback'
-              assert source.count(b.CALL + b.CALL_BEFORE) == 1, 'Cannot identify exact original call'
-              source = source.replace(old, b.INSERT_BEFORE, 1)
-              source = source.replace(b.CALL + b.CALL_BEFORE, b.CALL_BEFORE, 1)
-          Path('/tmp/pre_behavioural.py').write_text(source)
-          print('PRE_INTEGRATION_SOURCE_RECOVERED=PASS')
-          PY
-          python experiments/mathgraph/build_projection_closure_schematic.py --base /tmp/pre_behavioural.py --output /tmp/solver.py
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('/tmp/solver.py'); s = p.read_text()
-          a = 'frontier_seconds = min(12.0, max(0.5, timeout / 40.0))'
-          b = 'given_seconds = min(5.0, max(0.5, timeout / 80.0))'
-          assert s.count(a) == 1 and s.count(b) == 1
-          p.write_text(s.replace(a, 'frontier_seconds = 30.0').replace(b, 'given_seconds = 10.0'))
-          PY
-          python experiments/mathgraph/determinize_solver_order.py /tmp/solver.py
+          git -C /tmp/stage2 rev-parse HEAD:submissions/mathgraph/solver.py > /tmp/source-blob
+          test "$(cat /tmp/source-blob)" = "$SOURCE_BLOB"
+          cp /tmp/stage2/submissions/mathgraph/solver.py /tmp/solver.py
           python -m py_compile /tmp/solver.py
           python - <<'PY'
           import hashlib, os
           from pathlib import Path
           data = Path('/tmp/solver.py').read_bytes()
           actual = hashlib.sha256(data).hexdigest()
-          print('FROZEN_SOLVER_SHA256=' + actual)
-          print('FROZEN_SOLVER_BYTES=' + str(len(data)))
-          assert actual == os.environ['FROZEN_SHA256'], 'Frozen solver reconstruction differs; comparison forbidden'
-          assert len(data) == 423718, 'Frozen solver size differs'
-          print('FROZEN_SOLVER_IDENTITY=PASS')
+          print('PINNED_SOURCE_SHA256=' + actual)
+          print('PINNED_SOURCE_BYTES=' + str(len(data)))
+          print('ARCHIVED_SHA256=' + os.environ['ARCHIVED_SHA256'])
+          print('ARCHIVED_SOLVER_IDENTITY=' + ('PASS' if actual == os.environ['ARCHIVED_SHA256'] else 'NOT_ESTABLISHED'))
+          print('PINNED_SOURCE_IDENTITY=PASS')
           PY
       - name: Run matched source-only solver-core comparison
         run: |
