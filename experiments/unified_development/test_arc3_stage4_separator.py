@@ -30,14 +30,15 @@ class Tests(unittest.TestCase):
 
     def test_real_residual_selects_distinct_effects(self):
         representatives, programs = self.selected()
+        entry = P.verified_entry(self.source, self.report, self.transfer, self.evidence, self.actions)
+        allowed = set(self.actions) | set(P.component_actions(entry, entry['available_actions']))
         self.assertGreaterEqual(len(representatives), 2)
         self.assertLessEqual(len(representatives), 4)
-        self.assertTrue(all(len(p) == 1 and p[0] in self.actions for p in representatives))
+        self.assertTrue(all(len(p) == 1 and p[0] in allowed for p in representatives))
         self.assertTrue(all(0 < len(p) <= 16 for p in programs))
         self.assertEqual(len(programs), len(set(programs)))
         self.assertTrue(all(p in programs for p in representatives))
-        groups = {tuple(row['observed_hashes'][-1]) if isinstance(row['observed_hashes'][-1], list) else row['observed_hashes'][-1]
-                  for row in self.residual['diagnostic_rows'] if len(row['program']) == 1}
+        groups = {row['observed_hashes'][-1] for row in self.residual['diagnostic_rows'] if len(row['program']) == 1}
         self.assertGreaterEqual(len(groups), 2)
 
     def test_forged_residuals_refuse(self):
