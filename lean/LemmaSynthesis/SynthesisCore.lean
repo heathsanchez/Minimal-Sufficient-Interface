@@ -69,4 +69,21 @@ def develop {α initialObs protectedObs discObs repairedObs tag : Type}
               replayResiduals :=
                 adequacyWitnesses univ (repairQuotient selected) protectedFunction }
 
+/-- Promotion is downstream of an independently recomputed replay. Selection
+alone, and even a caller-supplied `replayResiduals` field, never licenses
+retained capability. -/
+def promoteIfReplayAdequate {α protectedObs repairedObs tag : Type}
+    [DecidableEq protectedObs] [DecidableEq repairedObs]
+    (univ : List α)
+    (protectedFunction : α → protectedObs)
+    (repairQuotient : tag → α → repairedObs)
+    (development : Option (DevelopmentOutcome α tag)) : Option tag :=
+  match development with
+  | none => none
+  | some outcome =>
+      match adequacyWitnesses univ
+          (repairQuotient outcome.selected) protectedFunction with
+      | [] => some outcome.selected
+      | _ :: _ => none
+
 end SynthesisCore

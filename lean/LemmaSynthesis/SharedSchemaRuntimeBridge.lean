@@ -153,7 +153,8 @@ def metaDevelopment : Option
     policyCandidates policyRepairQuotient
 
 def selectedProgram? : Option PolicyProgram :=
-  metaDevelopment.map (fun outcome => outcome.selected)
+  SynthesisCore.promoteIfReplayAdequate
+    policyUniv policyFB policyRepairQuotient metaDevelopment
 
 def selectedProgram : PolicyProgram :=
   match selectedProgram? with
@@ -285,7 +286,8 @@ def ablatedDevelopment : Option
     ablatedCandidates policyRepairQuotient
 
 def ablatedProgram : PolicyProgram :=
-  match ablatedDevelopment.map (fun outcome => outcome.selected) with
+  match SynthesisCore.promoteIfReplayAdequate
+      policyUniv policyFB policyRepairQuotient ablatedDevelopment with
   | some program => program
   | none => .keepBaseline
 
@@ -293,7 +295,8 @@ def ablatedPolicy : SearchPolicy :=
   interpretPolicyProgram ablatedProgram heldOutK
 
 theorem exact_ablation_removes_repair :
-    ablatedDevelopment.map (fun outcome => outcome.selected) = none := by
+    SynthesisCore.promoteIfReplayAdequate
+      policyUniv policyFB policyRepairQuotient ablatedDevelopment = none := by
   native_decide
 
 theorem exact_ablation_restores_failure :

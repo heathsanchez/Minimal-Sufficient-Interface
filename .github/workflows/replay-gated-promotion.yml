@@ -1,0 +1,60 @@
+name: Replay-gated promotion
+
+on:
+  push:
+    paths:
+      - 'lean-toolchain'
+      - 'lean/TypedBehaviouralCongruence.lean'
+      - 'lean/DevelopmentalCategory.lean'
+      - 'lean/LemmaSynthesis/SynthesisCore.lean'
+      - 'lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean'
+      - 'lean/LemmaSynthesis/ReplayGatedPromotion.lean'
+      - 'lean/LemmaSynthesis/EndToEnd.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/GeneratedStage.lean'
+      - '.github/workflows/replay-gated-promotion.yml'
+  pull_request:
+    paths:
+      - 'lean-toolchain'
+      - 'lean/TypedBehaviouralCongruence.lean'
+      - 'lean/DevelopmentalCategory.lean'
+      - 'lean/LemmaSynthesis/SynthesisCore.lean'
+      - 'lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean'
+      - 'lean/LemmaSynthesis/ReplayGatedPromotion.lean'
+      - 'lean/LemmaSynthesis/EndToEnd.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/GeneratedStage.lean'
+      - '.github/workflows/replay-gated-promotion.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  replay-gated-promotion:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile shared runtime dependencies
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
+          lean -o lean/LemmaSynthesis/EndToEnd.olean lean/LemmaSynthesis/EndToEnd.lean
+          lean -o lean/LemmaSynthesis/SearchPolicy.olean lean/LemmaSynthesis/SearchPolicy.lean
+          lean -o lean/LemmaSynthesis/DerivedSearchConstraint.olean lean/LemmaSynthesis/DerivedSearchConstraint.lean
+          lean -o lean/LemmaSynthesis/SynthesisCore.olean lean/LemmaSynthesis/SynthesisCore.lean
+          lean -o lean/LemmaSynthesis/SharedSchemaRuntimeBridge.olean lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean
+      - name: Prove replay-gated promotion and refusal controls
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/LemmaSynthesis/ReplayGatedPromotion.olean lean/LemmaSynthesis/ReplayGatedPromotion.lean
+          echo 'REPLAY_GATED_PROMOTION_PASS'
