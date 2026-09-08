@@ -19,6 +19,10 @@ jobs:
         run: |
           python experiments/austin_promotion_compiler.py
           python -m unittest tests.test_austin_promotion_compiler -v
+      - name: Transfer E40909 constructor to E5295 by duality
+        run: |
+          python experiments/austin_dual_transfer.py
+          python -m unittest tests.test_austin_dual_transfer -v
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
@@ -26,4 +30,6 @@ jobs:
       - name: Replay discovered obligations in Lean
         env:
           LEAN_PATH: lean
-        run: lean lean/LemmaSynthesis/AustinRecursiveObligation.lean
+        run: |
+          lean -o lean/LemmaSynthesis/AustinRecursiveObligation.olean lean/LemmaSynthesis/AustinRecursiveObligation.lean
+          lean lean/LemmaSynthesis/AustinDualTransfer.lean
