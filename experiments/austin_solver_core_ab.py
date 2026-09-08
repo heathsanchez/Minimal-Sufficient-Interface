@@ -131,13 +131,16 @@ def compile_completion(m, source):
     assert right.rhs == to_mg(residual["right_nf"])
     result = trans(m, symmetry(m, left), right)
     assert result.lhs != result.rhs
-    search = m.CompactSuperposition(m, source, source, time.monotonic() + 30,
+    goal = result.lhs, result.rhs, tuple(sorted(m.term_variables(result.lhs) | m.term_variables(result.rhs)))
+    # CompactSuperposition.compile specializes variables absent from its
+    # target. Use the actual completion goal, not the original source law,
+    # so the required free variables are retained rather than collapsed.
+    search = m.CompactSuperposition(m, source, goal, time.monotonic() + 30,
         dict(m.COMPACT_SUPERPOSITION_PROBE, maximum_term_size=10000))
     nodes, root = search.compile(result)
     assert m.replay_dag(source, nodes, root, maximum_term_size=10000,
                         maximum_nodes=100000), "Independent DAG replay rejected completion"
-    assert (nodes[root].lhs, nodes[root].rhs) == (result.lhs, result.rhs)
-    goal = result.lhs, result.rhs, tuple(sorted(m.term_variables(result.lhs) | m.term_variables(result.rhs)))
+    assert (nodes[root].lhs, nodes[root].rhs) == goal[:2]
     certificate, count = m.make_dag_certificate(goal, nodes, root)
     return result, goal, certificate, {"proof_nodes": count, "pair": [i, j, list(path)]}
 
