@@ -5,6 +5,7 @@ on:
     paths:
       - 'experiments/convergence/finite_consequence.py'
       - 'experiments/arc3_consequence/**'
+      - 'lean/LemmaSynthesis/AdequacyTester.lean'
       - 'lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean'
       - 'tests/test_consequence.py'
       - '.github/workflows/arc3-consequence-kernel.yml'
@@ -39,12 +40,12 @@ jobs:
           echo 'FINITE_DEVELOPMENT_TESTS=PASS'
       - name: Replay pinned evidence and generated Lean source
         run: |
+          set -euo pipefail
           python experiments/arc3_consequence/replay.py \
             --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
             --lean /tmp/ARC3ConsequenceCertificate.lean \
             --report /tmp/recorded_replay.json
-          sha256sum /tmp/ARC3ConsequenceCertificate.lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
-          diff -u lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean /tmp/ARC3ConsequenceCertificate.lean
+          echo '45022aa3c5995f8638e960d887540a9dd310b68dd7621f192aefd0df06789c3f  /tmp/ARC3ConsequenceCertificate.lean' | sha256sum -c -
           cmp /tmp/recorded_replay.json experiments/arc3_consequence/recorded_replay.json
           echo 'CONSEQUENCE_SOURCE_REPLAY=PASS'
       - name: Install pinned Lean toolchain
@@ -60,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/AdequacyTester.olean lean/LemmaSynthesis/AdequacyTester.lean
-          LEAN_PATH=lean lean lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean
+          LEAN_PATH=lean lean /tmp/ARC3ConsequenceCertificate.lean
           echo 'ARC3_CONSEQUENCE_LEAN=PASS'
       - uses: actions/checkout@v4
         with:
