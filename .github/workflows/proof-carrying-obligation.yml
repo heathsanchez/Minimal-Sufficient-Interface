@@ -1,0 +1,50 @@
+name: Proof-carrying obligation qualification
+
+on:
+  push:
+    branches:
+      - experiment/proof-carrying-obligation-v1
+    paths:
+      - 'experiments/mathgraph/proof_carrying_obligation.py'
+      - 'experiments/mathgraph/proof_carrying_lean.py'
+      - 'experiments/mathgraph/recursive_obligation_synthesis.py'
+      - 'tests/test_proof_carrying_obligation.py'
+      - '.github/workflows/proof-carrying-obligation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof-carrying-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check generic compiler and negative certificates
+        run: python -m unittest tests.test_proof_carrying_obligation -v
+      - name: Generate and verify pinned proof source
+        run: |
+          python -m experiments.mathgraph.proof_carrying_lean --write
+          python -m experiments.mathgraph.proof_carrying_lean
+          printf '%s  %s\n' f150b6b2c37a4fcc6ab76a6eed6e1b97a0f28f6b7d93ed0756ad5dacbf7a4e55 lean/LemmaSynthesis/ProofCarryingObligation.lean | sha256sum -c -
+          echo SOURCE_HASH=PASS
+      - name: Install pinned Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check generated derivations
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean --version
+          lean lean/LemmaSynthesis/ProofCarryingObligation.lean
+          echo PROOF_CARRYING_LEAN=PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-carrying-lean-source
+          path: lean/LemmaSynthesis/ProofCarryingObligation.lean
