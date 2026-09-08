@@ -1,0 +1,51 @@
+name: Shared schema runtime bridge
+
+on:
+  push:
+    paths:
+      - 'lean/LemmaSynthesis/SynthesisCore.lean'
+      - 'lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean'
+      - 'lean/LemmaSynthesis/EndToEnd.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/GeneratedStage.lean'
+      - '.github/workflows/shared-schema-runtime-bridge.yml'
+  pull_request:
+    paths:
+      - 'lean/LemmaSynthesis/SynthesisCore.lean'
+      - 'lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean'
+      - 'lean/LemmaSynthesis/EndToEnd.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/GeneratedStage.lean'
+      - '.github/workflows/shared-schema-runtime-bridge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  shared-schema-runtime-bridge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies in order
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
+          lean -o lean/LemmaSynthesis/EndToEnd.olean lean/LemmaSynthesis/EndToEnd.lean
+          lean -o lean/LemmaSynthesis/SearchPolicy.olean lean/LemmaSynthesis/SearchPolicy.lean
+          lean -o lean/LemmaSynthesis/DerivedSearchConstraint.olean lean/LemmaSynthesis/DerivedSearchConstraint.lean
+          lean -o lean/LemmaSynthesis/SynthesisCore.olean lean/LemmaSynthesis/SynthesisCore.lean
+      - name: Qualify shared implementation, retained installation, and runtime effect
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/LemmaSynthesis/SharedSchemaRuntimeBridge.olean lean/LemmaSynthesis/SharedSchemaRuntimeBridge.lean
+          echo "SHARED_SCHEMA_RUNTIME_BRIDGE_PASS"
