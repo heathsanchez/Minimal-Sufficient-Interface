@@ -12,11 +12,12 @@ from compact_agent import Controller, run_episode
 
 def simple_action_ids(action_space):
     """Convert SDK actions using the public action identifier, not enum values."""
+    return tuple(sorted(set(int(a.value) for a in action_space if a.is_simple())))
+
+
+def decode_action(action_id):
     from arcengine import GameAction
-    return tuple(sorted(set(
-        int(a.value) for a in action_space
-        if a != GameAction.ACTION6
-    )))
+    return GameAction.from_id(int(action_id))
 
 
 def main():
@@ -29,7 +30,6 @@ def main():
     p.add_argument('--output', default='arc3-result.json')
     args = p.parse_args()
     from arc_agi import Arcade, OperationMode
-    from arcengine import GameAction
     mode = OperationMode.ONLINE if args.online else OperationMode.OFFLINE
     arcade = Arcade(operation_mode=mode, environments_dir=args.environments_dir)
     env = arcade.make(args.game)
@@ -39,7 +39,7 @@ def main():
     class Adapter:
         @property
         def observation_space(self): return env.observation_space
-        def step(self, action): return env.step(GameAction.from_id(action))
+        def step(self, action): return env.step(decode_action(action))
         def reset(self): return env.reset()
     controller = Controller(actions, args.probe_limit)
     result = run_episode(Adapter(), controller, args.max_actions)
