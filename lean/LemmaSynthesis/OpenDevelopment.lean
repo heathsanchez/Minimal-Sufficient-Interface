@@ -116,7 +116,7 @@ def oldSteps2 : List Step := [Step.succ, Step.double, Step.learned0]
 
 private theorem obstructionTable2 :
     AllFailure (fun x y => x ^ y) (candidates oldSteps2) := by
-  exact ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, True.intro⟩⟩⟩⟩⟩⟩⟩⟩⟩
+  exact ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, True.intro⟩⟩⟩⟩⟩⟩⟩⟩⟩
 
 theorem obstruction2 (p : Program) (hp : p ∈ candidates oldSteps2) :
     ¬ ∀ x y, eval p x y = (fun x y => x ^ y) x y := by
