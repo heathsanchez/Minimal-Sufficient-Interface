@@ -1,0 +1,55 @@
+name: Grammar genesis qualification
+on:
+  push:
+    branches: [grammar-genesis-v1]
+    paths:
+      - 'tests/grammar_genesis.py'
+      - 'tests/verify_grammar_genesis.py'
+      - 'tests/grammar_genesis_test.py'
+      - 'tests/grammar_genesis_template.lean'
+      - 'lean/LemmaSynthesis/GrammarGenesis.lean'
+      - '.github/workflows/grammar-genesis-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test synthesis, independent replay and ablation
+        run: python -m unittest discover -s tests -p grammar_genesis_test.py -v
+      - name: Replay the exact generated Lean source
+        run: |
+          python - <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('tests').resolve()))
+          import grammar_genesis_test as development
+          actual = Path('lean/LemmaSynthesis/GrammarGenesis.lean').read_bytes()
+          assert development.lean_source().encode('utf-8') == actual, 'Generated Lean differs from committed proof'
+          assert b'\nsorry' not in actual and b'\nadmit' not in actual
+          report = development.report()
+          assert report['source_bound'] == 4
+          assert report['baseline_sha256'] == 'c7209c8dafa1f4fa645c68b0d83a124e156a8f9d8cb968ddcf9a0a91e7813f63'
+          print('SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel-check acquisition, transfer and old-grammar obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean lean/LemmaSynthesis/GrammarGenesis.lean
+          echo 'GRAMMAR_GENESIS_LEAN=PASS'
