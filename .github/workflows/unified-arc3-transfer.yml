@@ -31,7 +31,8 @@ jobs:
       - name: Prepare exact immutable controller sources
         run: |
           mkdir -p frozen-src
-          cp frozen-msi/experiments/arc3_consequence/{agent,finite_consequence,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
       - uses: actions/checkout@v4
         with:
           repository: arcprize/ARC-AGI
