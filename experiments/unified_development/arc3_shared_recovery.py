@@ -26,7 +26,8 @@ def load_witnesses(path, game, initial_sha, actions):
     r = json.loads(raw)
     d = r['policies']['ranked-factor-v1']['development']
     if (r['status'] != 'COMPARABLE' or r['game'] != game
-            or r['initial_sha256'] != d['initial_sha256'] != initial_sha
+            or r['initial_sha256'] != initial_sha
+            or d['initial_sha256'] != initial_sha
             or r['selected_policy'] != 'ranked-factor-v1'
             or r['model_calls'] != 0 or r['competition_submission']):
         raise ValueError('Historical evidence provenance mismatch')
