@@ -75,7 +75,6 @@ def lift(m, r, root, path):
 
 def rule_recipe(m, source, seed, index, prefix):
     base = source_recipe(m, source)
-    # w is the fresh promotion variable, not an original source binder.
     renamed = {v: ast.V(prefix + v) for v in set(source[2]) | {"w"}}
     branch = instance(m, base, {v: to_mg(renamed[v]) for v in source[2]})
     if index == 0:
@@ -102,8 +101,6 @@ def rule_recipe(m, source, seed, index, prefix):
 def step(m, source, seed, index, prefix, env, root, path):
     r = rule_recipe(m, source, seed, index, prefix)
     renamed = ast.rename_rule((seed, dev.promote(seed))[index], prefix)
-    # Simultaneous substitution is essential: matching environments can
-    # contain names which also occur inside their replacement terms.
     mapping = {v: to_mg(dev.instantiate(ast.V(v), env))
                for v in variables(renamed[0]) | variables(renamed[1])}
     r = instance(m, r, mapping)
@@ -132,9 +129,8 @@ def compile_completion(m, source):
     result = trans(m, symmetry(m, left), right)
     assert result.lhs != result.rhs
     goal = result.lhs, result.rhs, tuple(sorted(m.term_variables(result.lhs) | m.term_variables(result.rhs)))
-    # CompactSuperposition.compile specializes variables absent from its
-    # target. Use the actual completion goal, not the original source law,
-    # so the required free variables are retained rather than collapsed.
+    # The compiler specializes variables absent from its target. Retain the
+    # actual completion goal so its free variables cannot be collapsed.
     search = m.CompactSuperposition(m, source, goal, time.monotonic() + 30,
         dict(m.COMPACT_SUPERPOSITION_PROBE, maximum_term_size=10000))
     nodes, root = search.compile(result)
@@ -148,16 +144,30 @@ def compile_completion(m, source):
 def run_core(m, source, goal, extra=None, seconds=10.0):
     """Same pinned CompactSuperposition scheduler in both arms."""
     import heapq
+    # The first E40909 residual has a 75-node side. A 65-node bound silently
+    # rejected the installed equality, so the common bound must cover the goal.
+    term_limit = max(96, m.term_size(goal[0]), m.term_size(goal[1]))
     limits = dict(m.COMPACT_SUPERPOSITION_PROBE)
-    limits.update(seconds=seconds, maximum_term_size=65, maximum_replay_term_size=10000,
+    limits.update(seconds=seconds, maximum_term_size=term_limit, maximum_replay_term_size=10000,
         maximum_depth=12, maximum_rules=1000, maximum_rounds=128,
         new_clauses_per_round=512, maximum_clauses=12000,
         normalization_steps=128, maximum_proof_nodes=100000)
     deadline = time.monotonic() + seconds
     search = m.CompactSuperposition(m, source, goal, deadline, limits)
     initial = list(search.clauses)
+    injection_status = "disabled"
+    injected = False
     if extra is not None:
-        assert search.add_clause(extra), "Completion was already present in the initial state"
+        injected = search.add_clause(extra)
+        if injected:
+            injection_status = "accepted"
+        else:
+            oriented = search.orient(extra) or extra
+            signature = search.alpha_signature(oriented.lhs, oriented.rhs)
+            reverse = search.alpha_signature(oriented.rhs, oriented.lhs)
+            injection_status = ("overbound" if max(m.term_size(extra.lhs), m.term_size(extra.rhs)) > term_limit
+                else "duplicate" if signature in search.signatures or reverse in search.signatures
+                else "rejected")
     active, heap, queued = [], [], set()
     serial = added = 0
 
@@ -185,7 +195,7 @@ def run_core(m, source, goal, extra=None, seconds=10.0):
             if time.monotonic() >= deadline:
                 return
             candidate = search.critical_pair(outer, inner, oi, ii, path)
-            if candidate is None or max(m.term_size(candidate.lhs), m.term_size(candidate.rhs)) > limits["maximum_term_size"]:
+            if candidate is None or max(m.term_size(candidate.lhs), m.term_size(candidate.rhs)) > term_limit:
                 continue
             key = endpoint_key(candidate)
             if key in queued:
@@ -221,8 +231,8 @@ def run_core(m, source, goal, extra=None, seconds=10.0):
 
     for r in initial:
         activate(r, 0)
-    if extra is not None:
-        activate(extra, 0)
+    if injected:
+        activate(search.clauses[-1], 0)
     found = finish()
     while found is None and heap and added < 128 and len(search.clauses) < limits["maximum_clauses"] and time.monotonic() < deadline:
         _, _, _, depth, key, candidate = heapq.heappop(heap)
@@ -237,7 +247,8 @@ def run_core(m, source, goal, extra=None, seconds=10.0):
         if found is None:
             activate(r, depth)
     return found, {"added_clauses": added, "generated": search.generated,
-                   "active": len(active), "pending": len(heap), "expired": time.monotonic() >= deadline}
+                   "active": len(active), "pending": len(heap), "expired": time.monotonic() >= deadline,
+                   "term_limit": term_limit, "injection_status": injection_status}
 
 
 def standalone_goal(m, source, goal):
