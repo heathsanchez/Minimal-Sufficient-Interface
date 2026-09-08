@@ -11,13 +11,21 @@ from compact_agent import Controller, run_episode
 
 
 def simple_action_ids(action_space):
-    """Convert SDK actions using the public action identifier, not enum values."""
     return tuple(sorted(set(int(a.value) for a in action_space if a.is_simple())))
 
 
 def decode_action(action_id):
     from arcengine import GameAction
     return GameAction.from_id(int(action_id))
+
+
+def observation_record(frame, action=None):
+    """Only public frame and progress data; never inspect game internals."""
+    return {'action': action, 'state': getattr(frame.state, 'name', str(frame.state)),
+            'levels_completed': int(frame.levels_completed),
+            'available_actions': list(frame.available_actions),
+            'frame': [layer.tolist() if hasattr(layer, 'tolist') else layer
+                      for layer in frame.frame]}
 
 
 def main():
@@ -28,6 +36,7 @@ def main():
     p.add_argument('--max-actions', type=int, default=120)
     p.add_argument('--probe-limit', type=int, default=32)
     p.add_argument('--output', default='arc3-result.json')
+    p.add_argument('--trace', default=None)
     args = p.parse_args()
     from arc_agi import Arcade, OperationMode
     mode = OperationMode.ONLINE if args.online else OperationMode.OFFLINE
@@ -36,11 +45,20 @@ def main():
     if env is None:
         raise RuntimeError('ARC environment unavailable: ' + args.game)
     actions = simple_action_ids(env.action_space)
+    trace = [observation_record(env.observation_space)] if args.trace else None
     class Adapter:
         @property
         def observation_space(self): return env.observation_space
-        def step(self, action): return env.step(decode_action(action))
-        def reset(self): return env.reset()
+        def step(self, action):
+            frame = env.step(decode_action(action))
+            if trace is not None and frame is not None:
+                trace.append(observation_record(frame, action))
+            return frame
+        def reset(self):
+            frame = env.reset()
+            if trace is not None and frame is not None:
+                trace.append(observation_record(frame, 'reset'))
+            return frame
     controller = Controller(actions, args.probe_limit)
     result = run_episode(Adapter(), controller, args.max_actions)
     scorecard = arcade.close_scorecard()
@@ -48,6 +66,8 @@ def main():
                    'scorecard': scorecard.model_dump(mode='json') if hasattr(scorecard, 'model_dump') else str(scorecard),
                    'method': 'bounded-repeat-macro-v1', 'model_provider': None})
     Path(args.output).write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + '\n')
+    if trace is not None:
+        Path(args.trace).write_text(json.dumps(trace, separators=(',', ':')) + '\n')
     print('ARC3_COMPACT_RESULT=' + json.dumps(result, sort_keys=True, default=str))
 
 
