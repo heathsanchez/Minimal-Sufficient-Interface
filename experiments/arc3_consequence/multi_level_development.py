@@ -22,12 +22,19 @@ def execute_stage(env, prefix, suffix, target, budget, checkpoint=None,
     trace = []
     def result(status, point=None):
         final = observation(frame)
+        close = getattr(env, 'close', None)
+        card = close() if callable(close) else None
+        if hasattr(card, 'model_dump'):
+            card = card.model_dump(mode='json')
+        if isinstance(card, dict):
+            card.pop('api_key', None)
         return {'status': status, 'initial_sha256': digest(initial),
                 'checkpoint_sha256': point, 'final_sha256': digest(final),
                 'actions': len(trace), 'progress': max(0, final['levels_completed'] - target),
                 'levels_completed': final['levels_completed'], 'state': final['state'],
                 'terminal': terminal(final), 'executed': tuple(x[0] for x in trace),
-                'trace_sha256': digest(trace)}
+                'trace_sha256': digest(trace), 'scorecard': card,
+                'score': card.get('score') if isinstance(card, dict) else None}
     for action in prefix:
         if len(trace) >= budget:
             return result('BUDGET_EXHAUSTED')
@@ -111,7 +118,7 @@ def discover_levels(factory, actions, budget=120, max_episodes=512,
             d.evidence.append({'target': target, 'suffix': suffix,
                                'status': result['status'], 'actions': result['actions'],
                                'progress': result['progress'], 'terminal': result['terminal'],
-                               'trace_sha256': result['trace_sha256']})
+                               'trace_sha256': result['trace_sha256'], 'score': result['score']})
             if result['status'] == 'BUDGET_EXHAUSTED':
                 d.status = 'TRAINING_BOUND_EXHAUSTED'
                 return d
