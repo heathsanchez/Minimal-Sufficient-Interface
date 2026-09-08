@@ -51,15 +51,20 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.33.1
       - name: Kernel-check all replayed certificates
+        env:
+          LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
         run: |
           set -euo pipefail
-          mkdir -p /tmp/austin-lean
+          mkdir -p .austin-lean
+          export LEAN_PATH="$PWD/.austin-lean"
+          lean --version
           for name in E40909 E11116; do
-            cp "/tmp/austin-ab/${name}_JudgeProblem.lean" /tmp/austin-lean/JudgeProblem.lean
-            LEAN_PATH=/tmp/austin-lean lean -o /tmp/austin-lean/JudgeProblem.olean /tmp/austin-lean/JudgeProblem.lean
+            cp "/tmp/austin-ab/${name}_JudgeProblem.lean" .austin-lean/JudgeProblem.lean
+            lean -o .austin-lean/JudgeProblem.olean .austin-lean/JudgeProblem.lean
             for proof in /tmp/austin-ab/${name}_*.lean; do
               case "$proof" in *_JudgeProblem.lean) continue;; esac
-              LEAN_PATH=/tmp/austin-lean lean "$proof"
+              cp "$proof" .austin-lean/Replay.lean
+              lean .austin-lean/Replay.lean
               echo "KERNEL_REPLAY_PASS=$(basename "$proof")"
             done
           done
