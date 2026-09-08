@@ -1,8 +1,8 @@
-"""One-stage ARC3 transfer through the existing shared developmental gate.
+"""Bounded ARC3 transfer through the existing shared developmental gate.
 
-The frozen controller proposes a witnessed option. It is not shared-retained
-until fresh public-API replay and the actual Lean SynthesisCore gate accept it.
-This is a bounded policy-attachment test, not general world-model genesis.
+The immutable controller proposes a witnessed option. Fresh public-API replay
+and the actual Lean SynthesisCore gate must accept it before shared retention.
+This is policy attachment, not unrestricted representation or grammar genesis.
 """
 import argparse
 import hashlib
@@ -10,7 +10,6 @@ import json
 import logging
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
@@ -21,6 +20,7 @@ import closed_feedback_v2 as F
 
 FROZEN = "68e37033f3ae1e86e992dfe8d982aef9133612aa"
 UPSTREAM = "f12822c4d550121c35a275008d964afbbed47d2f"
+FEEDBACK_BLOB = "32dd8a45394b7441e7f08be7c128f1691ff941c0"
 SOURCE_BLOBS = {
     "agent.py": "00e9d5059aa21bc6a3c47d46a829ecef58a29bea",
     "finite_consequence.py": "6c9831358dabb33ba1323ebcbc85f683b6587248",
@@ -39,6 +39,8 @@ def source_blob(path):
 
 def load_frozen(directory):
     directory = Path(directory).resolve()
+    if source_blob(F.__file__) != FEEDBACK_BLOB:
+        raise ValueError("Feedback source mismatch")
     for name, expected in SOURCE_BLOBS.items():
         if source_blob(directory / name) != expected:
             raise ValueError("Frozen source mismatch: " + name)
@@ -51,7 +53,7 @@ def load_frozen(directory):
     return agent, finite_consequence, parameterized_actions, compositional_development, multi_level_development
 
 def lean_source(identity, outcomes, evidence_sha):
-    """Use the real shared develop/promote implementation, not a Python copy."""
+    """Two distinct observed consequences, encoded as 0 and 1."""
     if len(outcomes) != 2 or outcomes[0] == outcomes[1]:
         raise ValueError("No separating consequence")
     return '''import LemmaSynthesis.SynthesisCore
@@ -86,15 +88,15 @@ end ARC3SharedTransfer
 '''
 
 def run_lean_gate(identity, outcomes, evidence_sha, output, lean="lean"):
-    """The only production promotion authority is successful external Lean."""
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
+    """Production promotion requires successful Lean and the exact return tag."""
+    output = Path(output).resolve()
+    (output / "LemmaSynthesis").mkdir(parents=True, exist_ok=True)
     source = lean_source(identity, outcomes, evidence_sha)
     path = output / "ARC3SharedTransfer.lean"
     path.write_text(source)
     env = dict(os.environ, LEAN_PATH=str(ROOT / "lean"))
     core = ROOT / "lean/LemmaSynthesis/SynthesisCore.lean"
-    subprocess.run([lean, "-o", str(output / "SynthesisCore.olean"), str(core)],
+    subprocess.run([lean, "-o", str(output / "LemmaSynthesis/SynthesisCore.olean"), str(core)],
                    cwd=ROOT, env=env, check=True, capture_output=True, text=True)
     env["LEAN_PATH"] = str(output) + os.pathsep + str(ROOT / "lean")
     result = subprocess.run([lean, str(path)], cwd=ROOT, env=env,
@@ -105,11 +107,11 @@ def run_lean_gate(identity, outcomes, evidence_sha, output, lean="lean"):
     return {"identity": identity, "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
             "marker": marker, "lean_output": result.stdout}
 
-def better(a, b):
-    return (a["state"] == "WIN", a["levels_completed"], -a["actions"]) > (b["state"] == "WIN", b["levels_completed"], -b["actions"])
+def quality(r):
+    return (r["state"] == "WIN", r["levels_completed"], -r["actions"])
 
 def promote(factory, prefix, source, cold, initial_sha, archive, output, gate=run_lean_gate):
-    """Reject before installation on every mismatch or failed verifier."""
+    """Only actual replay and independent approval may reach archive.install."""
     prefix = tuple(prefix)
     if not prefix:
         return {"status": "NO_WITNESSED_OPTION"}
@@ -119,23 +121,28 @@ def promote(factory, prefix, source, cold, initial_sha, archive, output, gate=ru
              and first["executed"] == proof["executed"] == prefix
              and first["observations"] == proof["observations"]
              and first["initial_sha256"] == proof["initial_sha256"] == initial_sha
-             and proof["levels_completed"] > 0)
+             and proof["levels_completed"] > 0
+             and source["checkpoint_sha256"] == proof["final_sha256"]
+             and tuple(source["prefix"]) == prefix
+             and source["level"] == proof["levels_completed"])
     if not valid:
         return {"status": "INCONCLUSIVE_REPLAY", "replay": first, "proof": proof}
     candidate = {"actions": len(prefix), "levels_completed": proof["levels_completed"], "state": proof["state"]}
-    if not better(candidate, cold):
+    if quality(candidate) <= quality(cold):
         return {"status": "NO_MEASURED_IMPROVEMENT", "replay": first, "proof": proof}
     evidence = {"initial_sha256": initial_sha, "program": prefix, "cold": cold,
                 "replay": first, "proof": proof, "source_commit": FROZEN}
     evidence_sha = digest(evidence)
     identity = digest({"kind": "arc3_witnessed_policy", "evidence_sha256": evidence_sha,
                        "program": prefix, "source_commit": FROZEN})
-    # A failed, absent, or forged gate result cannot reach archive.install.
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "evidence.json").write_text(json.dumps(evidence, indent=2, sort_keys=True, default=str) + "\n")
+    # The actual gate is invoked before the first shared installation.
     approval = gate(identity, [cold, candidate], evidence_sha, output)
     if approval.get("identity") != identity:
         raise ValueError("Promotion identity mismatch")
-    entry = first["initial_sha256"]
-    archive.install(entry, prefix, first["final_sha256"], proof,
+    archive.install(first["initial_sha256"], prefix, first["final_sha256"], proof,
                     source=("policy", identity))
     return {"status": "REPLAY_GATED_PROMOTION_PASS", "identity": identity,
             "evidence_sha256": evidence_sha, "evidence": evidence, "approval": approval,
@@ -143,7 +150,7 @@ def promote(factory, prefix, source, cold, initial_sha, archive, output, gate=ru
 
 def run(factory, actions, discover, execute_stage, output, max_training_actions=3000,
         max_episodes=512, max_depth=32, gate=run_lean_gate):
-    """A single bounded development cycle, followed by genuine fresh deployment."""
+    """One bounded development cycle, followed by fresh deployment and ablation."""
     actions = tuple(actions)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
@@ -151,10 +158,9 @@ def run(factory, actions, discover, execute_stage, output, max_training_actions=
     first = factory()
     initial_sha = digest(F.observe(first.observation_space))
     first.close()
-    # Reserve two maximum-depth replays inside the declared training budget.
-    reserve = min(2 * max_depth, max_training_actions)
+    reserve = 2 * max_depth
     discovery_budget = max_training_actions - reserve
-    if discovery_budget < 1:
+    if not actions or discovery_budget < 1:
         raise ValueError("Training budget must leave room for replay")
     d = discover(factory, actions, budget=120, max_episodes=max_episodes,
                  max_depth=max_depth, max_training_actions=discovery_budget, max_levels=1)
@@ -162,22 +168,27 @@ def run(factory, actions, discover, execute_stage, output, max_training_actions=
                          0, 120, stop_at_progress=False)
     result = {"status": "NO_PROMOTION_WITHIN_BOUND", "source_commit": FROZEN,
               "source_development": d.snapshot(), "cold": cold, "initial_sha256": initial_sha,
-              "grounded_actions": len(actions), "model_calls": 0, "competition_submission": False}
+              "grounded_actions": len(actions), "training_actions": d.training_actions,
+              "model_calls": 0, "competition_submission": False}
     if d.initial_sha256 != initial_sha or cold["initial_sha256"] != initial_sha:
         result["status"] = "INCONCLUSIVE_UNMATCHED_START"
         return result
     if not d.stages:
         return result
-    candidate = promote(factory, d.prefix, d.stages[-1], cold, initial_sha, archive, output, gate)
+    try:
+        candidate = promote(factory, d.prefix, d.stages[-1], cold, initial_sha, archive, output, gate)
+    except (ValueError, subprocess.CalledProcessError, FileNotFoundError) as exc:
+        result["status"] = "INCONCLUSIVE_VERIFIER"
+        result["verifier_error"] = str(exc)
+        return result
     result["promotion"] = candidate
-    result["training_actions"] = d.training_actions + candidate.get("replay_actions", 0)
+    result["training_actions"] += candidate.get("replay_actions", 0)
     if candidate["status"] != "REPLAY_GATED_PROMOTION_PASS":
         return result
     if result["training_actions"] > max_training_actions:
-        raise ValueError("Training budget exceeded before installation")
-    # The actual installed operation must change the next search proposal.
+        raise ValueError("Training budget exceeded")
     next_candidate = next(F.candidates(actions, archive, (), 120, max_depth, feedback=True))
-    if next_candidate["source"] != ("option", 0):
+    if next_candidate["source"] != ("option", 0) or next_candidate["program"] != tuple(d.prefix):
         raise ValueError("Retained operation did not enter future search")
     warm = F.replay(factory, next_candidate["program"], None, 120)
     if warm["initial_sha256"] != initial_sha or warm["executed"] != tuple(d.prefix):
@@ -186,7 +197,7 @@ def run(factory, actions, discover, execute_stage, output, max_training_actions=
     result.update(status="COMPARABLE", warm={k:v for k,v in warm.items() if k != "observations"},
                   installed_options=archive.snapshot()["options"],
                   next_candidate_source=next_candidate["source"],
-                  improved=better(warm, cold))
+                  improved=quality(warm) > quality(cold), terminal_win=warm["state"] == "WIN")
     return result
 
 def main():
@@ -226,7 +237,7 @@ def main():
                   upstream_commit=UPSTREAM, source_blobs=SOURCE_BLOBS)
     Path(a.output).write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
     print("ARC3_SHARED_TRANSFER=" + json.dumps({k:result.get(k) for k in
-          ("status", "training_actions", "grounded_actions", "improved", "installed_options")}, sort_keys=True))
+          ("status", "training_actions", "grounded_actions", "improved", "terminal_win", "installed_options")}, sort_keys=True))
 
 if __name__ == "__main__":
     main()
