@@ -1,7 +1,8 @@
 import unittest
 from dataclasses import dataclass
 import numpy as np
-from world_model import MotionModel,run_model_episode
+from world_model import MotionModel
+from developmental_agent import run_developmental_episode
 
 @dataclass
 class Frame:
@@ -63,11 +64,22 @@ class WorldModelTests(unittest.TestCase):
         self.assertEqual(m.conflicts,[])
     def test_hidden_mapping_and_palette(self):
         for mapping,palette in [((1,2,3,4),(3,4,9,12)),((4,3,1,2),(5,2,7,13)),((2,1,4,3),(8,6,10,14))]:
-            result=run_model_episode(HiddenGrid(mapping,palette),mapping,300)
+            result=run_developmental_episode(HiddenGrid(mapping,palette),mapping,300)
             self.assertEqual(result['state'],'WIN',result)
             self.assertEqual(result['levels_completed'],3)
             self.assertEqual(result['model_calls'],0)
             self.assertGreater(len(result['level_actions']),0)
+    def test_compiled_macro_transfer_and_ablation(self):
+        for mapping,palette in [((1,2,3,4),(3,4,9,12)),((4,3,1,2),(5,2,7,13)),((2,1,4,3),(8,6,10,14))]:
+            warm=run_developmental_episode(HiddenGrid(mapping,palette),mapping,300)
+            cold=run_developmental_episode(HiddenGrid(mapping,palette),mapping,300,retain_operators=False)
+            self.assertEqual(warm['state'],'WIN')
+            self.assertEqual(cold['state'],'WIN')
+            self.assertLess(warm['actions'],cold['actions'])
+            self.assertEqual(warm['macro_count'],1)
+            self.assertGreaterEqual(warm['macro_replays'],2)
+            self.assertEqual(cold['macro_count'],0)
+            print('MACRO_ABLATION',mapping,'warm',warm['actions'],'cold',cold['actions'])
     def test_moving_component_is_not_hud(self):
         env=HiddenGrid()
         before=env.observation_space
