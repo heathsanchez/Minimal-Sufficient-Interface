@@ -35,7 +35,7 @@ jobs:
           python experiments/arc3_consequence/run_compositional.py \
             --game bt11-fd9df0622a1a \
             --environments-dir upstream-arc-agi/test_environment_files \
-            --max-actions 120 --max-episodes 512 --max-depth 12 \
+            --max-actions 120 --max-episodes 512 --max-depth 32 \
             --max-training-actions 3000 --max-levels 5 \
             --output arc3-compositional.json
           echo 'ARC3_COMPOSITIONAL_OFFLINE=COMPLETED'
