@@ -1,7 +1,9 @@
 """Lean certificate for finite consequence factorization.
 
-Instead of enumerating all O(n^2) adequacy-witness pairs, emit the factor map
-h : repaired-class -> outcome and check each observed row against h.
+Emit the finite factor map h : repaired-class -> outcome, prove the observed
+rows satisfy F = h ∘ Q+, then invoke the reusable Lean theorem that this
+factorization rules out all adequacy witnesses.  This avoids quadratic
+normalization of the witness list.
 """
 from __future__ import annotations
 from finite_consequence import freeze, replay
@@ -53,17 +55,26 @@ def lean_factorization_certificate(rows, q, f, repair):
 private theorem old_residual :
     old[{i}]! = old[{j}]! ∧ outcome[{i}]! ≠ outcome[{j}]! := by decide
 """
-    return f'''import LemmaSynthesis.AdequacyTester
+    return f'''import LemmaSynthesis.ConsequenceFactorization
 namespace FiniteConsequenceCertificate
 private def old : List Nat := {lit(old_ids)}
 private def repaired : List Nat := {lit(repaired_ids)}
 private def outcome : List Nat := {lit(outcome_ids)}
 private def factor : List Nat := {lit(factor)}
+private def rowIds : List Nat := List.range {len(rows)}
+private def qPlus (i : Nat) : Nat := repaired[i]!
+private def protected (i : Nat) : Nat := outcome[i]!
+private def realize (c : Nat) : Nat := factor[c]!
 
-/-- The observed consequence factors through the repaired representation. -/
-private theorem finite_factorization :
-    (repaired.zip outcome).all (fun p => factor[p.1]! == p.2) = true := by
+/-- Linear replay obligation: every observed row respects the factor map. -/
+private theorem factor_rows : ∀ i ∈ rowIds, protected i = realize (qPlus i) := by
   decide
+
+/-- Therefore the repaired quotient has no finite adequacy witness. -/
+private theorem finite_factorization :
+    AdequacyTester.adequacyWitnesses rowIds qPlus protected = [] := by
+  exact ConsequenceFactorization.no_witnesses_of_factor
+    rowIds qPlus protected realize factor_rows
 {residual}
 end FiniteConsequenceCertificate
 '''
