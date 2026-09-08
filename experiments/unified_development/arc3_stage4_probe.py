@@ -67,7 +67,10 @@ def component_actions(observation, available, limit=48):
     """Generic public-pixel coordinate grammar, with the old grammar retained."""
     if 6 not in available:
         return ()
-    image = np.asarray(observation["frame"][0])
+    frames = observation.get("frame", ())
+    if not frames:
+        return ()
+    image = np.asarray(frames[0])
     if image.ndim != 2 or not image.size:
         return ()
     h, w = image.shape
