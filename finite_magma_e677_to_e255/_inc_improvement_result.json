@@ -1,0 +1,19 @@
+{
+  "cube": 5,
+  "partition_label": "square",
+  "frozen_baseline": {
+    "solver": "glucose42",
+    "status": "UNKNOWN",
+    "time_s": 90.4
+  },
+  "improvement": {
+    "solver": "cadical195",
+    "status": "UNKNOWN",
+    "time_s": 100.0,
+    "note": "Interrupt mechanism verified (z_0=10 UNSAT closed in 0.4s within 10s timer); cube z_0=5 remains open for both solvers"
+  },
+  "improved": false,
+  "diagnosis": "Different solver heuristics do not advance cube z_0=5. UNKNOWN in both Glucose42 (90s) and CaDiCaL195 (100s). The cube is solver-limited, not solver-specific — confirms the partition's irreducible hard-core characterization for the pure G-CROSS branch.",
+  "lemma_sharing_feasible": false,
+  "lemma_sharing_reason": "PySAT 1.9.dev15 Glucose42/CaDiCaL195 wrappers lack get_learnts()/clauses API (confirmed: no attribute), blocking inter-cube lemma transfer via clause export."
+}

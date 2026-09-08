@@ -1,0 +1,87 @@
+{
+  "solved": {
+    "5": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "square"
+    },
+    "6": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "square"
+    },
+    "7": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "square"
+    },
+    "8": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "square"
+    },
+    "9": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "square"
+    },
+    "12": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "sigma"
+    },
+    "13": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "sigma"
+    },
+    "14": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "sigma"
+    },
+    "15": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "kappa"
+    },
+    "16": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "kappa"
+    },
+    "17": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "kappa"
+    },
+    "18": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "kappa"
+    },
+    "19": {
+      "status": "UNKNOWN",
+      "time": 90.2,
+      "layer": "kappa"
+    }
+  },
+  "sat": [],
+  "unsat": [],
+  "unknown": [
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19"
+  ],
+  "all_unsat": false
+}
