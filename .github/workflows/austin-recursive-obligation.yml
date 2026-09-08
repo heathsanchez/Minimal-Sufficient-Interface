@@ -25,6 +25,8 @@ jobs:
           python -m unittest tests.test_austin_dual_transfer -v
       - name: Probe recursively generated rule interactions
         run: python experiments/austin_overlap_probe.py
+      - name: Compile unresolved completion residuals
+        run: python experiments/austin_critical_pair_residual.py
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
