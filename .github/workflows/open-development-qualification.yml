@@ -1,0 +1,51 @@
+name: Open development qualification
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - 'tests/open_development_test.py'
+      - 'lean/LemmaSynthesis/OpenDevelopment.lean'
+      - 'lean-toolchain'
+      - '.github/workflows/open-development-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run bounded synthesis and certificate tests
+        run: python -m unittest discover -s tests -p open_development_test.py -v
+      - name: Replay generated source against committed proof
+        run: |
+          python - <<'PY'
+          import hashlib
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('tests').resolve()))
+          import open_development_test as development
+          actual = Path('lean/LemmaSynthesis/OpenDevelopment.lean').read_bytes()
+          generated = development.lean_source().encode('utf-8')
+          assert generated == actual, 'Generated Lean differs from committed proof'
+          print('SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel-check all-Nat proofs and finite-grammar obstructions
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean lean/LemmaSynthesis/OpenDevelopment.lean
+          echo 'OPEN_DEVELOPMENT_LEAN=PASS'
