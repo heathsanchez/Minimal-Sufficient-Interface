@@ -1,7 +1,7 @@
 name: Blind development qualification
 on:
   push:
-    branches: [recursive-discovery-compiler-v1]
+    branches: [recursive-discovery-compiler-v1, experiment/arc3-consequence-kernel-v1]
     paths:
       - 'tests/blind_development.py'
       - 'tests/blind_development_test.py'
@@ -9,9 +9,15 @@ on:
       - 'lean/LemmaSynthesis/OpenDevelopment.lean'
       - 'lean-toolchain'
       - '.github/workflows/blind-development-qualification.yml'
+      - '.github/workflows/arc3-consequence-kernel.yml'
+      - 'experiments/convergence/finite_consequence.py'
+      - 'experiments/arc3_consequence/**'
+      - 'lean/LemmaSynthesis/ARC3ConsequenceCertificate.lean'
+      - 'tests/test_consequence.py'
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   qualification:
     runs-on: ubuntu-24.04
@@ -56,3 +62,9 @@ jobs:
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/OpenDevelopment.olean lean/LemmaSynthesis/OpenDevelopment.lean
           LEAN_PATH=lean lean lean/LemmaSynthesis/BlindDevelopment.lean
           echo 'BLIND_DEVELOPMENT_LEAN=PASS'
+  arc3-consequence:
+    uses: ./.github/workflows/arc3-consequence-kernel.yml
+    permissions:
+      contents: read
+      actions: read
+    secrets: inherit
