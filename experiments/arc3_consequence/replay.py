@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse, json, hashlib
 from pathlib import Path
 from agent import Development, SensorGrammar, observation
-from finite_consequence import Repair, conflict_count, digest, lean_certificate, replay
+from finite_consequence import Repair, conflict_count, digest, replay
+from factorization_certificate import lean_factorization_certificate
 
 PINNED_TRACE_SHA256='4e8ed8f20fac3303a22009b190e90100ee4e867d8f3e520cdf60bf6896a68d83'
 
@@ -40,7 +41,7 @@ def build(data: bytes):
             'holdout_rows':len(holdout),'holdout_residual_pairs':holdout_residual,
             'full_replay_residual_pairs':full_residual,
             'competition_score':None,'model_calls':0}
-    source=lean_certificate(rows,q,f,repair)
+    source=lean_factorization_certificate(rows,q,f,repair)
     report['lean_sha256']=hashlib.sha256(source.encode()).hexdigest()
     return report,source
 
