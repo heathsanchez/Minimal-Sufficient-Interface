@@ -128,7 +128,7 @@ def oldSteps3 : List Step := [Step.succ, Step.double, Step.learned0, Step.learne
 
 private theorem obstructionTable3 :
     AllFailure (fun x y => tower x y) (candidates oldSteps3) := by
-  exact ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 2, by decide⟩, ⟨⟨0, 0, by decide⟩, True.intro⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩
+  exact ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 0, by decide⟩, ⟨⟨0, 1, by decide⟩, ⟨⟨0, 2, by decide⟩, ⟨⟨0, 0, by decide⟩, True.intro⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩
 
 theorem obstruction3 (p : Program) (hp : p ∈ candidates oldSteps3) :
     ¬ ∀ x y, eval p x y = (fun x y => tower x y) x y := by
