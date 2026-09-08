@@ -7,7 +7,7 @@ import argparse
 import hashlib
 import json
 import logging
-from collections import Counter, deque
+from collections import deque
 from pathlib import Path
 
 import arc3_stage4_probe as P
@@ -41,7 +41,10 @@ def separator_programs(source, report, transfer, evidence, residual, actions, bo
     for old, new in zip(transfer['accepted'], residual['accepted']):
         if old != new:
             raise ValueError('Archived promotion changed')
+    # The prior experiment extended the old alphabet using public pixels.
+    # Verify that constructor, rather than silently treating it as an old action.
     alphabet = set(map(F.atom, actions))
+    alphabet.update(P.component_actions(entry, entry['available_actions']))
     groups = {}
     for row in residual.get('diagnostic_rows', ()):
         program = tuple(map(F.atom, row['program']))
@@ -109,7 +112,6 @@ def separator_search(stages, programs, representatives, diagnostics=None):
             hashes = tuple(map(F.digest, observations))
             diagnostics.append({'program': actual, 'observed_hashes': hashes,
                                 'observations': observations})
-            # Only a newly observed consequence changes the next candidate set.
             new = set(hashes[1:]) - {hashes[0]} - self.effects
             self.effects.update(hashes[1:])
             if new:
