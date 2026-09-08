@@ -1,0 +1,111 @@
+name: ARC3 level-four consequence probe
+on:
+  push:
+    branches: [experiment/arc3-level4-residual-v1]
+    paths:
+      - 'experiments/unified_development/arc3_level4_probe.py'
+      - 'experiments/unified_development/test_arc3_level4_probe.py'
+      - '.github/workflows/unified-arc3-level4-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare exact immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-archive-transfer
+          run-id: 34272649151
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: source-evidence
+      - name: Verify exact archived source and run regressions
+        env:
+          MSI_FROZEN_DIR: ${{ github.workspace }}/frozen-src
+          MSI_ARCHIVE_TRANSFER_EVIDENCE: ${{ github.workspace }}/source-evidence/arc3-archive-transfer.json
+          MSI_SOURCE_EVIDENCE: ${{ github.workspace }}/source-evidence/arc3-archive-transfer.json
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p=Path('source-evidence/arc3-archive-transfer.json')
+          assert hashlib.sha256(p.read_bytes()).hexdigest() == '0eba01df78865553b1be566d1544e77ef2d6a5006cb1b312d7c04e8c6c0eff51'
+          r=json.loads(p.read_text())
+          assert r['status']=='ALL_LEVELS_WITNESSED' and r['levels_witnessed']==3
+          assert r['warm']['state']=='NOT_FINISHED' and not r['terminal_win']
+          assert len(r['prefix'])==28 and r['installed_options']==5
+          PY
+          python -m py_compile experiments/unified_development/arc3_level4_probe.py
+          python -m unittest discover -s experiments/unified_development -p test_arc3_level4_probe.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_multilevel_transfer.py -v
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Probe level four through public API and real shared gate
+        run: |
+          python experiments/unified_development/arc3_level4_probe.py \
+            --source-evidence source-evidence/arc3-archive-transfer.json \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --output arc3-level4-probe.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-level4-probe.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=900 and r['training_episodes']<=32
+          assert r['source_run']==34272649151
+          assert r['source_approval']=='REPLAY_GATED_PROMOTION_PASS'
+          assert r['source_gate_identity']==r['accepted'][2]['promotion']
+          assert r['source_gate_source_sha256']
+          assert r['status'] in ('OBSERVED_RESIDUAL','NO_OBSERVATION_CHANGE_WITHIN_BOUND','TRAINING_BOUND_EXHAUSTED','PROGRESS_WITNESSED','VERIFIED_WIN')
+          assert r['levels_witnessed']>=3 and r['installed_options']>=5
+          assert r['new_discoveries'] in (0,1)
+          assert len(r['accepted'])==r['levels_witnessed']
+          if r['status']=='OBSERVED_RESIDUAL':
+              assert r['selected_probe']['replay_confirmed']
+              assert r['selected_probe']['novel_observations']>0
+          if r['new_discoveries']:
+              assert len(r['accepted'])==4 and r['levels_witnessed']>3
+              assert r['accepted'][-1]['promotion'] and r['accepted'][-1]['gate_source_sha256']
+              assert r['new_installed_options']==2
+          if r['terminal_win'] or r['status']=='VERIFIED_WIN':
+              assert r['warm']['state']=='WIN'
+          print('ARC3_LEVEL4_QUALIFICATION='+json.dumps({k:r.get(k) for k in (
+              'status','training_actions','training_episodes','levels_witnessed',
+              'installed_options','new_discoveries','terminal_win')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-level4-probe
+          path: |
+            arc3-level4-probe.json
+            level4-gate/
+          if-no-files-found: warn
