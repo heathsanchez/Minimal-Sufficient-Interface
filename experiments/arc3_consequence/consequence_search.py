@@ -56,7 +56,7 @@ class RankedSearch(RestartDevelopment):
         self.seen = set()
         self.serial = count()
         for o in self.options:
-            self._add(o, 1)
+            self._add(o, 0)
             for n in range(2, max_depth//len(o)+1):
                 self._add(o*n, 2+ceil(log2(n)))
         for a in self.actions:
