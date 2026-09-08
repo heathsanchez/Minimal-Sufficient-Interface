@@ -1,0 +1,55 @@
+name: Independent genesis validation
+
+on:
+  push:
+    paths:
+      - 'tests/test_independent_genesis_validation.py'
+      - '.github/workflows/independent-genesis-validation.yml'
+  pull_request:
+    paths:
+      - 'tests/test_independent_genesis_validation.py'
+      - '.github/workflows/independent-genesis-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 7f962c53da728045ea8455976b9a4ee93c953ead
+          path: source-constructor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen learner blobs
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          expected = {
+              'experiments/mathgraph/recursive_obligation_synthesis.py': 'e6bce93107d71bbef3b146b012433104944fb3da',
+              'source-constructor/tests/test_unscripted_constructor_family_genesis.py': '294fc3a43c4d155290430777695add4d5de56cb7',
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              actual = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              assert actual == sha, (name, actual)
+          print('FROZEN_SOURCE_BLOBS=PASS')
+          PY
+      - name: Reproduce frozen constructor baseline
+        run: python source-constructor/tests/test_unscripted_constructor_family_genesis.py
+      - name: Independent generated grammars, transfer, and verifier ablation
+        run: python -m unittest tests.test_independent_genesis_validation -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-genesis-validation
+          path: results/independent_genesis_validation.json
+          if-no-files-found: warn
