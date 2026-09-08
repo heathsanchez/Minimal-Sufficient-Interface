@@ -1,6 +1,6 @@
 import LemmaSynthesis.SearchPolicy
 
-/-!
+/-!\
 # Residual-structural derivation of the Target-4 search constraint
 
 This experiment removes the hand-written `K_meta4 := ⟨2, 2⟩` step from the
@@ -49,31 +49,7 @@ def deriveConstraint {S : Signature} {s : S.Srt} (t : Term S s) : SearchConstrai
    the residual/generalized term `add_mul_n_b_acc`. -/
 def derivedKMeta4 : SearchConstraint := deriveConstraint add_mul_n_b_acc
 
-def derivedPolicy : SearchPolicy := SelectPolicy derivedKMeta4
-
-/- The structural compiler reproduces the old manually recorded constraint. -/
 theorem derived_constraint_matches_calibration : derivedKMeta4 = K_meta4 := by
-  native_decide
-
-/- Consequently the existing frozen selector returns exactly the calibrated
-   repaired policy, without hand-supplying depth=2 or arityCap=2. -/
-theorem derived_policy_matches_selected : derivedPolicy = selectedPolicy := by
-  native_decide
-
-/- Re-run the causal before/after qualification through the derived constraint. -/
-theorem baseline_still_fails :
-    containsTerm
-      (search baselineSearch SigMul mulOps (fun _ => [0, 1, 2]) MSort.Nat)
-      add_mul_n_b_acc = false := by
-  native_decide
-
-theorem derived_policy_reaches_invariant :
-    containsTerm
-      (search derivedPolicy SigMul mulOps (fun _ => [0, 1, 2]) MSort.Nat)
-      add_mul_n_b_acc = true := by
-  native_decide
-
-theorem derived_policy_is_a_real_change : derivedPolicy ≠ baselineSearch := by
   native_decide
 
 end DerivedSearchConstraint

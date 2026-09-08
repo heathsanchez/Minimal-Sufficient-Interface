@@ -1,0 +1,40 @@
+name: D_object = D_meta bridge
+
+on:
+  push:
+    paths:
+      - 'lean/LemmaSynthesis/PolicyViaSameSchema.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - 'lean/LemmaSynthesis/EndToEnd.lean'
+      - '.github/workflows/d-object-d-meta-bridge.yml'
+  pull_request:
+    paths:
+      - 'lean/LemmaSynthesis/PolicyViaSameSchema.lean'
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile dependencies (ordered)
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/LemmaSynthesis/EndToEnd.olean lean/LemmaSynthesis/EndToEnd.lean
+          lean -o lean/LemmaSynthesis/SearchPolicy.olean lean/LemmaSynthesis/SearchPolicy.lean
+          lean -o lean/LemmaSynthesis/DerivedSearchConstraint.olean lean/LemmaSynthesis/DerivedSearchConstraint.lean
+      - name: Check D_object = D_meta bridge
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/LemmaSynthesis/PolicyViaSameSchema.olean lean/LemmaSynthesis/PolicyViaSameSchema.lean
+          echo "D_OBJECT_D_META_BRIDGE_PASS"
