@@ -5,11 +5,15 @@ on:
     paths:
       - 'tests/test_autonomous_development_chain.py'
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - 'experiments/mathgraph/recursive_obligation_synthesis.py'
+      - 'lean/LemmaSynthesis/RecursiveObligationGenesis.lean'
       - '.github/workflows/autonomous-development-chain.yml'
   pull_request:
     paths:
       - 'tests/test_autonomous_development_chain.py'
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
+      - 'experiments/mathgraph/recursive_obligation_synthesis.py'
+      - 'lean/LemmaSynthesis/RecursiveObligationGenesis.lean'
       - '.github/workflows/autonomous-development-chain.yml'
 
 permissions:
@@ -26,3 +30,13 @@ jobs:
           python-version: '3.12'
       - name: MERGE SPLIT EXTEND MERGE frontier-collapse gates
         run: python -m unittest tests.test_autonomous_development_chain -v
+      - name: Blind recursive Austin obligation synthesis
+        run: python experiments/mathgraph/recursive_obligation_synthesis.py
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check recursive obligation genesis
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/RecursiveObligationGenesis.lean
