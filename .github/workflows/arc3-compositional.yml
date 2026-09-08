@@ -1,0 +1,45 @@
+name: ARC3 compositional development
+on:
+  push:
+    branches: [experiment/arc3-probe-exploration-v1]
+    paths:
+      - 'experiments/arc3_consequence/compositional_development.py'
+      - 'experiments/arc3_consequence/run_compositional.py'
+      - 'tests/test_compositional_development.py'
+      - '.github/workflows/arc3-compositional.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Test composition and exact ablation
+        run: |
+          python -m unittest discover -s tests -p test_compositional_development.py -v
+          python -m unittest discover -s tests -p test_multi_level_development.py -v
+          echo 'COMPOSITIONAL_TESTS=PASS'
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Run bounded compositional learning and fresh-start ablation
+        run: |
+          python experiments/arc3_consequence/run_compositional.py \
+            --game bt11-fd9df0622a1a \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --max-actions 120 --max-episodes 512 --max-depth 12 \
+            --max-training-actions 3000 --max-levels 5 \
+            --output arc3-compositional.json
+          echo 'ARC3_COMPOSITIONAL_OFFLINE=COMPLETED'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-compositional
+          path: arc3-compositional.json
