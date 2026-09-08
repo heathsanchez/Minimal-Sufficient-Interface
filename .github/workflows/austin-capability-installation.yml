@@ -1,0 +1,56 @@
+name: Austin capability installation
+
+on:
+  push:
+    branches: [austin-capability-installation-v1]
+    paths:
+      - 'experiments/austin_capability_installation.py'
+      - 'experiments/austin_promotion_compiler.py'
+      - 'tests/test_austin_capability_installation.py'
+      - 'tests/open_development_test.py'
+      - 'lean/LemmaSynthesis/AustinCapabilityInstallation.lean'
+      - '.github/workflows/austin-capability-installation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run baseline and developmental transfer tests
+        run: |
+          python -m unittest discover -s tests -p open_development_test.py -v
+          python -m unittest discover -s tests -p test_austin_capability_installation.py -v
+      - name: Replay generated source against committed proof
+        run: |
+          python - <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('experiments').resolve()))
+          import austin_capability_installation as d
+          actual = Path('lean/LemmaSynthesis/AustinCapabilityInstallation.lean').read_bytes()
+          assert d.lean_source().encode('utf-8') == actual, 'Generated Lean differs from committed proof'
+          print('SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/lean" --version
+      - name: Check generated transport and held-out proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean lean/LemmaSynthesis/AustinCapabilityInstallation.lean
+          echo 'AUSTIN_CAPABILITY_INSTALLATION_LEAN=PASS'
