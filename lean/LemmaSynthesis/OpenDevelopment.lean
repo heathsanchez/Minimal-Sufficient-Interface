@@ -74,7 +74,7 @@ theorem generated0_correct (x y : Nat) : generated0 x y = x + y := by
   | zero => rfl
   | succ y ih =>
       change Nat.succ (generated0 x y) = x + Nat.succ y
-      simpa [ih]
+      simpa only [ih, Nat.add_succ]
 
 theorem generated1_correct (x y : Nat) : generated1 x y = x * y := by
   induction y with

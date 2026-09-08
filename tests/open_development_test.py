@@ -342,7 +342,7 @@ def lean_source():
                   "  induction y with", "  | zero => rfl", "  | succ y ih =>"]
         if i == 0:
             lines += ["      change Nat.succ (generated0 x y) = x + Nat.succ y",
-                      "      simpa [ih]"]
+                      "      simpa only [ih, Nat.add_succ]"]
         elif i == 1:
             lines += ["      change generated0 x (generated1 x y) = x * Nat.succ y",
                       "      rw [generated0_correct, ih]",
