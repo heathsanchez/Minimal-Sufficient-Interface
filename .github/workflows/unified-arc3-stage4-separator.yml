@@ -1,0 +1,134 @@
+name: ARC3 stage-four separator
+on:
+  push:
+    branches: [experiment/arc3-stage4-separator-v2]
+    paths:
+      - 'experiments/unified_development/arc3_stage4_separator.py'
+      - 'experiments/unified_development/test_arc3_stage4_separator.py'
+      - '.github/workflows/unified-arc3-stage4-separator.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare exact immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-shared-transfer
+          run-id: 34240189934
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: source-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-consequence-search
+          run-id: 34192005884
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: archive-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-archive-transfer
+          run-id: 34272649151
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: transfer-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-stage4-probe
+          run-id: 34277495372
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: residual-evidence
+      - name: Verify pinned evidence and run regressions
+        env:
+          MSI_FROZEN_DIR: ${{ github.workspace }}/frozen-src
+          MSI_SOURCE_EVIDENCE: ${{ github.workspace }}/source-evidence/arc3-shared-transfer.json
+          MSI_ARCHIVE_EVIDENCE: ${{ github.workspace }}/archive-evidence/arc3-consequence-search-bt33.json
+          MSI_TRANSFER_EVIDENCE: ${{ github.workspace }}/transfer-evidence/arc3-archive-transfer.json
+          MSI_STAGE_EVIDENCE: ${{ github.workspace }}/transfer-evidence/archive-gate/stage-3/evidence.json
+          MSI_RESIDUAL_EVIDENCE: ${{ github.workspace }}/residual-evidence/arc3-stage4-probe.json
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          checks={
+            'archive-evidence/arc3-consequence-search-bt33.json':'bf8a69009a641fe20d02ee495a2a7ddef76ee1fc88ab42e766ccfe9e333bea99',
+            'transfer-evidence/arc3-archive-transfer.json':'0eba01df78865553b1be566d1544e77ef2d6a5006cb1b312d7c04e8c6c0eff51',
+            'residual-evidence/arc3-stage4-probe.json':'9c0ae1e1efbd4cbe269e7b619370a65c579bc25f2a7a83c980800763c2572197'}
+          for name,expected in checks.items():
+              assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==expected
+          PY
+          python -m py_compile experiments/unified_development/arc3_stage4_separator.py
+          python -m unittest discover -s experiments/unified_development -p test_arc3_stage4_separator.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_stage4_probe.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_archive_transfer.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_multilevel_transfer.py -v
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Test distinguishing consequences at the verified third-level checkpoint
+        run: |
+          python experiments/unified_development/arc3_stage4_separator.py \
+            --source-evidence source-evidence/arc3-shared-transfer.json \
+            --archive-evidence archive-evidence/arc3-consequence-search-bt33.json \
+            --transfer-evidence transfer-evidence/arc3-archive-transfer.json \
+            --stage-evidence transfer-evidence/archive-gate/stage-3/evidence.json \
+            --residual-evidence residual-evidence/arc3-stage4-probe.json \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --output arc3-stage4-separator.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-stage4-separator.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=1200 and r['training_episodes']<=64
+          assert r['source_run']==34240189934 and r['archive_run']==34192005884
+          assert r['transfer_run']==34272649151 and r['residual_run']==34277495372
+          assert r['archived_levels']==3
+          assert r['status'] in ('ALL_LEVELS_WITNESSED','VERIFIED_WIN','NO_PROGRESS_WITHIN_BOUND','TRAINING_BOUND_EXHAUSTED','INCONCLUSIVE_UNMATCHED_START','INCONCLUSIVE_PREFIX_MISMATCH','INCONCLUSIVE_REPLAY','INCONCLUSIVE_VERIFIER','INCONCLUSIVE_DEPLOYMENT','BUDGET_EXHAUSTED','PREFIX_TERMINATED','NO_MEASURED_IMPROVEMENT')
+          assert all(0<len(p)<=16 for p in r['candidate_programs'])
+          assert r['installed_options']==len(r['accepted']) or r['installed_options']>=len(r['accepted'])
+          for a in r['accepted']:
+              assert a['promotion'] and a['gate_source_sha256']
+          if r['new_discoveries']:
+              assert r['levels_witnessed']>=4 and len(r['accepted'])>=4
+              assert r['improved_over_archive']
+          if r['terminal_win'] or r['status']=='VERIFIED_WIN':
+              assert r['warm']['state']=='WIN'
+          print('ARC3_STAGE4_SEPARATOR_QUALIFICATION='+json.dumps({k:r.get(k) for k in
+            ('status','training_actions','training_episodes','levels_witnessed',
+             'installed_options','new_discoveries','improved_over_archive','terminal_win')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-stage4-separator
+          path: |
+            arc3-stage4-separator.json
+            separator-gate/
+          if-no-files-found: warn
