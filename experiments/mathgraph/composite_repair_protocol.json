@@ -1,0 +1,17 @@
+{
+  "status": "exploratory post-discovery repair",
+  "source_commit": "7f962c53da728045ea8455976b9a4ee93c953ead",
+  "source_blob": "294fc3a43c4d155290430777695add4d5de56cb7",
+  "parent_branch_commit": "448190de0faa0481b0b9f040545682e93b79ba1d",
+  "original_seed": 20260908,
+  "original_world_seed": 20260909,
+  "fresh_world_seed": 20260910,
+  "acquisition_rows": 108,
+  "heldout_rows": 2079,
+  "constructor_depth": 2,
+  "new_pair_candidates": 14,
+  "source_bound": 3,
+  "primary": "exact held-out prediction coverage and incorrect covered predictions",
+  "controls": ["frozen learner", "independent certificate replay", "missing acquisition labels", "actual archive removal", "outside-grammar target"],
+  "qualification": "finite Python verifier, not Lean or joint-study confirmation"
+}

@@ -1,0 +1,65 @@
+name: Composite residual repair
+
+on:
+  push:
+    paths:
+      - 'experiments/mathgraph/composite_residual_repair.py'
+      - 'experiments/mathgraph/verify_composite_repair.py'
+      - 'experiments/mathgraph/run_composite_repair.py'
+      - 'experiments/mathgraph/test_composite_repair.py'
+      - 'experiments/mathgraph/frozen_constructor.py'
+      - '.github/workflows/composite-residual-repair.yml'
+  pull_request:
+    paths:
+      - 'experiments/mathgraph/composite_residual_repair.py'
+      - 'experiments/mathgraph/verify_composite_repair.py'
+      - 'experiments/mathgraph/run_composite_repair.py'
+      - 'experiments/mathgraph/test_composite_repair.py'
+      - 'experiments/mathgraph/frozen_constructor.py'
+      - '.github/workflows/composite-residual-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composite-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 7f962c53da728045ea8455976b9a4ee93c953ead
+          path: source-constructor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify source identity
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          expected = '294fc3a43c4d155290430777695add4d5de56cb7'
+          for name in ('source-constructor/tests/test_unscripted_constructor_family_genesis.py', 'experiments/mathgraph/frozen_constructor.py'):
+              data = Path(name).read_bytes()
+              actual = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              assert actual == expected, (name, actual)
+          print('FROZEN_SOURCE_BLOBS=PASS')
+          PY
+      - name: Reproduce frozen constructor baseline
+        run: python source-constructor/tests/test_unscripted_constructor_family_genesis.py
+      - name: Run source-pinned residual repair and independent finite verifier
+        run: python experiments/mathgraph/run_composite_repair.py
+      - name: Qualification and negative controls
+        run: python -m unittest discover -s experiments/mathgraph -p test_composite_repair.py -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composite-residual-repair
+          path: |
+            experiments/mathgraph/results.json
+            experiments/mathgraph/*_evidence.json
+            experiments/mathgraph/*_certificate.json
+          if-no-files-found: warn
