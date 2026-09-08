@@ -17,6 +17,9 @@ def main():
     p.add_argument('--max-training-actions',type=int,default=3000)
     p.add_argument('--max-episodes',type=int,default=128)
     p.add_argument('--max-depth',type=int,default=32)
+    p.add_argument('--stride',type=int,default=1)
+    p.add_argument('--max-grounded-actions',type=int,default=4096)
+    p.add_argument('--horizon',type=int,default=1)
     p.add_argument('--output',default='arc3-terminal-confirmation.json')
     a=p.parse_args()
     evidence=json.loads(Path(a.evidence).read_text())
@@ -52,21 +55,21 @@ def main():
         return Adapter()
     first=factory()
     initial=digest(observation(first.observation_space))
-    actions,unsupported=action_catalog(first.action_space,first.observation_space,8,256)
+    actions,unsupported=action_catalog(first.action_space,first.observation_space,a.stride,a.max_grounded_actions)
     first.close()
     if initial!=evidence['initial_sha256']:
         raise ValueError('Source initial observation mismatch')
     result=confirm(factory,actions,prefix,len(stages),checkpoint,initial,
                    a.max_actions,a.max_training_actions,a.max_episodes,a.max_depth,
-                   options=prior['development']['options'])
+                   options=prior['development']['options'],horizon=a.horizon)
     result.update(game=a.game,mode='offline',competition_submission=False,model_calls=0,
                   source_run=34192005884,source_policy=selected,source_evidence_sha256=digest(evidence),
-                  initial_sha256=initial,unsupported_action_ids=unsupported)
+                  initial_sha256=initial,grounded_actions=len(actions),unsupported_action_ids=unsupported)
     Path(a.output).write_text(json.dumps(result,indent=2,sort_keys=True,default=str)+'\n')
     print('ARC3_TERMINAL_CONFIRMATION='+json.dumps({
         'status':result['status'],'training_actions':result['training_actions'],
         'training_episodes':result['training_episodes'],
-        'levels_witnessed':result['levels_witnessed'],
+        'levels_witnessed':result['levels_witnessed'],'grounded_actions':len(actions),
         'actions':result.get('result',{}).get('actions'),
         'levels_completed':result.get('result',{}).get('levels_completed'),
         'state':result.get('result',{}).get('state'),
