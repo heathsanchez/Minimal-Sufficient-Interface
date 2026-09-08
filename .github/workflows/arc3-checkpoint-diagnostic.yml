@@ -1,0 +1,39 @@
+name: ARC3 checkpoint diagnostic
+on:
+  push:
+    branches: [experiment/arc3-unrestricted-prefix-search-v1]
+    paths: [.github/workflows/arc3-checkpoint-diagnostic.yml, experiments/arc3_consequence/diagnose_prefix.py]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Measure witnessed checkpoint
+        run: |
+          python experiments/arc3_consequence/diagnose_prefix.py \
+            --game bt33-a7c3f9d18b4e \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --prefix-json '[[6,4,4],[6,4,4],[6,4,4],[6,4,4]]' \
+            --target 1 \
+            --checkpoint c3d1e3c387c3669f462fdb6636c76e5f020d2d041a334a87c5d2c757429a9fe1 \
+            --repetitions 4 --max-probes 256 \
+            --output arc3-checkpoint-diagnostic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-checkpoint-diagnostic
+          path: arc3-checkpoint-diagnostic.json
+          if-no-files-found: warn
