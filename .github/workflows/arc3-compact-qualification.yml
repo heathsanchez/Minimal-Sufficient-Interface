@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   local-qualification:
     runs-on: ubuntu-24.04
@@ -17,10 +18,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run transfer, ablation, and negative tests
-        run: python -m unittest discover -s experiments/arc3_compact -p test_compact_agent.py -v
       - name: Install official ARC toolkit
         run: python -m pip install arc-agi==0.9.9
+      - name: Restore pinned public observation evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 34177824229 --repo heathsanchez/Minimal-Sufficient-Interface --name arc3-online-result --dir experiments/arc3_compact/observations
+          echo 'e21bb0cbec26662656b8f982dd95e57cca1d0a5d46f0c8f3efac61981309b32d  experiments/arc3_compact/observations/arc3-observations.json' | sha256sum -c -
+      - name: Run transfer, ablation, and recorded-observation tests
+        env:
+          PYTHONPATH: experiments/arc3_compact
+        run: python -m unittest discover -s experiments/arc3_compact -p 'test_*.py' -v
       - uses: actions/checkout@v4
         with:
           repository: arcprize/ARC-AGI
@@ -29,7 +38,7 @@ jobs:
       - name: Exercise official SDK against its public test game
         run: |
           python experiments/arc3_compact/run_arc.py \
-            --game bt11-fd9df0622a1a \
+            --controller repeat --game bt11-fd9df0622a1a \
             --environments-dir upstream-arc-agi/test_environment_files \
             --max-actions 200 --probe-limit 64 \
             --output arc3-offline-result.json
@@ -42,8 +51,11 @@ jobs:
           if-no-files-found: ignore
   public-online-probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    continue-on-error: true
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        controller: [repeat, motion, motion-ablated]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -51,19 +63,19 @@ jobs:
           python-version: '3.12'
       - name: Install official ARC toolkit
         run: python -m pip install arc-agi==0.9.9
-      - name: Capture bounded public observations
+      - name: Run matched-budget public game
         env:
           ARC_API_KEY: ${{ secrets.ARC_API_KEY }}
         run: |
           python experiments/arc3_compact/run_arc.py \
-            --online --game ls20 --max-actions 16 --probe-limit 4 \
-            --output arc3-online-result.json --trace arc3-observations.json
+            --online --game ls20 --controller '${{ matrix.controller }}' \
+            --max-actions 300 --probe-limit 24 \
+            --output 'arc3-${{ matrix.controller }}.json' \
+            --trace 'arc3-${{ matrix.controller }}-observations.json'
           echo 'ARC3_ONLINE=COMPLETED'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-online-result
-          path: |
-            arc3-online-result.json
-            arc3-observations.json
+          name: arc3-${{ matrix.controller }}-result
+          path: arc3-${{ matrix.controller }}*.json
           if-no-files-found: ignore
