@@ -11,7 +11,7 @@ theorem eval_eq_of_parts (p : Program) (b : Nat → Nat) (s : Nat → Nat → Na
     (hs : ∀ x a, stepValue p.step x a = s x a) :
     ∀ x y, eval p x y = recursor b s x y := by
   intro x y
-  have hstep : (fun _ a => stepValue p.step x a) = (fun _ a => s x a) := by
+  have hstep : (fun (_ : Nat) (a : Nat) => stepValue p.step x a) = (fun (_ : Nat) (a : Nat) => s x a) := by
     funext n a
     exact hs x a
   unfold eval recursor
@@ -35,23 +35,23 @@ theorem pow_recursor (x y : Nat) :
       rw [ih]
       simp [Nat.pow_succ, Nat.mul_comm]
 
-theorem acquired_correct (x y : Nat) : eval ⟨.zero, .learned0⟩ x y = x * y := by
-  have hb : ∀ x, baseValue ⟨.zero, .learned0⟩.base x = 0 := by
+theorem acquired_correct (x y : Nat) : eval (⟨.zero, .learned0⟩ : Program) x y = x * y := by
+  have hb : ∀ x, baseValue (⟨.zero, .learned0⟩ : Program).base x = 0 := by
     intro x
     rfl
-  have hs : ∀ x a, stepValue ⟨.zero, .learned0⟩.step x a = x + a := by
+  have hs : ∀ x a, stepValue (⟨.zero, .learned0⟩ : Program).step x a = x + a := by
     intro x a
     exact generated0_correct x a
-  exact (eval_eq_of_parts ⟨.zero, .learned0⟩ (fun _ => 0) (fun x a => x + a) hb hs x y).trans (mul_recursor x y)
+  exact (eval_eq_of_parts (⟨.zero, .learned0⟩ : Program) (fun _ => 0) (fun x a => x + a) hb hs x y).trans (mul_recursor x y)
 
-theorem transferred_correct (x y : Nat) : eval ⟨.one, .learned1⟩ x y = x ^ y := by
-  have hb : ∀ x, baseValue ⟨.one, .learned1⟩.base x = 1 := by
+theorem transferred_correct (x y : Nat) : eval (⟨.one, .learned1⟩ : Program) x y = x ^ y := by
+  have hb : ∀ x, baseValue (⟨.one, .learned1⟩ : Program).base x = 1 := by
     intro x
     rfl
-  have hs : ∀ x a, stepValue ⟨.one, .learned1⟩.step x a = x * a := by
+  have hs : ∀ x a, stepValue (⟨.one, .learned1⟩ : Program).step x a = x * a := by
     intro x a
     exact generated1_correct x a
-  exact (eval_eq_of_parts ⟨.one, .learned1⟩ (fun _ => 1) (fun x a => x * a) hb hs x y).trans (pow_recursor x y)
+  exact (eval_eq_of_parts (⟨.one, .learned1⟩ : Program) (fun _ => 1) (fun x a => x * a) hb hs x y).trans (pow_recursor x y)
 
 def ablatedSteps : List Step := [.succ, .double, .learned0]
 
@@ -66,9 +66,9 @@ theorem ablation_obstruction (p : Program) (hp : p ∈ candidates ablatedSteps) 
   exact hne (h x y)
 
 theorem acquired_reachable :
-    ⟨.zero, .learned0⟩ ∈ candidates ablatedSteps := by decide
+    (⟨.zero, .learned0⟩ : Program) ∈ candidates ablatedSteps := by decide
 
 theorem transferred_reachable :
-    ⟨.one, .learned1⟩ ∈ candidates [.succ, .double, .learned0, .learned1] := by decide
+    (⟨.one, .learned1⟩ : Program) ∈ candidates [.succ, .double, .learned0, .learned1] := by decide
 
 end BlindDevelopment

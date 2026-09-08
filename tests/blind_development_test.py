@@ -167,7 +167,7 @@ def lean_source():
              '    (hs : ∀ x a, stepValue p.step x a = s x a) :',
              '    ∀ x y, eval p x y = recursor b s x y := by',
              '  intro x y',
-             '  have hstep : (fun _ a => stepValue p.step x a) = (fun _ a => s x a) := by',
+             '  have hstep : (fun (_ : Nat) (a : Nat) => stepValue p.step x a) = (fun (_ : Nat) (a : Nat) => s x a) := by',
              '    funext n a', '    exact hs x a',
              '  unfold eval recursor', '  rw [hb x, hstep]', '',
              'theorem mul_recursor (x y : Nat) :',
@@ -183,7 +183,7 @@ def lean_source():
     def source(p):
         step = {'succ': '.succ', 'double': '.double', ADD_ID: '.learned0'}
         step.update({result['installed_step']: '.learned1'})
-        return f'⟨.{p.base}, {step[p.step]}⟩'
+        return f'(⟨.{p.base}, {step[p.step]}⟩ : Program)'
     for label, discovery, base, step_expr, step_proof, rec_thm, target in [
         ('acquired', first, '0', 'x + a', 'generated0_correct x a', 'mul_recursor', 'x * y'),
         ('transferred', second, '1', 'x * a', 'generated1_correct x a', 'pow_recursor', 'x ^ y')]:
