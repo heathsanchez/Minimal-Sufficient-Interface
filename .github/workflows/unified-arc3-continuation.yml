@@ -1,0 +1,94 @@
+name: ARC3 shared continuation
+on:
+  push:
+    branches: [experiment/unified-arc3-continuation-v1]
+    paths:
+      - 'experiments/unified_development/arc3_shared_continuation.py'
+      - 'experiments/unified_development/test_arc3_shared_continuation.py'
+      - '.github/workflows/unified-arc3-continuation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Check continuation and existing feedback regressions
+        run: |
+          python -m py_compile experiments/unified_development/arc3_shared_transfer.py experiments/unified_development/arc3_shared_continuation.py
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_shared_continuation.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Download immutable successful source artifact
+        uses: actions/download-artifact@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          run-id: 34240189934
+          artifact-ids: 10061620544
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: source-evidence
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Continue from certified checkpoint
+        run: |
+          python experiments/unified_development/arc3_shared_continuation.py \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --source source-evidence/arc3-shared-transfer.json \
+            --source-identity cc9b95c1a7237465e8a8075c0602c583d77d5e2aec1802ac2e83709 \
+            --max-training-actions 3000 --max-episodes 512 --max-depth 32 --max-levels 5 \
+            --output arc3-shared-continuation.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-shared-continuation.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=3000 and r['training_episodes']<=512
+          assert r['status'] in ('VERIFIED_WIN','LEVEL_TARGET_WITNESSED','NO_PROGRESS_WITHIN_BOUND','TRAINING_BOUND_EXHAUSTED','PENDING_CERTIFICATION_BUDGET','INCONCLUSIVE_SOURCE_REPLAY','INCONCLUSIVE_UNMATCHED_START','INCONCLUSIVE_SOURCE_IDENTITY','INCONCLUSIVE_PREFIX_REPLAY','INCONCLUSIVE_REPLAY','INCONCLUSIVE_VERIFIER','NO_MEASURED_IMPROVEMENT','TERMINAL_WITHOUT_WIN')
+          for i,s in enumerate(r['stages']):
+              p=s['promotion']
+              assert p['status']=='REPLAY_GATED_PROMOTION_PASS'
+              assert p['approval']['identity']==p['identity']
+              assert p['installed']['target_sha256']==s['checkpoint_sha256']
+              if i:
+                  assert s['level']>r['stages'][i-1]['level']
+                  assert p['installed']['entry_path']==r['stages'][i-1]['prefix']
+          if r.get('terminal_win'):
+              assert r['status']=='VERIFIED_WIN'
+              assert r['stages'][-1]['promotion']['evidence']['proof']['state']=='WIN'
+          print('ARC3_SHARED_CONTINUATION_QUALIFICATION='+json.dumps({k:r.get(k) for k in ('status','training_actions','training_episodes','grounded_actions','terminal_win')},sort_keys=True))
+          print('CERTIFIED_STAGES='+str(len(r['stages'])))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-shared-continuation
+          path: |
+            arc3-shared-continuation.json
+            shared-continuation-gate/
+          if-no-files-found: warn
