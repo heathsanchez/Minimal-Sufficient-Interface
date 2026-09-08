@@ -1,0 +1,55 @@
+name: ARC3 consequence search
+on:
+  push:
+    branches: [experiment/arc3-consequence-search-v1]
+    paths:
+      - 'experiments/arc3_consequence/consequence_search.py'
+      - 'experiments/arc3_consequence/run_consequence_search.py'
+      - 'tests/test_consequence_search.py'
+      - '.github/workflows/arc3-consequence-search.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install arc-agi==0.9.9
+      - name: Test developmental search and retained regressions
+        run: |
+          python -m unittest discover -s tests -p test_consequence_search.py -v
+          python -m unittest discover -s tests -p test_consequence_quotient.py -v
+          python -m unittest discover -s tests -p test_compositional_development.py -v
+          python -m unittest discover -s tests -p test_multi_level_development.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Frozen positive-control game
+        run: |
+          python experiments/arc3_consequence/run_consequence_search.py \
+            --game bt11-fd9df0622a1a \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --max-actions 120 --max-episodes 512 --max-depth 32 \
+            --max-training-actions 3000 --max-levels 5 --horizon 4 \
+            --output arc3-consequence-search-bt11.json
+      - name: Second-game developmental comparison
+        run: |
+          python experiments/arc3_consequence/run_consequence_search.py \
+            --game bt33-a7c3f9d18b4e \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --max-actions 120 --max-episodes 2048 --max-depth 32 \
+            --max-training-actions 20000 --max-levels 5 --horizon 4 \
+            --output arc3-consequence-search-bt33.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-consequence-search
+          path: arc3-consequence-search-*.json
+          if-no-files-found: warn
