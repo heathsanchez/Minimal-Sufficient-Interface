@@ -46,7 +46,7 @@ class Tests(unittest.TestCase):
 
     def test_archive_acquires_second_capability_through_existing_gate(self):
         r=self.run_world()
-        self.assertEqual(r['status'],'ALL_LEVELS_WITNESSED')
+        self.assertEqual(r['status'],'VERIFIED_WIN')
         self.assertEqual(r['warm']['state'],'WIN')
         self.assertEqual(r['warm']['actions'],8)
         self.assertEqual(len(r['accepted']),2)
