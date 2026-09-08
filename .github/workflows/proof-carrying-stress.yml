@@ -1,0 +1,54 @@
+name: Proof-carrying stress qualification
+
+on:
+  push:
+    branches:
+      - experiment/proof-carrying-stress-20260909
+    paths:
+      - 'tests/test_proof_carrying_stress.py'
+      - '.github/workflows/proof-carrying-stress.yml'
+      - 'experiments/mathgraph/proof_carrying_obligation.py'
+      - 'experiments/mathgraph/proof_carrying_lean.py'
+      - 'experiments/mathgraph/recursive_obligation_synthesis.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-stress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recheck original qualification
+        run: python -m unittest tests.test_proof_carrying_obligation -v
+      - name: Independent oracle, held-out semantics, reuse and negative controls
+        run: python -m unittest tests.test_proof_carrying_stress -v
+      - name: Generate and replay fresh Lean source
+        run: |
+          python -m tests.test_proof_carrying_stress --emit-lean lean/LemmaSynthesis/ProofCarryingStress.lean
+          cp lean/LemmaSynthesis/ProofCarryingStress.lean /tmp/proof-carrying-stress.lean
+          python -m tests.test_proof_carrying_stress --emit-lean lean/LemmaSynthesis/ProofCarryingStress.lean
+          cmp /tmp/proof-carrying-stress.lean lean/LemmaSynthesis/ProofCarryingStress.lean
+          sha256sum lean/LemmaSynthesis/ProofCarryingStress.lean
+      - name: Install pinned Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check held-out derivations
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean --version
+          lean lean/LemmaSynthesis/ProofCarryingStress.lean
+          echo PROOF_CARRYING_STRESS_LEAN=PASS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-carrying-stress-evidence
+          path: lean/LemmaSynthesis/ProofCarryingStress.lean
+          if-no-files-found: warn
