@@ -38,6 +38,10 @@ jobs:
           repository: arcprize/ARC-AGI
           ref: f12822c4d550121c35a275008d964afbbed47d2f
           path: upstream-arc-agi
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Run public bt33 transfer and actual shared Lean gate
         run: |
           python experiments/unified_development/arc3_shared_transfer.py \
