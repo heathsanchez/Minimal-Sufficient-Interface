@@ -1,17 +1,17 @@
 """Discover recursive branch-promotion schemas from a source law.
 
-The compiler is deliberately tiny.  It is given a law lhs = rhs and a generic
-known branch A⋄p = q.  It scans lhs subterms and asks where the *law subterm*,
-using only the law's universally quantified variables as wildcards, can match
-an arbitrary branch lhs A⋄p.  For every such attachment it:
+Given a law lhs = rhs and a generic known branch A⋄p = q, scan lhs subterms for
+places where the law exposes A and p as *separate coordinates*.  This excludes
+degenerate matches in which one law variable swallows the whole compound A⋄p.
+For every genuine two-coordinate attachment the compiler:
 
 1. computes the induced substitution on source-law variables;
 2. instantiates the whole law;
 3. replaces the attached occurrence by q;
 4. emits the resulting outer equality as a candidate promotion rule.
 
-The output is only a candidate.  In the experiment, Lean independently proves
-soundness of the E40909 and E11116 candidates in AustinRecursiveObligation.lean.
+The output is only a candidate.  Lean independently proves soundness of the
+E40909 and E11116 candidates in AustinRecursiveObligation.lean.
 """
 
 from __future__ import annotations
@@ -56,11 +56,7 @@ def match_law_pattern(
     law_variables: frozenset[str],
     env: dict[str, Term] | None = None,
 ) -> dict[str, Term] | None:
-    """Directionally match a law term against a rigid target term.
-
-    Only variables in ``law_variables`` may bind.  Target variables such as
-    A/p are rigid placeholders representing arbitrary branch coordinates.
-    """
+    """Directionally match a law term against a rigid target term."""
     env = {} if env is None else dict(env)
     if isinstance(pattern, Var):
         if pattern.name not in law_variables:
@@ -107,18 +103,26 @@ class Promotion:
     rhs: Term
 
 
+def coordinate_preserving(env: Mapping[str, Term], coordinates: tuple[Term, Term]) -> bool:
+    """Both branch coordinates must be exposed separately by the law match."""
+    values = tuple(env.values())
+    allowed = set(coordinates)
+    return bool(values) and all(v in allowed for v in values) and set(values) == allowed
+
+
 def discover_promotions(
     law_lhs: Term,
     law_rhs: Term,
     law_variables: frozenset[str],
-    branch_left: Term,
+    branch_left: Op,
     branch_right: Term,
 ) -> list[Promotion]:
-    """Find all generic branch attachments in ``law_lhs``."""
+    """Find genuine two-coordinate branch attachments in ``law_lhs``."""
+    coordinates = (branch_left.left, branch_left.right)
     found: list[Promotion] = []
     for path, candidate in subterms(law_lhs):
         env = match_law_pattern(candidate, branch_left, law_variables)
-        if env is None:
+        if env is None or not coordinate_preserving(env, coordinates):
             continue
         instantiated_lhs = substitute(law_lhs, env)
         instantiated_rhs = substitute(law_rhs, env)
