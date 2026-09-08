@@ -35,18 +35,28 @@ def main():
             def close(self):return arcade.close_scorecard()
         return Adapter()
     first=factory();actions=simple_action_ids(first.action_space)
-    initial_sha=digest(observation(first.observation_space));first.close()
-    result=compare_levels(factory,actions,a.max_actions,a.max_episodes,a.max_depth,
-                          a.max_training_actions,a.max_levels)
+    initial_sha=digest(observation(first.observation_space))
+    available_action_ids=tuple(sorted(int(x.value) for x in first.action_space))
+    first.close()
+    if not actions:
+        result={'status':'UNSUPPORTED_ACTION_INTERFACE','reason':'No supported simple actions; no gameplay was attempted',
+                'available_action_ids':available_action_ids,'initial_sha256':initial_sha,
+                'development':None,'cold':None,'warm':None,'improved':False}
+    else:
+        result=compare_levels(factory,actions,a.max_actions,a.max_episodes,a.max_depth,
+                              a.max_training_actions,a.max_levels)
+        if any(x['initial_sha256']!=initial_sha for x in (result['cold'],result['warm'])):
+            result['status']='INCONCLUSIVE_UNMATCHED_START';result['improved']=False
     result.update(game=a.game,mode='offline',competition_submission=False,model_calls=0,
                   budget=a.max_actions,max_training_actions=a.max_training_actions,
                   max_episodes=a.max_episodes,max_depth=a.max_depth,max_levels=a.max_levels)
-    if any(x['initial_sha256']!=initial_sha for x in (result['cold'],result['warm'])):
-        result['status']='INCONCLUSIVE_UNMATCHED_START';result['improved']=False
     Path(a.output).write_text(json.dumps(result,indent=2,sort_keys=True,default=str)+'\n')
     summary={k:v for k,v in result.items() if k not in ('cold','warm')}
-    summary['cold']={k:result['cold'][k] for k in ('actions','levels_completed','score','state')}
-    summary['warm']={k:result['warm'][k] for k in ('actions','levels_completed','score','state')}
+    for arm in ('cold','warm'):
+        if result[arm] is not None:
+            summary[arm]={k:result[arm][k] for k in ('actions','levels_completed','score','state')}
+        else:
+            summary[arm]=None
     print('ARC3_COMPOSITIONAL='+json.dumps(summary,sort_keys=True,default=str))
 
 if __name__=='__main__':main()
