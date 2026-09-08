@@ -1,6 +1,6 @@
 {
   "method": "incremental-glucose42-learned-retained",
-  "frozen_baseline": "Glucose42 cold-start, 90s/cube, 13 UNKNOWN",
+  "frozen_baseline": "Glucose42 cold-start, 90s/cube, 13 UNKNOWN (12c056b)",
   "solved": {
     "5": {
       "status": "UNKNOWN",
@@ -113,5 +113,17 @@
     "17": "timeout",
     "18": "timeout",
     "19": "timeout"
+  },
+  "exclusions_verified": {
+    "10": {
+      "status": "UNSAT",
+      "time": 0.3,
+      "sigma_d": 0
+    },
+    "11": {
+      "status": "UNSAT",
+      "time": 0.4,
+      "sigma_d": 1
+    }
   }
 }

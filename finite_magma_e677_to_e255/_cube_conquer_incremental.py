@@ -23,34 +23,56 @@ LAYER = {v: "square" if v < 10 else ("sigma" if v < 15 else "kappa") for v in ra
 PER_CUBE = 90
 
 def solve_incremental(s, assumptions, seconds):
-    """Solve with timer-based interrupt. Returns (status, dt, reason)."""
+    """Solve with timer-based interrupt. Returns (status, dt, reason).
+
+    reason: 'decided' (r in False/True), 'timeout' (timer fired), 'error'
+    (exception with no timer fire), 'unknown' (solver returned None, no timer).
+    """
     t0 = time.time()
-    interrupted = False
-    tmr = threading.Timer(seconds, lambda: None)
-    # Use a proper interrupt
+    timer_fired = [False]
+
     def do_interrupt():
+        timer_fired[0] = True
         s.interrupt()
+
     tmr = threading.Timer(seconds, do_interrupt)
     tmr.daemon = True
     tmr.start()
     try:
         r = s.solve_limited(assumptions=assumptions, expect_interrupt=True)
-    except Exception as e:
+        if timer_fired[0]:
+            reason = "timeout"
+        else:
+            reason = "unknown"
+    except Exception:
+        if timer_fired[0]:
+            reason = "timeout"
+        else:
+            reason = "error"
         r = None
-        interrupted = True
     finally:
         tmr.cancel()
-        s.clear_interrupt() if hasattr(s, "clear_interrupt") else None
-        # PySAT: interrupt is auto-cleared on next solve call
+        if hasattr(s, "clear_interrupt"):
+            s.clear_interrupt()
     dt = time.time() - t0
     if r is False:
         return "UNSAT", round(dt, 1), "decided"
     if r is True:
         return "SAT", round(dt, 1), "decided"
-    # r is None or we timed out — distinguish solver-limited vs killed
-    if dt < seconds - 1:
-        return "UNKNOWN", round(dt, 1), "error"
-    return "UNKNOWN", round(dt, 1), "timeout"
+    return "UNKNOWN", round(dt, 1), reason
+
+# Direct partition exclusion verification (NOT k-arity inference):
+# z_0=10,11 (sigma d=0,1) must be UNSAT under the full E677 encoding.
+print("=== partition exclusion verification (z_0=10,11 = sigma d=0,1) ===", flush=True)
+exclusions = {}
+for v in [10, 11]:
+    t0 = time.time()
+    with Solver(name="glucose42", bootstrap_with=clauses) as s_ex:
+        r_ex = s_ex.solve(assumptions=all_sel + [C.cell(10, 1, v)])
+        dt_ex = time.time() - t0
+    st_ex = "UNSAT" if r_ex is False else ("SAT" if r_ex is True else "UNKNOWN")
+    exclusions[str(v)] = {"status": st_ex, "time": round(dt_ex, 1), "sigma_d": v - 10}
+    print(f"  exclusion z_0={v} (sigma d={v-10}): {st_ex} ({dt_ex:.1f}s)", flush=True)
 
 # Single solver instance — retains learned clauses across cubes
 s = Solver(name="glucose42", bootstrap_with=clauses, use_timer=True)
@@ -70,13 +92,17 @@ for v in CUBES:
     out[str(v)] = {"status": st, "time": dt, "layer": LAYER[v], "reason": reason}
     print(f"cube z_0={v} ({LAYER[v]}): {st} ({dt:.1f}s, {reason})", flush=True)
     with open("_cube_results_incremental.json", "w") as f:
-        json.dump({"solved": out, "method": "incremental-glucose42-learned-retained", "remaining": True}, f, indent=2)
+        json.dump({"solved": out, "method": "incremental-glucose42-learned-retained",
+                   "exclusions": exclusions, "remaining": True}, f, indent=2)
 
 s.delete()
 
 # Compare against frozen baseline
-with open("_cube_results.json") as f:
-    baseline = json.load(f)
+try:
+    with open("finite_magma_e677_to_e255/_cube_results.json") as f:
+        baseline = json.load(f)
+except FileNotFoundError:
+    baseline = {"solved": {str(v): {"status": "UNKNOWN", "time": 90.2, "layer": LAYER[v]} for v in CUBES}}
 
 improved = []
 for v in CUBES:
@@ -89,6 +115,7 @@ for v in CUBES:
 summary = {
     "method": "incremental-glucose42-learned-retained",
     "frozen_baseline": "Glucose42 cold-start, 90s/cube, 13 UNKNOWN",
+    "exclusions_verified": exclusions,
     "solved": out,
     "improved": improved,
     "sat": [v for v, r in out.items() if r["status"] == "SAT"],
