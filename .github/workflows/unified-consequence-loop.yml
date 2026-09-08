@@ -1,0 +1,66 @@
+name: Unified consequence loop
+on:
+  push:
+    branches: [experiment/unified-consequence-loop-v1]
+    paths:
+      - 'experiments/unified_development/**'
+      - '.github/workflows/unified-consequence-loop.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run source-pinned integration and adversarial tests
+        run: |
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - name: Generate exact selected-repair Lean certificate
+        run: |
+          python - <<'PY'
+          import sys, json, hashlib
+          from pathlib import Path
+          sys.path.insert(0,'experiments/unified_development')
+          import unified_qualification as U
+          import generate_unified_lean as G
+          U.verify_sources()
+          name,oracle=U.worlds(20260909)[8]
+          r=U.evaluate_world(name,oracle)
+          cert=r['result']['certificate']
+          data=r['result']['evidence']
+          path=Path('experiments/unified_development/UnifiedQualification.lean')
+          sha=G.write(cert,data,path)
+          assert path.read_text()==G.render(cert,data)
+          out={'status':'FINITE_CERTIFICATE_PASS','source_sha256':sha,
+               'certificate_id':cert['identity'],'source_blob':U.SOURCE_BLOBS,
+               'scope':'108 acquisition rows; not full-world or ARC3 proof',
+               'planning':r['planning'],'heldout_coverage':r['new_coverage'],
+               'heldout_errors':r['errors'],'acquisition_actions':r['acquisition_actions'],
+               'model_calls':0,'competition_submission':False}
+          Path('unified-qualification.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('FINITE_UNIFIED_QUALIFICATION='+json.dumps(out,sort_keys=True))
+          PY
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check actual shared replay gate
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/LemmaSynthesis/SynthesisCore.olean lean/LemmaSynthesis/SynthesisCore.lean
+          lean experiments/unified_development/UnifiedQualification.lean
+          echo 'UNIFIED_REPLAY_GATE_PASS'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-consequence-loop
+          path: |
+            unified-qualification.json
+            experiments/unified_development/UnifiedQualification.lean
+          if-no-files-found: warn
