@@ -5,14 +5,12 @@ programs supply reusable factors. Every candidate is executed through the
 public interface, and only observed progress installs a new option. The
 original controller is retained as an ablation.
 """
-from collections import defaultdict
 from heapq import heappush, heappop
 from itertools import count
 from math import ceil, log2
 from multi_level_development import MultiLevelDevelopment, execute_stage
 from restart_development import RestartDevelopment
 from consequence_quotient import measure, BAD
-from finite_consequence import digest
 
 
 def ordered_actions(classes):
@@ -44,7 +42,7 @@ def factors(program, bound=32):
             if p[start+size:start+2*size] == block:
                 out.add(block)
                 out.add(block*2)
-    return tuple(sorted((x for x in out if 1 < len(x) <= bound), key=lambda x:(len(x),x)))
+    return tuple(sorted((x for x in out if 1 < len(x) <= bound), key=lambda x:(len(x),repr(x))))
 
 
 class RankedSearch(RestartDevelopment):
@@ -86,15 +84,29 @@ class RankedSearch(RestartDevelopment):
     def retain(self, program, result):
         p = tuple(program)
         cost = self.best[p]
-        verdict = super().retain(p, result)
-        if verdict == 'NONTERMINAL_PREFIX':
+        self.evidence.append({'program':p,'progress':result['progress'],
+                              'terminal':result['terminal'],'actions':result['actions'],
+                              'initial_sha256':result['initial_sha256'],
+                              'trace_sha256':result['trace_sha256']})
+        if result['progress'] > 0:
+            observed = tuple(result['executed'])
+            if observed not in self.successful:
+                self.successful.append(observed)
+            return 'PROGRESS_WITNESSED'
+        if result['terminal']:
+            self.rejected.add(p)
+            return 'TERMINAL_PREFIX'
+        if result['actions'] != len(p):
+            return 'INCONCLUSIVE'
+        if p not in self.expanded:
+            self.expanded.add(p)
             for o in self.options:
                 self._add(p+o, cost+1)
             for n in range(2, self.max_depth//len(p)+1):
                 self._add(p*n, cost+1+ceil(log2(n)))
             for a in self.actions:
                 self._add(p+(a,), cost+self.atom_cost(a))
-        return verdict
+        return 'NONTERMINAL_PREFIX'
 
 
 def discover(factory, actions, budget=120, max_episodes=2048, max_depth=32,
@@ -118,8 +130,7 @@ def discover(factory, actions, budget=120, max_episodes=2048, max_depth=32,
             break
         quotients.append(q)
         alphabet = ordered_actions(q['classes'])
-        # The only new operators are generic factor reuse and ranked expansion.
-        # Their installation is provisional until the external comparison.
+        # Generic factors are candidate constructors, never assumed effects.
         options = tuple(dict.fromkeys(tuple(o) for o in d.options +
                                       [f for o in d.options for f in factors(o, max_depth)]))
         search = RankedSearch(alphabet, options, max_depth)
