@@ -40,14 +40,14 @@ jobs:
           run-id: 34192005884
           github-token: ${{ github.token }}
           path: source-evidence
-      - name: Exhaust grounded one-step terminal continuations
+      - name: Continue witnessed progress to terminal verdict
         run: |
           python experiments/arc3_consequence/run_terminal_confirmation.py \
             --game bt33-a7c3f9d18b4e \
             --evidence source-evidence/arc3-consequence-search-bt33.json \
             --environments-dir upstream-arc-agi/test_environment_files \
             --max-actions 120 --max-training-actions 8000 \
-            --max-episodes 512 --max-depth 1 \
+            --max-episodes 512 --max-depth 32 \
             --output arc3-terminal-confirmation.json
       - uses: actions/upload-artifact@v4
         if: always()
