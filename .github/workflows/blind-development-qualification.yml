@@ -1,7 +1,7 @@
 name: Blind development qualification
 on:
   push:
-    branches: [recursive-discovery-compiler-v1]
+    branches: [recursive-discovery-compiler-v1, grammar-genesis-v1]
     paths:
       - 'tests/blind_development.py'
       - 'tests/blind_development_test.py'
@@ -9,6 +9,11 @@ on:
       - 'lean/LemmaSynthesis/OpenDevelopment.lean'
       - 'lean-toolchain'
       - '.github/workflows/blind-development-qualification.yml'
+      - 'tests/grammar_genesis.py'
+      - 'tests/verify_grammar_genesis.py'
+      - 'tests/grammar_genesis_test.py'
+      - 'tests/grammar_genesis_template.lean'
+      - 'lean/LemmaSynthesis/GrammarGenesis.lean'
   workflow_dispatch:
 permissions:
   contents: read
@@ -56,3 +61,41 @@ jobs:
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/OpenDevelopment.olean lean/LemmaSynthesis/OpenDevelopment.lean
           LEAN_PATH=lean lean lean/LemmaSynthesis/BlindDevelopment.lean
           echo 'BLIND_DEVELOPMENT_LEAN=PASS'
+  grammar_genesis:
+    if: github.ref_name == 'grammar-genesis-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test synthesis, independent replay and ablation
+        run: python -m unittest discover -s tests -p grammar_genesis_test.py -v
+      - name: Replay the exact generated Lean source
+        run: |
+          python - <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('tests').resolve()))
+          import grammar_genesis_test as development
+          actual = Path('lean/LemmaSynthesis/GrammarGenesis.lean').read_bytes()
+          assert development.lean_source().encode('utf-8') == actual, 'Generated Lean differs from committed proof'
+          assert b'\nsorry' not in actual and b'\nadmit' not in actual
+          print('SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel-check grammar acquisition, transfer and obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean lean/LemmaSynthesis/GrammarGenesis.lean
+          echo 'GRAMMAR_GENESIS_LEAN=PASS'
