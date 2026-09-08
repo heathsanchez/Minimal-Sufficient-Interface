@@ -60,7 +60,8 @@ def run(factory, actions, source, output, max_training_actions=320,
     if len(stages) != 1 or source['source_development']['prefix'] != stages[0]['prefix']:
         raise ValueError('Unexpected source checkpoint')
     prefix = tuple(map(F.atom, stages[0]['prefix']))
-    initial, checkpoint = source['initial_sha256'], stages[0]['checkpoint_sha256']
+    stage = dict(stages[0], prefix=prefix, suffix=prefix)
+    initial, checkpoint = source['initial_sha256'], stage['checkpoint_sha256']
     if len(prefix) > budget or source['cold']['initial_sha256'] != initial:
         raise ValueError('Invalid source bounds or initial observation')
     if source['training_actions'] > max_training_actions:
@@ -77,11 +78,15 @@ def run(factory, actions, source, output, max_training_actions=320,
               'source_training_actions': source['training_actions'], 'model_calls': 0,
               'competition_submission': False, 'traces': [], 'accepted': [],
               'terminal_win': False}
+    accepted_warm = None
 
     def finish(status):
         result.update(status=status, training_actions=meter.actions,
                       training_episodes=meter.episodes,
-                      installed_options=archive.snapshot()['options'])
+                      installed_options=archive.snapshot()['options'],
+                      levels_witnessed=max((a['level'] for a in result['accepted']), default=0))
+        if accepted_warm is not None:
+            result['warm'] = M.compact(accepted_warm)
         return result
 
     def replay(path, expected=None):
@@ -93,7 +98,7 @@ def run(factory, actions, source, output, max_training_actions=320,
     # supplies the exact checkpoint observation for all subsequent comparisons.
     try:
         meter.reserve(2 * len(prefix), 2)
-        approval = T.promote(meter.factory, prefix, stages[0], source['cold'],
+        approval = T.promote(meter.factory, prefix, stage, source['cold'],
                              initial, archive, output / 'source-gate', gate=gate)
     except M.TrainingLimit:
         return finish('TRAINING_BOUND_EXHAUSTED')
@@ -102,10 +107,11 @@ def run(factory, actions, source, output, max_training_actions=320,
         return finish('INCONCLUSIVE_VERIFIER')
     if approval['status'] != 'REPLAY_GATED_PROMOTION_PASS':
         return finish(approval['status'])
+    accepted_warm = approval['evidence']['proof']
     result['accepted'].append({'level': 1, 'prefix': prefix,
                                'promotion': approval['identity'],
                                'gate_source_sha256': approval['approval']['source_sha256']})
-    entry = approval['evidence']['proof']['observations'][-1]
+    entry = accepted_warm['observations'][-1]
     if F.digest(entry) != checkpoint:
         return finish('INCONCLUSIVE_PREFIX_MISMATCH')
 
@@ -175,10 +181,11 @@ def run(factory, actions, source, output, max_training_actions=320,
         return finish('INCONCLUSIVE_VERIFIER')
     if promotion['status'] != 'REPLAY_GATED_PROMOTION_PASS':
         return finish(promotion['status'])
+    accepted_warm = promotion['evidence']['proof']
     result['accepted'].append({'level': stage['level'], 'prefix': actual_path,
                                'promotion': promotion['identity'],
                                'gate_source_sha256': promotion['approval']['source_sha256']})
-    result['terminal_win'] = trial['state'] == 'WIN'
+    result['terminal_win'] = accepted_warm['state'] == 'WIN'
     return finish('VERIFIED_WIN' if result['terminal_win'] else 'PROGRESS_WITNESSED')
 
 
@@ -196,7 +203,8 @@ def main():
     logger.addHandler(logging.NullHandler())
     logger.setLevel(logging.WARNING)
     def factory():
-        arcade = Arcade(operation_mode=OperationMode.OFFLINE, environments_dir=a.environments_dir, logger=logger)
+        arcade = Arcade(operation_mode=OperationMode.OFFLINE,
+                        environments_dir=a.environments_dir, logger=logger)
         env = arcade.make(a.game)
         if env is None:
             raise RuntimeError('Environment unavailable')
@@ -222,7 +230,7 @@ def main():
     Path(a.output).write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + '\n')
     print('ARC3_OBSERVATION_PROBE=' + json.dumps({k: result.get(k) for k in
           ('status', 'training_actions', 'training_episodes', 'installed_options',
-           'terminal_win')}, sort_keys=True))
+           'levels_witnessed', 'terminal_win')}, sort_keys=True))
 
 
 if __name__ == '__main__':
