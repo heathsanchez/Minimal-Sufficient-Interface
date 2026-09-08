@@ -1,0 +1,52 @@
+name: Inferred recurrence qualification
+on:
+  push:
+    branches: [experiment/inferred-recurrence-v1]
+    paths:
+      - 'tests/test_inferred_recurrence.py'
+      - 'lean/LemmaSynthesis/InferredRecurrence.lean'
+      - '.github/workflows/inferred-recurrence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Blind recurrence selection, replay, and ablation
+        run: python -m unittest tests.test_inferred_recurrence -v
+      - name: Exact generated-source replay
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from tests import test_inferred_recurrence as experiment
+          actual = Path('lean/LemmaSynthesis/InferredRecurrence.lean').read_bytes()
+          generated = experiment.lean_source().encode('utf-8')
+          assert actual == generated, 'Generated Lean differs from committed source'
+          print('INFERRED_SOURCE_REPLAY=PASS')
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version
+      - name: Check pinned arithmetic baseline
+        env:
+          LEAN_PATH: lean
+        run: lean -o lean/LemmaSynthesis/OpenDevelopment.olean lean/LemmaSynthesis/OpenDevelopment.lean
+      - name: Check inferred all-Nat proofs and old-grammar obstructions
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean lean/LemmaSynthesis/InferredRecurrence.lean
+          echo 'INFERRED_RECURRENCE_LEAN=PASS'
