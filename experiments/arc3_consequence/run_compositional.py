@@ -14,7 +14,7 @@ def main():
     p.add_argument('--environments-dir',default='environment_files')
     p.add_argument('--max-actions',type=int,default=120)
     p.add_argument('--max-episodes',type=int,default=512)
-    p.add_argument('--max-depth',type=int,default=12)
+    p.add_argument('--max-depth',type=int,default=32)
     p.add_argument('--max-training-actions',type=int,default=3000)
     p.add_argument('--max-levels',type=int,default=5)
     p.add_argument('--output',default='arc3-compositional.json')
