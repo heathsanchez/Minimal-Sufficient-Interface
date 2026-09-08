@@ -1,0 +1,68 @@
+name: ARC3 shared transfer
+on:
+  push:
+    branches: [experiment/unified-arc3-transfer-v1]
+    paths:
+      - 'experiments/unified_development/arc3_shared_transfer.py'
+      - '.github/workflows/unified-arc3-transfer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Check transfer syntax and frozen feedback regressions
+        run: |
+          python -m py_compile experiments/unified_development/arc3_shared_transfer.py
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare exact immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,finite_consequence,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Run public bt33 transfer and actual shared Lean gate
+        run: |
+          python experiments/unified_development/arc3_shared_transfer.py \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --output arc3-shared-transfer.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-shared-transfer.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=3000
+          assert r['status'] in ('COMPARABLE','NO_PROMOTION_WITHIN_BOUND','INCONCLUSIVE_UNMATCHED_START','INCONCLUSIVE_VERIFIER','INCONCLUSIVE_DEPLOYMENT')
+          if r['status']=='COMPARABLE':
+              assert r['promotion']['status']=='REPLAY_GATED_PROMOTION_PASS'
+              assert r['next_candidate_source']==['option',0]
+              assert r['installed_options']>0
+              assert r['warm']['initial_sha256']==r['cold']['initial_sha256']==r['initial_sha256']
+          print('ARC3_SHARED_TRANSFER_QUALIFICATION='+json.dumps({k:r.get(k) for k in ('status','training_actions','grounded_actions','improved','terminal_win','installed_options')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-shared-transfer
+          path: |
+            arc3-shared-transfer.json
+            shared-gate/
+          if-no-files-found: warn
