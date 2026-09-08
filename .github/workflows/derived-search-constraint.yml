@@ -1,0 +1,31 @@
+name: Derived Search Constraint
+
+on:
+  push:
+    paths:
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - '.github/workflows/derived-search-constraint.yml'
+  pull_request:
+    paths:
+      - 'lean/LemmaSynthesis/DerivedSearchConstraint.lean'
+      - 'lean/LemmaSynthesis/SearchPolicy.lean'
+      - '.github/workflows/derived-search-constraint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  derive:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check residual-derived search constraint
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/DerivedSearchConstraint.lean
