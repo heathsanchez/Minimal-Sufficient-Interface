@@ -1,0 +1,106 @@
+name: ARC3 option-priority probe
+on:
+  push:
+    branches: [experiment/unified-arc3-multilevel-v1]
+    paths:
+      - 'experiments/unified_development/arc3_priority_probe.py'
+      - 'experiments/unified_development/test_arc3_priority_probe.py'
+      - '.github/workflows/unified-arc3-priority-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: frozen-msi
+      - name: Prepare exact immutable controller sources
+        run: |
+          mkdir -p frozen-src
+          cp frozen-msi/experiments/arc3_consequence/{agent,restart_development,multi_level_development,compositional_development,parameterized_actions}.py frozen-src/
+          cp frozen-msi/experiments/convergence/finite_consequence.py frozen-src/
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-shared-transfer
+          run-id: 34240189934
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: source-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-multilevel-transfer
+          run-id: 34244268321
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: previous-evidence
+      - name: Run scheduling and refusal regressions
+        env:
+          MSI_FROZEN_DIR: ${{ github.workspace }}/frozen-src
+          MSI_PREVIOUS_EVIDENCE: ${{ github.workspace }}/previous-evidence/arc3-multilevel-transfer.json
+        run: |
+          python -m py_compile experiments/unified_development/arc3_priority_probe.py
+          python -m unittest discover -s experiments/unified_development -p test_arc3_priority_probe.py -v
+          python -m unittest discover -s experiments/unified_development -p test_arc3_multilevel_transfer.py -v
+          python -m unittest discover -s experiments/unified_development -p test_unified_qualification.py -v
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/0e36a07b9bbcc5381fa6250df109f9a4f94d7bac/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Probe public bt33 with the actual shared gate
+        run: |
+          python experiments/unified_development/arc3_priority_probe.py \
+            --source-evidence source-evidence/arc3-shared-transfer.json \
+            --frozen-dir frozen-src \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --game bt33-a7c3f9d18b4e \
+            --output arc3-priority-probe.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('arc3-priority-probe.json').read_text())
+          p=json.loads(Path('previous-evidence/arc3-multilevel-transfer.json').read_text())
+          assert r['model_calls']==0 and not r['competition_submission']
+          assert r['training_actions']<=3000 and r['training_episodes']<=512
+          assert r['grounded_actions']==p['grounded_actions']==256
+          assert r['initial_sha256']==p['initial_sha256']
+          assert r['source_commit']==p['source_commit']
+          assert r['source_run']==p['source_run']
+          assert r['status'] in ('VERIFIED_WIN','ALL_LEVELS_WITNESSED','NO_PROGRESS_WITHIN_BOUND','TRAINING_BOUND_EXHAUSTED','INCONCLUSIVE_UNMATCHED_START','INCONCLUSIVE_PREFIX_MISMATCH','INCONCLUSIVE_REPLAY','INCONCLUSIVE_VERIFIER','INCONCLUSIVE_DEPLOYMENT','BUDGET_EXHAUSTED','PREFIX_TERMINATED','NO_MEASURED_IMPROVEMENT')
+          for a in r['accepted']:
+              assert a['promotion'] and a['gate_source_sha256']
+          if r['status'] not in ('INCONCLUSIVE_UNMATCHED_START','INCONCLUSIVE_VERIFIER','INCONCLUSIVE_DEPLOYMENT'):
+              assert r['levels_witnessed']>=1
+          if r['terminal_win'] or r['status']=='VERIFIED_WIN':
+              assert r['warm']['state']=='WIN'
+          print('ARC3_PRIORITY_QUALIFICATION='+json.dumps({
+              'status':r['status'],'training_actions':r['training_actions'],
+              'training_episodes':r['training_episodes'],
+              'levels_witnessed':r['levels_witnessed'],
+              'installed_options':r['installed_options'],
+              'terminal_win':r['terminal_win'],
+              'previous_levels':p['levels_witnessed'],
+              'previous_training_actions':p['training_actions']},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-priority-probe
+          path: |
+            arc3-priority-probe.json
+            priority-gate/
+          if-no-files-found: warn
