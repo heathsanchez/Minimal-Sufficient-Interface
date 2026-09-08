@@ -1,0 +1,67 @@
+name: ARC3 compact qualification
+on:
+  push:
+    branches: [experiment/arc3-compact-v1]
+    paths:
+      - 'experiments/arc3_compact/**'
+      - '.github/workflows/arc3-compact-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run transfer, ablation, and negative tests
+        run: python -m unittest discover -s experiments/arc3_compact -p test_compact_agent.py -v
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Exercise official SDK against its public test game
+        run: |
+          python experiments/arc3_compact/run_arc.py \
+            --game bt11-fd9df0622a1a \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --max-actions 200 --probe-limit 64 \
+            --output arc3-offline-result.json
+          echo 'ARC3_LOCAL_SDK=PASS'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-offline-result
+          path: arc3-offline-result.json
+          if-no-files-found: ignore
+  public-online-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official ARC toolkit
+        run: python -m pip install arc-agi==0.9.9
+      - name: Attempt bounded anonymous public game
+        env:
+          ARC_API_KEY: ${{ secrets.ARC_API_KEY }}
+        run: |
+          python experiments/arc3_compact/run_arc.py \
+            --online --game ls20 --max-actions 120 --probe-limit 24 \
+            --output arc3-online-result.json
+          echo 'ARC3_ONLINE=COMPLETED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-online-result
+          path: arc3-online-result.json
+          if-no-files-found: ignore
