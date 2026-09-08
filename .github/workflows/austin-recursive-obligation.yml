@@ -1,0 +1,22 @@
+name: Austin recursive obligation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check recursive obligation theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/LemmaSynthesis/AustinRecursiveObligation.lean
