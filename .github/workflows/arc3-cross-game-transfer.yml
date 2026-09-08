@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Verify frozen controller source
         run: |
           git diff --exit-code dd567ec83c044da46fb1a44dd39c5ffc2c397929 HEAD -- experiments/arc3_consequence experiments/convergence/finite_consequence.py tests/test_compositional_development.py tests/test_multi_level_development.py
