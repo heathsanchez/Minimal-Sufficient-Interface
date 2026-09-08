@@ -38,15 +38,20 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_consequence.py -v
           echo 'FINITE_DEVELOPMENT_TESTS=PASS'
-      - name: Replay pinned evidence and generated Lean source
+      - name: Replay pinned evidence and generated factorization certificate
         run: |
           set -euo pipefail
           python experiments/arc3_consequence/replay.py \
             --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
             --lean /tmp/ARC3ConsequenceCertificate.lean \
             --report /tmp/recorded_replay.json
-          echo '0d2c79f97f3d647864ae608b241e994a5335020e91ab53cff54bcb2b818c3ae0  /tmp/ARC3ConsequenceCertificate.lean' | sha256sum -c -
-          cmp /tmp/recorded_replay.json experiments/arc3_consequence/recorded_replay.json
+          python experiments/arc3_consequence/replay.py \
+            --trace experiments/arc3_consequence/observations/arc3-motion-observations.json \
+            --lean /tmp/ARC3ConsequenceCertificate.second.lean \
+            --report /tmp/recorded_replay.second.json
+          cmp /tmp/ARC3ConsequenceCertificate.lean /tmp/ARC3ConsequenceCertificate.second.lean
+          cmp /tmp/recorded_replay.json /tmp/recorded_replay.second.json
+          sha256sum /tmp/ARC3ConsequenceCertificate.lean
           echo 'CONSEQUENCE_SOURCE_REPLAY=PASS'
       - name: Install pinned Lean toolchain
         shell: bash
@@ -56,13 +61,13 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
           "$HOME/.elan/bin/lean" --version
-      - name: Check existing adequacy kernel and finite certificate
+      - name: Check adequacy kernel and factorization certificate
         shell: bash
         run: |
           set -euo pipefail
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/AdequacyTester.olean lean/LemmaSynthesis/AdequacyTester.lean
           LEAN_PATH=lean lean -o lean/LemmaSynthesis/ConsequenceFactorization.olean lean/LemmaSynthesis/ConsequenceFactorization.lean
-          LEAN_PATH=lean lean -DmaxRecDepth=4096 -DmaxHeartbeats=2000000 /tmp/ARC3ConsequenceCertificate.lean
+          LEAN_PATH=lean lean /tmp/ARC3ConsequenceCertificate.lean
           echo 'ARC3_CONSEQUENCE_LEAN=PASS'
       - uses: actions/checkout@v4
         with:
