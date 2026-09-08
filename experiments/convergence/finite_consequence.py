@@ -151,13 +151,13 @@ namespace FiniteConsequenceCertificate
 private def old : List Nat := {lit(qids)}
 private def outcome : List Nat := {lit(fids)}
 private def repaired : List Nat := {lit(nids)}
-private def universe : List Nat := List.range {len(rows)}
-private def at (xs : List Nat) (i : Nat) : Nat := xs[i]!
+private def rowIds : List Nat := List.range {len(rows)}
+private def lookup (xs : List Nat) (i : Nat) : Nat := xs[i]!
 private theorem finite_replay :
-    AdequacyTester.adequacyWitnesses universe (at repaired) (at outcome) = [] := by
+    AdequacyTester.adequacyWitnesses rowIds (lookup repaired) (lookup outcome) = [] := by
   decide
 private theorem old_residual :
-    AdequacyTester.adequacyWitnesses universe (at old) (at outcome) ≠ [] := by
+    AdequacyTester.adequacyWitnesses rowIds (lookup old) (lookup outcome) ≠ [] := by
   decide
 end FiniteConsequenceCertificate
 ''' if repair.before else f'''import LemmaSynthesis.AdequacyTester
