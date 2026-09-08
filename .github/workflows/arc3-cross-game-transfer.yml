@@ -18,13 +18,28 @@ jobs:
         run: |
           git diff --exit-code dd567ec83c044da46fb1a44dd39c5ffc2c397929 HEAD -- experiments/arc3_consequence experiments/convergence/finite_consequence.py tests/test_compositional_development.py tests/test_multi_level_development.py
           echo 'FROZEN_CONTROLLER=PASS'
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 68e37033f3ae1e86e992dfe8d982aef9133612aa
+          path: source-adapter
+      - name: Install previously qualified public action adapter
+        run: |
+          cp source-adapter/experiments/arc3_consequence/parameterized_actions.py experiments/arc3_consequence/
+          cp source-adapter/experiments/arc3_consequence/run_parameterized.py experiments/arc3_consequence/
+          cp source-adapter/tests/test_parameterized_actions.py tests/
+          for p in experiments/arc3_consequence/parameterized_actions.py experiments/arc3_consequence/run_parameterized.py tests/test_parameterized_actions.py; do
+            cmp "$p" "source-adapter/$p"
+          done
+          echo 'PINNED_ACTION_ADAPTER=PASS'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install official ARC toolkit
         run: python -m pip install arc-agi==0.9.9
-      - name: Qualify frozen controller
+      - name: Qualify frozen controller and action grounding
         run: |
+          python -m unittest discover -s tests -p test_parameterized_actions.py -v
           python -m unittest discover -s tests -p test_compositional_development.py -v
           python -m unittest discover -s tests -p test_multi_level_development.py -v
       - uses: actions/checkout@v4
@@ -32,31 +47,30 @@ jobs:
           repository: arcprize/ARC-AGI
           ref: f12822c4d550121c35a275008d964afbbed47d2f
           path: upstream-arc-agi
-      - name: Run unchanged controller on second game
+      - name: Run frozen controller with public action grounding
         run: |
           mkdir -p arc3-transfer-results
-          python experiments/arc3_consequence/run_compositional.py \
+          python experiments/arc3_consequence/run_parameterized.py \
             --game bt33-a7c3f9d18b4e \
             --environments-dir upstream-arc-agi/test_environment_files \
             --max-actions 120 --max-episodes 512 --max-depth 32 \
             --max-training-actions 3000 --max-levels 3 \
+            --stride 8 --max-grounded-actions 256 \
             --output arc3-transfer-results/bt33.json \
             > arc3-transfer-results/bt33.log
+          cat arc3-transfer-results/bt33.log
           python - <<'PY'
           import json
           from pathlib import Path
           r=json.loads(Path('arc3-transfer-results/bt33.json').read_text())
-          d=r['development']
-          summary={
-              'game':r['game'], 'status':r['status'], 'improved':r['improved'],
-              'development_status':d['status'], 'stages':len(d['stages']),
-              'training_episodes':d['training_episodes'],
-              'training_actions':d['training_actions'],
-              'cold':{k:r['cold'][k] for k in ('actions','levels_completed','score','state')},
-              'warm':{k:r['warm'][k] for k in ('actions','levels_completed','score','state')},
-          }
-          print('ARC3_CROSS_GAME='+json.dumps(summary,sort_keys=True))
-          Path('arc3-transfer-results/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          assert r['model_calls']==0
+          assert r['status'] in ('COMPARABLE','INCONCLUSIVE_UNMATCHED_START','UNSUPPORTED_ACTION_INTERFACE')
+          summary={k:v for k,v in r.items() if k not in ('cold','warm')}
+          for arm in ('cold','warm'):
+              if r[arm] is not None:
+                  summary[arm]={k:r[arm][k] for k in ('actions','levels_completed','score','state')}
+          print('ARC3_CROSS_GAME='+json.dumps(summary,sort_keys=True,default=str))
+          Path('arc3-transfer-results/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True,default=str)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
