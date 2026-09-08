@@ -1,19 +1,33 @@
-"""Bounded option-compositional development, without game-specific semantics.
+"""Bounded option-compositional development without game-specific semantics.
 
-A previously witnessed suffix is an executable candidate, not a universal rule.
-Every composition is replayed through the public interface. Only external level
-progress promotes it. Primitive search remains available; failures are retained.
+Previously witnessed suffixes are candidate constructors, not universal rules.
+Repetition is a generic program constructor. Every candidate is replayed via
+public observations; only external progress promotes it. Primitive search stays
+available and all experiments count against the training budget.
 """
 from collections import deque
 from multi_level_development import MultiLevelDevelopment, execute_stage
 from restart_development import RestartDevelopment
 
 
+def repetitions(programs, bound):
+    """Enumerate repeated programs by primitive length, without duplicates."""
+    candidates = set()
+    for program in programs:
+        program = tuple(program)
+        if not program:
+            continue
+        for n in range(2, bound // len(program) + 1):
+            candidates.add(program * n)
+    return tuple(sorted(candidates, key=lambda p: (len(p), p)))
+
+
 class OptionSearch(RestartDevelopment):
-    def __init__(self, actions, options=(), max_depth=12):
+    def __init__(self, actions, options=(), max_depth=32):
         super().__init__(tuple(actions), max_depth=max_depth)
         self.options = tuple(dict.fromkeys(tuple(o) for o in options if 1 < len(o) <= max_depth))
-        self.frontier = deque(dict.fromkeys(self.options + tuple((a,) for a in self.actions)))
+        self.frontier = deque(dict.fromkeys(self.options + repetitions(self.options, max_depth)
+                                             + tuple((a,) for a in self.actions)))
         self.seen = set()
 
     def propose(self):
@@ -28,16 +42,16 @@ class OptionSearch(RestartDevelopment):
     def retain(self, program, result):
         verdict = super().retain(program, result)
         if verdict == 'NONTERMINAL_PREFIX':
-            # Reuse a successful program as one search constructor. Primitive
-            # length, not number of constructors, remains the depth bound.
+            # Expand the program grammar, not a presumed game rule.
             additions = [tuple(program) + o for o in self.options
                          if len(program) + len(o) <= self.max_depth]
-            self.frontier.extendleft(reversed(additions))
+            additions += list(repetitions((program,), self.max_depth))
+            self.frontier.extendleft(reversed(tuple(dict.fromkeys(additions))))
         return verdict
 
 
 def discover_levels(factory, actions, budget=120, max_episodes=512,
-                    max_depth=12, max_training_actions=3000, max_levels=5):
+                    max_depth=32, max_training_actions=3000, max_levels=5):
     d = MultiLevelDevelopment(tuple(actions), max_depth=max_depth)
     while len(d.stages) < max_levels:
         target = len(d.stages)
@@ -92,7 +106,7 @@ def discover_levels(factory, actions, budget=120, max_episodes=512,
 
 
 def compare_levels(factory, actions, budget=120, max_episodes=512,
-                   max_depth=12, max_training_actions=3000, max_levels=5):
+                   max_depth=32, max_training_actions=3000, max_levels=5):
     d = discover_levels(factory, actions, budget, max_episodes, max_depth,
                         max_training_actions, max_levels)
     cold = execute_stage(factory(), (), tuple(actions)*((budget+len(actions)-1)//len(actions)),
