@@ -23,7 +23,7 @@ class ActionGroundingTests(unittest.TestCase):
         with self.assertRaises(ValueError):action_catalog([],{'frame':[]})
     def test_decode_preserves_coordinates(self):
         action,data=decode((6,12,7))
-        self.assertEqual(int(action),6)
+        self.assertEqual(int(action.value),6)
         self.assertEqual(data,{'x':12,'y':7})
         with self.assertRaises(ValueError):decode((7,1,2))
 
