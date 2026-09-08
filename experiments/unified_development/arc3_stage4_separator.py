@@ -38,9 +38,14 @@ def separator_programs(source, report, transfer, evidence, residual, actions, bo
             or len(residual.get('accepted', ())) != len(stages)
             or residual.get('warm') != transfer['warm']):
         raise ValueError('Unqualified residual source')
+    # Independent replays can have different evidence/certificate identities.
+    # Preserve the protected consequence, and require a gate record in each run.
     for old, new in zip(transfer['accepted'], residual['accepted']):
-        if old != new:
-            raise ValueError('Archived promotion changed')
+        for key in ('level', 'prefix', 'suffix', 'checkpoint_sha256'):
+            if old.get(key) != new.get(key):
+                raise ValueError('Archived protected consequence changed')
+        if not old.get('promotion') or not new.get('promotion') or not old.get('gate_source_sha256') or not new.get('gate_source_sha256'):
+            raise ValueError('Missing archived promotion evidence')
     # The prior experiment extended the old alphabet using public pixels.
     # Verify that constructor, rather than silently treating it as an old action.
     alphabet = set(map(F.atom, actions))
@@ -135,7 +140,7 @@ def run(factory, actions, source, report, transfer, evidence, residual, execute_
                                  max_depth=16, budget=120, max_levels=4, gate=gate)
     result.update(residual_run=RESIDUAL_RUN, archive_run=A.ARCHIVE_RUN, transfer_run=P.TRANSFER_RUN,
                   transfer_kind='replay_of_prior_witnesses_then_separator',
-                  residual_training_actions=residual['training_actions'],
+                  residual_training_actions=residual.get('training_actions'),
                   representatives=representatives, candidate_programs=programs,
                   diagnostic_rows=diagnostics, archived_levels=len(stages),
                   new_discoveries=max(0, len(result.get('accepted', ())) - len(stages)))
