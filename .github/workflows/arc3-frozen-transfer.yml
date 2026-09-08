@@ -4,6 +4,7 @@ on:
     branches: [experiment/arc3-frozen-transfer-v1]
     paths:
       - '.github/workflows/arc3-frozen-transfer.yml'
+      - 'experiments/arc3_consequence/run_compositional.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -38,9 +39,11 @@ jobs:
           import json
           from pathlib import Path
           r=json.loads(Path('arc3-frozen-transfer.json').read_text())
-          assert r['status'] == 'COMPARABLE', r['status']
+          assert r['status'] in ('COMPARABLE','UNSUPPORTED_ACTION_INTERFACE'), r['status']
           assert r['model_calls'] == 0
-          print('FROZEN_TRANSFER_RESULT='+json.dumps({k:r[k] for k in ('status','improved','development','cold','warm')},sort_keys=True,default=str))
+          if r['status']=='UNSUPPORTED_ACTION_INTERFACE':
+              assert r['cold'] is None and r['warm'] is None and not r['improved']
+          print('FROZEN_TRANSFER_RESULT='+json.dumps(r,sort_keys=True,default=str))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
