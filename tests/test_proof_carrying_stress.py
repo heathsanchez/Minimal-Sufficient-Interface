@@ -21,7 +21,6 @@ VARS = ('x', 'y', 'z')
 O = core.op
 SEED = core.SEED
 
-# New source families, not the three cases in the original qualification.
 LAWS = (
     ('LeftProjection', (O('x', 'y'), 'x'), ('x', 'y')),
     ('RightProjection', (O('x', 'y'), 'y'), ('x', 'y')),
@@ -39,7 +38,6 @@ def independent_substitute(t, mapping):
 
 
 def independent_replacements(t, old, new):
-    """Return (path, replacement), including nested and repeated occurrences."""
     if t == old:
         yield (), new
     if isinstance(t, str):
@@ -85,7 +83,6 @@ def compiled_cases():
         state = pc.State(law, variables, SEED)
         candidates = core.synthesize(law, variables, branch_left=SEED[0],
                                      branch_right=SEED[1], atoms=('A', 'p', 'q', 'F'))
-        # Retain a bounded, deterministic sample without selecting a desired answer.
         for candidate in candidates[:4]:
             state, _ = pc.compile_candidate(state, candidate)
         cases.append((label, state))
@@ -102,10 +99,8 @@ class ProofCarryingStress(unittest.TestCase):
             return O(term(depth-1), term(depth-1))
         for i in range(16):
             cases.append((f'Random{i}', (term(3), term(3)), VARS))
-        # Includes residual occurrences on both sides and at multiple depths.
-        atoms = ('A', 'p', 'q', 'F')
-        checked = 0
-        left = right = nested = 0
+        atoms = ('A', 'p', 'q', 'F', O('A', 'p'))
+        checked = left = right = compound = 0
         for label, law, variables in cases:
             state = pc.State(law, variables, SEED)
             actual = core.synthesize(law, variables, branch_left=SEED[0],
@@ -120,25 +115,22 @@ class ProofCarryingStress(unittest.TestCase):
                 checked += 1
                 left += candidate.rewritten_side == 'lhs'
                 right += candidate.rewritten_side == 'rhs'
-                nested += any(core.is_op(t) for _, t in candidate.substitution)
+                compound += any(core.is_op(t) for _, t in candidate.substitution)
         self.assertGreater(checked, 0)
         self.assertGreater(left, 0)
         self.assertGreater(right, 0)
-        self.assertGreater(nested, 0)
-        print(f'INDEPENDENT_ORACLE=PASS cases={len(cases)} candidates={checked} lhs={left} rhs={right} compound_substitutions={nested}')
+        self.assertGreater(compound, 0)
+        print(f'INDEPENDENT_ORACLE=PASS cases={len(cases)} candidates={checked} lhs={left} rhs={right} compound_substitutions={compound}')
 
     def test_exhaustive_finite_semantics(self):
-        checked = 0
-        nonvacuous = 0
+        checked = nonvacuous = 0
         for label, state in compiled_cases():
-            # Every binary operation on two elements; all 19,683 operations on
-            # three elements for the first three held-out law families.
             orders = (2, 3) if label in ('LeftProjection', 'RightProjection', 'Commutative') else (2,)
             for n in orders:
                 count = 0
                 for table in models(state.source, state.source_variables, n):
                     count += 1
-                    names = sorted(set().union(*(pc.variables(t) for t in state.source + state.seed),
+                    names = sorted(set().union(*(pc.variables(t) for t in state.seed),
                                                *(pc.variables(t) for c in state.archive for t in c.equation)))
                     for values in product(range(n), repeat=len(names)):
                         env = dict(zip(names, values))
@@ -165,10 +157,10 @@ class ProofCarryingStress(unittest.TestCase):
             self.assertTrue(pc.check_state(state))
         law = LAWS[0][1]
         state = pc.State(law, LAWS[0][2], SEED)
-        # Left projection satisfies the source law and the local seed, but not p=q.
         table = (0, 0, 1, 1)
         env = {'A': 0, 'p': 1, 'q': 0}
-        self.assertTrue(holds(law, {'x': 0, 'y': 1}, table, 2))
+        self.assertTrue(all(holds(law, dict(zip(('x', 'y'), v)), table, 2)
+                            for v in product(range(2), repeat=2)))
         self.assertTrue(holds(SEED, env, table, 2))
         self.assertFalse(holds(('p', 'q'), env, table, 2))
         with self.assertRaises(pc.Rejected):
@@ -177,6 +169,17 @@ class ProofCarryingStress(unittest.TestCase):
             pc.install(state, ('p', 'q'), pc.Proof('source', ((('x', 'p'), ('y', 'q')),)))
         print('RECURSIVE_REUSE=PASS generations=5 laws=2')
         print('NEGATIVE_COUNTERMODEL=PASS order=2')
+
+    def test_cross_source_replay_is_rejected(self):
+        law, variables = LAWS[0][1:]
+        state = pc.State(law, variables, SEED)
+        proof = pc.Proof('source', ((('x', 'A'), ('y', 'p')),))
+        state, cert = pc.install(state, (O('A', 'p'), 'A'), proof)
+        wrong = replace(state, source=LAWS[1][1])
+        with self.assertRaises(pc.Rejected):
+            pc.check_state(wrong)
+        self.assertTrue(pc.check_state(state))
+        print('CROSS_SOURCE_REPLAY=PASS')
 
     def test_deterministic_lean_replay(self):
         text = stress_lean_source()
