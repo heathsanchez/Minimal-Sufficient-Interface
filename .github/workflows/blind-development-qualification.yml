@@ -1,0 +1,58 @@
+name: Blind development qualification
+on:
+  push:
+    branches: [recursive-discovery-compiler-v1]
+    paths:
+      - 'tests/blind_development.py'
+      - 'tests/blind_development_test.py'
+      - 'lean/LemmaSynthesis/BlindDevelopment.lean'
+      - 'lean/LemmaSynthesis/OpenDevelopment.lean'
+      - 'lean-toolchain'
+      - '.github/workflows/blind-development-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run blind acquisition and transfer tests
+        run: python -m unittest discover -s tests -p blind_development_test.py -v
+      - name: Replay generated source and bind verified baseline
+        run: |
+          python - <<'PY'
+          import hashlib
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('tests').resolve()))
+          import blind_development_test as development
+          baseline = Path('lean/LemmaSynthesis/OpenDevelopment.lean').read_bytes()
+          assert hashlib.sha256(baseline).hexdigest() == 'c7209c8dafa1f4fa645c68b0d83a124e156a8f9d8cb968ddcf9a0a91e7813f63', 'Verified baseline changed'
+          actual = Path('lean/LemmaSynthesis/BlindDevelopment.lean').read_bytes()
+          generated = development.lean_source().encode('utf-8')
+          assert generated == actual, 'Generated Lean differs from committed proof'
+          assert b'sorry' not in actual and b'admit' not in actual
+          print('SOURCE_REPLAY=PASS')
+          print('BASELINE_SHA256=' + hashlib.sha256(baseline).hexdigest())
+          print('LEAN_SHA256=' + hashlib.sha256(actual).hexdigest())
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version
+      - name: Kernel-check acquisition, transfer and ablation
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEAN_PATH=lean lean -o lean/LemmaSynthesis/OpenDevelopment.olean lean/LemmaSynthesis/OpenDevelopment.lean
+          LEAN_PATH=lean lean lean/LemmaSynthesis/BlindDevelopment.lean
+          echo 'BLIND_DEVELOPMENT_LEAN=PASS'
