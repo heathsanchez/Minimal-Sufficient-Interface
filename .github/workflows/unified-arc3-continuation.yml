@@ -59,7 +59,7 @@ jobs:
             --frozen-dir frozen-src \
             --environments-dir upstream-arc-agi/test_environment_files \
             --game bt33-a7c3f9d18b4e \
-            --source source-evidence/arc3-shared-transfer.json \
+            --source source-evidence/arc3-shared-transfer/arc3-shared-transfer.json \
             --source-identity cc9b95c1a7237465e8a8075e7277de07c0602c583d77d5e2aec1802ac2e83709 \
             --max-training-actions 3000 --max-episodes 512 --max-depth 32 --max-levels 5 \
             --output arc3-shared-continuation.json
