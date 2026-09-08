@@ -127,10 +127,12 @@ def replay(rows, q, f, repair):
 
 
 def lean_certificate(rows, q, f, repair):
-    """Generate a data-only certificate checked by the existing Lean tester.
+    """Generate a finite factorization certificate checked by the Lean kernel.
 
-    Values are canonicalized to finite Nat IDs. The checker proves only the
-    recorded table, not unobserved environment transitions or causal transfer.
+    Values are canonicalized to finite Nat IDs. The pointwise factorization
+    is checked on every recorded row; the generic theorem then proves that
+    no witness exists. This avoids normalizing the quadratic pair list.
+    It proves neither unobserved transitions nor causal transfer.
     """
     if replay(rows, q, f, repair):
         raise ValueError('Cannot certify an inadequate repair')
@@ -145,25 +147,38 @@ def lean_certificate(rows, q, f, repair):
             result.append(table[v])
         return result
     qids, fids, nids = ids(old), ids(out), ids(new)
+    factor = [None] * len(set(nids))
+    for key, value in zip(nids, fids):
+        if factor[key] is not None and factor[key] != value:
+            raise ValueError('Consequences do not factor through the repair')
+        factor[key] = value
+    if any(value is None for value in factor):
+        raise ValueError('Non-canonical repaired identifiers')
     def lit(xs): return '[' + ', '.join(map(str,xs)) + ']'
-    return f'''import LemmaSynthesis.AdequacyTester
+    prefix = f'''import LemmaSynthesis.ConsequenceFactorization
 namespace FiniteConsequenceCertificate
 private def old : List Nat := {lit(qids)}
 private def outcome : List Nat := {lit(fids)}
 private def repaired : List Nat := {lit(nids)}
+private def factor : List Nat := {lit(factor)}
 private def rowIds : List Nat := List.range {len(rows)}
 private def lookup (xs : List Nat) (i : Nat) : Nat := xs[i]!
+private theorem pointwise :
+    ∀ i ∈ rowIds, lookup outcome i = lookup factor (lookup repaired i) := by
+  decide
 private theorem finite_replay :
     AdequacyTester.adequacyWitnesses rowIds (lookup repaired) (lookup outcome) = [] := by
-  decide
-private theorem old_residual :
-    AdequacyTester.adequacyWitnesses rowIds (lookup old) (lookup outcome) ≠ [] := by
-  decide
-end FiniteConsequenceCertificate
-''' if repair.before else f'''import LemmaSynthesis.AdequacyTester
-namespace FiniteConsequenceCertificate
-private def repaired : List Nat := {lit(nids)}
-private def outcome : List Nat := {lit(fids)}
-private theorem finite_replay : AdequacyTester.adequacyWitnesses (List.range {len(rows)}) (fun i => repaired[i]!) (fun i => outcome[i]!) = [] := by decide
-end FiniteConsequenceCertificate
+  exact ConsequenceFactorization.no_witnesses_of_factor
+    rowIds (lookup repaired) (lookup outcome) (lookup factor) pointwise
 '''
+    if repair.before:
+        i, j = witnesses(rows, q, f)[0]
+        prefix += f'''private theorem old_residual :
+    AdequacyTester.adequacyWitnesses rowIds (lookup old) (lookup outcome) ≠ [] := by
+  intro h
+  have hw : ({i}, {j}) ∈ AdequacyTester.adequacyWitnesses rowIds (lookup old) (lookup outcome) := by
+    apply AdequacyTester.search_complete <;> decide
+  rw [h] at hw
+  cases hw
+'''
+    return prefix + 'end FiniteConsequenceCertificate\n'
