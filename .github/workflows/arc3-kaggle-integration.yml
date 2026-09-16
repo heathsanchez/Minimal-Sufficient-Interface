@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 jobs:
-  test:
+  qualification:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -17,5 +17,42 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Runtime contracts
+      - name: Run integration contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build self-contained agent
+        run: |
+          python kaggle/scripts/build_agent.py
+          python -m py_compile kaggle/agent/my_agent.py
+      - name: Build offline CPU notebook
+        run: python kaggle/scripts/build_notebook.py
+      - name: Inspect generated bundle
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          agent = Path('kaggle/agent/my_agent.py').read_text()
+          nb = json.loads(Path('kaggle/notebooks/submission.ipynb').read_text())
+          meta = json.loads(Path('kaggle/notebooks/kernel-metadata.json').read_text())
+          assert 'class MyAgent' in agent
+          assert 'class OnlineController' in agent
+          assert 'BUILD_PROVENANCE' in agent
+          lower = agent.lower()
+          for forbidden in ('requests', 'openai', 'anthropic', 'subprocess', 'socket', 'urllib'):
+              assert forbidden not in lower, forbidden
+          k = nb['metadata']['kaggle']
+          assert k['accelerator'] == 'none'
+          assert k['isInternetEnabled'] is False
+          assert k['isGpuEnabled'] is False
+          assert meta['enable_gpu'] is False
+          assert meta['enable_internet'] is False
+          print('ARC3_KAGGLE_BUNDLE=PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-kaggle-bundle
+          path: |
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/notebooks/kernel-metadata.json
+            kaggle/provenance/sources.json
+          if-no-files-found: error
