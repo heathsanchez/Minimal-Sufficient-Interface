@@ -1,5 +1,10 @@
 .venv/
 .kaggle/
+vendor/
+environment_files/
+recordings/
+reference/
+logs.log
 __pycache__/
 *.pyc
 agent/my_agent.py
