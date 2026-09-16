@@ -17,6 +17,13 @@ class PlayLocalSourceContracts(unittest.TestCase):
         self.assertIn("arc.make(game_id", SOURCE)
         self.assertNotIn("game_ids = [env.game_id.split(\"-\")[0]", SOURCE)
 
+    def test_dynamic_agent_module_is_registered_before_exec(self):
+        registration = "sys.modules[spec.name] = module"
+        execution = "spec.loader.exec_module(module)"
+        self.assertIn(registration, SOURCE)
+        self.assertIn(execution, SOURCE)
+        self.assertLess(SOURCE.index(registration), SOURCE.index(execution))
+
     def test_smoke_marker_is_emitted(self):
         self.assertIn("ARC3_PUBLIC_SMOKE=PASS", SOURCE)
 
