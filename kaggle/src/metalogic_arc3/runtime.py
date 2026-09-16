@@ -86,9 +86,10 @@ def normalize_frame(frame: Any) -> Observation:
 class OnlineController:
     """Small consequence-driven online controller for the Kaggle hot path.
 
-    It retains only witnessed progress programs and reuses them only when the
-    same public guard is seen again. No game semantics or solved trajectories
-    are supplied.
+    Exploration starts from the coarsest public task state that is useful for
+    avoiding immediate duplicate probes. Retention is stricter: a witnessed
+    progress program is replayed only when the exact public entry observation
+    is seen again. No game semantics or solved trajectories are supplied.
     """
 
     def __init__(self, action_ids: Iterable[int], max_history: int = 8):
@@ -100,7 +101,6 @@ class OnlineController:
         self.action_ids = ids
         self.max_history = max_history
         self._retained: dict[tuple[Any, ...], list[tuple[ActionToken, ...]]] = {}
-        self._visits: dict[tuple[tuple[Any, ...], int], int] = {}
         self.reset_episode()
 
     @property
@@ -119,15 +119,27 @@ class OnlineController:
         self._level_start_guard: tuple[Any, ...] | None = None
         self._active_option: tuple[ActionToken, ...] = ()
         self._active_index = 0
-        self._visits = {}
+        self._visits: dict[tuple[tuple[Any, ...], int], int] = {}
 
     @staticmethod
-    def _guard(obs: Observation) -> tuple[Any, ...]:
+    def _retention_guard(obs: Observation) -> tuple[Any, ...]:
         return (
             obs.levels_completed,
             obs.state,
             obs.available_actions,
             obs.frame_digest,
+        )
+
+    @staticmethod
+    def _exploration_guard(obs: Observation) -> tuple[Any, ...]:
+        # Start coarse. Consequence evidence, rather than visual novelty alone,
+        # is what should justify a finer live exploration quotient.
+        return (
+            obs.levels_completed,
+            obs.state,
+            obs.available_actions,
+            obs.height,
+            obs.width,
         )
 
     def _retain_progress(self) -> None:
@@ -149,7 +161,7 @@ class OnlineController:
         if obs.levels_completed > self._previous.levels_completed:
             self._retain_progress()
             self._since_progress = []
-            self._level_start_guard = self._guard(obs)
+            self._level_start_guard = self._retention_guard(obs)
             self._active_option = ()
             self._active_index = 0
 
@@ -179,7 +191,7 @@ class OnlineController:
         return min(max(0, x), width - 1), min(max(0, y), height - 1)
 
     def _token_for(self, action_id: int, obs: Observation, source: str) -> ActionToken:
-        guard = self._guard(obs)
+        guard = self._exploration_guard(obs)
         count = self._visits.get((guard, action_id), 0)
         self._visits[(guard, action_id)] = count + 1
         if action_id == 6:
@@ -194,7 +206,7 @@ class OnlineController:
             return ActionToken(token.action_id, token.x, token.y, "retained")
         self._active_option = ()
         self._active_index = 0
-        bucket = self._retained.get(self._guard(obs), ())
+        bucket = self._retained.get(self._retention_guard(obs), ())
         if not bucket:
             return None
         self._active_option = bucket[0]
@@ -206,7 +218,7 @@ class OnlineController:
         obs = normalize_frame(frame)
         self._process_previous_outcome(obs)
         if self._level_start_guard is None:
-            self._level_start_guard = self._guard(obs)
+            self._level_start_guard = self._retention_guard(obs)
         if obs.state == "WIN":
             self._previous = obs
             self._last_action = None
@@ -217,7 +229,7 @@ class OnlineController:
             token = retained
         else:
             legal = self._legal_ids(obs)
-            guard = self._guard(obs)
+            guard = self._exploration_guard(obs)
             action_id = min(
                 legal,
                 key=lambda a: (self._visits.get((guard, a), 0), self.action_ids.index(a)),
