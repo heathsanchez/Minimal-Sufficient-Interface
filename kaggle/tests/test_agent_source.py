@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import sys
 import unittest
 from pathlib import Path
 
@@ -35,6 +34,27 @@ class AgentSourceContracts(unittest.TestCase):
         self.assertIn("GameState.WIN", source)
         self.assertIn("set_data", source)
         self.assertIn("OnlineController", source)
+
+    def test_full_reset_clears_local_state_but_does_not_send_reset_again(self):
+        tree = ast.parse(SRC.read_text())
+        my_agent = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "MyAgent")
+        choose = next(n for n in my_agent.body if isinstance(n, ast.FunctionDef) and n.name == "choose_action")
+        full_reset_if = next(
+            n for n in choose.body
+            if isinstance(n, ast.If)
+            and isinstance(n.test, ast.Attribute)
+            and n.test.attr == "full_reset"
+        )
+        self.assertTrue(
+            any(
+                isinstance(n, ast.Expr)
+                and isinstance(n.value, ast.Call)
+                and isinstance(n.value.func, ast.Attribute)
+                and n.value.func.attr == "reset_episode"
+                for n in full_reset_if.body
+            )
+        )
+        self.assertFalse(any(isinstance(n, ast.Return) for n in full_reset_if.body))
 
 
 if __name__ == "__main__":
