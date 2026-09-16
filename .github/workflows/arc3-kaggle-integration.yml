@@ -1,0 +1,21 @@
+name: ARC3 Kaggle integration
+on:
+  push:
+    branches: [arc3-kaggle-integration-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-kaggle-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Runtime contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
