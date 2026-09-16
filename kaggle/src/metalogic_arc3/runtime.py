@@ -84,22 +84,38 @@ def normalize_frame(frame: Any) -> Observation:
 
 
 class OnlineController:
-    """Small consequence-driven online controller for the Kaggle hot path.
+    """Consequence-driven online controller for the Kaggle hot path.
 
-    Exploration starts from the coarsest public task state that is useful for
-    avoiding immediate duplicate probes. Retention is stricter: a witnessed
-    progress program is replayed only when the exact public entry observation
-    is seen again. No game semantics or solved trajectories are supplied.
+    Exploration starts from the coarsest public task state useful for avoiding
+    duplicate probes. Action 6 is grounded by the already-qualified public
+    dimensions-only coarse-to-fine grammar from the MSI ARC3 lineage. Each
+    coordinate is a distinct experiment token, so future retention preserves
+    the exact witnessed intervention rather than only the action ID.
+
+    Retention is stricter than exploration: a witnessed progress program is
+    replayed only when the exact public entry observation is seen again. No
+    game semantics, object labels, goal labels, solved trajectories, or hidden
+    source knowledge are supplied.
     """
 
-    def __init__(self, action_ids: Iterable[int], max_history: int = 8):
+    def __init__(
+        self,
+        action_ids: Iterable[int],
+        max_history: int = 8,
+        grounding_stride: int = 8,
+        max_grounded_actions: int = 256,
+    ):
         ids = tuple(dict.fromkeys(int(a) for a in action_ids))
         if not ids:
             raise ValueError("action_ids must be nonempty")
         if max_history < 1:
             raise ValueError("max_history must be positive")
+        if grounding_stride < 1 or max_grounded_actions < 1:
+            raise ValueError("positive grounding bounds required")
         self.action_ids = ids
         self.max_history = max_history
+        self.grounding_stride = grounding_stride
+        self.max_grounded_actions = max_grounded_actions
         self._retained: dict[tuple[Any, ...], list[tuple[ActionToken, ...]]] = {}
         self.reset_episode()
 
@@ -119,7 +135,7 @@ class OnlineController:
         self._level_start_guard: tuple[Any, ...] | None = None
         self._active_option: tuple[ActionToken, ...] = ()
         self._active_index = 0
-        self._visits: dict[tuple[tuple[Any, ...], int], int] = {}
+        self._visits: dict[tuple[tuple[Any, ...], tuple[int, int | None, int | None]], int] = {}
 
     @staticmethod
     def _retention_guard(obs: Observation) -> tuple[Any, ...]:
@@ -172,32 +188,53 @@ class OnlineController:
                 return legal
         return self.action_ids
 
-    @staticmethod
-    def _coordinate(obs: Observation, index: int) -> tuple[int, int]:
-        width = max(1, obs.width)
-        height = max(1, obs.height)
-        candidates = [
-            (width // 2, height // 2),
-            (width // 4, height // 4),
-            ((3 * width) // 4, height // 4),
-            (width // 4, (3 * height) // 4),
-            ((3 * width) // 4, (3 * height) // 4),
-            (0, 0),
-            (width - 1, 0),
-            (0, height - 1),
-            (width - 1, height - 1),
-        ]
-        x, y = candidates[index % len(candidates)]
-        return min(max(0, x), width - 1), min(max(0, y), height - 1)
+    def _coordinate_candidates(self, obs: Observation) -> tuple[tuple[int, int], ...]:
+        if obs.height < 1 or obs.width < 1:
+            raise ValueError("No public image dimensions")
 
-    def _token_for(self, action_id: int, obs: Observation, source: str) -> ActionToken:
-        guard = self._exploration_guard(obs)
-        count = self._visits.get((guard, action_id), 0)
-        self._visits[(guard, action_id)] = count + 1
-        if action_id == 6:
-            x, y = self._coordinate(obs, count)
-            return ActionToken(action_id=6, x=x, y=y, source=source)
-        return ActionToken(action_id=action_id, source=source)
+        seen: set[tuple[int, int]] = set()
+        result: list[tuple[int, int]] = []
+        for step in (self.grounding_stride, max(1, self.grounding_stride // 2), 1):
+            for y in range(step // 2, obs.height, step):
+                for x in range(step // 2, obs.width, step):
+                    coordinate = (x, y)
+                    if coordinate in seen:
+                        continue
+                    seen.add(coordinate)
+                    result.append(coordinate)
+        return tuple(result)
+
+    def _action_catalog(self, obs: Observation) -> tuple[ActionToken, ...]:
+        """Ground the currently legal public action space deterministically.
+
+        Simple actions remain single tokens. Action 6 receives the donor
+        coarse-to-fine coordinate lattice. The total catalog is bounded, so
+        this is an experiment grammar rather than a claim of exhaustive useful
+        action enumeration.
+        """
+        legal = self._legal_ids(obs)
+        candidates: list[ActionToken] = []
+
+        for action_id in legal:
+            if action_id == 6:
+                continue
+            candidates.append(ActionToken(action_id=action_id, source="explore"))
+            if len(candidates) >= self.max_grounded_actions:
+                return tuple(candidates)
+
+        if 6 in legal:
+            for x, y in self._coordinate_candidates(obs):
+                candidates.append(ActionToken(action_id=6, x=x, y=y, source="explore"))
+                if len(candidates) >= self.max_grounded_actions:
+                    break
+
+        if not candidates:
+            raise ValueError("No supported legal action candidates")
+        return tuple(candidates)
+
+    @staticmethod
+    def _candidate_key(token: ActionToken) -> tuple[int, int | None, int | None]:
+        return (token.action_id, token.x, token.y)
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
         if self._active_option and self._active_index < len(self._active_option):
@@ -228,13 +265,16 @@ class OnlineController:
         if retained is not None:
             token = retained
         else:
-            legal = self._legal_ids(obs)
             guard = self._exploration_guard(obs)
-            action_id = min(
-                legal,
-                key=lambda a: (self._visits.get((guard, a), 0), self.action_ids.index(a)),
+            catalog = self._action_catalog(obs)
+            token = min(
+                catalog,
+                key=lambda candidate: self._visits.get(
+                    (guard, self._candidate_key(candidate)), 0
+                ),
             )
-            token = self._token_for(action_id, obs, "explore")
+            key = (guard, self._candidate_key(token))
+            self._visits[key] = self._visits.get(key, 0) + 1
 
         self._previous = obs
         self._last_action = token
