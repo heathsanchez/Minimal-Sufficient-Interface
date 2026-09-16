@@ -15,6 +15,38 @@ _ACCELERATORS = {
 }
 
 
+REGISTRY_SOURCE = dedent(
+    """\
+    from typing import Type
+    from dotenv import load_dotenv
+    from .agent import Agent, Playback
+    from .swarm import Swarm
+    from .templates.random_agent import Random
+    from .templates.my_agent import MyAgent
+
+    load_dotenv()
+
+    AVAILABLE_AGENTS: dict[str, Type[Agent]] = {
+        'random': Random,
+        'myagent': MyAgent,
+    }
+    """
+)
+
+ENV_SOURCE = dedent(
+    """\
+    SCHEME=http
+    HOST=gateway
+    PORT=8001
+    ARC_API_KEY=test-key-123
+    ARC_BASE_URL=http://gateway:8001/
+    OPERATION_MODE=online
+    ENVIRONMENTS_DIR=
+    RECORDINGS_DIR=/kaggle/working/server_recording
+    """
+)
+
+
 def code_cell(source: str) -> dict:
     return {
         "cell_type": "code",
@@ -43,7 +75,7 @@ def build(agent_path: Path) -> dict:
     write_agent_cell = code_cell("%%writefile /tmp/my_agent.py\n" + agent_body)
 
     run_cell_source = dedent(
-        '''\
+        f'''\
         import os
 
         if os.getenv('KAGGLE_IS_COMPETITION_RERUN'):
@@ -57,31 +89,10 @@ def build(agent_path: Path) -> dict:
                 /kaggle/working/ARC-AGI-3-Agents/agents/templates/my_agent.py
 
             with open('/kaggle/working/ARC-AGI-3-Agents/agents/__init__.py', 'w') as f:
-                f.write("""from typing import Type
-        from dotenv import load_dotenv
-        from .agent import Agent, Playback
-        from .swarm import Swarm
-        from .templates.random_agent import Random
-        from .templates.my_agent import MyAgent
-
-        load_dotenv()
-
-        AVAILABLE_AGENTS: dict[str, Type[Agent]] = {
-            'random': Random,
-            'myagent': MyAgent,
-        }
-        """)
+                f.write({REGISTRY_SOURCE!r})
 
             with open('/kaggle/working/ARC-AGI-3-Agents/.env', 'w') as f:
-                f.write("""SCHEME=http
-        HOST=gateway
-        PORT=8001
-        ARC_API_KEY=test-key-123
-        ARC_BASE_URL=http://gateway:8001/
-        OPERATION_MODE=online
-        ENVIRONMENTS_DIR=
-        RECORDINGS_DIR=/kaggle/working/server_recording
-        """)
+                f.write({ENV_SOURCE!r})
 
             !cd /kaggle/working/ARC-AGI-3-Agents && \\
                 MPLBACKEND=agg \\
