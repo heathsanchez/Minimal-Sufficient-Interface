@@ -35,6 +35,10 @@ def load_my_agent_class():
     if spec is None or spec.loader is None:
         raise SystemExit("Could not load agent/my_agent.py")
     module = importlib.util.module_from_spec(spec)
+    # Python 3.12 dataclasses resolve annotations through sys.modules while
+    # the class decorator executes. Register before exec_module, exactly as a
+    # normal import would.
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     if not hasattr(module, "MyAgent"):
         raise SystemExit("agent/my_agent.py must define MyAgent")
@@ -70,9 +74,6 @@ def _resolve_requested_games(requested: str | None, available: list[str], offlin
                 f"Ambiguous short game id {token!r}; choose one exact versioned id: {short_matches}"
             )
 
-        # The pinned public offline protocol already knows exact versioned IDs.
-        # Some SDK versions do not enumerate offline files, so preserve an
-        # explicitly versioned request and let Arcade.make validate it.
         if offline and "-" in token:
             resolved_game_ids.append(token)
             continue
