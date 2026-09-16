@@ -68,16 +68,42 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(c.local_history_length, 0)
         self.assertEqual(c.retained_option_count, 1)
 
-    def test_complex_action_coordinates_are_deterministic_and_in_bounds(self):
-        c = OnlineController((6,))
-        token = c.observe_and_choose(frame(actions=(6,), h=10, w=20))
+    def test_complex_grounding_starts_with_public_coarse_lattice(self):
+        c = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
+        token = c.observe_and_choose(frame(actions=(6,), h=64, w=64))
         self.assertIsInstance(token, ActionToken)
         self.assertEqual(token.action_id, 6)
-        self.assertEqual((token.x, token.y), (10, 5))
-        self.assertGreaterEqual(token.x, 0)
-        self.assertLess(token.x, 20)
-        self.assertGreaterEqual(token.y, 0)
-        self.assertLess(token.y, 10)
+        # Exact first donor token: half-stride offset on public dimensions.
+        self.assertEqual((token.x, token.y), (4, 4))
+
+    def test_complex_grounding_is_deterministic_diverse_and_bounded(self):
+        f = frame(actions=(6,), h=64, w=64)
+        a = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
+        b = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
+
+        seq_a = [a.observe_and_choose(f) for _ in range(80)]
+        seq_b = [b.observe_and_choose(f) for _ in range(80)]
+        coords_a = [(t.x, t.y) for t in seq_a]
+        coords_b = [(t.x, t.y) for t in seq_b]
+
+        self.assertEqual(coords_a, coords_b)
+        self.assertEqual(len(set(coords_a)), 80)
+        self.assertEqual(coords_a[:3], [(4, 4), (12, 4), (20, 4)])
+        for x, y in coords_a:
+            self.assertGreaterEqual(x, 0)
+            self.assertLess(x, 64)
+            self.assertGreaterEqual(y, 0)
+            self.assertLess(y, 64)
+
+    def test_complex_grounding_moves_from_coarse_to_finer_scale(self):
+        f = frame(actions=(6,), h=64, w=64)
+        c = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
+        coords = [(c.observe_and_choose(f).x, c._last_action.y) for _ in range(66)]
+        # First 64 probes are the 8x8 stride-8 lattice; the next probe begins
+        # the stride-4 refinement and is not a duplicate of the coarse set.
+        self.assertEqual(coords[63], (60, 60))
+        self.assertEqual(coords[64], (2, 2))
+        self.assertNotIn(coords[64], coords[:64])
 
     def test_unavailable_actions_are_not_selected(self):
         c = OnlineController((1, 2, 6))
