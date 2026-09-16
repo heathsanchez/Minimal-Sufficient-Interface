@@ -32,9 +32,11 @@ class MyAgent(Agent):
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
+        # The official local/offline wrapper performs RESET during arc.make().
+        # That returned observation has full_reset=True and is already playable,
+        # so full_reset is a memory boundary, not a request to RESET again.
         if latest_frame.full_reset:
             self.controller.reset_episode()
-            return GameAction.RESET
 
         if latest_frame.state in (GameState.NOT_PLAYED, GameState.GAME_OVER):
             self.controller.reset_episode()
