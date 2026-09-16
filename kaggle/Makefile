@@ -4,35 +4,39 @@ VENV_PY := $(VENV)/bin/python
 VENV_PIP := $(VENV)/bin/pip
 KAGGLE := KAGGLE_API_TOKEN=$$(cat .kaggle/access_token) $(VENV)/bin/kaggle
 FRAMEWORK_REPO := https://github.com/arcprize/ARC-AGI-3-Agents.git
+FRAMEWORK_REF := 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
 FRAMEWORK_DIR := vendor/ARC-AGI-3-Agents
+PUBLIC_ENV_DIR ?= ../upstream-arc-agi/test_environment_files
+PUBLIC_GAME ?= bt33-a7c3f9d18b4e
 GAME ?=
 STEPS ?= 200
 
-.PHONY: help setup test build-agent play-local verify-local list-games notebook submit status clean _check-kaggle
+.PHONY: help setup test build-agent play-local verify-local verify-public list-games notebook submit status clean _check-kaggle
 
 help:
 	@echo "ARC3 Kaggle integration"
-	@echo "  make setup        create venv, install deps, clone/slim official framework"
-	@echo "  make test         run all offline integration contracts"
-	@echo "  make build-agent  compile modular source to agent/my_agent.py"
-	@echo "  make play-local   run generated agent on all games (or GAME=ls20)"
-	@echo "  make verify-local run 50-step smoke test on ls20 + vc33"
-	@echo "  make list-games   list locally available ARC3 games"
-	@echo "  make notebook     build the self-contained CPU/offline Kaggle notebook"
-	@echo "  make submit       push notebooks/ to Kaggle (requires local token + username)"
-	@echo "  make status       show latest Kaggle kernel status"
+	@echo "  make setup         create venv, install pinned deps, checkout/slim official framework"
+	@echo "  make test          run all offline integration contracts"
+	@echo "  make build-agent   compile modular source to agent/my_agent.py"
+	@echo "  make play-local    run generated agent in normal local mode (or GAME=ls20)"
+	@echo "  make verify-local  run 50-step normal-mode smoke on ls20 + vc33"
+	@echo "  make verify-public run generated agent on pinned public offline bt33 corpus"
+	@echo "  make list-games    list locally available ARC3 games"
+	@echo "  make notebook      build the self-contained CPU/offline Kaggle notebook"
+	@echo "  make submit        push notebooks/ to Kaggle (requires local token + username)"
+	@echo "  make status        show latest Kaggle kernel status"
 
 setup:
 	$(PYTHON) -m venv $(VENV)
 	$(VENV_PIP) install --upgrade pip
-	$(VENV_PIP) install "arc-agi>=0.9.9" "kaggle>=2.2" python-dotenv pandas pyarrow
+	$(VENV_PIP) install "arc-agi==0.9.9" "kaggle>=2.2" python-dotenv pandas pyarrow
 	@if [ ! -d "$(FRAMEWORK_DIR)/.git" ]; then \
-		mkdir -p vendor && git clone --depth 1 $(FRAMEWORK_REPO) $(FRAMEWORK_DIR); \
-	else \
-		git -C $(FRAMEWORK_DIR) pull --ff-only; \
+		mkdir -p vendor && git clone --no-checkout $(FRAMEWORK_REPO) $(FRAMEWORK_DIR); \
 	fi
+	git -C $(FRAMEWORK_DIR) fetch --depth 1 origin $(FRAMEWORK_REF)
+	git -C $(FRAMEWORK_DIR) checkout --detach FETCH_HEAD
 	$(VENV_PY) scripts/slim_framework.py
-	@echo "Setup complete. Next: make verify-local"
+	@echo "Setup complete. Next: make verify-public PUBLIC_ENV_DIR=/path/to/test_environment_files"
 
 # Tests intentionally use stdlib only; the generated agent imports ARC framework
 # modules only when executed by the official framework/Kaggle runtime.
@@ -47,6 +51,12 @@ play-local: build-agent
 
 verify-local: build-agent
 	$(VENV_PY) scripts/play_local.py --game ls20,vc33 --max-steps 50
+
+verify-public: build-agent
+	$(VENV_PY) scripts/play_local.py \
+		--offline-environments-dir $(PUBLIC_ENV_DIR) \
+		--game $(PUBLIC_GAME) \
+		--max-steps 8
 
 list-games:
 	$(VENV_PY) scripts/play_local.py --list
