@@ -3,6 +3,8 @@
   "frozen_arc3_controller": "68e37033f3ae1e86e992dfe8d982aef9133612aa",
   "verified_shared_transfer": "ab32c4ba719e57d982c09c39ee921d33a7b7b33e",
   "arc_upstream": "f12822c4d550121c35a275008d964afbbed47d2f",
+  "agents_framework": "4743e7d0aaae0ded0d98a89a7e282e63564cd58b",
+  "arc_agi_python": "0.9.9",
   "runtime": "metalogic-online-v1",
   "hot_path": "offline-online-controller"
 }
