@@ -1,0 +1,76 @@
+# Metalogic ARC3 Kaggle Integration
+
+This directory is the single execution shell for the ARC-AGI-3 competition agent.
+
+The readable source lives under `src/metalogic_arc3/`. `scripts/build_agent.py` compiles it deterministically into one self-contained `agent/my_agent.py`, and `scripts/build_notebook.py` places that exact file into an offline CPU Kaggle notebook using the official ARC-AGI-3 gateway pattern.
+
+## Runtime boundary
+
+The competition hot path is deliberately small:
+
+```text
+live public frame
+  -> normalize observation
+  -> record consequence of previous action
+  -> update minimum warranted task state
+  -> reuse a witnessed progress program only under a matching guard
+  -> otherwise choose the least-tested legal public action
+  -> return GameAction
+```
+
+The submitted runtime does **not** require network access, GitHub, Lean subprocesses, external model/API calls, or creation of extra hidden environments. Lean/replay/ablation remain development and qualification tools outside the Kaggle hot path.
+
+## One-time local setup
+
+From this directory:
+
+```bash
+make setup
+```
+
+Set your Kaggle notebook owner once by replacing `REPLACE_WITH_YOUR_USERNAME` in:
+
+```text
+notebooks/kernel-metadata.json
+```
+
+Create a Kaggle API token in Kaggle settings and save the token string locally as:
+
+```text
+.kaggle/access_token
+```
+
+That directory is gitignored. Do not commit the token.
+
+## Verify and build
+
+```bash
+make test
+make notebook
+```
+
+This produces:
+
+```text
+agent/my_agent.py
+notebooks/submission.ipynb
+```
+
+Both are generated artifacts and are gitignored. The source-of-truth code remains modular and reviewable.
+
+## Push to Kaggle
+
+```bash
+make submit
+make status
+```
+
+`make submit` refuses to run if the token is missing or the Kaggle username placeholder is still present. CI never submits to Kaggle and never needs the token.
+
+## Provenance
+
+`provenance/sources.json` pins the MSI ARC3 integration base, frozen ARC3 controller, verified shared-transfer checkpoint, and ARC upstream used by the qualified research lineage.
+
+## V1 claim boundary
+
+This bundle connects the existing consequence-driven ARC3 machinery to the official online Kaggle agent contract. It currently retains exact-guarded progress programs and uses deterministic bounded exploration. RealityGraph verified language growth is intentionally not in the first hot path; it should be added only after a live residual establishes that the present observation/action language is expressively inadequate rather than merely under-searched.
