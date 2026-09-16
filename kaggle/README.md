@@ -20,13 +20,22 @@ live public frame
 
 The submitted runtime does **not** require network access, GitHub, Lean subprocesses, external model/API calls, or creation of extra hidden environments. Lean/replay/ablation remain development and qualification tools outside the Kaggle hot path.
 
-## One-time local setup
+## Get the integrated branch
 
-From this directory:
+```bash
+git clone https://github.com/heathsanchez/Minimal-Sufficient-Interface.git
+cd Minimal-Sufficient-Interface
+git checkout arc3-kaggle-integration-v1
+cd kaggle
+```
+
+## One-time local setup
 
 ```bash
 make setup
 ```
+
+This creates the Python 3.12 environment, installs ARC/Kaggle dependencies, clones the official `ARC-AGI-3-Agents` framework into `vendor/`, and slims its eager optional-agent imports exactly for this lightweight runtime.
 
 Set your Kaggle notebook owner once by replacing `REPLACE_WITH_YOUR_USERNAME` in:
 
@@ -42,10 +51,43 @@ Create a Kaggle API token in Kaggle settings and save the token string locally a
 
 That directory is gitignored. Do not commit the token.
 
-## Verify and build
+## Verify locally on real ARC3 games
+
+First run the repository contracts:
 
 ```bash
 make test
+```
+
+Then run the generated agent through the same official agent framework used by the Kaggle shell:
+
+```bash
+make verify-local
+```
+
+For one game:
+
+```bash
+make play-local GAME=ls20
+```
+
+For all available games:
+
+```bash
+make play-local
+```
+
+To list game IDs:
+
+```bash
+make list-games
+```
+
+The first local ARC call may download/cache the public game source; subsequent local runs use the cache. The hidden Kaggle execution remains internet-disabled.
+
+## Build the exact Kaggle artifact
+
+```bash
 make notebook
 ```
 
@@ -65,7 +107,7 @@ make submit
 make status
 ```
 
-`make submit` refuses to run if the token is missing or the Kaggle username placeholder is still present. CI never submits to Kaggle and never needs the token.
+`make submit` refuses to run if the token is missing or the Kaggle username placeholder is still present. This pushes the notebook for Kaggle's save/run phase; the deliberate competition submission of its `submission.parquet` remains a separate UI action. CI never submits to Kaggle and never needs the token.
 
 ## Provenance
 
