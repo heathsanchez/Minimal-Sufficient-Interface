@@ -1,0 +1,6 @@
+.venv/
+.kaggle/
+__pycache__/
+*.pyc
+agent/my_agent.py
+notebooks/submission.ipynb
