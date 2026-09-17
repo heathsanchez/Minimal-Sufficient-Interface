@@ -11,6 +11,7 @@ MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
 CAUSAL_AFFORDANCE = ROOT / "kaggle" / "src" / "metalogic_arc3" / "causal_affordance.py"
+STABLE_STATE = ROOT / "kaggle" / "src" / "metalogic_arc3" / "stable_state.py"
 CONSEQUENCE_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "consequence_controller.py"
 CERTIFIED_MEMORY = ROOT / "kaggle" / "src" / "metalogic_arc3" / "certified_memory.py"
 REQUALIFICATION_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "requalification_controller.py"
@@ -46,6 +47,7 @@ def render() -> str:
         RUNTIME,
         MEMORY_CONTROLLER,
         CAUSAL_AFFORDANCE,
+        STABLE_STATE,
         CONSEQUENCE_CONTROLLER,
         CERTIFIED_MEMORY,
         REQUALIFICATION_CONTROLLER,
@@ -71,6 +73,10 @@ def render() -> str:
         ),
     )
     causal_affordance = clean_module(CAUSAL_AFFORDANCE.read_text())
+    stable_state = clean_module(
+        STABLE_STATE.read_text(),
+        remove=("from .memory_graph import ActionKey\n",),
+    )
     consequence_controller = clean_module(
         CONSEQUENCE_CONTROLLER.read_text(),
         remove=(
@@ -104,6 +110,7 @@ def render() -> str:
         runtime,
         memory_controller,
         causal_affordance,
+        stable_state,
         consequence_controller,
         certified_memory,
         requalification_controller,
