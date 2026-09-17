@@ -75,6 +75,17 @@ jobs:
           echo 'ARC3_ARCHIVED_THREE_LEVELS=PASS'
           echo 'ARC3_LEVEL4_FRONTIER=PASS'
           echo 'ARC3_GENERATED_AGENT_PUBLIC_ENV=PASS'
+      - name: Measure untouched bt11 generalization baseline
+        run: |
+          python kaggle/scripts/play_local.py \
+            --offline-environments-dir upstream-arc-agi/test_environment_files \
+            --game bt11-fd9df0622a1a \
+            --max-steps 128 | tee arc3-untouched-bt11.log
+          grep -q 'ARC3_PUBLIC_SMOKE=PASS' arc3-untouched-bt11.log
+          bt11_levels="$(grep -o 'MAX_LEVELS_REACHED=[0-9]*' arc3-untouched-bt11.log | tail -1 | cut -d= -f2)"
+          test -n "$bt11_levels"
+          echo "ARC3_UNTOUCHED_BT11_LEVELS=$bt11_levels"
+          echo 'ARC3_UNTOUCHED_BT11_EXECUTED=PASS'
       - uses: actions/upload-artifact@v4
         with:
           name: arc3-kaggle-bundle
@@ -84,4 +95,5 @@ jobs:
             kaggle/notebooks/kernel-metadata.json
             kaggle/provenance/sources.json
             arc3-public-smoke.log
+            arc3-untouched-bt11.log
           if-no-files-found: error
