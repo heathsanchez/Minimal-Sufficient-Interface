@@ -12,7 +12,7 @@ open Module Submodule LinearMap
 
 noncomputable section
 
-universe u v y
+universe u v y r
 
 variable {𝕜 : Type u} [Field 𝕜]
 variable {V : Type v} [AddCommGroup V] [Module 𝕜 V] [FiniteDimensional 𝕜 V]
@@ -226,7 +226,7 @@ theorem canonical_finrank_eq_futureObservableSpan
         Module.finrank 𝕜 (Module.Dual 𝕜 (futureObservableSpan S C)) :=
       (canonicalEquivFinitePresentation S C).finrank_eq
     _ = Module.finrank 𝕜 (futureObservableSpan S C) :=
-      Subspace.dual_finrank_eq
+      Subspace.dual_finrank_eq (K := 𝕜) (V := futureObservableSpan S C)
 
 /-- Every sufficient finite-dimensional linear realization has rank at least the canonical quotient. -/
 theorem sufficient_rank_ge_canonical
