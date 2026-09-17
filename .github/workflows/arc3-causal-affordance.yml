@@ -8,14 +8,183 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: arc3-affordance-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   qualification:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run ARC contracts
+      - name: Run ARC contracts including executed generated deployment
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build and compile deployed candidate
+        run: |
+          mkdir -p kaggle/deployment
+          python kaggle/scripts/build_agent.py
+          python -m py_compile kaggle/agent/my_agent.py
+          cp kaggle/agent/my_agent.py kaggle/deployment/candidate.py
+          python kaggle/scripts/build_notebook.py
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 846b3919f4b8cdf8e2ca414b41c7239c255419e7
+          path: baseline-worktree
+      - name: Rebuild and verify the immutable baseline
+        run: |
+          python baseline-worktree/kaggle/scripts/build_agent.py --output "$PWD/kaggle/deployment/baseline.py"
+          echo '871cd5b6092962b098d653875233d26098b84bf22c2ebe82f5750bf427264b5b  kaggle/deployment/baseline.py' | sha256sum --check
+      - name: Install pinned ARC SDK
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/deployment/requirements-resolved.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Verify actual SDK adapter uses the new controller
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'kaggle/scripts')
+          import benchmark_audit as audit
+          module = audit.load_agent()
+          policy = module.MyAgent(card_id='preflight', game_id='public-diagnostic', agent_name='candidate', ROOT_URL='', record=False, arc_env=None)
+          assert type(policy.controller) is module.ConsequenceController
+          assert isinstance(policy.controller.affordances, module.AffordanceMemory)
+          print('ARC3_DEPLOYED_CONSEQUENCE_CONTROLLER=PASS')
+          PY
+      - name: Freeze fixture control and exact public diagnostic manifests
+        run: |
+          python kaggle/scripts/benchmark_audit.py prepare --fixtures --games bt11 --max-actions 128 --environments-dir upstream-arc-agi/test_environment_files --manifest kaggle/deployment/candidate-fixture.json
+          python kaggle/scripts/benchmark_audit.py prepare --games ls20,ft09,vc33 --max-actions 400 --manifest kaggle/deployment/candidate-public.json
+          python - <<'PY'
+          import copy, hashlib, json, os
+          from pathlib import Path
+          root = Path('kaggle/deployment')
+          expected = {
+              'ft09-0d8bbf25': {'ft09.py': 'aa5b54f48a29da9f276c3df0dc04de728002f523384ab868c85d56d819cd0783', 'metadata.json': '52d1ff67f9785e32a9b2e4dc3ebba31233708d152aec4dfd73645b3958af2e78'},
+              'ls20-9607627b': {'ls20.py': '298c810da2850d557c95d92a2cbd846df29a45d7134e20888617bedf5dafcd92', 'metadata.json': '648b6e93d548fd369db26447699dc13a2cbad56cfbb5a129c7ae86de329cd216'},
+              'vc33-5430563c': {'vc33.py': '8afa9f55054b2a2460b6c44ec5c66e120f6d6f4c2289e24d50832a68d1e3fcfd', 'metadata.json': 'ff50aec3c72e1a8c536bc152fb9117b1e1f46b5f79a3f52e180a550e5ae6a381'},
+          }
+          for kind in ('fixture', 'public'):
+              path = root / f'candidate-{kind}.json'
+              manifest = json.loads(path.read_text())
+              assert manifest['sdk_versions'] == {'arc-agi': '0.9.9', 'arcengine': '0.9.3'}
+              if kind == 'public':
+                  assert {g['game_id']: g['files'] for g in manifest['games']} == expected, 'public diagnostic version drift'
+              # Prior two-seed trials were identical, so do not count duplicate
+              # deterministic traces as independent evidence here.
+              manifest['seeds'] = [0]
+              manifest['candidate_commit'] = os.environ['GITHUB_SHA']
+              path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+              baseline = copy.deepcopy(manifest)
+              baseline['generated_agent_sha256'] = hashlib.sha256((root / 'baseline.py').read_bytes()).hexdigest()
+              (root / f'baseline-{kind}.json').write_text(json.dumps(baseline, indent=2, sort_keys=True) + '\n')
+          print('ARC3_EXACT_PUBLIC_VERSIONS_AND_HASHES=PASS')
+          PY
+      - name: Candidate fixture control and three real public diagnostics
+        run: |
+          python kaggle/scripts/benchmark_audit.py run --manifest kaggle/deployment/candidate-fixture.json --output kaggle/deployment/candidate-fixture-results
+          python kaggle/scripts/benchmark_audit.py run --manifest kaggle/deployment/candidate-public.json --output kaggle/deployment/candidate-public-results
+      - name: Matched frozen baseline on identical worlds and budgets
+        run: |
+          cp kaggle/deployment/baseline.py kaggle/agent/my_agent.py
+          python kaggle/scripts/benchmark_audit.py run --manifest kaggle/deployment/baseline-fixture.json --output kaggle/deployment/baseline-fixture-results
+          python kaggle/scripts/benchmark_audit.py run --manifest kaggle/deployment/baseline-public.json --output kaggle/deployment/baseline-public-results
+          cp kaggle/deployment/candidate.py kaggle/agent/my_agent.py
+      - name: Disable only affordance ranking in fresh matched cells
+        run: |
+          mkdir -p kaggle/deployment/no-affordance-results
+          for GAME in ft09-0d8bbf25 ls20-9607627b vc33-5430563c bt11-fd9df0622a1a; do
+            GAME_ID="$GAME" python - <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          from types import SimpleNamespace
+          sys.path.insert(0, 'kaggle/scripts')
+          import benchmark_audit as audit
+          game = os.environ['GAME_ID']
+          kind = 'fixture' if game.startswith('bt11-') else 'public'
+          original = audit.apply_ablation
+          def no_affordance(policy, arm):
+              original(policy, arm)
+              assert type(policy.controller).__name__ == 'ConsequenceController'
+              policy.controller.affordances.affordance_score = lambda descriptor: 0.0
+          audit.apply_ablation = no_affordance
+          output = Path('kaggle/deployment/no-affordance-results') / (game + '.json')
+          audit.cell(SimpleNamespace(manifest=f'kaggle/deployment/candidate-{kind}.json', game=game, seed=0, arm='full', output=str(output)))
+          result = json.loads(output.read_text())
+          result['variant'] = 'no_affordance_ranking'
+          output.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          assert result['status'] in ('WIN', 'ACTION_BOUND'), result
+          print('NO_AFFORDANCE_CELL=' + json.dumps({k:v for k,v in result.items() if k != 'trace'}, sort_keys=True))
+          PY
+          done
+      - name: Compare measured progress and prove changed deployed behavior
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('kaggle/deployment')
+          rows = []
+          for kind in ('fixture', 'public'):
+              c = json.loads((root / f'candidate-{kind}-results/summary.json').read_text())
+              b = json.loads((root / f'baseline-{kind}-results/summary.json').read_text())
+              assert c['comparison'] == b['comparison'] == 'MATCHED'
+              baseline = {(r['game_id'],r['arm']): r for r in b['results']}
+              for row in c['results']:
+                  old = baseline[(row['game_id'],row['arm'])]
+                  assert row['initial_digest'] == old['initial_digest']
+                  assert row['status'] in ('WIN','ACTION_BOUND') and old['status'] in ('WIN','ACTION_BOUND')
+                  assert row['actions'] <= c['manifest']['max_actions']
+                  if row['arm'] != 'full':
+                      continue
+                  name = f"{row['game_id']}-0-full.json"
+                  ct = json.loads((root / f'candidate-{kind}-results' / name).read_text())['trace']
+                  bt = json.loads((root / f'baseline-{kind}-results' / name).read_text())['trace']
+                  noaff = json.loads((root / 'no-affordance-results' / (row['game_id'] + '.json')).read_text())
+                  assert noaff['initial_digest'] == row['initial_digest']
+                  assert noaff['generated_agent_sha256'] == row['generated_agent_sha256']
+                  def behavior(trace):
+                      return [(r['action'],r['after'],r['level'],r['state']) for r in trace]
+                  record = dict(kind=kind, game_id=row['game_id'], baseline_levels=old['max_levels'], baseline_actions=old['actions'], candidate_levels=row['max_levels'], candidate_actions=row['actions'], candidate_status=row['status'], baseline_distinct=old['distinct_observations'], candidate_distinct=row['distinct_observations'], baseline_no_change=old['zero_observation_change'], candidate_no_change=row['zero_observation_change'], candidate_sources=row['source_counts'], candidate_capabilities=row['capability_records'], changed_from_baseline=behavior(ct)!=behavior(bt), no_affordance_levels=noaff['max_levels'], no_affordance_actions=noaff['actions'], ranking_changed_behavior=behavior(ct)!=behavior(noaff['trace']))
+                  rows.append(record)
+                  print('DEPLOYMENT_COMPARISON=' + json.dumps(record, sort_keys=True))
+          assert any(r['candidate_sources'].get('affordance',0) for r in rows if r['kind']=='public')
+          assert any(r['changed_from_baseline'] for r in rows if r['kind']=='public')
+          report = dict(candidate_commit=os.environ['GITHUB_SHA'], baseline_commit='846b3919f4b8cdf8e2ca414b41c7239c255419e7', candidate_sha256=hashlib.sha256((root/'candidate.py').read_bytes()).hexdigest(), baseline_sha256=hashlib.sha256((root/'baseline.py').read_bytes()).hexdigest(), trial_count=36, seed=0, qualification='deployment and matched measurement, not a solve gate', interpretation='development-set diagnostic; not sealed generalization or Kaggle score', comparisons=rows)
+          (root/'comparison.json').write_text(json.dumps(report, indent=2, sort_keys=True)+'\n')
+          print('ARC3_AFFORDANCE_DEPLOYMENT_AND_COMPARISON=PASS')
+          PY
+      - name: Restore candidate and upload all evidence
+        if: always()
+        run: |
+          if test -f kaggle/deployment/candidate.py; then cp kaggle/deployment/candidate.py kaggle/agent/my_agent.py; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-affordance-deployment
+          path: |
+            kaggle/deployment/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/src/
+            kaggle/scripts/
+            kaggle/tests/
+            kaggle/provenance/
+          if-no-files-found: warn
