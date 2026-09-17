@@ -49,13 +49,56 @@ class ResourceFactorContracts(unittest.TestCase):
         self.assertNotEqual(f.resource_signature(0, a), f.resource_signature(0, b))
 
     def test_interior_motion_is_never_factored_as_resource_ui(self):
-        f = ResourceFactor(activation_transitions=8, min_positions=6)
-        frames = [with_interior_marker(x) for x in range(1, 11)]
+        f = ResourceFactor(
+            activation_transitions=8, min_positions=6, max_observation_horizon=12
+        )
+        frames = [with_interior_marker((i % 10) + 1) for i in range(14)]
         for before, after in zip(frames, frames[1:]):
             f.observe(0, before, after)
         self.assertTrue(f.frozen(0, 12, 16))
         self.assertFalse(f.active(0, 12, 16))
         self.assertEqual(f.masked_positions(0, 12, 16), ())
+
+    def test_sparse_late_boundary_can_earn_factor_after_activation_threshold(self):
+        f = ResourceFactor(
+            activation_transitions=8,
+            min_positions=6,
+            max_observation_horizon=40,
+        )
+
+        def large_bar(active):
+            return with_bar(active, width=64, height=64)
+
+        frames = [large_bar(64 - (i // 4)) for i in range(30)]
+        for i, (before, after) in enumerate(zip(frames, frames[1:]), start=1):
+            f.observe(0, before, after)
+            if i == 8:
+                self.assertFalse(f.frozen(0, 64, 64))
+        self.assertTrue(f.active(0, 64, 64))
+        self.assertGreaterEqual(len(f.masked_positions(0, 64, 64)), 6)
+
+    def test_oversized_edge_change_is_rejected_at_max_horizon(self):
+        f = ResourceFactor(
+            activation_transitions=8,
+            min_positions=6,
+            edge_band=3,
+            max_observation_horizon=20,
+            max_mask_fraction=0.04,
+        )
+
+        def broad(active):
+            grid = [[4 for _ in range(64)] for _ in range(64)]
+            for y in range(3):
+                for x in range(64):
+                    grid[y][x] = 12 if x < active else 11
+            return tuple(tuple(row) for row in grid)
+
+        frames = [broad(64 - i) for i in range(22)]
+        for before, after in zip(frames, frames[1:]):
+            f.observe(0, before, after)
+        self.assertTrue(f.frozen(0, 64, 64))
+        self.assertFalse(f.active(0, 64, 64))
+        self.assertEqual(f.masked_positions(0, 64, 64), ())
 
     def test_resource_ledger_retains_cost_evidence_separately(self):
         f = ResourceFactor(activation_transitions=8, min_positions=6)
