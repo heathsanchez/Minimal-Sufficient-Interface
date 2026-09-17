@@ -149,12 +149,49 @@ def run_world(game_id, envdir, max_actions):
         for depth in (1,2,3,4,6,8):
             for side in ("top","bottom","left","right"):
                 pts=border_points(h,w,side,depth)
-                unique=len({digest_grid(g,pts) for g in frames})
+                qseq=[digest_grid(g,pts) for g in frames]
+                unique=len(set(qseq))
+                transition_rows=defaultdict(Counter)
+                source_counts=Counter()
+                outcome_rows=defaultdict(set)
+                for i,action in enumerate(actions):
+                    key=(qseq[i],tuple(action))
+                    transition_rows[key][qseq[i+1]] += 1
+                    source_counts[key] += 1
+                    outcome_rows[qseq[i]].add((
+                        levels[i-1] if i else 0,
+                        states[i-1] if i else "NOT_FINISHED",
+                    ))
+                ambiguous_keys=sum(len(counter)>1 for counter in transition_rows.values())
+                conflicting_events=sum(
+                    sum(counter.values())-max(counter.values())
+                    for counter in transition_rows.values()
+                )
+                repeated_keys=sum(count>1 for count in source_counts.values())
+                repeated_events=sum(count for count in source_counts.values() if count>1)
+                outcome_conflicts=sum(len(values)>1 for values in outcome_rows.values())
                 projections.append({
                     "side":side,"depth":depth,"unique":unique,
                     "compression": raw_unique/max(1,unique),
+                    "transition_keys":len(transition_rows),
+                    "repeated_keys":repeated_keys,
+                    "repeated_events":repeated_events,
+                    "ambiguous_keys":ambiguous_keys,
+                    "conflicting_events":conflicting_events,
+                    "outcome_conflicts":outcome_conflicts,
+                    "empirical_transition_consistency": (
+                        1.0 - conflicting_events/max(1,len(actions))
+                    ),
                 })
-    projections.sort(key=lambda x:(x["compression"],-x["unique"]),reverse=True)
+    projections.sort(
+        key=lambda x:(
+            x["outcome_conflicts"]==0,
+            x["conflicting_events"]==0,
+            x["repeated_events"],
+            x["compression"],
+        ),
+        reverse=True,
+    )
 
     pair_actions=defaultdict(set)
     pair_positions=defaultdict(set)
