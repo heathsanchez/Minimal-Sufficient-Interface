@@ -5,11 +5,11 @@ from typing import Any
 from arcengine import FrameData, GameAction, GameState
 from agents.agent import Agent
 
-from .runtime import OnlineController
+from .memory_controller import MemoryGraphController
 
 
 class MyAgent(Agent):
-    """Thin ARC-AGI-3 framework adapter around the online MSI controller."""
+    """Thin ARC-AGI-3 framework adapter around the online MSI + .mg controller."""
 
     MAX_ACTIONS = 400
 
@@ -20,11 +20,11 @@ class MyAgent(Agent):
             for action in GameAction
             if action is not GameAction.RESET
         )
-        self.controller = OnlineController(action_ids)
+        self.controller = MemoryGraphController(action_ids)
 
     @property
     def name(self) -> str:
-        return f"{super().name}.metalogic-online-v1"
+        return f"{super().name}.metalogic-mg-v1"
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
         return latest_frame.state is GameState.WIN
@@ -38,7 +38,14 @@ class MyAgent(Agent):
         if latest_frame.full_reset:
             self.controller.reset_episode()
 
-        if latest_frame.state in (GameState.NOT_PLAYED, GameState.GAME_OVER):
+        if latest_frame.state is GameState.GAME_OVER:
+            # Terminal consequence is evidence. Commit the failed prefix to the
+            # compressed consequential present before clearing trajectory state.
+            self.controller.record_terminal_failure("GAME_OVER")
+            self.controller.reset_episode()
+            return GameAction.RESET
+
+        if latest_frame.state is GameState.NOT_PLAYED:
             self.controller.reset_episode()
             return GameAction.RESET
 
@@ -52,14 +59,14 @@ class MyAgent(Agent):
                 raise ValueError("complex action requires coordinates")
             action.set_data({"x": int(token.x), "y": int(token.y)})
             action.reasoning = {
-                "agent": "metalogic-online-v1",
+                "agent": "metalogic-mg-v1",
                 "source": token.source,
                 "x": int(token.x),
                 "y": int(token.y),
             }
         else:
             action.reasoning = {
-                "agent": "metalogic-online-v1",
+                "agent": "metalogic-mg-v1",
                 "source": token.source,
             }
         return action
