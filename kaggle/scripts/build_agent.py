@@ -11,6 +11,7 @@ MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
 CAUSAL_AFFORDANCE = ROOT / "kaggle" / "src" / "metalogic_arc3" / "causal_affordance.py"
+RESOURCE_FACTOR = ROOT / "kaggle" / "src" / "metalogic_arc3" / "resource_factor.py"
 CONSEQUENCE_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "consequence_controller.py"
 CERTIFIED_MEMORY = ROOT / "kaggle" / "src" / "metalogic_arc3" / "certified_memory.py"
 REQUALIFICATION_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "requalification_controller.py"
@@ -46,6 +47,7 @@ def render() -> str:
         RUNTIME,
         MEMORY_CONTROLLER,
         CAUSAL_AFFORDANCE,
+        RESOURCE_FACTOR,
         CONSEQUENCE_CONTROLLER,
         CERTIFIED_MEMORY,
         REQUALIFICATION_CONTROLLER,
@@ -71,6 +73,10 @@ def render() -> str:
         ),
     )
     causal_affordance = clean_module(CAUSAL_AFFORDANCE.read_text())
+    resource_factor = clean_module(
+        RESOURCE_FACTOR.read_text(),
+        remove=("from .memory_graph import ActionKey\n",),
+    )
     consequence_controller = clean_module(
         CONSEQUENCE_CONTROLLER.read_text(),
         remove=(
@@ -78,6 +84,7 @@ def render() -> str:
             "from .memory_controller import MemoryGraphController\n",
             "from .memory_graph import ActionKey\n",
             "from .runtime import ActionToken, Observation, normalize_frame\n",
+            "from .resource_factor import ResourceFactor\n",
         ),
     )
     certified_memory = clean_module(
@@ -104,6 +111,7 @@ def render() -> str:
         runtime,
         memory_controller,
         causal_affordance,
+        resource_factor,
         consequence_controller,
         certified_memory,
         requalification_controller,
