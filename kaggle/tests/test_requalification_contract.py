@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# RED contract: these imports must fail until MG-ARC5 is implemented.
 import json
 import sys
 import unittest
@@ -120,8 +121,6 @@ class RequalificationControllerContracts(unittest.TestCase):
         for i in range(16):
             tokens.append(c.observe_and_choose(frame([[1, (i + 1) % 2], [0, 0]], level=1)))
         speculative = [t for t in tokens if t.source in ("transfer_probe", "transfer")]
-        # The first probe was returned by _source_capability; after it, at most
-        # seven more actions may use the target's eight-action allowance.
         self.assertLessEqual(len(speculative), 7)
         self.assertLessEqual(c.memory.transfer_trial(1)["issued"], 8)
 
