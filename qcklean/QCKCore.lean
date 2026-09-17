@@ -155,8 +155,13 @@ theorem canonicalFactor_rangeRestrict
     (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) (q : V →ₗ[𝕜] R)
     (hq : Sufficient S C q) (x : V) :
     canonicalFactor S C q hq (q.rangeRestrict x) = canonicalMap S C x := by
-  simp [canonicalFactor, canonicalMap,
-    LinearMap.quotKerEquivRange_symm_apply_image]
+  change (Submodule.factor (ker_le_contextNullspace S C q hq))
+      (q.quotKerEquivRange.symm (q.rangeRestrict x)) =
+    (contextNullspace S C).mkQ x
+  have hr : q.rangeRestrict x =
+      ⟨q x, LinearMap.mem_range_self q x⟩ := rfl
+  rw [hr, LinearMap.quotKerEquivRange_symm_apply_image]
+  exact Submodule.factor_mk (ker_le_contextNullspace S C q hq) x
 
 /-- The universal factor is surjective: every sufficient realized representation factors onto the canonical one. -/
 theorem canonicalFactor_surjective
@@ -189,13 +194,24 @@ theorem Certificate.comp
   constructor
   · intro a
     ext x
-    have h₂x := congrArg (fun f : R →ₗ[𝕜] U => f (q₁ x)) (h₂.action a)
-    have h₁x := congrArg (fun f : V →ₗ[𝕜] R => f x) (h₁.action a)
-    simpa [LinearMap.comp_apply, h₁x] using h₂x
+    have h₂x : Uact a (q₂ (q₁ x)) = q₂ (T a (q₁ x)) := by
+      exact congrArg (fun f : R →ₗ[𝕜] U => f (q₁ x)) (h₂.action a)
+    have h₁x : T a (q₁ x) = q₁ (S a x) := by
+      exact congrArg (fun f : V →ₗ[𝕜] R => f x) (h₁.action a)
+    calc
+      Uact a ((q₂.comp q₁) x) = Uact a (q₂ (q₁ x)) := rfl
+      _ = q₂ (T a (q₁ x)) := h₂x
+      _ = q₂ (q₁ (S a x)) := by rw [h₁x]
+      _ = (q₂.comp q₁) (S a x) := rfl
   · ext x
-    have h₂x := congrArg (fun f : R →ₗ[𝕜] Y => f (q₁ x)) h₂.observe
-    have h₁x := congrArg (fun f : V →ₗ[𝕜] Y => f x) h₁.observe
-    simpa [LinearMap.comp_apply, h₁x] using h₂x
+    have h₂x : E (q₂ (q₁ x)) = D (q₁ x) := by
+      exact congrArg (fun f : R →ₗ[𝕜] Y => f (q₁ x)) h₂.observe
+    have h₁x : D (q₁ x) = C x := by
+      exact congrArg (fun f : V →ₗ[𝕜] Y => f x) h₁.observe
+    calc
+      E ((q₂.comp q₁) x) = E (q₂ (q₁ x)) := rfl
+      _ = D (q₁ x) := h₂x
+      _ = C x := h₁x
 
 /-- Kernel stability is the primary semantic condition for a proposed operation to descend. -/
 def KernelStable
@@ -219,8 +235,11 @@ theorem descendedOperation_intertwines
     (Aop : V →ₗ[𝕜] V) (hstable : KernelStable q Aop) :
     (descendedOperation q hq Aop hstable).comp q = q.comp Aop := by
   ext x
-  simp [descendedOperation, LinearMap.comp_apply,
-    LinearMap.quotKerEquivOfSurjective_apply_mk]
+  change (q.quotKerEquivOfSurjective hq)
+      ((LinearMap.ker q).mapQ (LinearMap.ker q) Aop hstable
+        (Submodule.Quotient.mk x)) = q (Aop x)
+  rw [Submodule.mapQ_apply]
+  exact LinearMap.quotKerEquivOfSurjective_apply_mk (f := q) hq (Aop x)
 
 /-- A source operation descends uniquely through a surjective representation exactly when its kernel is stable. -/
 theorem operation_descends_iff
