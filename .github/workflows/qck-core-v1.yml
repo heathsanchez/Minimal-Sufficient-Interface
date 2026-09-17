@@ -27,6 +27,9 @@ jobs:
         run: |
           lake update
           lake exe cache get
+      - name: Build QCK Core
+        working-directory: qcklean
+        run: lake build QCK
       - name: Check QCK Core interface
         working-directory: qcklean
         run: lake env lean QCKCoreTest.lean
