@@ -24,8 +24,12 @@ class BuildAgentContracts(unittest.TestCase):
             text = first.decode()
             self.assertIn("class MyAgent", text)
             self.assertIn("class OnlineController", text)
+            self.assertIn("class ArcMemoryGraph", text)
+            self.assertIn("class MemoryGraphController", text)
             self.assertIn("BUILD_PROVENANCE", text)
             self.assertNotIn("from .runtime", text)
+            self.assertNotIn("from .memory_graph", text)
+            self.assertNotIn("from .memory_controller", text)
             self.assertNotIn("metalogic_arc3", text)
             for forbidden in ("requests", "openai", "anthropic", "subprocess", "socket", "urllib"):
                 self.assertNotIn(forbidden, text.lower())
