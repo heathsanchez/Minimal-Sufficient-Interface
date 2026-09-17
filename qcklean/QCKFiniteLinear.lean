@@ -196,20 +196,22 @@ theorem finitePresentation_surjective
     (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
     Function.Surjective (finitePresentation S C) := by
   exact
-    (futureObservableSpan S C).quotDualCoannihilatorToDual_bijective.2.comp
+    (Subspace.quotDualCoannihilatorToDual_bijective
+      (futureObservableSpan S C)).2.comp
       (Submodule.mkQ_surjective _)
 
 /-- The frozen canonical quotient is linearly equivalent to the executable finite presentation. -/
 noncomputable def canonicalEquivFinitePresentation
     (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
-    Canonical S C ≃ₗ[𝕜] Module.Dual 𝕜 (futureObservableSpan S C) := by
-  rw [show contextNullspace S C =
-      (futureObservableSpan S C).dualCoannihilator from
-    (futureObservableSpan_dualCoannihilator S C).symm]
-  exact
+    Canonical S C ≃ₗ[𝕜] Module.Dual 𝕜 (futureObservableSpan S C) :=
+  (Submodule.quotEquivOfEq
+      (contextNullspace S C)
+      (futureObservableSpan S C).dualCoannihilator
+      (futureObservableSpan_dualCoannihilator S C).symm).trans <|
     LinearEquiv.ofBijective
       (futureObservableSpan S C).quotDualCoannihilatorToDual
-      (futureObservableSpan S C).quotDualCoannihilatorToDual_bijective
+      (Subspace.quotDualCoannihilatorToDual_bijective
+        (futureObservableSpan S C))
 
 end
 
