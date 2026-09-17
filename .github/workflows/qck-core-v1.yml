@@ -27,9 +27,39 @@ jobs:
         run: |
           lake update
           lake exe cache get
+      - name: Reject placeholders and local axioms
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          if grep -nER --include='*.lean' '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' .; then
+            echo "Forbidden proof placeholder or local axiom declaration found."
+            exit 1
+          fi
       - name: Build QCK Core
         working-directory: qcklean
         run: lake build QCK
       - name: Check QCK Core interface
         working-directory: qcklean
         run: lake env lean QCKCoreTest.lean
+      - name: Compile every QCK Lean source
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            echo "checking $file"
+            lake env lean "$file"
+          done < <(find . -maxdepth 1 -type f -name '*.lean' ! -name 'lakefile.lean' | sort)
+      - name: Report QCK theorem axiom surface
+        working-directory: qcklean
+        run: |
+          cat > /tmp/QCKCoreAxiomAudit.lean <<'EOF'
+          import QCKCore
+          #print axioms QCK.allWordSubstitution
+          #print axioms QCK.ker_le_contextNullspace
+          #print axioms QCK.canonicalFactor_surjective
+          #print axioms QCK.Certificate.comp
+          #print axioms QCK.descendedOperation_intertwines
+          #print axioms QCK.operation_descends_iff
+          #print axioms QCK.operation_defect_witness
+          EOF
+          lake env lean /tmp/QCKCoreAxiomAudit.lean
