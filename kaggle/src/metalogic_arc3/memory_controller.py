@@ -11,7 +11,8 @@ class MemoryGraphController(OnlineController):
 
     The base controller still owns action grounding, exact archived capability
     replay, progress retention, and bounded option reuse. This layer owns facts
-    that must survive RESET: purchased interventions and refuted action prefixes.
+    that must survive RESET: purchased interventions, observed legal branching,
+    and exact terminally refuted programs.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -74,10 +75,16 @@ class MemoryGraphController(OnlineController):
         # gates. MemoryGraph filters only developmental exploration.
         if token.source == "explore":
             prefix = tuple(self._episode_program)
+            catalog = self._action_catalog(obs)
+            legal_keys = tuple(self._action_key(candidate) for candidate in catalog)
+            self.memory.note_legal(self._episode_context, prefix, legal_keys)
             forbidden = self.memory.forbidden_next(self._episode_context, prefix)
             selected_key = self._action_key(token)
-            catalog = self._action_catalog(obs)
-            allowed = [candidate for candidate in catalog if self._action_key(candidate) not in forbidden]
+            allowed = [
+                candidate
+                for candidate in catalog
+                if self._action_key(candidate) not in forbidden
+            ]
 
             if selected_key in forbidden and allowed:
                 guard = self._exploration_guard(obs)
