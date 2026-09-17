@@ -1,0 +1,59 @@
+name: QCK FiniteLinear v1
+
+on:
+  push:
+    branches: [qck-finite-linear-v1]
+    paths:
+      - 'qcklean/**'
+      - 'docs/superpowers/specs/2026-09-18-qck-finite-linear-v1-design.md'
+      - 'docs/superpowers/plans/2026-09-18-qck-finite-linear-v1.md'
+      - 'QCK_FINITE_LINEAR_V1.md'
+      - '.github/workflows/qck-finite-linear-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-linear:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen QCK Core
+        run: |
+          test "$(git hash-object qcklean/QCKCore.lean)" = \
+            "b9b1921c49c9947a02009be124286cfe3c723cb4"
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Fetch pinned Mathlib
+        working-directory: qcklean
+        run: |
+          lake update
+          lake exe cache get
+      - name: Reject placeholders and local axioms
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          found=0
+          for file in QCK*.lean; do
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' "$file"; then
+              found=1
+            fi
+          done
+          test "$found" -eq 0
+      - name: Build QCK
+        working-directory: qcklean
+        run: lake build QCK
+      - name: Check FiniteLinear interface
+        working-directory: qcklean
+        run: lake env lean QCKFiniteLinearTest.lean
+      - name: Compile every QCK Lean source
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            echo "checking $file"
+            lake env lean "$file"
+          done < <(find . -maxdepth 1 -type f -name 'QCK*.lean' | sort)
