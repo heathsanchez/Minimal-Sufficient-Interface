@@ -7,6 +7,7 @@ from typing import Any, Iterable
 ActionKey = tuple[int, int | None, int | None]
 ContextKey = tuple[Any, ...]
 ProgramKey = tuple[ActionKey, ...]
+CapabilityKey = tuple[ContextKey, ProgramKey, int, int]
 
 
 def _freeze(value: Any) -> Any:
@@ -26,23 +27,24 @@ def _jsonable(value: Any) -> Any:
 class ArcMemoryGraph:
     """Canonical compressed consequential memory for an ARC session.
 
-    MG-ARC2 stores only consequences that have earned future relevance:
+    MG-ARC3 retains only facts that have earned future relevance:
     * purchased interventions by public context;
-    * exact terminally refuted programs; and
-    * the legal branching actually observed at each program prefix.
+    * exact terminally refuted programs;
+    * observed legal branching for exact finite closure; and
+    * source-scoped programs that actually caused a level increment.
 
-    A terminal program is closed immediately.  An ancestor is closed only when
-    every legal child observed from that prefix is itself closed.  This gives an
-    exact finite refutation trie rather than treating one failed continuation as
-    evidence against an earlier action.
+    A capability is verified only at its witnessed source context.  Exposing its
+    program elsewhere makes it a *hypothesis constructor*, never a universal
+    rule.  New contexts must earn their own consequence evidence.
     """
 
-    VERSION = "MG-ARC2"
+    VERSION = "MG-ARC3"
 
     def __init__(self) -> None:
         self._attempts: dict[tuple[ContextKey, ActionKey], int] = {}
         self._refuted: set[tuple[ContextKey, ProgramKey, str]] = set()
         self._legal: dict[tuple[ContextKey, ProgramKey], tuple[ActionKey, ...]] = {}
+        self._capabilities: set[CapabilityKey] = set()
 
     @staticmethod
     def _context(value: Iterable[Any] | ContextKey) -> ContextKey:
@@ -75,6 +77,10 @@ class ArcMemoryGraph:
     def branching_fact_count(self) -> int:
         return len(self._legal)
 
+    @property
+    def capability_count(self) -> int:
+        return len(self._capabilities)
+
     def note_attempt(self, context: ContextKey, action: ActionKey) -> None:
         key = (self._context(context), self._action(action))
         self._attempts[key] = self._attempts.get(key, 0) + 1
@@ -94,9 +100,6 @@ class ArcMemoryGraph:
         if not observed:
             return
         key = (context_key, prefix_key)
-        # Union is conservative if the same action prefix is ever observed with
-        # a larger legal set: a newly discovered child re-opens any premature
-        # closure instead of silently assuming the action does not exist.
         observed.update(self._legal.get(key, ()))
         self._legal[key] = tuple(sorted(observed, key=repr))
 
@@ -110,6 +113,46 @@ class ArcMemoryGraph:
         if not frozen_program:
             return
         self._refuted.add((self._context(context), frozen_program, str(consequence)))
+
+    def add_capability(
+        self,
+        source_context: ContextKey,
+        program: Iterable[ActionKey],
+        *,
+        source_level: int,
+        target_level: int,
+    ) -> None:
+        frozen_program = self._program(program)
+        if not frozen_program:
+            return
+        source_level = int(source_level)
+        target_level = int(target_level)
+        if target_level <= source_level:
+            raise ValueError("capability must witness positive level progress")
+        self._capabilities.add(
+            (self._context(source_context), frozen_program, source_level, target_level)
+        )
+
+    def capability_programs(self, for_level: int | None = None) -> tuple[ProgramKey, ...]:
+        """Return unique witnessed programs ordered by freshest source progress.
+
+        `for_level` is the current completed-level count.  A capability may be
+        proposed only after its witnessed target level has been reached, which
+        prevents a learned later-stage program from displacing an earlier exact
+        retained replay after RESET.
+        """
+        rows = [
+            row for row in self._capabilities
+            if for_level is None or row[3] <= int(for_level)
+        ]
+        rows.sort(key=lambda row: (-row[3], len(row[1]), repr(row[1]), repr(row[0])))
+        seen: set[ProgramKey] = set()
+        out: list[ProgramKey] = []
+        for _context, program, _source_level, _target_level in rows:
+            if program not in seen:
+                seen.add(program)
+                out.append(program)
+        return tuple(out)
 
     def _terminally_refuted(self, context: ContextKey, program: ProgramKey) -> bool:
         return any(
@@ -185,7 +228,23 @@ class ArcMemoryGraph:
                 self._legal.items(), key=lambda item: repr(item[0])
             )
         ]
-        return {"attempts": attempts, "refuted": refuted, "legal": legal}
+        capabilities = [
+            {
+                "source_context": _jsonable(context),
+                "program": _jsonable(program),
+                "source_level": source_level,
+                "target_level": target_level,
+            }
+            for context, program, source_level, target_level in sorted(
+                self._capabilities, key=repr
+            )
+        ]
+        return {
+            "attempts": attempts,
+            "refuted": refuted,
+            "legal": legal,
+            "capabilities": capabilities,
+        }
 
     def text(self) -> str:
         payload = json.dumps(self._payload(), sort_keys=True, separators=(",", ":"))
@@ -218,6 +277,13 @@ class ArcMemoryGraph:
                 out._context(row["context"]),
                 out._program(row["program"]),
                 str(row.get("consequence", "GAME_OVER")),
+            )
+        for row in payload.get("capabilities", []):
+            out.add_capability(
+                out._context(row["source_context"]),
+                out._program(row["program"]),
+                source_level=int(row["source_level"]),
+                target_level=int(row["target_level"]),
             )
         return out
 
