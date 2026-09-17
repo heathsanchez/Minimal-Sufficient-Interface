@@ -113,4 +113,19 @@ abbrev MaintainedReserve
     (_h : maintainedNullspace S N₀ future ≤ N₀) :=
   N₀ ⧸ (maintainedNullspace S N₀ future).comap N₀.subtype
 
+/-- Maintained optionality always refines snapshot optionality. -/
+theorem maintainedNullspace_le_active
+    {A I : Type*} (S : A → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    maintainedNullspace S N₀ future ≤ N₀ :=
+  (maintainedNullspace_le_snapshot S N₀ future).trans
+    (snapshotNullspace_le N₀ future)
+
+/-- The canonical maintained reserve needs no extra hypothesis: maintained-safe
+forgetting is automatically contained in the active forgetting space. -/
+abbrev CanonicalMaintainedReserve
+    {A I : Type*} (S : A → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :=
+  N₀ ⧸ (maintainedNullspace S N₀ future).comap N₀.subtype
+
 end QCK
