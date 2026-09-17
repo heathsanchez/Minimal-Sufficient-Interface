@@ -89,12 +89,14 @@ class AffordanceDeploymentContracts(unittest.TestCase):
         self.policy.controller.archived_capabilities = ()
 
     def require_consequence_controller(self):
-        self.assertEqual(type(self.policy.controller).__name__, 'ConsequenceController')
+        self.assertEqual(type(self.policy.controller).__name__, 'CertifiedConsequenceController')
         return self.policy.controller
 
     def test_standalone_contains_both_new_modules(self):
         self.assertTrue(hasattr(self.generated, 'AffordanceMemory'))
         self.assertTrue(hasattr(self.generated, 'ConsequenceController'))
+        self.assertTrue(hasattr(self.generated, 'CertifiedArcMemoryGraph'))
+        self.assertTrue(hasattr(self.generated, 'CertifiedConsequenceController'))
 
     def test_adapter_instantiates_the_consequence_controller(self):
         self.require_consequence_controller()
@@ -129,6 +131,7 @@ class AffordanceDeploymentContracts(unittest.TestCase):
         self.assertTrue(self.policy.is_done([start, won], won))
         self.assertEqual(c.effects.total_observations, 1)
         self.assertEqual(c.memory.capability_count, 1)
+        self.assertEqual(len(c.memory.certified_capability_candidates(1)), 1)
         self.assertIsNone(c._pending_effect)
         self.assertTrue(self.policy.is_done([start, won], won))
         self.assertEqual(c.effects.total_observations, 1)
@@ -147,9 +150,9 @@ class AffordanceDeploymentContracts(unittest.TestCase):
         self.assertEqual(c.effects.total_observations, 2)
 
     def test_generated_and_modular_controllers_make_identical_decisions(self):
-        from metalogic_arc3.consequence_controller import ConsequenceController
+        from metalogic_arc3.requalification_controller import CertifiedConsequenceController
         c = self.require_consequence_controller()
-        modular = ConsequenceController(tuple(range(1, 7)), archived_capabilities=())
+        modular = CertifiedConsequenceController(tuple(range(1, 7)), archived_capabilities=())
         for i in range(24):
             frame = observation(i % 4, actions=(3, 4, 6), full_reset=(i in (0, 12)))
             if frame.full_reset:
