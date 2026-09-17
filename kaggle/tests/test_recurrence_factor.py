@@ -74,6 +74,31 @@ class RecurrenceFactorContracts(unittest.TestCase):
         self.assertTrue(f.frozen(0, 12, 64))
         self.assertFalse(f.active(0, 12, 64))
 
+    def test_rejected_factor_rechecks_only_at_geometric_evidence_checkpoints(self):
+        f = RecurrenceFactor(
+            activation_frames=64,
+            min_compression=8.0,
+            min_scalar_changes=16,
+            min_sign_consistency=0.9,
+            min_action_classes=2,
+            candidate_depths=(1,),
+        )
+        calls = 0
+        original = f._evaluate
+
+        def counted(key):
+            nonlocal calls
+            calls += 1
+            return original(key)
+
+        f._evaluate = counted
+        frames = [frame(64 - (i % 32), i % 16) for i in range(129)]
+        for i, (before, after) in enumerate(zip(frames, frames[1:])):
+            f.observe(0, before, after, (3 if i % 2 == 0 else 4, None, None))
+
+        self.assertFalse(f.active(0, 12, 64))
+        self.assertLessEqual(calls, 2)
+
     def test_factor_signature_is_reconstructive_for_removed_band(self):
         f = RecurrenceFactor(
             activation_frames=64,
