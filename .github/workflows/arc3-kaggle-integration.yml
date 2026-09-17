@@ -35,6 +35,7 @@ jobs:
           meta = json.loads(Path('kaggle/notebooks/kernel-metadata.json').read_text())
           assert 'class MyAgent' in agent
           assert 'class OnlineController' in agent
+          assert 'class ArchivedCapability' in agent
           assert 'BUILD_PROVENANCE' in agent
           lower = agent.lower()
           for forbidden in ('requests', 'openai', 'anthropic', 'subprocess', 'socket', 'urllib'):
@@ -61,13 +62,18 @@ jobs:
           repository: arcprize/ARC-AGI
           ref: f12822c4d550121c35a275008d964afbbed47d2f
           path: upstream-arc-agi
-      - name: Run generated agent on pinned public bt33
+      - name: Reproduce archived three-level capability and enter Level 4
         run: |
           python kaggle/scripts/play_local.py \
             --offline-environments-dir upstream-arc-agi/test_environment_files \
             --game bt33-a7c3f9d18b4e \
-            --max-steps 8 | tee arc3-public-smoke.log
+            --max-steps 32 | tee arc3-public-smoke.log
           grep -q 'ARC3_PUBLIC_SMOKE=PASS' arc3-public-smoke.log
+          levels="$(grep -o 'MAX_LEVELS_REACHED=[0-9]*' arc3-public-smoke.log | tail -1 | cut -d= -f2)"
+          test -n "$levels"
+          test "$levels" -ge 3
+          echo 'ARC3_ARCHIVED_THREE_LEVELS=PASS'
+          echo 'ARC3_LEVEL4_FRONTIER=PASS'
           echo 'ARC3_GENERATED_AGENT_PUBLIC_ENV=PASS'
       - uses: actions/upload-artifact@v4
         with:
