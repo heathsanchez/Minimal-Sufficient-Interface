@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 from pathlib import Path
 
@@ -14,10 +15,24 @@ DEFAULT_OUTPUT = ROOT / "kaggle" / "agent" / "my_agent.py"
 
 
 def clean_module(text: str, remove: tuple[str, ...] = ()) -> str:
-    text = text.replace("from __future__ import annotations\n\n", "", 1)
-    for line in remove:
-        text = text.replace(line, "")
-    return text.rstrip() + "\n"
+    # Match the vendored module, not an exact list of imported symbols.
+    vendored = set()
+    for statement in remove:
+        node = ast.parse(statement).body[0]
+        if not isinstance(node, ast.ImportFrom):
+            raise ValueError("vendored declarations must be from-imports")
+        vendored.add((node.level, node.module))
+    skipped: set[int] = set()
+    for node in ast.parse(text).body:
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        hoisted = node.module == "__future__" and all(
+            alias.name == "annotations" for alias in node.names
+        )
+        if hoisted or (node.level, node.module) in vendored:
+            skipped.update(range(node.lineno - 1, node.end_lineno))
+    return "".join(line for i, line in enumerate(text.splitlines(keepends=True))
+                   if i not in skipped).strip() + "\n"
 
 
 def render() -> str:
@@ -48,6 +63,10 @@ def render() -> str:
 def build(output: Path) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     source = render()
+    remaining = [node for node in ast.walk(ast.parse(source))
+                 if isinstance(node, ast.ImportFrom) and node.level]
+    if remaining:
+        raise ValueError("standalone agent contains unvendored relative imports")
     compile(source, str(output), "exec")
     output.write_text(source)
     return output
