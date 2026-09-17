@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# RED contract: these imports must fail until MG-ARC5 is implemented.
 import json
 import sys
 import unittest
@@ -81,28 +80,48 @@ class CertifiedMemoryContracts(unittest.TestCase):
 
 class RequalificationControllerContracts(unittest.TestCase):
     def _source_capability(self) -> CertifiedConsequenceController:
+        """Earn a two-action source capability with one portable process effect.
+
+        The second action crosses the level boundary and deliberately changes the
+        whole visible grid. That endpoint replacement is protected by
+        LEVEL_INCREMENT but must not become a target process checkpoint.
+        """
         c = CertifiedConsequenceController((3,), archived_capabilities=(), max_transfer_depth=8)
         first = c.observe_and_choose(frame([[0, 0], [0, 0]], level=0))
         self.assertEqual(first.action_id, 3)
-        probe = c.observe_and_choose(frame([[1, 0], [0, 0]], level=1))
+        second = c.observe_and_choose(frame([[1, 0], [0, 0]], level=0))
+        self.assertEqual(second.action_id, 3)
+        probe = c.observe_and_choose(frame([[9, 9], [9, 9]], level=1))
         self.assertEqual(probe.source, "transfer_probe")
         self.assertEqual(c.memory.capability_count, 1)
-        self.assertEqual(len(c.memory.certified_capability_candidates(1)), 1)
+        candidate = c.memory.certified_capability_candidates(1)[0]
+        self.assertEqual(candidate["program"], ((3, None, None), (3, None, None)))
+        self.assertEqual(len(candidate["checkpoints"]), 1)
         return c
+
+    def test_level_boundary_effect_is_not_a_process_checkpoint(self):
+        c = self._source_capability()
+        candidate = c.memory.certified_capability_candidates(1)[0]
+        self.assertEqual(candidate["protected_outcome"], "LEVEL_INCREMENT")
+        self.assertEqual(candidate["checkpoints"], (
+            (0, (3, None, None), "primitive:3", (1, 1, 1, 0, 0, 1)),
+        ))
 
     def test_source_witness_is_captured_only_after_progress(self):
         c = CertifiedConsequenceController((3,), archived_capabilities=(), max_transfer_depth=8)
         c.observe_and_choose(frame([[0, 0], [0, 0]], level=0))
+        c.observe_and_choose(frame([[1, 0], [0, 0]], level=0))
         self.assertEqual(c.memory.certified_capability_candidates(0), ())
-        c.observe_and_choose(frame([[1, 0], [0, 0]], level=1))
+        c.observe_and_choose(frame([[9, 9], [9, 9]], level=1))
         candidate = c.memory.certified_capability_candidates(1)[0]
         self.assertEqual(candidate["protected_outcome"], "LEVEL_INCREMENT")
+        self.assertEqual(len(candidate["checkpoints"]), 1)
         self.assertEqual(candidate["checkpoints"][0][2], "primitive:3")
         self.assertEqual(candidate["checkpoints"][0][3], (1, 1, 1, 0, 0, 1))
 
     def test_mismatch_stops_target_reuse_without_refuting_source(self):
         c = self._source_capability()
-        next_token = c.observe_and_choose(frame([[1, 0], [0, 0]], level=1))
+        next_token = c.observe_and_choose(frame([[9, 9], [9, 9]], level=1))
         self.assertNotIn(next_token.source, ("transfer_probe", "transfer"))
         trial = c.memory.transfer_trial(1)
         self.assertEqual(trial["status"], "CONTRACT_MISMATCH")
@@ -112,14 +131,14 @@ class RequalificationControllerContracts(unittest.TestCase):
 
     def test_matching_probe_requalifies_then_allows_bounded_transfer(self):
         c = self._source_capability()
-        second = c.observe_and_choose(frame([[1, 1], [0, 0]], level=1))
+        second = c.observe_and_choose(frame([[8, 9], [9, 9]], level=1))
         self.assertEqual(c.memory.transfer_trial(1)["status"], "PREFIX_REQUALIFIED")
         self.assertEqual(c.memory.transfer_trial(1)["matched"], 1)
         self.assertEqual(second.source, "transfer")
 
         tokens = [second]
         for i in range(16):
-            tokens.append(c.observe_and_choose(frame([[1, (i + 1) % 2], [0, 0]], level=1)))
+            tokens.append(c.observe_and_choose(frame([[8 - (i % 2), 9], [9, 9]], level=1)))
         speculative = [t for t in tokens if t.source in ("transfer_probe", "transfer")]
         self.assertLessEqual(len(speculative), 7)
         self.assertLessEqual(c.memory.transfer_trial(1)["issued"], 8)
