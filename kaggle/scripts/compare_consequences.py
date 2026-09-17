@@ -11,7 +11,7 @@ import sys
 import time
 import benchmark_audit as audit
 
-ARMS=('baseline','candidate','no_effect_feedback','no_visual_grounding')
+ARMS=('baseline','candidate','no_effect_feedback','no_visual_grounding','no_pattern_search')
 ROOT=audit.ROOT
 
 
@@ -44,6 +44,20 @@ def cell(args):
     policy.controller.archived_capabilities=()
     if args.arm=='no_effect_feedback':policy.controller.consequence_enabled=False
     if args.arm=='no_visual_grounding':policy.controller.visual_grounding=False
+    if args.arm=='no_pattern_search':policy.controller.pattern_search=False
+    # Trusted evaluator measures settled-frame changes; policy never receives env.
+    settled_trace=[]
+    original_step=env.step
+    def settled_hash(raw):
+        grid=raw.frame[-1] if len(raw.frame) else []
+        if hasattr(grid,'tolist'):grid=grid.tolist()
+        return audit.sha(json.dumps(grid,separators=(',',':')).encode())
+    def measured_step(*a,**kw):
+        before=settled_hash(env.observation_space)
+        raw=original_step(*a,**kw)
+        settled_trace.append(dict(settled_before=before,settled_after=settled_hash(raw)))
+        return raw
+    env.step=measured_step
     samples=[];seen=set()
     def digest(obs):
         d=module.normalize_frame(obs).evidence_sha256
@@ -51,11 +65,15 @@ def cell(args):
             samples.append(dict(digest=d,frame=obs.frame,level=int(obs.levels_completed),state=audit.state_name(obs)))
             seen.add(d)
         return d
-    result=audit.run_session(policy,env,digest,max_actions=manifest['max_actions'],wall_seconds=60)
+    result=audit.run_session(policy,env,digest,max_actions=manifest['max_actions'],wall_seconds=manifest['wall_seconds'])
     # Record an already returned terminal consequence; no new environment action.
     last=policy._convert_raw_frame_data(env.observation_space)
     if audit.state_name(last) in ('WIN','GAME_OVER') and hasattr(policy.controller,'observe_terminal'):
         policy.controller.observe_terminal(last)
+    for transition,settled in zip(result['trace'],settled_trace):transition.update(settled)
+    result['settled_no_change']=sum(t['settled_before']==t['settled_after'] for t in settled_trace)
+    result['settled_distinct']=len({t[k] for t in settled_trace for k in ('settled_before','settled_after')})
+    result['capability_records']=policy.controller.memory.capability_count
     result.update(arm=args.arm,game_id=args.game,seed=0,kind=manifest['kind'],
                   candidate_sha256=audit.sha(candidate.read_bytes()),baseline_sha256=expected)
     if hasattr(policy.controller,'effects'):
@@ -72,6 +90,11 @@ def cell(args):
 
 def batch(args):
     manifest=json.loads(Path(args.manifest).read_text());audit.validate_manifest(manifest)
+    # Freeze effective arms, seed, hashes and limits BEFORE evaluated actions.
+    manifest.update(arms=list(ARMS),seeds=[0],wall_seconds=60,
+                    baseline_agent_sha256=audit.sha(Path(args.baseline).read_bytes()),
+                    candidate_commit='recorded by GitHub workflow head SHA')
+    audit.write_json(Path(args.manifest),manifest)
     directory=Path(args.output);directory.mkdir(parents=True,exist_ok=True)
     def one(pair):
         game,arm=pair;path=directory/f'{game}-{arm}.json'
@@ -92,7 +115,7 @@ def batch(args):
     valid=len(rows)==len(pairs) and all(r['status'] not in ('ERROR','TIME_BOUND','TIMEOUT') for r in rows)
     for g in manifest['games']:
         group=[r for r in rows if r['game_id']==g['game_id']]
-        valid=valid and len(group)==4 and len({r.get('initial_digest') for r in group})==1
+        valid=valid and len(group)==len(ARMS) and len({r.get('initial_digest') for r in group})==1
     audit.write_json(directory/'summary.json',dict(comparison='MATCHED' if valid else 'INVALID',
         interpretation='public development-set comparison; no sealed holdout or competition score',
         manifest=manifest,results=rows))

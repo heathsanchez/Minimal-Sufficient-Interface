@@ -6,8 +6,7 @@ from arcengine import FrameData, GameAction, GameState
 from agents.agent import Agent
 
 from .memory_controller import MemoryGraphController
-from .consequence_controller import ConsequenceController
-
+from .pattern_controller import PatternController
 
 
 class MyAgent(Agent):
@@ -22,7 +21,7 @@ class MyAgent(Agent):
             for action in GameAction
             if action is not GameAction.RESET
         )
-        self.controller = ConsequenceController(action_ids)
+        self.controller = PatternController(action_ids)
 
     @property
     def name(self) -> str:
@@ -37,15 +36,12 @@ class MyAgent(Agent):
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
     ) -> GameAction:
-        # The official local/offline wrapper performs RESET during arc.make().
-        # That returned observation has full_reset=True and is already playable,
-        # so full_reset is a memory boundary, not a request to RESET again.
+        # full_reset marks an already playable fresh observation, not a request
+        # to reset again. The consequential memory survives this boundary.
         if latest_frame.full_reset:
             self.controller.reset_episode()
 
         if latest_frame.state is GameState.GAME_OVER:
-            # Terminal consequence is evidence. Commit the failed prefix to the
-            # compressed consequential present before clearing trajectory state.
             self.controller.observe_terminal(latest_frame)
             self.controller.record_terminal_failure("GAME_OVER")
             self.controller.reset_episode()
@@ -65,14 +61,9 @@ class MyAgent(Agent):
                 raise ValueError("complex action requires coordinates")
             action.set_data({"x": int(token.x), "y": int(token.y)})
             action.reasoning = {
-                "agent": "metalogic-mg-v1",
-                "source": token.source,
-                "x": int(token.x),
-                "y": int(token.y),
+                "agent": "metalogic-mg-v1", "source": token.source,
+                "x": int(token.x), "y": int(token.y),
             }
         else:
-            action.reasoning = {
-                "agent": "metalogic-mg-v1",
-                "source": token.source,
-            }
+            action.reasoning = {"agent": "metalogic-mg-v1", "source": token.source}
         return action

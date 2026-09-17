@@ -34,6 +34,17 @@ jobs:
           cat red-tests.log
           test "$code" -ne 0
           grep -q 'FAILED (failures=7)' red-tests.log
+      - name: Reproduce RED animation and negative-transfer regressions
+        run: |
+          mv kaggle/src/metalogic_arc3/pattern_controller.py /tmp/pattern_controller.py
+          set +e
+          python -m unittest discover -s kaggle/tests -p test_consequence_repairs.py -v > repair-red.log 2>&1
+          code=$?
+          set -e
+          mv /tmp/pattern_controller.py kaggle/src/metalogic_arc3/pattern_controller.py
+          cat repair-red.log
+          test "$code" -ne 0
+          grep -q 'FAILED (failures=2)' repair-red.log
       - name: All integration and acquisition contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
       - name: Build candidate and frozen baseline
@@ -79,6 +90,9 @@ jobs:
             kaggle/consequence-*-results/
             kaggle/agent/my_agent.py
             kaggle/notebooks/submission.ipynb
+            kaggle/src/metalogic_arc3/pattern_controller.py
+            kaggle/tests/test_pattern_acquisition.py
             red-tests.log
+            repair-red.log
             sdk-regression.log
           if-no-files-found: error
