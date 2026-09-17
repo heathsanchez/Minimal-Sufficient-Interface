@@ -21,7 +21,7 @@ variable {V : Type v} [AddCommGroup V] [Module 𝕜 V]
 variable {Y : Type y} [AddCommGroup Y] [Module 𝕜 Y]
 variable {A : Type*}
 
-/-- Composite action associated to a finite word.  Letters are executed left-to-right. -/
+/-- Composite action associated to a finite word. Letters are executed left-to-right. -/
 def wordMap (S : A → V →ₗ[𝕜] V) : List A → V →ₗ[𝕜] V
   | [] => LinearMap.id
   | a :: w => (wordMap S w).comp (S a)
@@ -55,6 +55,7 @@ theorem mem_contextNullspace_iff (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜
 theorem contextNullspace_invariant (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) (a : A) :
     contextNullspace S C ≤ (contextNullspace S C).comap (S a) := by
   intro x hx
+  change S a x ∈ contextNullspace S C
   rw [mem_contextNullspace_iff] at hx ⊢
   intro w
   simpa [wordMap] using hx (a :: w)
@@ -154,7 +155,8 @@ theorem canonicalFactor_rangeRestrict
     (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) (q : V →ₗ[𝕜] R)
     (hq : Sufficient S C q) (x : V) :
     canonicalFactor S C q hq (q.rangeRestrict x) = canonicalMap S C x := by
-  simp [canonicalFactor, canonicalMap]
+  simp [canonicalFactor, canonicalMap,
+    LinearMap.quotKerEquivRange_symm_apply_image]
 
 /-- The universal factor is surjective: every sufficient realized representation factors onto the canonical one. -/
 theorem canonicalFactor_surjective
@@ -186,10 +188,14 @@ theorem Certificate.comp
     Certificate S C (q₂.comp q₁) Uact E := by
   constructor
   · intro a
-    rw [LinearMap.comp_assoc, h₂.action a]
-    rw [← LinearMap.comp_assoc, h₁.action a]
-    rfl
-  · rw [LinearMap.comp_assoc, h₂.observe, h₁.observe]
+    ext x
+    have h₂x := congrArg (fun f : R →ₗ[𝕜] U => f (q₁ x)) (h₂.action a)
+    have h₁x := congrArg (fun f : V →ₗ[𝕜] R => f x) (h₁.action a)
+    simpa [LinearMap.comp_apply, h₁x] using h₂x
+  · ext x
+    have h₂x := congrArg (fun f : R →ₗ[𝕜] Y => f (q₁ x)) h₂.observe
+    have h₁x := congrArg (fun f : V →ₗ[𝕜] Y => f x) h₁.observe
+    simpa [LinearMap.comp_apply, h₁x] using h₂x
 
 /-- Kernel stability is the primary semantic condition for a proposed operation to descend. -/
 def KernelStable
@@ -213,7 +219,8 @@ theorem descendedOperation_intertwines
     (Aop : V →ₗ[𝕜] V) (hstable : KernelStable q Aop) :
     (descendedOperation q hq Aop hstable).comp q = q.comp Aop := by
   ext x
-  simp [descendedOperation, KernelStable, LinearMap.comp_apply]
+  simp [descendedOperation, LinearMap.comp_apply,
+    LinearMap.quotKerEquivOfSurjective_apply_mk]
 
 /-- A source operation descends uniquely through a surjective representation exactly when its kernel is stable. -/
 theorem operation_descends_iff
@@ -247,9 +254,12 @@ theorem operation_defect_witness
     (q : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V)
     (h : ¬ KernelStable q Aop) :
     ∃ v : V, q v = 0 ∧ q (Aop v) ≠ 0 := by
-  unfold KernelStable at h
-  simp only [Submodule.le_def, Submodule.mem_comap, LinearMap.mem_ker] at h
-  push_neg at h
-  exact h
+  by_contra hn
+  apply h
+  intro v hv
+  change q (Aop v) = 0
+  by_contra hne
+  apply hn
+  exact ⟨v, (by simpa [LinearMap.mem_ker] using hv), hne⟩
 
 end QCK
