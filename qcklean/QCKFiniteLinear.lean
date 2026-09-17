@@ -48,9 +48,9 @@ theorem maintainedNullspace_le_snapshot
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
     maintainedNullspace S N₀ future ≤ snapshotNullspace N₀ future := by
   intro x hx
-  have h : x ∈ (snapshotNullspace N₀ future).comap (wordMap S ([] : List A)) := by
-    exact (show x ∈ ⨅ w : List A, (snapshotNullspace N₀ future).comap (wordMap S w) from hx) []
-  simpa [wordMap] using h
+  have h := show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
+    simpa only [Submodule.mem_iInf] using hx
+  simpa [wordMap] using h []
 
 /-- Maintained-safe forgetting is invariant under every waiting generator. -/
 theorem maintainedNullspace_invariant
@@ -59,9 +59,11 @@ theorem maintainedNullspace_invariant
     maintainedNullspace S N₀ future ≤
       (maintainedNullspace S N₀ future).comap (S a) := by
   intro x hx
-  intro w
-  have h : x ∈ (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := hx (a :: w)
-  simpa [wordMap] using h
+  have hall := show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
+    simpa only [Submodule.mem_iInf] using hx
+  apply (show ∀ w : List A, S a x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
+    intro w
+    simpa [wordMap] using hall (a :: w))
 
 /-- Universal property: maintainedNullspace is the greatest generator-invariant
 subspace contained in the snapshot-safe forgetting space. -/
@@ -73,13 +75,14 @@ theorem le_maintainedNullspace
     (hWinv : ∀ a, W ≤ W.comap (S a)) :
     W ≤ maintainedNullspace S N₀ future := by
   intro x hx
-  intro w
-  induction w generalizing x with
+  apply (show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
+    intro w
+    induction w generalizing x with
   | nil =>
       simpa [wordMap] using hWsafe hx
-  | cons a w ih =>
-      change wordMap S w (S a x) ∈ snapshotNullspace N₀ future
-      exact ih (hWinv a hx)
+    | cons a w ih =>
+        change wordMap S w (S a x) ∈ snapshotNullspace N₀ future
+        exact ih (hWinv a hx))
 
 /-- The canonical maintained reserve is the quotient of distinctions forgotten
 by the active representation by those still safely forgettable while waiting.
