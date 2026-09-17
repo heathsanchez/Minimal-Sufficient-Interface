@@ -228,6 +228,16 @@ class ContextualQuotient:
         ignored = self._points(shape, str(cert["side"]), int(cert["depth"]))
         return self._digest(grid, ignored)
 
+    def certificates(self) -> tuple[dict[str, Any], ...]:
+        return tuple(
+            {
+                "height": shape[0],
+                "width": shape[1],
+                **dict(row),
+            }
+            for shape, row in sorted(self._certificates.items())
+        )
+
     @property
     def active_contexts(self) -> int:
         return len(self._certificates)
