@@ -2,6 +2,8 @@ import QCKCore
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.Dimension.RankNullity
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Prod
+import Mathlib.Tactic.Omega
 import Mathlib.RingTheory.Finiteness.Basic
 
 namespace QCK
@@ -212,6 +214,126 @@ noncomputable def canonicalEquivFinitePresentation
       (futureObservableSpan S C).quotDualCoannihilatorToDual
       (Subspace.quotDualCoannihilatorToDual_bijective
         (futureObservableSpan S C))
+
+
+/-- The canonical quotient dimension equals the dimension of the retained future-observable space. -/
+theorem canonical_finrank_eq_futureObservableSpan
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    Module.finrank 𝕜 (Canonical S C) =
+      Module.finrank 𝕜 (futureObservableSpan S C) := by
+  calc
+    Module.finrank 𝕜 (Canonical S C) =
+        Module.finrank 𝕜 (Module.Dual 𝕜 (futureObservableSpan S C)) :=
+      (canonicalEquivFinitePresentation S C).finrank_eq
+    _ = Module.finrank 𝕜 (futureObservableSpan S C) :=
+      Subspace.dual_finrank_eq
+
+/-- Every sufficient finite-dimensional linear realization has rank at least the canonical quotient. -/
+theorem sufficient_rank_ge_canonical
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R] [FiniteDimensional 𝕜 R]
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y)
+    (q : V →ₗ[𝕜] R) (hq : Sufficient S C q) :
+    Module.finrank 𝕜 (Canonical S C) ≤
+      Module.finrank 𝕜 (LinearMap.range q) := by
+  exact
+    LinearMap.finrank_le_finrank_of_surjective
+      (canonicalFactor_surjective S C q hq)
+
+/-- Coordinate diagnostic map retaining current output and output after a proposed source operation. -/
+def stackedOperationMap
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R]
+    (O : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V) :
+    V →ₗ[𝕜] R × R :=
+  LinearMap.prod O (O.comp Aop)
+
+/-- Additional finite-dimensional rank exposed by a proposed source operation. -/
+def operationDefect
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R]
+    (O : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V) : ℕ :=
+  Module.finrank 𝕜 (LinearMap.range (stackedOperationMap O Aop)) -
+    Module.finrank 𝕜 (LinearMap.range O)
+
+@[simp]
+theorem ker_stackedOperationMap
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R]
+    (O : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V) :
+    LinearMap.ker (stackedOperationMap O Aop) =
+      LinearMap.ker O ⊓ (LinearMap.ker O).comap Aop := by
+  rw [stackedOperationMap, LinearMap.ker_prod, LinearMap.ker_comp]
+
+/-- Zero coordinate defect is exactly the Core kernel-stability condition. -/
+theorem operationDefect_eq_zero_iff
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R] [FiniteDimensional 𝕜 R]
+    (O : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V) :
+    operationDefect O Aop = 0 ↔ KernelStable O Aop := by
+  let F : V →ₗ[𝕜] R × R := stackedOperationMap O Aop
+  have hk : LinearMap.ker F ≤ LinearMap.ker O := by
+    dsimp [F]
+    rw [ker_stackedOperationMap]
+    exact inf_le_left
+  have hkfin :
+      Module.finrank 𝕜 (LinearMap.ker F) ≤
+        Module.finrank 𝕜 (LinearMap.ker O) :=
+    Submodule.finrank_mono hk
+  have hO := O.finrank_range_add_finrank_ker
+  have hF := F.finrank_range_add_finrank_ker
+  have hrange :
+      Module.finrank 𝕜 (LinearMap.range O) ≤
+        Module.finrank 𝕜 (LinearMap.range F) := by
+    omega
+  constructor
+  · intro hzero
+    have hback :
+        Module.finrank 𝕜 (LinearMap.range F) ≤
+          Module.finrank 𝕜 (LinearMap.range O) := by
+      change
+        Module.finrank 𝕜 (LinearMap.range F) -
+            Module.finrank 𝕜 (LinearMap.range O) = 0 at hzero
+      exact Nat.sub_eq_zero_iff_le.mp hzero
+    have hrEq :
+        Module.finrank 𝕜 (LinearMap.range F) =
+          Module.finrank 𝕜 (LinearMap.range O) :=
+      le_antisymm hback hrange
+    have hkEqFin :
+        Module.finrank 𝕜 (LinearMap.ker F) =
+          Module.finrank 𝕜 (LinearMap.ker O) := by
+      omega
+    have hkEq : LinearMap.ker F = LinearMap.ker O :=
+      Submodule.eq_of_le_of_finrank_eq hk hkEqFin
+    change LinearMap.ker O ≤ (LinearMap.ker O).comap Aop
+    have hinf :
+        LinearMap.ker O ⊓ (LinearMap.ker O).comap Aop =
+          LinearMap.ker O := by
+      simpa [F] using hkEq
+    exact inf_eq_left.mp hinf
+  · intro hstable
+    change LinearMap.ker O ≤ (LinearMap.ker O).comap Aop at hstable
+    have hkEq : LinearMap.ker F = LinearMap.ker O := by
+      dsimp [F]
+      rw [ker_stackedOperationMap, inf_eq_left.mpr hstable]
+    have hkEqFin :
+        Module.finrank 𝕜 (LinearMap.ker F) =
+          Module.finrank 𝕜 (LinearMap.ker O) :=
+      congrArg (Module.finrank 𝕜) hkEq
+    have hrEq :
+        Module.finrank 𝕜 (LinearMap.range F) =
+          Module.finrank 𝕜 (LinearMap.range O) := by
+      omega
+    change
+      Module.finrank 𝕜 (LinearMap.range F) -
+          Module.finrank 𝕜 (LinearMap.range O) = 0
+    rw [hrEq, Nat.sub_self]
+
+/-- Positive coordinate defect carries the same separating witness as Core kernel instability. -/
+theorem operationDefect_positive_witness
+    {R : Type r} [AddCommGroup R] [Module 𝕜 R] [FiniteDimensional 𝕜 R]
+    (O : V →ₗ[𝕜] R) (Aop : V →ₗ[𝕜] V)
+    (h : 0 < operationDefect O Aop) :
+    ∃ v : V, O v = 0 ∧ O (Aop v) ≠ 0 := by
+  apply operation_defect_witness O Aop
+  intro hstable
+  have hz := (operationDefect_eq_zero_iff O Aop).2 hstable
+  exact (Nat.ne_of_gt h) hz
 
 end
 
