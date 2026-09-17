@@ -64,16 +64,25 @@ theorem maintainedNullspace_invariant
       (maintainedNullspace S N₀ future).comap (S a) := by
   intro x hx
   change S a x ∈ maintainedNullspace S N₀ future
-  rw [maintainedNullspace]
-  refine (Set.mem_sInter_iff).2 ?_
-  intro U hU
-  rcases hU with ⟨w, rfl⟩
-  have hle : maintainedNullspace S N₀ future ≤
-      (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := by
-    apply sInf_le
-    exact ⟨a :: w, rfl⟩
-  have h := hle hx
-  simpa [wordMap] using h
+  change S a x ∈ sInf (Set.range (fun w : List A =>
+    (snapshotNullspace N₀ future).comap (wordMap S w)))
+  have hsub : (Submodule.span 𝕜 {S a x}) ≤
+      sInf (Set.range (fun w : List A =>
+        (snapshotNullspace N₀ future).comap (wordMap S w))) := by
+    apply le_sInf
+    intro U hU
+    rcases hU with ⟨w, rfl⟩
+    apply Submodule.span_le.2
+    intro z hz
+    simp only [Set.mem_singleton_iff] at hz
+    subst z
+    have hle : maintainedNullspace S N₀ future ≤
+        (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := by
+      apply sInf_le
+      exact ⟨a :: w, rfl⟩
+    have h := hle hx
+    simpa [wordMap] using h
+  exact hsub (Submodule.subset_span (Set.mem_singleton (S a x)))
 
 /-- Universal property/: maintainedNullspace is the greatest generator-invariant
 subspace contained in the snapshot-safe forgetting space. -/
