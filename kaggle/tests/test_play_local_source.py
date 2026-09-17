@@ -24,6 +24,11 @@ class PlayLocalSourceContracts(unittest.TestCase):
         self.assertIn(execution, SOURCE)
         self.assertLess(SOURCE.index(registration), SOURCE.index(execution))
 
+    def test_reports_maximum_level_reached_across_full_trace(self):
+        self.assertIn("max_levels_reached", SOURCE)
+        self.assertIn("MAX_LEVELS_REACHED=", SOURCE)
+        self.assertIn("agent.frames", SOURCE)
+
     def test_smoke_marker_is_emitted(self):
         self.assertIn("ARC3_PUBLIC_SMOKE=PASS", SOURCE)
 
