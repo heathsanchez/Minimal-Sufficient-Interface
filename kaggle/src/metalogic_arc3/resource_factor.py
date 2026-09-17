@@ -30,6 +30,8 @@ class ResourceFactor:
         min_pair_fraction: float = 0.8,
         min_span_density: float = 0.7,
         max_changes_per_position: int = 2,
+        max_observation_horizon: int = 64,
+        max_mask_fraction: float = 0.04,
         ledger_limit: int = 2048,
     ) -> None:
         if activation_transitions < 1 or min_positions < 1 or edge_band < 1:
@@ -38,14 +40,22 @@ class ResourceFactor:
             raise ValueError("pair fraction must lie in [0,1]")
         if not 0.0 <= min_span_density <= 1.0:
             raise ValueError("span density must lie in [0,1]")
-        if max_changes_per_position < 1 or ledger_limit < 1:
-            raise ValueError("positive revisit and ledger bounds required")
+        if (
+            max_changes_per_position < 1
+            or max_observation_horizon < activation_transitions
+            or ledger_limit < 1
+        ):
+            raise ValueError("invalid revisit, observation or ledger bounds")
+        if not 0.0 < max_mask_fraction <= 1.0:
+            raise ValueError("mask fraction must lie in (0,1]")
         self.activation_transitions = int(activation_transitions)
         self.min_positions = int(min_positions)
         self.edge_band = int(edge_band)
         self.min_pair_fraction = float(min_pair_fraction)
         self.min_span_density = float(min_span_density)
         self.max_changes_per_position = int(max_changes_per_position)
+        self.max_observation_horizon = int(max_observation_horizon)
+        self.max_mask_fraction = float(max_mask_fraction)
         self.ledger_limit = int(ledger_limit)
         self._n: dict[ShapeKey, int] = {}
         self._events: dict[
@@ -145,7 +155,9 @@ class ResourceFactor:
             bottom += 1
         return {(x, y) for y in range(top, bottom + 1)}
 
-    def _freeze(self, key: ShapeKey, grid: Grid) -> None:
+    def _candidate_mask(
+        self, key: ShapeKey, grid: Grid
+    ) -> tuple[tuple[int, int], ...]:
         _level, height, width = key
         events = self._events.get(key, {})
         mask: set[tuple[int, int]] = set()
@@ -161,7 +173,7 @@ class ResourceFactor:
             mask.update(self._row_candidate(y, grid, events))
         for x in col_ids:
             mask.update(self._col_candidate(x, grid, events))
-        self._masks[key] = tuple(sorted(mask, key=lambda p: (p[1], p[0])))
+        return tuple(sorted(mask, key=lambda p: (p[1], p[0])))
 
     def observe(self, level: int, before: Grid, after: Grid) -> None:
         before_key = self._shape(level, before)
@@ -178,8 +190,16 @@ class ResourceFactor:
                 if left == right:
                     continue
                 events.setdefault((x, y), Counter())[(int(left), int(right))] += 1
-        if self._n[key] >= self.activation_transitions:
-            self._freeze(key, after)
+        n = self._n[key]
+        if n < self.activation_transitions:
+            return
+        candidate = self._candidate_mask(key, after)
+        _level, height, width = key
+        if candidate and len(candidate) / (height * width) <= self.max_mask_fraction:
+            self._masks[key] = candidate
+            return
+        if n >= self.max_observation_horizon:
+            self._masks[key] = ()
 
     def world_digest(self, level: int, grid: Grid) -> str:
         key = self._shape(level, grid)
