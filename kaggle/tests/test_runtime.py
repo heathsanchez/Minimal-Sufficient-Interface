@@ -73,6 +73,20 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(c.local_history_length, 0)
         self.assertEqual(c.retained_option_count, 1)
 
+    def test_reset_preserves_refuted_exploration_evidence(self):
+        c = OnlineController((3, 4), archived_capabilities=())
+        start = frame(0, level=0, actions=(3, 4))
+
+        first = c.observe_and_choose(start)
+        self.assertEqual(first.action_id, 3)
+
+        # A reset is an episode boundary, not permission to pay again for the
+        # same already-tried intervention from the same public start state.
+        c.reset_episode()
+        second = c.observe_and_choose(start)
+        self.assertEqual(second.action_id, 4)
+        self.assertEqual(second.source, "explore")
+
     def test_complex_grounding_starts_with_public_coarse_lattice(self):
         c = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
         token = c.observe_and_choose(frame(actions=(6,), h=64, w=64))
