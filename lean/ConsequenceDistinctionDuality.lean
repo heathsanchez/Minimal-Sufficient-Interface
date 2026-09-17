@@ -102,6 +102,39 @@ theorem representation_closure_idempotent {X : Type u} {A : Type v}
     exact huv ha
   · exact representation_closure_extensive kernel (CloseRepresentation kernel E)
 
+/-- A semantic crystal is a mutually closed consequence/representation pair. -/
+def ClosedPair {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) (C : Family A) : Prop :=
+  FamEq C (Psi kernel E) ∧ RelEq E (Phi kernel C)
+
+/-- Closing any consequence family yields a mutually closed pair. -/
+theorem closed_pair_from_consequences {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (C : Family A) :
+    ClosedPair kernel (Phi kernel C) (CloseConsequences kernel C) := by
+  constructor
+  · constructor
+    · intro a ha
+      exact ha
+    · intro a ha
+      exact ha
+  · constructor
+    · exact representation_closure_extensive kernel (Phi kernel C)
+    · exact phi_antitone kernel (consequence_closure_extensive kernel C)
+
+/-- Closing any representation yields a mutually closed pair. -/
+theorem closed_pair_from_representation {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) :
+    ClosedPair kernel (CloseRepresentation kernel E) (Psi kernel E) := by
+  constructor
+  · constructor
+    · exact consequence_closure_extensive kernel (Psi kernel E)
+    · exact psi_antitone kernel (representation_closure_extensive kernel E)
+  · constructor
+    · intro x y hxy
+      exact hxy
+    · intro x y hxy
+      exact hxy
+
 /-- A residual is exactly a witness that a consequence fails to descend. -/
 def Residual {X : Type u} {A : Type v}
     (kernel : A → Rel X) (E : Rel X) (d : A) : Prop :=
@@ -190,6 +223,33 @@ theorem representation_failure_excludes_reachable {X : Type u} {A : Type v}
   intro hReach
   exact hRep (hReachableSound hReach)
 
+/-- Representation failure and capability failure are disjoint by definition. -/
+theorem representation_failure_excludes_capability {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) (Reachable : Family A) (d : A)
+    (hRep : RepresentationFailure kernel E d) :
+    ¬ CapabilityFailure kernel E Reachable d := by
+  intro hCap
+  exact hRep hCap.1
+
+/-- Sound reachability makes representation failure and search failure disjoint. -/
+theorem representation_failure_excludes_search {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) (Reachable Found : Family A) (d : A)
+    (hReachableSound : FamLe Reachable (Psi kernel E))
+    (hRep : RepresentationFailure kernel E d) :
+    ¬ SearchFailure Reachable Found d := by
+  intro hSearch
+  exact hRep (hReachableSound hSearch.1)
+
+/-- Sound found/reachable invariants make representation failure and solved disjoint. -/
+theorem representation_failure_excludes_solved {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) (Reachable Found : Family A) (d : A)
+    (hReachableSound : FamLe Reachable (Psi kernel E))
+    (hFoundSound : FamLe Found Reachable)
+    (hRep : RepresentationFailure kernel E d) :
+    ¬ Solved Found d := by
+  intro hSolved
+  exact hRep (hReachableSound (hFoundSound hSolved))
+
 /-- Capability failure and search failure are disjoint. -/
 theorem capability_failure_excludes_search {X : Type u} {A : Type v}
     (kernel : A → Rel X) (E : Rel X) (Reachable Found : Family A) (d : A)
@@ -197,6 +257,15 @@ theorem capability_failure_excludes_search {X : Type u} {A : Type v}
     ¬ SearchFailure Reachable Found d := by
   intro hSearch
   exact hCap.2 hSearch.1
+
+/-- Sound foundness makes capability failure and solved disjoint. -/
+theorem capability_failure_excludes_solved {X : Type u} {A : Type v}
+    (kernel : A → Rel X) (E : Rel X) (Reachable Found : Family A) (d : A)
+    (hFoundSound : FamLe Found Reachable)
+    (hCap : CapabilityFailure kernel E Reachable d) :
+    ¬ Solved Found d := by
+  intro hSolved
+  exact hCap.2 (hFoundSound hSolved)
 
 /-- Search failure and solved are disjoint. -/
 theorem search_failure_excludes_solved {A : Type v}
