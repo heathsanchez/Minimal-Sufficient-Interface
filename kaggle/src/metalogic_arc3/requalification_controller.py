@@ -14,8 +14,10 @@ class CertifiedConsequenceController(ConsequenceController):
 
     A witnessed source program does not automatically authorize full reuse at a
     new target. Initial target actions are `transfer_probe` actions. Their
-    observed structural effects must match the stored source checkpoints before
-    the remainder of the macro can use the ordinary `transfer` source.
+    observed *process* effects must match stored source checkpoints before the
+    remainder of the macro can use ordinary `transfer`. The observation that
+    crosses a level boundary is kept separate as protected endpoint outcome,
+    not misclassified as an intermediate process checkpoint.
     """
 
     def __init__(self, *args: Any, requalification_prefix: int = 8, **kwargs: Any) -> None:
@@ -114,18 +116,29 @@ class CertifiedConsequenceController(ConsequenceController):
         super()._process_previous_outcome(obs)
 
         if progressed and source_context is not None and witnessed_program and witnessed:
-            limit = min(self.requalification_prefix, len(witnessed_program), len(witnessed))
-            checkpoints = tuple(
-                (index, witnessed[index][1], witnessed[index][2], witnessed[index][3])
-                for index in range(limit)
-            )
-            self.memory.add_capability_contract(
-                source_context,
-                witnessed_program,
-                source_level=int(previous_level),
-                target_level=int(obs.levels_completed),
-                checkpoints=checkpoints,
-            )
+            # The last observed transition is exactly the action whose successor
+            # observation establishes LEVEL_INCREMENT. Its raster may be a new
+            # level/camera/state representation, so it is endpoint evidence, not
+            # an intermediate process effect that a longer target must reproduce.
+            process_witness = witnessed[:-1]
+            if process_witness:
+                limit = min(
+                    self.requalification_prefix,
+                    len(witnessed_program) - 1,
+                    len(process_witness),
+                )
+                checkpoints = tuple(
+                    (index, process_witness[index][1], process_witness[index][2], process_witness[index][3])
+                    for index in range(limit)
+                )
+                if checkpoints:
+                    self.memory.add_capability_contract(
+                        source_context,
+                        witnessed_program,
+                        source_level=int(previous_level),
+                        target_level=int(obs.levels_completed),
+                        checkpoints=checkpoints,
+                    )
             self._episode_certificate = []
 
     def _start_transfer(self, obs: Observation) -> None:
