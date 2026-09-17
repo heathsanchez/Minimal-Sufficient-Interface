@@ -2,6 +2,7 @@ import QCKCore
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.Dimension.RankNullity
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Projection
 import Mathlib.LinearAlgebra.Prod
 import Lean.Elab.Tactic.Omega
 import Mathlib.RingTheory.Finiteness.Basic
@@ -334,6 +335,165 @@ theorem operationDefect_positive_witness
   intro hstable
   have hz := (operationDefect_eq_zero_iff O Aop).2 hstable
   exact (Nat.ne_of_gt h) hz
+
+/-- Snapshot-safe forgetting: distinctions forgotten by the active interface and every promised future interface. -/
+def snapshotSafe
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : Submodule 𝕜 V :=
+  N0 ⊓ ⨅ i, N i
+
+/-- Snapshot-safe forgetting viewed inside the current active kernel. -/
+def snapshotSafeInActive
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : Submodule 𝕜 N0 :=
+  (snapshotSafe N0 N).comap N0.subtype
+
+/-- Minimum extra linear dimension needed to retain a fixed portfolio of future distinctions. -/
+def snapshotReserveFinrank
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : ℕ :=
+  Module.finrank 𝕜 (N0 ⧸ snapshotSafeInActive N0 N)
+
+theorem snapshotSafe_le_active
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
+    snapshotSafe N0 N ≤ N0 :=
+  inf_le_left
+
+theorem finrank_snapshotSafeInActive
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
+    Module.finrank 𝕜 (snapshotSafeInActive N0 N) =
+      Module.finrank 𝕜 (snapshotSafe N0 N) := by
+  let e : snapshotSafeInActive N0 N ≃ₗ[𝕜] snapshotSafe N0 N :=
+    LinearEquiv.ofBijective
+      (LinearMap.codRestrict
+        (snapshotSafe N0 N)
+        N0.subtype
+        (fun x hx => hx))
+      ⟨by
+        intro x y h
+        exact Subtype.ext (congrArg Subtype.val h),
+       by
+        intro x
+        refine ⟨⟨⟨x.1, snapshotSafe_le_active N0 N x.2⟩, ?_⟩, ?_⟩
+        · exact x.2
+        · rfl⟩
+  exact e.finrank_eq
+
+theorem snapshotReserveFinrank_eq_sub
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
+    snapshotReserveFinrank N0 N =
+      Module.finrank 𝕜 N0 - Module.finrank 𝕜 (snapshotSafe N0 N) := by
+  have hq := (snapshotSafeInActive N0 N).finrank_quotient_add_finrank
+  rw [snapshotReserveFinrank, finrank_snapshotSafeInActive N0 N]
+  omega
+
+/-- Any supplementary record whose combined kernel preserves all promised future distinctions
+must carry at least the snapshot reserve dimension. -/
+theorem snapshotReserve_lower_bound
+    {ι : Type*} [Fintype ι]
+    {R0 RH : Type*}
+    [AddCommGroup R0] [Module 𝕜 R0] [FiniteDimensional 𝕜 R0]
+    [AddCommGroup RH] [Module 𝕜 RH] [FiniteDimensional 𝕜 RH]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V)
+    (O0 : V →ₗ[𝕜] R0) (H : V →ₗ[𝕜] RH)
+    (hO0 : LinearMap.ker O0 = N0)
+    (hcombined :
+      LinearMap.ker (LinearMap.prod O0 H) ≤ snapshotSafe N0 N) :
+    snapshotReserveFinrank N0 N ≤
+      Module.finrank 𝕜 (LinearMap.range H) := by
+  have hkerprod :
+      LinearMap.ker (LinearMap.prod O0 H) =
+        N0 ⊓ LinearMap.ker H := by
+    rw [LinearMap.ker_prod, hO0]
+  have hprod_le : N0 ⊓ LinearMap.ker H ≤ snapshotSafe N0 N := by
+    simpa [hkerprod] using hcombined
+  have hsafe_le : snapshotSafe N0 N ≤ N0 := snapshotSafe_le_active N0 N
+  have hdimprod :
+      Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) ≤
+        Module.finrank 𝕜 (snapshotSafe N0 N) :=
+    Submodule.finrank_mono hprod_le
+  have hH := H.finrank_range_add_finrank_ker
+  have hN0ker :
+      Module.finrank 𝕜 N0 ≤
+        Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) +
+          Module.finrank 𝕜 (LinearMap.range H) := by
+    have hsup :
+        Module.finrank 𝕜 N0 +
+            Module.finrank 𝕜 (LinearMap.ker H) =
+          Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) +
+            Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) := by
+      simpa [add_comm, add_left_comm, add_assoc] using
+        (Submodule.finrank_sup_add_finrank_inf_eq N0 (LinearMap.ker H)).symm
+    have hsup_le :
+        Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) ≤
+          Module.finrank 𝕜 V :=
+      (N0 ⊔ LinearMap.ker H).finrank_le
+    omega
+  rw [snapshotReserveFinrank_eq_sub N0 N]
+  omega
+
+/-- A chosen complement used to project arbitrary source state into the current active kernel. -/
+noncomputable def activeComplement (N0 : Submodule 𝕜 V) : Submodule 𝕜 V :=
+  Classical.choose (Submodule.exists_isCompl N0)
+
+theorem active_isCompl (N0 : Submodule 𝕜 V) :
+    IsCompl N0 (activeComplement N0) :=
+  Classical.choose_spec (Submodule.exists_isCompl N0)
+
+/-- An attained snapshot reserve: project into the active kernel, then retain exactly its
+quotient by the future-safe subspace. -/
+noncomputable def snapshotReserveMap
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
+    V →ₗ[𝕜] (N0 ⧸ snapshotSafeInActive N0 N) :=
+  (snapshotSafeInActive N0 N).mkQ.comp
+    (N0.projectionOnto (activeComplement N0) (active_isCompl N0))
+
+@[simp]
+theorem snapshotReserveMap_on_active
+    {ι : Type*} [Fintype ι]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) (x : N0) :
+    snapshotReserveMap N0 N x =
+      (snapshotSafeInActive N0 N).mkQ x := by
+  simp [snapshotReserveMap, Submodule.projectionOnto_apply_left]
+
+/-- The attained reserve, paired with any active map having kernel N0, forgets exactly
+the snapshot-safe distinctions. -/
+theorem ker_prod_active_snapshotReserveMap
+    {ι : Type*} [Fintype ι]
+    {R0 : Type*} [AddCommGroup R0] [Module 𝕜 R0]
+    (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V)
+    (O0 : V →ₗ[𝕜] R0) (hO0 : LinearMap.ker O0 = N0) :
+    LinearMap.ker (LinearMap.prod O0 (snapshotReserveMap N0 N)) =
+      snapshotSafe N0 N := by
+  ext x
+  rw [LinearMap.mem_ker, LinearMap.prod_apply, Prod.mk_eq_zero,
+    LinearMap.mem_ker]
+  constructor
+  · rintro ⟨hx0, hxH⟩
+    have hxN0 : x ∈ N0 := by
+      rw [← hO0, LinearMap.mem_ker]
+      exact hx0
+    let xn : N0 := ⟨x, hxN0⟩
+    have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
+      simpa [xn, snapshotReserveMap_on_active] using hxH
+    have hxsafeSub : xn ∈ snapshotSafeInActive N0 N := by
+      simpa [LinearMap.mem_ker] using hq
+    exact hxsafeSub
+  · intro hxsafe
+    have hxN0 : x ∈ N0 := snapshotSafe_le_active N0 N hxsafe
+    constructor
+    · rw [← LinearMap.mem_ker, hO0]
+      exact hxN0
+    · let xn : N0 := ⟨x, hxN0⟩
+      have hxin : xn ∈ snapshotSafeInActive N0 N := hxsafe
+      have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
+        simpa [LinearMap.mem_ker] using hxin
+      simpa [xn, snapshotReserveMap_on_active] using hq
+
 
 end
 
