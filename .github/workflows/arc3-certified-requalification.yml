@@ -1,0 +1,34 @@
+name: ARC3 certified requalification
+on:
+  push:
+    branches: [arc3-certified-requalification-v1]
+    paths:
+      - 'kaggle/**'
+      - 'docs/superpowers/**'
+      - '.github/workflows/arc3-certified-requalification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-certified-requalification-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run MG-ARC5 and existing contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build standalone candidate
+        run: |
+          python kaggle/scripts/build_agent.py
+          python -m py_compile kaggle/agent/my_agent.py
+          python kaggle/scripts/build_notebook.py
