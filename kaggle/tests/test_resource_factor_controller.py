@@ -31,7 +31,7 @@ def bar(active: int, width=16, height=12):
 class ResourceFactorControllerContracts(unittest.TestCase):
     def test_memory_context_remains_exact_after_factor_activation(self):
         c = ConsequenceController((3, 4), archived_capabilities=())
-        c.resource_factor = ResourceFactor(activation_transitions=2, min_positions=1)
+        c.resource_factor = ResourceFactor(activation_transitions=2, min_positions=1, max_mask_fraction=0.10)
         c.resource_factor.observe(0, bar(16), bar(15))
         c.resource_factor.observe(0, bar(15), bar(14))
         obs = normalize_frame(frame(bar(13)))
@@ -41,7 +41,7 @@ class ResourceFactorControllerContracts(unittest.TestCase):
 
     def test_factorized_world_context_ignores_resource_but_ledger_does_not(self):
         c = ConsequenceController((3, 4), archived_capabilities=())
-        c.resource_factor = ResourceFactor(activation_transitions=2, min_positions=1)
+        c.resource_factor = ResourceFactor(activation_transitions=2, min_positions=1, max_mask_fraction=0.10)
         c.resource_factor.observe(0, bar(16), bar(15))
         c.resource_factor.observe(0, bar(15), bar(14))
         left = normalize_frame(frame(bar(13)))
