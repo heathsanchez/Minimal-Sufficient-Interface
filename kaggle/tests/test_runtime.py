@@ -7,7 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 
-from metalogic_arc3.runtime import ActionToken, OnlineController, normalize_frame
+from metalogic_arc3.runtime import (
+    ActionToken,
+    ArchivedCapability,
+    OnlineController,
+    normalize_frame,
+)
 
 
 def frame(value: int = 0, *, level: int = 0, state: str = "NOT_FINISHED", actions=(1, 2, 3), h=4, w=6):
@@ -29,6 +34,7 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(obs.height, 4)
         self.assertEqual(obs.width, 6)
         self.assertTrue(obs.frame_digest)
+        self.assertTrue(obs.evidence_sha256)
 
     def test_exploration_is_deterministic_and_least_tested(self):
         c = OnlineController((1, 2, 3))
@@ -45,7 +51,6 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(first.action_id, 1)
         second = c.observe_and_choose(frame(1, level=0))
         self.assertEqual(second.action_id, 2)
-        # The second action is witnessed to complete the level on the next call.
         c.observe_and_choose(frame(9, level=1))
         self.assertEqual(c.retained_option_count, 1)
 
@@ -73,7 +78,6 @@ class RuntimeContracts(unittest.TestCase):
         token = c.observe_and_choose(frame(actions=(6,), h=64, w=64))
         self.assertIsInstance(token, ActionToken)
         self.assertEqual(token.action_id, 6)
-        # Exact first donor token: half-stride offset on public dimensions.
         self.assertEqual((token.x, token.y), (4, 4))
 
     def test_complex_grounding_is_deterministic_diverse_and_bounded(self):
@@ -99,11 +103,53 @@ class RuntimeContracts(unittest.TestCase):
         f = frame(actions=(6,), h=64, w=64)
         c = OnlineController((6,), grounding_stride=8, max_grounded_actions=256)
         coords = [(c.observe_and_choose(f).x, c._last_action.y) for _ in range(66)]
-        # First 64 probes are the 8x8 stride-8 lattice; the next probe begins
-        # the stride-4 refinement and is not a duplicate of the coarse set.
         self.assertEqual(coords[63], (60, 60))
         self.assertEqual(coords[64], (2, 2))
         self.assertNotIn(coords[64], coords[:64])
+
+    def test_archived_capability_is_exact_observation_guarded_and_aborts_on_divergence(self):
+        start = frame(0, level=0, actions=(1, 2))
+        middle = frame(1, level=0, actions=(1, 2))
+        final = frame(2, level=1, actions=(1, 2))
+        trace = ArchivedCapability(
+            observation_sha256=(
+                normalize_frame(start).evidence_sha256,
+                normalize_frame(middle).evidence_sha256,
+                normalize_frame(final).evidence_sha256,
+            ),
+            program=(ActionToken(1), ActionToken(2)),
+            continuation_programs=(),
+            provenance="unit-test",
+        )
+        c = OnlineController((1, 2), archived_capabilities=(trace,))
+        first = c.observe_and_choose(start)
+        self.assertEqual((first.action_id, first.source), (1, "archive"))
+        second = c.observe_and_choose(middle)
+        self.assertEqual((second.action_id, second.source), (2, "archive"))
+
+        c.reset_episode()
+        first = c.observe_and_choose(start)
+        self.assertEqual(first.source, "archive")
+        diverged = c.observe_and_choose(frame(9, level=0, actions=(1, 2)))
+        self.assertNotEqual(diverged.source, "archive")
+
+    def test_completed_archive_hands_off_to_residual_program(self):
+        start = frame(0, level=0, actions=(6,))
+        final = frame(1, level=1, actions=(6,))
+        trace = ArchivedCapability(
+            observation_sha256=(
+                normalize_frame(start).evidence_sha256,
+                normalize_frame(final).evidence_sha256,
+            ),
+            program=(ActionToken(6, 4, 4),),
+            continuation_programs=((ActionToken(6, 16, 14),),),
+            provenance="unit-test",
+        )
+        c = OnlineController((6,), archived_capabilities=(trace,))
+        archived = c.observe_and_choose(start)
+        self.assertEqual((archived.x, archived.y, archived.source), (4, 4, "archive"))
+        probe = c.observe_and_choose(final)
+        self.assertEqual((probe.x, probe.y, probe.source), (16, 14, "stage4_probe"))
 
     def test_unavailable_actions_are_not_selected(self):
         c = OnlineController((1, 2, 6))
