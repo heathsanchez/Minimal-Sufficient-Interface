@@ -27,8 +27,53 @@ jobs:
           python-version: '3.12'
       - name: Run MG-ARC5 and existing contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
-      - name: Build standalone candidate
+      - name: Build standalone candidate and offline notebook
         run: |
+          mkdir -p kaggle/requalification-results
           python kaggle/scripts/build_agent.py
-          python -m py_compile kaggle/agent/my_agent.py
+          python -m py_compile kaggle/agent/my_agent.py kaggle/scripts/requalification_audit.py
+          cp kaggle/agent/my_agent.py kaggle/requalification-results/candidate.py
           python kaggle/scripts/build_notebook.py
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 42dec1f23e243f9f3e288f57fc73833cde6c3c69
+          path: prior-worktree
+      - name: Rebuild and verify exact MG-ARC4 prior
+        run: |
+          python prior-worktree/kaggle/scripts/build_agent.py --output "$PWD/kaggle/requalification-results/prior.py"
+          echo '1d9a3d9c130ee049e6428b6c87b80186756dead840086a6b68d7357960009000  kaggle/requalification-results/prior.py' | sha256sum --check
+      - name: Install pinned ARC SDK
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/requalification-results/requirements-resolved.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Freeze identical worlds before evaluation
+        run: python kaggle/scripts/requalification_audit.py prepare
+      - name: Run paired candidate, prior and ablations
+        run: python kaggle/scripts/requalification_audit.py run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-certified-requalification
+          path: |
+            kaggle/requalification-results/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/src/
+            kaggle/scripts/
+            kaggle/tests/
+            kaggle/provenance/
+            docs/superpowers/specs/2026-09-18-arc3-certified-requalification-design.md
+            docs/superpowers/plans/2026-09-18-arc3-certified-requalification.md
+          if-no-files-found: warn
