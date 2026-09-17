@@ -117,6 +117,22 @@ class MotionMemory:
 
     def record(self, action: ActionKey, before: Grid, after: Grid) -> None:
         action_key = self._action(action)
+        before_components = _components(before)
+        after_components = _components(after)
+
+        # Local applicability evidence is kept even for a no-move outcome.
+        # Ambiguous component multiplicity stays UNKNOWN.
+        for component_key, origins in before_components.items():
+            targets = after_components.get(component_key, ())
+            if len(origins) != 1 or len(targets) != 1:
+                continue
+            origin = origins[0]
+            target = targets[0]
+            local = self._local.setdefault(
+                (component_key, origin, action_key), Counter()
+            )
+            local[target] += 1
+
         for row in extract_transports(before, after):
             counts = self._vectors.setdefault((row.component_key, action_key), Counter())
             counts[(row.dx, row.dy)] += 1
@@ -143,6 +159,32 @@ class MotionMemory:
             for component_key, action in self._vectors
         )
 
+    @property
+    def blocked_local_count(self) -> int:
+        count = 0
+        for (component_key, origin, action), outcomes in self._local.items():
+            vector = self._reliable_vector(component_key, action)
+            if vector is None or not outcomes:
+                continue
+            target, support = outcomes.most_common(1)[0]
+            if target == origin and support == sum(outcomes.values()):
+                count += 1
+        return count
+
+    def _local_target(
+        self,
+        component_key: ComponentKey,
+        origin: tuple[int, int],
+        action: ActionKey,
+    ) -> tuple[int, int] | None:
+        outcomes = self._local.get((component_key, origin, self._action(action)))
+        if not outcomes:
+            return None
+        target, support = outcomes.most_common(1)[0]
+        if support != sum(outcomes.values()):
+            return None
+        return target
+
     def recommend(
         self,
         grid: Grid,
@@ -153,39 +195,61 @@ class MotionMemory:
         height, width = len(grid), len(grid[0])
         components = _components(grid)
         actions = tuple(self._action(action) for action in legal_actions)
-        candidates: list[tuple[int, int, tuple[int, int, int], ActionKey]] = []
 
-        for component_key, origins in components.items():
+        def in_bounds(component_key: ComponentKey, origin: tuple[int, int]) -> bool:
+            return all(
+                0 <= origin[0] + sx < width and 0 <= origin[1] + sy < height
+                for sx, sy in component_key[1]
+            )
+
+        for component_key, origins in sorted(components.items(), key=repr):
             if len(origins) != 1:
                 continue
-            origin = origins[0]
-            controls: list[tuple[ActionKey, tuple[int, int]]] = []
-            for action in actions:
-                vector = self._reliable_vector(component_key, action)
-                if vector is not None:
-                    controls.append((action, vector))
-            # A controllable coordinate needs alternatives. One repeated action
-            # is evidence of transport, not yet a frontier-control system.
+            start = origins[0]
+            controls = [
+                (action, vector)
+                for action in actions
+                if (vector := self._reliable_vector(component_key, action)) is not None
+            ]
             if len(controls) < 2:
                 continue
-            shape = component_key[1]
-            seen = self._positions.get(component_key, Counter())
-            for action, (dx, dy) in controls:
-                predicted = (origin[0] + dx, origin[1] + dy)
-                if any(
-                    not (0 <= predicted[0] + sx < width and 0 <= predicted[1] + sy < height)
-                    for sx, sy in shape
-                ):
-                    continue
-                visits = int(seen.get(predicted, 0))
-                action_sort = tuple(-1 if value is None else int(value) for value in action)
-                candidates.append((visits, abs(dx) + abs(dy), action_sort, action))
+            controls.sort(
+                key=lambda row: tuple(-1 if value is None else int(value) for value in row[0])
+            )
 
-        if not candidates:
-            return None
-        candidates.sort(key=lambda row: row[:3])
-        # Do not displace generic acquisition unless a modeled control reaches
-        # a component position not yet witnessed for this transport class.
-        if candidates[0][0] > 0:
-            return None
-        return candidates[0][3]
+            # Search the actually observed local transition graph for the
+            # nearest position that still has an untried modeled control.
+            queue: list[tuple[tuple[int, int], ActionKey | None]] = [(start, None)]
+            seen_positions = {start}
+            index = 0
+            while index < len(queue) and len(seen_positions) <= 256:
+                origin, first_action = queue[index]
+                index += 1
+
+                frontier: list[tuple[int, tuple[int, int, int], ActionKey]] = []
+                for action, (dx, dy) in controls:
+                    predicted = (origin[0] + dx, origin[1] + dy)
+                    if not in_bounds(component_key, predicted):
+                        continue
+                    local = self._local_target(component_key, origin, action)
+                    if local is None:
+                        visits = int(self._positions.get(component_key, Counter()).get(predicted, 0))
+                        action_sort = tuple(
+                            -1 if value is None else int(value) for value in action
+                        )
+                        frontier.append((visits, action_sort, action))
+                        continue
+                    if local == origin:
+                        # Position-scoped obstruction: preserve the global
+                        # action->motion law but do not retry it here.
+                        continue
+                    if local not in seen_positions:
+                        seen_positions.add(local)
+                        queue.append((local, action if first_action is None else first_action))
+
+                if frontier:
+                    frontier.sort(key=lambda row: row[:2])
+                    chosen = frontier[0][2]
+                    return chosen if first_action is None else first_action
+
+        return None
