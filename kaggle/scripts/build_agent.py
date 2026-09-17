@@ -12,13 +12,14 @@ RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
 CAUSAL_AFFORDANCE = ROOT / "kaggle" / "src" / "metalogic_arc3" / "causal_affordance.py"
 CONSEQUENCE_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "consequence_controller.py"
+CERTIFIED_MEMORY = ROOT / "kaggle" / "src" / "metalogic_arc3" / "certified_memory.py"
+REQUALIFICATION_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "requalification_controller.py"
 ADAPTER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "agent_template.py"
 PROVENANCE = ROOT / "kaggle" / "provenance" / "sources.json"
 DEFAULT_OUTPUT = ROOT / "kaggle" / "agent" / "my_agent.py"
 
 
 def clean_module(text: str, remove: tuple[str, ...] = ()) -> str:
-    # Match the vendored module, not an exact list of imported symbols.
     vendored = set()
     for statement in remove:
         node = ast.parse(statement).body[0]
@@ -40,8 +41,16 @@ def clean_module(text: str, remove: tuple[str, ...] = ()) -> str:
 
 def render() -> str:
     provenance = json.loads(PROVENANCE.read_text())
-    sources = (MEMORY_GRAPH, RUNTIME, MEMORY_CONTROLLER, CAUSAL_AFFORDANCE,
-               CONSEQUENCE_CONTROLLER, ADAPTER)
+    sources = (
+        MEMORY_GRAPH,
+        RUNTIME,
+        MEMORY_CONTROLLER,
+        CAUSAL_AFFORDANCE,
+        CONSEQUENCE_CONTROLLER,
+        CERTIFIED_MEMORY,
+        REQUALIFICATION_CONTROLLER,
+        ADAPTER,
+    )
     source_hashes = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                      for path in sources}
     header = (
@@ -71,12 +80,35 @@ def render() -> str:
             "from .runtime import ActionToken, Observation, normalize_frame\n",
         ),
     )
+    certified_memory = clean_module(
+        CERTIFIED_MEMORY.read_text(),
+        remove=(
+            "from .memory_graph import (\n    ActionKey,\n    ArcMemoryGraph,\n    CapabilityKey,\n    ContextKey,\n    ProgramKey,\n    _jsonable,\n)\n",
+        ),
+    )
+    requalification_controller = clean_module(
+        REQUALIFICATION_CONTROLLER.read_text(),
+        remove=(
+            "from .certified_memory import CertifiedArcMemoryGraph, Checkpoint\n",
+            "from .consequence_controller import ConsequenceController, effect_signature, settled_grid\n",
+            "from .memory_graph import ActionKey, ProgramKey\n",
+            "from .runtime import ActionToken, Observation, normalize_frame\n",
+        ),
+    )
     adapter = clean_module(
         ADAPTER.read_text(),
-        remove=("from .consequence_controller import ConsequenceController\n",),
+        remove=("from .requalification_controller import CertifiedConsequenceController\n",),
     )
-    return header + "\n".join((memory_graph, runtime, memory_controller,
-                                 causal_affordance, consequence_controller, adapter))
+    return header + "\n".join((
+        memory_graph,
+        runtime,
+        memory_controller,
+        causal_affordance,
+        consequence_controller,
+        certified_memory,
+        requalification_controller,
+        adapter,
+    ))
 
 
 def build(output: Path) -> Path:
