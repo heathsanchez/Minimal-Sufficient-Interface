@@ -8,6 +8,7 @@ from .causal_affordance import AffordanceMemory, effect_signature
 from .memory_controller import MemoryGraphController
 from .memory_graph import ActionKey
 from .runtime import ActionToken, Observation, normalize_frame
+from .transport import MotionMemory
 
 
 class EffectMemory:
@@ -198,6 +199,7 @@ class ConsequenceController(MemoryGraphController):
         self.visual_grounding = bool(visual_grounding)
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
+        self.motions = MotionMemory()
         self._decision_tick = 0
         self._probe_serial = 0
         super().__init__(*args, **kwargs)
@@ -273,6 +275,13 @@ class ConsequenceController(MemoryGraphController):
                 )
                 signature = (changed, 0, 0, 0, 0, 0)
             terminal = obs.state in ("WIN", "GAME_OVER")
+            previous_level = (
+                self._previous.levels_completed
+                if self._previous is not None
+                else obs.levels_completed
+            )
+            if previous_level == obs.levels_completed and not terminal:
+                self.motions.record(action, before, grid)
             self.effects.record(
                 context,
                 action,
@@ -345,6 +354,13 @@ class ConsequenceController(MemoryGraphController):
                 ),
             )
             return self._token(self._action_key(token), "consequence_fair_probe")
+
+        motion = self.motions.recommend(
+            self._grid,
+            tuple(self._action_key(token) for token in primary),
+        )
+        if motion is not None and motion in allowed_keys:
+            return self._token(motion, "motion_frontier")
 
         # Once there is repeated controllability evidence, prefer it over raw
         # change frequency. This is still a proposal score, not a goal claim.
