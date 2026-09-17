@@ -21,3 +21,12 @@ open QCK
 #check QCK.operationDefect
 #check QCK.operationDefect_eq_zero_iff
 #check QCK.operationDefect_positive_witness
+
+#check QCK.snapshotSafe
+#check QCK.snapshotSafe_le_left
+#check QCK.snapshotSafeInActive
+#check QCK.snapshotReserveFinrank
+#check QCK.snapshotReserveFinrank_eq_sub
+#check QCK.snapshotReserve_lower_bound
+#check QCK.snapshotReserveMap
+#check QCK.ker_prod_active_snapshotReserveMap
