@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from math import gcd
 from typing import Any
 
 from .certified_memory import CertifiedArcMemoryGraph, Checkpoint
@@ -37,6 +38,44 @@ class CertifiedConsequenceController(ConsequenceController):
             return tuple(int(value) for value in signature.structural())
         changed = max(sum(len(row) for row in before), sum(len(row) for row in after))
         return (int(changed), 0, 0, 0, 0, 0)
+
+    @staticmethod
+    def _structural_class(
+        signature: tuple[int, int, int, int, int, int]
+    ) -> tuple[int, ...]:
+        """Quotient pixel scale while preserving effect topology.
+
+        Absolute changed-cell counts and bounding-box dimensions are rendering-
+        scale dependent. The retained invariants are changed-area density,
+        bounding-box aspect ratio, intervention-relative direction and component
+        count. Degenerate/no-op signatures remain exact.
+        """
+        changed, bbox_w, bbox_h, dx_sign, dy_sign, components = (
+            int(value) for value in signature
+        )
+        if changed <= 0 or bbox_w <= 0 or bbox_h <= 0:
+            return (changed, bbox_w, bbox_h, dx_sign, dy_sign, components)
+        area = bbox_w * bbox_h
+        density_gcd = gcd(changed, area)
+        aspect_gcd = gcd(bbox_w, bbox_h)
+        return (
+            changed // density_gcd,
+            area // density_gcd,
+            bbox_w // aspect_gcd,
+            bbox_h // aspect_gcd,
+            dx_sign,
+            dy_sign,
+            components,
+        )
+
+    @classmethod
+    def _checkpoint_matches(cls, observed: Checkpoint, expected: Checkpoint) -> bool:
+        return (
+            tuple(observed[1]) == tuple(expected[1])
+            and str(observed[2]) == str(expected[2])
+            and cls._structural_class(observed[3])
+            == cls._structural_class(expected[3])
+        )
 
     def _clear_transfer(self) -> None:
         super()._clear_transfer()
@@ -78,11 +117,7 @@ class CertifiedConsequenceController(ConsequenceController):
             if source == "transfer_probe" and self._pending_probe_expected is not None:
                 expected = self._pending_probe_expected
                 self._pending_probe_expected = None
-                matches = (
-                    checkpoint[1] == expected[1]
-                    and checkpoint[2] == expected[2]
-                    and checkpoint[3] == expected[3]
-                )
+                matches = self._checkpoint_matches(checkpoint, expected)
                 if self._transfer_base and self._transfer_level is not None:
                     if matches:
                         contract = self._active_contract
