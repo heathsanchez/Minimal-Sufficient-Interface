@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: arc3-residual-growth-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   qualification:
     runs-on: ubuntu-24.04
