@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 
 from metalogic_arc3.consequence_controller import ConsequenceController
 from metalogic_arc3.recurrence_factor import RecurrenceFactor
-from metalogic_arc3.runtime import normalize_frame
+from metalogic_arc3.runtime import ActionToken, normalize_frame
 
 
 def raster(resource: int, world: int, width=64, height=12):
@@ -65,6 +65,36 @@ class RecurrenceFactorControllerContracts(unittest.TestCase):
             c._consequence_context(right_obs, right),
         )
         self.assertTrue(c._consequence_context(left_obs, left).startswith("w:"))
+
+    def test_recurrent_world_frontier_outranks_generic_affordance(self):
+        c = self._activated()
+        g = raster(8, 1)
+        obs = normalize_frame(frame(g))
+        c._grid = g
+        catalog = (ActionToken(3), ActionToken(4))
+        c._primary = catalog
+        c._decision_tick = 1
+
+        context = c._consequence_context(obs, g)
+        target = "w:target"
+        c.effects.note_catalog(context, ((3, None, None), (4, None, None)))
+        c.effects.record(
+            context, (3, None, None), target, "primitive:3", 1, "h", False
+        )
+        c.effects.note_catalog(target, ((4, None, None),))
+
+        for i in range(3):
+            c.affordances.record(
+                f"a{i}",
+                (4, None, None),
+                "primitive:4",
+                (1, 1, 1, 0, 0, 1),
+                directness=1.0,
+            )
+
+        selected = c._select_probe(obs, catalog)
+        self.assertEqual(selected.action_id, 3)
+        self.assertEqual(selected.source, "consequence_frontier")
 
     def test_removed_factor_is_retained_separately(self):
         c = self._activated()
