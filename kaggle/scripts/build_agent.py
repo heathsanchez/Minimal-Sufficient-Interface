@@ -84,6 +84,7 @@ def render() -> str:
             "from .memory_controller import MemoryGraphController\n",
             "from .memory_graph import ActionKey\n",
             "from .runtime import ActionToken, Observation, normalize_frame\n",
+            "from .stable_state import StableStateQuotient\n",
         ),
     )
     certified_memory = clean_module(
