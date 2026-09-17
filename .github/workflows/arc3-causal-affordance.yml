@@ -87,7 +87,26 @@ jobs:
               manifest = json.loads(path.read_text())
               assert manifest['sdk_versions'] == {'arc-agi': '0.9.9', 'arcengine': '0.9.3'}
               if kind == 'public':
-                  assert {g['game_id']: g['files'] for g in manifest['games']} == expected, 'public diagnostic version drift'
+                  current = {g['game_id']: g['files'] for g in manifest['games']}
+                  assert set(current) == set(expected), 'public game version drift'
+                  metadata_changes = {}
+                  for game in manifest['games']:
+                      gid = game['game_id']
+                      # Historical game source stays byte-identical. Downloaded
+                      # metadata differed in run 35252890728; it is now frozen
+                      # once and checked byte-for-byte for BOTH paired policies
+                      # by benchmark_audit.cell, not ignored during evaluation.
+                      code = lambda files: {p:h for p,h in files.items() if p != 'metadata.json'}
+                      assert code(current[gid]) == code(expected[gid]), 'public game source drift: ' + gid
+                      assert 'metadata.json' in current[gid]
+                      metadata_changes[gid] = {'historical': expected[gid]['metadata.json'], 'paired_run': current[gid]['metadata.json']}
+                      metadata = Path(game['local_dir']) / 'metadata.json'
+                      target = root / 'paired-metadata' / (gid + '.json')
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(metadata.read_bytes())
+                  manifest['historical_metadata_comparison'] = metadata_changes
+                  manifest['historical_comparison_scope'] = 'same exact game source and versions; metadata freshly pinned for both agents'
+                  print('PAIRED_METADATA_HASHES=' + json.dumps(metadata_changes, sort_keys=True))
               # Prior two-seed trials were identical, so do not count duplicate
               # deterministic traces as independent evidence here.
               manifest['seeds'] = [0]
@@ -96,7 +115,7 @@ jobs:
               baseline = copy.deepcopy(manifest)
               baseline['generated_agent_sha256'] = hashlib.sha256((root / 'baseline.py').read_bytes()).hexdigest()
               (root / f'baseline-{kind}.json').write_text(json.dumps(baseline, indent=2, sort_keys=True) + '\n')
-          print('ARC3_EXACT_PUBLIC_VERSIONS_AND_HASHES=PASS')
+          print('ARC3_PUBLIC_SOURCE_PINS_AND_PAIRED_METADATA=PASS')
           PY
       - name: Candidate fixture control and three real public diagnostics
         run: |
@@ -146,6 +165,8 @@ jobs:
               c = json.loads((root / f'candidate-{kind}-results/summary.json').read_text())
               b = json.loads((root / f'baseline-{kind}-results/summary.json').read_text())
               assert c['comparison'] == b['comparison'] == 'MATCHED'
+              assert c['manifest']['games'] == b['manifest']['games']
+              assert c['manifest']['max_actions'] == b['manifest']['max_actions']
               baseline = {(r['game_id'],r['arm']): r for r in b['results']}
               for row in c['results']:
                   old = baseline[(row['game_id'],row['arm'])]
