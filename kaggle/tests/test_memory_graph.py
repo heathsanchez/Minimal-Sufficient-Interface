@@ -11,31 +11,61 @@ from metalogic_arc3.memory_graph import ArcMemoryGraph
 
 
 class ArcMemoryGraphContracts(unittest.TestCase):
-    def test_refuted_program_is_canonical_restartable_and_guides_divergence(self):
+    def test_terminal_leaf_does_not_close_ancestor_until_all_legal_children_close(self):
         mg = ArcMemoryGraph()
         context = (0, "NOT_FINISHED", (3, 4), 64, 64, "start")
         a3 = (3, None, None)
         a4 = (4, None, None)
-        program = (a3, a4, a3, a4)
+        legal = (a3, a4)
+        failed = (a3, a4, a3, a4)
+
+        # Record the legal branching actually witnessed along the path.  A
+        # terminal failure closes only the exact leaf, not every ancestor.
+        for prefix in ((), (a3,), (a3, a4), (a3, a4, a3)):
+            mg.note_legal(context, prefix, legal)
+        mg.add_refuted(context, failed, consequence="GAME_OVER")
+
+        self.assertTrue(mg.is_closed(context, failed))
+        self.assertFalse(mg.is_closed(context, (a3, a4, a3)))
+        self.assertEqual(mg.forbidden_next(context, ()), set())
+        self.assertEqual(mg.forbidden_next(context, (a3,)), set())
+        self.assertEqual(mg.forbidden_next(context, (a3, a4, a3)), {a4})
+
+        # Once the sibling leaf also fails, the parent is exactly closed and
+        # that closed child may be pruned one level higher.
+        sibling = (a3, a4, a3, a3)
+        mg.add_refuted(context, sibling, consequence="GAME_OVER")
+        self.assertTrue(mg.is_closed(context, (a3, a4, a3)))
+        self.assertEqual(mg.forbidden_next(context, (a3, a4)), {a3})
+        self.assertFalse(mg.is_closed(context, (a3, a4)))
+
+    def test_refutation_trie_is_canonical_restartable_and_preserves_attempts(self):
+        mg = ArcMemoryGraph()
+        context = (0, "NOT_FINISHED", (3, 4), 64, 64, "start")
+        a3 = (3, None, None)
+        a4 = (4, None, None)
+        legal = (a3, a4)
 
         mg.note_attempt(context, a3)
         mg.note_attempt(context, a4)
-        mg.add_refuted(context, program, consequence="GAME_OVER")
-        mg.add_refuted(context, program, consequence="GAME_OVER")
+        mg.note_legal(context, (), legal)
+        mg.note_legal(context, (a3,), legal)
+        mg.add_refuted(context, (a3, a4), consequence="GAME_OVER")
+        mg.add_refuted(context, (a3, a4), consequence="GAME_OVER")
 
         self.assertEqual(mg.attempt_count(context, a3), 1)
         self.assertEqual(mg.attempt_count(context, a4), 1)
         self.assertEqual(mg.refuted_count, 1)
-        self.assertEqual(mg.forbidden_next(context, ()), {a3})
+        self.assertEqual(mg.forbidden_next(context, ()), set())
         self.assertEqual(mg.forbidden_next(context, (a3,)), {a4})
-        self.assertEqual(mg.forbidden_next(context, (a4,)), set())
 
         text = mg.text()
-        self.assertTrue(text.startswith("MG-ARC1\n"))
+        self.assertTrue(text.startswith("MG-ARC2\n"))
         restarted = ArcMemoryGraph.parse(text)
         self.assertEqual(restarted.text(), text)
         self.assertEqual(restarted.digest(), mg.digest())
-        self.assertEqual(restarted.forbidden_next(context, ()), {a3})
+        self.assertEqual(restarted.forbidden_next(context, ()), set())
+        self.assertEqual(restarted.forbidden_next(context, (a3,)), {a4})
 
 
 if __name__ == "__main__":
