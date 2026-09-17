@@ -33,7 +33,8 @@ class AgentSourceContracts(unittest.TestCase):
         self.assertIn("GameState.GAME_OVER", source)
         self.assertIn("GameState.WIN", source)
         self.assertIn("set_data", source)
-        self.assertIn("OnlineController", source)
+        self.assertIn("MemoryGraphController", source)
+        self.assertIn("record_terminal_failure", source)
 
     def test_full_reset_clears_local_state_but_does_not_send_reset_again(self):
         tree = ast.parse(SRC.read_text())
