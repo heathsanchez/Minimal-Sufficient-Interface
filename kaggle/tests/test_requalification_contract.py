@@ -143,6 +143,26 @@ class RequalificationControllerContracts(unittest.TestCase):
         self.assertLessEqual(len(speculative), 7)
         self.assertLessEqual(c.memory.transfer_trial(1)["issued"], 8)
 
+    def test_scale_equivalent_process_effects_match(self):
+        expected = (0, (3, None, None), "primitive:3", (64, 8, 8, 0, 0, 1))
+        observed = (0, (3, None, None), "primitive:3", (16, 4, 4, 0, 0, 1))
+        self.assertTrue(CertifiedConsequenceController._checkpoint_matches(observed, expected))
+
+    def test_descriptor_change_still_blocks_scale_equivalent_structure(self):
+        expected = (
+            0,
+            (6, 47, 14),
+            "(6, (848, 32, 27), (0, 0, 0, 0, 0, 0, 0, 0, 0))",
+            (1, 1, 1, 1, -1, 1),
+        )
+        observed = (
+            0,
+            (6, 47, 14),
+            "(6, (972, 52, 19), (0, 0, 0, 0, 0, 0, 0, 0, 0))",
+            (1, 1, 1, 1, -1, 1),
+        )
+        self.assertFalse(CertifiedConsequenceController._checkpoint_matches(observed, expected))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
