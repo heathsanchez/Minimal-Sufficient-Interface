@@ -27,7 +27,7 @@ def snapshotNullspace
 future contract may split. -/
 abbrev SnapshotReserve
     {I : Type*} (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :=
-  N₀ ⧸ snapshotNullspace N₀ future
+  N₀ ⧸ (snapshotNullspace N₀ future).comap N₀.subtype
 
 theorem snapshotNullspace_le
     {I : Type*} (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
@@ -48,7 +48,8 @@ theorem maintainedNullspace_le_snapshot
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
     maintainedNullspace S N₀ future ≤ snapshotNullspace N₀ future := by
   intro x hx
-  have h := (Submodule.mem_iInf.mp hx) ([] : List A)
+  have h : x ∈ (snapshotNullspace N₀ future).comap (wordMap S ([] : List A)) := by
+    exact (show x ∈ ⨅ w : List A, (snapshotNullspace N₀ future).comap (wordMap S w) from hx) []
   simpa [wordMap] using h
 
 /-- Maintained-safe forgetting is invariant under every waiting generator. -/
@@ -58,9 +59,8 @@ theorem maintainedNullspace_invariant
     maintainedNullspace S N₀ future ≤
       (maintainedNullspace S N₀ future).comap (S a) := by
   intro x hx
-  apply Submodule.mem_iInf.mpr
   intro w
-  have h := (Submodule.mem_iInf.mp hx) (a :: w)
+  have h : x ∈ (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := hx (a :: w)
   simpa [wordMap] using h
 
 /-- Universal property: maintainedNullspace is the greatest generator-invariant
@@ -73,7 +73,6 @@ theorem le_maintainedNullspace
     (hWinv : ∀ a, W ≤ W.comap (S a)) :
     W ≤ maintainedNullspace S N₀ future := by
   intro x hx
-  apply Submodule.mem_iInf.mpr
   intro w
   induction w generalizing x with
   | nil =>
@@ -90,6 +89,6 @@ abbrev MaintainedReserve
     {A I : Type*} (S : A → V →ₗ[𝕜] V)
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
     (_h : maintainedNullspace S N₀ future ≤ N₀) :=
-  N₀ ⧸ maintainedNullspace S N₀ future
+  N₀ ⧸ (maintainedNullspace S N₀ future).comap N₀.subtype
 
 end QCK
