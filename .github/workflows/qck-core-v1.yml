@@ -31,8 +31,14 @@ jobs:
         working-directory: qcklean
         run: |
           set -euo pipefail
-          if grep -nER --include='*.lean' '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' .; then
-            echo "Forbidden proof placeholder or local axiom declaration found."
+          found=0
+          for file in QCK*.lean; do
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' "$file"; then
+              found=1
+            fi
+          done
+          if [ "$found" -ne 0 ]; then
+            echo "Forbidden proof placeholder or local axiom declaration found in QCK source."
             exit 1
           fi
       - name: Build QCK Core
