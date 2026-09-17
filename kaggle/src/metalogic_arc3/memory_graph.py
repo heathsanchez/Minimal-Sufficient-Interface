@@ -27,24 +27,30 @@ def _jsonable(value: Any) -> Any:
 class ArcMemoryGraph:
     """Canonical compressed consequential memory for an ARC session.
 
-    MG-ARC3 retains only facts that have earned future relevance:
+    MG-ARC4 retains only facts that have earned future relevance:
     * purchased interventions by public context;
     * exact terminally refuted programs;
     * observed legal branching for exact finite closure; and
-    * source-scoped programs that actually caused a level increment.
+    * source-scoped programs that actually caused a level increment; and
+    * nonrefundable target-scoped trial allowances for speculative reuse.
 
     A capability is verified only at its witnessed source context.  Exposing its
     program elsewhere makes it a *hypothesis constructor*, never a universal
     rule.  New contexts must earn their own consequence evidence.
     """
 
-    VERSION = "MG-ARC3"
+    VERSION = "MG-ARC4"
 
     def __init__(self) -> None:
         self._attempts: dict[tuple[ContextKey, ActionKey], int] = {}
         self._refuted: set[tuple[ContextKey, ProgramKey, str]] = set()
         self._legal: dict[tuple[ContextKey, ProgramKey], tuple[ActionKey, ...]] = {}
         self._capabilities: set[CapabilityKey] = set()
+        # A scheduling scope is NOT a state-equivalence class. Each agent owns
+        # one game session; completed-level count names its target obligation.
+        # Raster changes and RESET cannot create a fresh action allowance.
+        self._transfer_limits: dict[int, int] = {}
+        self._transfer_trials: dict[tuple[int, ProgramKey], dict[str, Any]] = {}
 
     @staticmethod
     def _context(value: Iterable[Any] | ContextKey) -> ContextKey:
@@ -154,6 +160,54 @@ class ArcMemoryGraph:
                 out.append(program)
         return tuple(out)
 
+    def transfer_remaining(
+        self, target_level: int, program: Iterable[ActionKey], max_actions: int,
+    ) -> int:
+        """Remaining hypothesis allowance, never a semantic success claim.
+
+        The cap is shared by ALL source programs for this target obligation.
+        Issued proposals are charged conservatively before the controller's
+        final trie filter; rejected proposals are not refunded. Thus actual
+        speculative environment calls cannot exceed this issued-action cap.
+        """
+        level, cap = int(target_level), int(max_actions)
+        if level < 0 or cap < 1:
+            raise ValueError("nonnegative target and positive trial cap required")
+        base = self._program(program)
+        if not base or base not in self.capability_programs(for_level=level):
+            return 0
+        trial = self._transfer_trials.get((level, base))
+        if trial and trial["status"] != "OPEN":
+            return 0
+        cap = min(cap, self._transfer_limits.get(level, cap))
+        issued = sum(row["issued"] for (target, _), row in self._transfer_trials.items()
+                     if target == level)
+        return max(0, cap - issued)
+
+    def issue_transfer(
+        self, target_level: int, program: Iterable[ActionKey], max_actions: int,
+    ) -> bool:
+        """Reserve one proposal slot; RESET and restart never refund it."""
+        level, cap = int(target_level), int(max_actions)
+        base = self._program(program)
+        if not self.transfer_remaining(level, base, cap):
+            return False
+        self._transfer_limits.setdefault(level, cap)
+        row = self._transfer_trials.setdefault(
+            (level, base), {"issued": 0, "status": "OPEN"})
+        row["issued"] += 1
+        return True
+
+    def finish_transfer(
+        self, target_level: int, program: Iterable[ActionKey],
+        status: str = "EXPIRED_UNCONFIRMED",
+    ) -> None:
+        if status not in ("EXPIRED_UNCONFIRMED", "WITNESSED_PROGRESS"):
+            raise ValueError("invalid transfer disposition")
+        row = self._transfer_trials.get((int(target_level), self._program(program)))
+        if row is not None:
+            row["status"] = status
+
     def _terminally_refuted(self, context: ContextKey, program: ProgramKey) -> bool:
         return any(
             candidate_context == context and candidate_program == program
@@ -239,7 +293,18 @@ class ArcMemoryGraph:
                 self._capabilities, key=repr
             )
         ]
+        transfer_limits = [
+            {"target_level": level, "max_actions": cap}
+            for level, cap in sorted(self._transfer_limits.items())
+        ]
+        transfer_trials = [
+            {"target_level": level, "program": _jsonable(program),
+             "issued": row["issued"], "status": row["status"]}
+            for (level, program), row in sorted(self._transfer_trials.items(), key=lambda item: repr(item[0]))
+        ]
         return {
+            "transfer_limits": transfer_limits,
+            "transfer_trials": transfer_trials,
             "attempts": attempts,
             "refuted": refuted,
             "legal": legal,
@@ -253,7 +318,7 @@ class ArcMemoryGraph:
     @classmethod
     def parse(cls, text: str) -> "ArcMemoryGraph":
         lines = [line.strip() for line in text.splitlines() if line.strip()]
-        if not lines or lines[0] != cls.VERSION:
+        if not lines or lines[0] not in (cls.VERSION, "MG-ARC3"):
             raise ValueError("unsupported ARC .mg version")
         if len(lines) != 2:
             raise ValueError("malformed ARC .mg")
@@ -285,6 +350,27 @@ class ArcMemoryGraph:
                 source_level=int(row["source_level"]),
                 target_level=int(row["target_level"]),
             )
+        for row in payload.get("transfer_limits", []):
+            level, cap = int(row["target_level"]), int(row["max_actions"])
+            if level < 0 or cap < 1 or level in out._transfer_limits:
+                raise ValueError("invalid or duplicate target transfer limit")
+            out._transfer_limits[level] = cap
+        for row in payload.get("transfer_trials", []):
+            level = int(row["target_level"])
+            program = out._program(row["program"])
+            issued, status = int(row["issued"]), str(row["status"])
+            key = (level, program)
+            if (level not in out._transfer_limits or issued < 1
+                    or key in out._transfer_trials
+                    or status not in ("OPEN", "EXPIRED_UNCONFIRMED", "WITNESSED_PROGRESS")
+                    or program not in out.capability_programs(for_level=level)):
+                raise ValueError("invalid or unsupported transfer trial")
+            out._transfer_trials[key] = {"issued": issued, "status": status}
+        for level, cap in out._transfer_limits.items():
+            issued = sum(row["issued"] for (target, _), row in out._transfer_trials.items()
+                         if target == level)
+            if issued > cap:
+                raise ValueError("transfer trial allowance exceeded")
         return out
 
     def digest(self) -> str:

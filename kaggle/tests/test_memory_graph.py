@@ -48,7 +48,7 @@ class ArcMemoryGraphContracts(unittest.TestCase):
         self.assertEqual(mg.capability_programs(), (program,))
 
         text = mg.text()
-        self.assertTrue(text.startswith("MG-ARC3\n"))
+        self.assertTrue(text.startswith("MG-ARC4\n"))
         restarted = ArcMemoryGraph.parse(text)
         self.assertEqual(restarted.text(), text)
         self.assertEqual(restarted.digest(), mg.digest())
@@ -75,7 +75,7 @@ class ArcMemoryGraphContracts(unittest.TestCase):
         self.assertEqual(mg.forbidden_next(context, (a3,)), {a4})
 
         text = mg.text()
-        self.assertTrue(text.startswith("MG-ARC3\n"))
+        self.assertTrue(text.startswith("MG-ARC4\n"))
         restarted = ArcMemoryGraph.parse(text)
         self.assertEqual(restarted.text(), text)
         self.assertEqual(restarted.digest(), mg.digest())

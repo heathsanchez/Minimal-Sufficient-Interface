@@ -10,11 +10,13 @@ class MemoryGraphController(OnlineController):
     """Online controller whose retained developmental present is ARC .mg.
 
     Exact-context retention remains the authority for replaying a capability in
-    the state where it was witnessed.  MG-ARC3 additionally exposes witnessed
+    the state where it was witnessed.  MG-ARC4 additionally exposes witnessed
     progress programs as *prospective constructors* at later levels.  Those
     constructors are hypotheses only: exact refutation evidence may override a
     transfer action at the first closed child, and no target-context success is
-    installed without an observed level increment.
+    installed without an observed level increment. Target-scoped issued-action
+    caps persist across RESET and memory restart; exhaustion is unconfirmed, not
+    semantic refutation.
     """
 
     def __init__(
@@ -54,6 +56,8 @@ class MemoryGraphController(OnlineController):
     def _clear_transfer(self) -> None:
         self._active_transfer: ProgramKey = ()
         self._transfer_index = 0
+        self._transfer_base: ProgramKey = ()
+        self._transfer_level: int | None = None
 
     def reset_episode(self) -> None:
         # Intentionally does NOT clear self.memory.
@@ -71,6 +75,9 @@ class MemoryGraphController(OnlineController):
         super()._process_previous_outcome(obs)
 
         if progressed:
+            if self._transfer_base and self._transfer_level is not None:
+                self.memory.finish_transfer(
+                    self._transfer_level, self._transfer_base, "WITNESSED_PROGRESS")
             if source_context is not None and witnessed_program:
                 self.memory.add_capability(
                     source_context,
@@ -104,21 +111,34 @@ class MemoryGraphController(OnlineController):
         # is a generic constructor from the frozen multilevel ARC lineage.  It
         # is bounded by primitive length and remains interruptible by external
         # progress, terminal consequence, illegality, or exact trie closure.
-        base = programs[0]
+        base = next((program for program in programs
+                     if self.memory.transfer_remaining(
+                         obs.levels_completed, program, self.max_transfer_depth)), ())
         if not base:
             return
         repeats = max(1, self.max_transfer_depth // len(base))
         expanded = base * repeats
-        self._active_transfer = expanded[: self.max_transfer_depth]
+        remaining = self.memory.transfer_remaining(
+            obs.levels_completed, base, self.max_transfer_depth)
+        self._active_transfer = expanded[:remaining]
+        self._transfer_base = base
+        self._transfer_level = obs.levels_completed
         self._transfer_index = 0
 
     def _next_transfer(self, obs: Observation) -> ActionToken | None:
         self._start_transfer(obs)
         if not self._active_transfer or self._transfer_index >= len(self._active_transfer):
+            if self._transfer_base and self._transfer_level is not None:
+                self.memory.finish_transfer(self._transfer_level, self._transfer_base)
             self._clear_transfer()
             return None
         action = self._active_transfer[self._transfer_index]
         if action[0] not in self._legal_ids(obs):
+            self._clear_transfer()
+            return None
+        if not self.memory.issue_transfer(
+                obs.levels_completed, self._transfer_base, self.max_transfer_depth):
+            self.memory.finish_transfer(obs.levels_completed, self._transfer_base)
             self._clear_transfer()
             return None
         self._transfer_index += 1
