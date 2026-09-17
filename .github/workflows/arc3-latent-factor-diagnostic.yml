@@ -44,6 +44,7 @@ jobs:
           path: upstream-arc-agi
       - name: Prepare exact worlds
         run: |
+          mkdir -p kaggle/agent
           cp kaggle/latent-factor-results/agent.py kaggle/agent/my_agent.py
           python - <<'PY'
           from types import SimpleNamespace
