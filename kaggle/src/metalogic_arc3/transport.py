@@ -105,6 +105,7 @@ class MotionMemory:
         self.min_dominance = float(min_dominance)
         self._vectors: dict[tuple[ComponentKey, ActionKey], Counter[tuple[int, int]]] = {}
         self._positions: dict[ComponentKey, Counter[tuple[int, int]]] = {}
+        self._local: dict[tuple[ComponentKey, tuple[int, int], ActionKey], Counter[tuple[int, int]]] = {}
 
     @staticmethod
     def _action(value: ActionKey | Iterable[int | None]) -> ActionKey:
