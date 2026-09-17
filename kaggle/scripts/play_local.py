@@ -122,6 +122,7 @@ def main() -> None:
         MyAgentCls.MAX_ACTIONS = min(int(MyAgentCls.MAX_ACTIONS), args.max_steps)
 
     per_game = []
+    overall_max_levels = 0
     for index, game_id in enumerate(resolved_game_ids, 1):
         print(f"=== [{index}/{len(resolved_game_ids)}] {game_id} ===")
         env = arc.make(game_id, render_mode=args.render)
@@ -138,10 +139,17 @@ def main() -> None:
         )
         agent.main()
         final = agent.frames[-1]
-        per_game.append((game_id, final.state, final.levels_completed, agent.action_counter))
+        max_levels_reached = max(
+            (int(frame.levels_completed) for frame in agent.frames),
+            default=int(final.levels_completed),
+        )
+        overall_max_levels = max(overall_max_levels, max_levels_reached)
+        per_game.append(
+            (game_id, final.state, final.levels_completed, agent.action_counter, max_levels_reached)
+        )
         print(
             f"  -> state={final.state}, levels_completed={final.levels_completed}, "
-            f"actions={agent.action_counter}"
+            f"max_levels_reached={max_levels_reached}, actions={agent.action_counter}"
         )
 
     if not per_game:
@@ -154,10 +162,14 @@ def main() -> None:
         score = None
 
     print("\n========= SUMMARY =========")
-    for game_id, state, levels, actions in per_game:
-        print(f"  {game_id:24} levels={levels:3} actions={actions:5} state={state}")
+    for game_id, state, levels, actions, max_levels_reached in per_game:
+        print(
+            f"  {game_id:24} levels={levels:3} max_levels={max_levels_reached:3} "
+            f"actions={actions:5} state={state}"
+        )
     if score is not None:
         print(f"\nAggregate scorecard score: {score}")
+    print(f"MAX_LEVELS_REACHED={overall_max_levels}")
     print("ARC3_PUBLIC_SMOKE=PASS")
 
 
