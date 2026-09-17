@@ -25,7 +25,7 @@ def with_interior_marker(x: int, *, width: int = 16, height: int = 12):
 
 class ResourceFactorContracts(unittest.TestCase):
     def test_dormant_before_bounded_evidence_horizon(self):
-        f = ResourceFactor(activation_transitions=8, min_positions=6)
+        f = ResourceFactor(activation_transitions=8, min_positions=6, max_mask_fraction=0.10)
         frames = [with_bar(16 - i) for i in range(5)]
         for before, after in zip(frames, frames[1:]):
             f.observe(0, before, after)
@@ -33,7 +33,7 @@ class ResourceFactorContracts(unittest.TestCase):
         self.assertEqual(f.masked_positions(0, 12, 16), ())
 
     def test_factors_monotone_edge_bar_and_retains_scalar(self):
-        f = ResourceFactor(activation_transitions=8, min_positions=6)
+        f = ResourceFactor(activation_transitions=8, min_positions=6, max_mask_fraction=0.10)
         frames = [with_bar(16 - i) for i in range(10)]
         for before, after in zip(frames, frames[1:]):
             f.observe(0, before, after)
@@ -101,7 +101,7 @@ class ResourceFactorContracts(unittest.TestCase):
         self.assertEqual(f.masked_positions(0, 64, 64), ())
 
     def test_resource_ledger_retains_cost_evidence_separately(self):
-        f = ResourceFactor(activation_transitions=8, min_positions=6)
+        f = ResourceFactor(activation_transitions=8, min_positions=6, max_mask_fraction=0.10)
         frames = [with_bar(16 - i) for i in range(10)]
         for before, after in zip(frames, frames[1:]):
             f.observe(0, before, after)
