@@ -66,6 +66,26 @@ class TransportContracts(unittest.TestCase):
         # entire origin set is related by one exact translation, stay UNKNOWN.
         self.assertEqual(extract_transports(before, after), ())
 
+    def test_blocked_local_move_forces_route_to_nearest_frontier(self):
+        memory = MotionMemory(min_support=2, min_dominance=1.0)
+        a_right = (3, None, None)
+        a_left = (4, None, None)
+
+        memory.record(a_right, point(1, 1), point(2, 1))
+        memory.record(a_right, point(2, 1), point(3, 1))
+        memory.record(a_left, point(3, 1), point(2, 1))
+        memory.record(a_left, point(2, 1), point(1, 1))
+
+        self.assertEqual(memory.recommend(point(3, 1), (a_right, a_left)), a_right)
+
+        # The globally valid RIGHT control is blocked at this local position.
+        memory.record(a_right, point(3, 1), point(3, 1))
+        self.assertEqual(memory.blocked_local_count, 1)
+
+        # RIGHT must not be retried here. LEFT is the first edge on the known
+        # path back to x=1, where LEFT remains an untried modeled control.
+        self.assertEqual(memory.recommend(point(3, 1), (a_right, a_left)), a_left)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
