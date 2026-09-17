@@ -1,0 +1,72 @@
+name: ARC3 frozen public benchmark audit
+on:
+  push:
+    branches: [arc3-real-benchmark-v1]
+    paths:
+      - 'kaggle/scripts/benchmark_audit.py'
+      - 'kaggle/tests/test_benchmark_audit.py'
+      - '.github/workflows/arc3-real-benchmark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-public-audit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify controller and builder remain frozen
+        run: |
+          git diff --exit-code 846b3919f4b8cdf8e2ca414b41c7239c255419e7 HEAD -- kaggle/src kaggle/scripts/build_agent.py kaggle/scripts/build_notebook.py kaggle/provenance/sources.json
+      - name: All integration and evaluator contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build and compile unchanged self-contained agent
+        run: |
+          python kaggle/scripts/build_agent.py
+          python -m py_compile kaggle/agent/my_agent.py kaggle/scripts/benchmark_audit.py
+          python kaggle/scripts/build_notebook.py
+      - name: Install pinned SDK
+        run: python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Lock SDK fixture CONTROL manifest, not benchmark evidence
+        run: |
+          python kaggle/scripts/benchmark_audit.py prepare --fixtures --games bt11 --max-actions 128 --environments-dir upstream-arc-agi/test_environment_files --manifest kaggle/audit-fixtures.json
+      - name: Four-arm SDK fixture causal control
+        run: python kaggle/scripts/benchmark_audit.py run --manifest kaggle/audit-fixtures.json --output kaggle/audit-fixture-results
+      - name: Download official anonymous games and freeze manifest before evaluation
+        run: |
+          python kaggle/scripts/benchmark_audit.py prepare --games ls20,ft09,vc33 --max-actions 400 --manifest kaggle/audit-public.json
+      - name: Actual public diagnostics, four ablations and two seeds
+        run: python kaggle/scripts/benchmark_audit.py run --manifest kaggle/audit-public.json --output kaggle/audit-public-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-frozen-public-audit
+          path: |
+            kaggle/audit-*.json
+            kaggle/audit-*-results/*.json
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+          if-no-files-found: warn
