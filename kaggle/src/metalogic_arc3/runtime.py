@@ -206,6 +206,10 @@ class OnlineController:
             else archived_capabilities
         )
         self._retained: dict[tuple[Any, ...], list[tuple[ActionToken, ...]]] = {}
+        # Developmental evidence belongs to the game/session, not one life.
+        # Resets clear transient trajectory state but must not make the agent
+        # repay for an intervention already tried from the same public state.
+        self._visits: dict[tuple[tuple[Any, ...], tuple[int, int | None, int | None]], int] = {}
         self.reset_episode()
 
     @property
@@ -224,7 +228,6 @@ class OnlineController:
         self._level_start_guard: tuple[Any, ...] | None = None
         self._active_option: tuple[ActionToken, ...] = ()
         self._active_index = 0
-        self._visits: dict[tuple[tuple[Any, ...], tuple[int, int | None, int | None]], int] = {}
         self._archive_active: ArchivedCapability | None = None
         self._archive_index = 0
         self._archive_disabled = False
