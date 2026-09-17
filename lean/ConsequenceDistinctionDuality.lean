@@ -118,9 +118,9 @@ theorem residual_iff_not_descends {X : Type u} {A : Type v}
   · intro hnot
     classical
     exact Classical.byContradiction (fun hnores =>
-      hnot (fun hE =>
+      hnot (fun {x y} hE =>
         Classical.byContradiction (fun hk =>
-          hnores ⟨_, _, hE, hk⟩)))
+          hnores ⟨x, y, hE, hk⟩)))
 
 /-- Semantic least repair: retain the old distinctions and add exactly the new kernel. -/
 def Repair {X : Type u} {A : Type v}
@@ -205,8 +205,7 @@ theorem search_failure_excludes_solved {A : Type v}
     ¬ Solved Found d := by
   exact hSearch.2
 
-/-- With sound reachability/found invariants, every desired consequence is in the intended
-diagnostic hierarchy: representation, capability, search, or solved. -/
+/-- Every desired consequence lies in the diagnostic hierarchy. -/
 theorem diagnostic_complete {X : Type u} {A : Type v}
     (kernel : A → Rel X) (E : Rel X)
     (Reachable Found : Family A) (d : A) :
