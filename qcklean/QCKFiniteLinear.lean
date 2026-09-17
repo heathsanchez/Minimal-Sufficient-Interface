@@ -40,7 +40,8 @@ after every finite waiting-action word. -/
 def maintainedNullspace
     {A I : Type*} (S : A → V →ₗ[𝕜] V)
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) : Submodule 𝕜 V :=
-  ⨅ w : List A, (snapshotNullspace N₀ future).comap (wordMap S w)
+  sInf (Set.range (fun w : List A =>
+    (snapshotNullspace N₀ future).comap (wordMap S w)))
 
 /-- Maintained-safe forgetting is contained in snapshot-safe forgetting. -/
 theorem maintainedNullspace_le_snapshot
@@ -48,24 +49,31 @@ theorem maintainedNullspace_le_snapshot
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
     maintainedNullspace S N₀ future ≤ snapshotNullspace N₀ future := by
   intro x hx
-  have h := show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
-    simpa only [Submodule.mem_iInf] using hx
-  simpa [wordMap] using h []
+  have hle : maintainedNullspace S N₀ future ≤
+      (snapshotNullspace N₀ future).comap (wordMap S ([] : List A)) := by
+    apply sInf_le
+    exact ⟨[], rfl⟩
+  have h := hle hx
+  simpa [wordMap] using h
 
-/-- Maintained-safe forgetting is invariant under every waiting generator. -/
+/-- Maintained-safe forgetting is invariant/ under every waiting generator. -/
 theorem maintainedNullspace_invariant
     {A I : Type*} (S : A → V →ₗ[𝕜] V)
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) (a : A) :
     maintainedNullspace S N₀ future ≤
       (maintainedNullspace S N₀ future).comap (S a) := by
   intro x hx
-  have hall := show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
-    simpa only [Submodule.mem_iInf] using hx
-  apply (show ∀ w : List A, S a x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
-    intro w
-    simpa [wordMap] using hall (a :: w))
+  change S a x ∈ maintainedNullspace S N₀ future
+  apply le_sInf
+  rintro U ⟨w, rfl⟩
+  have hle : maintainedNullspace S N₀ future ≤
+      (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := by
+    apply sInf_le
+    exact ⟨a :: w, rfl⟩
+  have h := hle hx
+  simpa [wordMap] using h
 
-/-- Universal property: maintainedNullspace is the greatest generator-invariant
+/-- Universal property/: maintainedNullspace is the greatest generator-invariant
 subspace contained in the snapshot-safe forgetting space. -/
 theorem le_maintainedNullspace
     {A I : Type*} (S : A → V →ₗ[𝕜] V)
@@ -74,17 +82,17 @@ theorem le_maintainedNullspace
     (hWsafe : W ≤ snapshotNullspace N₀ future)
     (hWinv : ∀ a, W ≤ W.comap (S a)) :
     W ≤ maintainedNullspace S N₀ future := by
+  apply le_sInf
+  rintro U ⟨w, rfl⟩
   intro x hx
-  apply (show ∀ w : List A, x ∈ (snapshotNullspace N₀ future).comap (wordMap S w) by
-    intro w
-    induction w generalizing x with
+  induction w generalizing x with
   | nil =>
       simpa [wordMap] using hWsafe hx
-    | cons a w ih =>
-        change wordMap S w (S a x) ∈ snapshotNullspace N₀ future
-        exact ih (hWinv a hx))
+  | cons a w ih =>
+      change wordMap S w (S a x) ∈ snapshotNullspace N₀ future
+      exact ih (hWinv a hx)
 
-/-- The canonical maintained reserve is the quotient of distinctions forgotten
+/-- The canonical maintained reserve/ is the quotient of distinctions forgotten
 by the active representation by those still safely forgettable while waiting.
 The inclusion hypothesis records that the active kernel itself is stable under
 the waiting contract. -/
