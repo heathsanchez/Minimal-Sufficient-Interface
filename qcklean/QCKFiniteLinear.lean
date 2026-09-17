@@ -314,7 +314,7 @@ theorem operationDefect_eq_zero_iff
     have hkEqFin :
         Module.finrank 𝕜 (LinearMap.ker F) =
           Module.finrank 𝕜 (LinearMap.ker O) :=
-      congrArg (Module.finrank 𝕜) hkEq
+      congrArg (fun K : Submodule 𝕜 V => Module.finrank 𝕜 K) hkEq
     have hrEq :
         Module.finrank 𝕜 (LinearMap.range F) =
           Module.finrank 𝕜 (LinearMap.range O) := by
