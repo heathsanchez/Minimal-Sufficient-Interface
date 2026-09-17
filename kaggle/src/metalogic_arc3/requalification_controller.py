@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from .certified_memory import CertifiedArcMemoryGraph, Checkpoint
@@ -22,7 +23,6 @@ class CertifiedConsequenceController(ConsequenceController):
             raise ValueError("requalification_prefix must be positive")
         self.requalification_prefix = int(requalification_prefix)
         super().__init__(*args, **kwargs)
-        # Preserve all base behavior but upgrade the canonical retained memory.
         self.memory = CertifiedArcMemoryGraph()
         self._episode_certificate: list[Checkpoint] = []
         self._active_contract: dict[str, Any] | None = None
@@ -42,9 +42,6 @@ class CertifiedConsequenceController(ConsequenceController):
         self._pending_probe_expected = None
 
     def reset_episode(self) -> None:
-        # A partial probe cannot be resumed across a reset because its earlier
-        # checkpoints belonged to the pre-reset trajectory. Its spent allowance
-        # remains charged and the source capability remains intact.
         memory = getattr(self, "memory", None)
         base = getattr(self, "_transfer_base", ())
         level = getattr(self, "_transfer_level", None)
@@ -78,12 +75,11 @@ class CertifiedConsequenceController(ConsequenceController):
             self._episode_certificate.append(checkpoint)
             if source == "transfer_probe" and self._pending_probe_expected is not None:
                 expected = self._pending_probe_expected
-                actual = checkpoint
                 self._pending_probe_expected = None
                 matches = (
-                    actual[1] == expected[1]
-                    and actual[2] == expected[2]
-                    and actual[3] == expected[3]
+                    checkpoint[1] == expected[1]
+                    and checkpoint[2] == expected[2]
+                    and checkpoint[3] == expected[3]
                 )
                 if self._transfer_base and self._transfer_level is not None:
                     if matches:
@@ -119,16 +115,16 @@ class CertifiedConsequenceController(ConsequenceController):
 
         if progressed and source_context is not None and witnessed_program and witnessed:
             limit = min(self.requalification_prefix, len(witnessed_program), len(witnessed))
-            checkpoints = []
-            for index in range(limit):
-                _old_index, action, descriptor, structural = witnessed[index]
-                checkpoints.append((index, action, descriptor, structural))
+            checkpoints = tuple(
+                (index, witnessed[index][1], witnessed[index][2], witnessed[index][3])
+                for index in range(limit)
+            )
             self.memory.add_capability_contract(
                 source_context,
                 witnessed_program,
                 source_level=int(previous_level),
                 target_level=int(obs.levels_completed),
-                checkpoints=tuple(checkpoints),
+                checkpoints=checkpoints,
             )
             self._episode_certificate = []
 
@@ -226,3 +222,64 @@ class CertifiedConsequenceController(ConsequenceController):
 
         self._transfer_index += 1
         return self._token(action, source)
+
+    def observe_and_choose(self, frame: Any) -> ActionToken | None:
+        obs = normalize_frame(frame)
+        self._record_effect(frame, obs)
+        previous_level = self._previous.levels_completed if self._previous is not None else None
+        self._process_previous_outcome(obs)
+        if previous_level is not None and obs.levels_completed > previous_level:
+            self._repeat = None
+            self._repeat_left = 0
+        if self._episode_context is None:
+            self._episode_context = self._memory_context(obs)
+        if self._level_start_guard is None:
+            self._level_start_guard = self._retention_guard(obs)
+        if obs.state == "WIN":
+            self._previous = obs
+            self._last_action = None
+            return None
+
+        token = self._next_archive(obs)
+        if token is None:
+            token = self._next_continuation(obs)
+        if token is None:
+            token = self._next_retained(obs)
+        self._decision_tick += 1
+
+        if token is None or token.source in ("transfer", "transfer_probe"):
+            catalog = self._catalog(obs)
+            prefix = tuple(self._episode_program)
+            self.memory.note_legal(
+                self._episode_context,
+                prefix,
+                tuple(self._action_key(candidate) for candidate in catalog),
+            )
+            forbidden = self.memory.forbidden_next(self._episode_context, prefix)
+            allowed = tuple(
+                candidate
+                for candidate in catalog
+                if self._action_key(candidate) not in forbidden
+            )
+            candidates = allowed or catalog
+            if token is None or self._action_key(token) in forbidden:
+                self._clear_transfer()
+                token = self._select_probe(obs, candidates)
+            key = self._action_key(token)
+            guard = self._exploration_guard(obs)
+            self._visits[(guard, key)] = self._visits.get((guard, key), 0) + 1
+            self.memory.note_attempt(self._memory_context(obs), key)
+
+        key = self._action_key(token)
+        history = hashlib.sha256(repr(tuple(self._episode_program[-8:])).encode()).hexdigest()
+        self._pending_effect = (
+            obs.evidence_sha256,
+            key,
+            self._grid,
+            self._descriptor(token),
+            history,
+        )
+        self._episode_program.append(key)
+        self._previous = obs
+        self._last_action = token
+        return token
