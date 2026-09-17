@@ -6,6 +6,8 @@ from arcengine import FrameData, GameAction, GameState
 from agents.agent import Agent
 
 from .memory_controller import MemoryGraphController
+from .consequence_controller import ConsequenceController
+
 
 
 class MyAgent(Agent):
@@ -20,14 +22,17 @@ class MyAgent(Agent):
             for action in GameAction
             if action is not GameAction.RESET
         )
-        self.controller = MemoryGraphController(action_ids)
+        self.controller = ConsequenceController(action_ids)
 
     @property
     def name(self) -> str:
         return f"{super().name}.metalogic-mg-v1"
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
-        return latest_frame.state is GameState.WIN
+        if latest_frame.state is GameState.WIN:
+            self.controller.observe_terminal(latest_frame)
+            return True
+        return False
 
     def choose_action(
         self, frames: list[FrameData], latest_frame: FrameData
@@ -41,6 +46,7 @@ class MyAgent(Agent):
         if latest_frame.state is GameState.GAME_OVER:
             # Terminal consequence is evidence. Commit the failed prefix to the
             # compressed consequential present before clearing trajectory state.
+            self.controller.observe_terminal(latest_frame)
             self.controller.record_terminal_failure("GAME_OVER")
             self.controller.reset_episode()
             return GameAction.RESET

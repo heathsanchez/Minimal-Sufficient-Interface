@@ -1,0 +1,84 @@
+name: ARC3 consequence acquisition
+on:
+  push:
+    branches: [arc3-consequence-acquisition-v1]
+    paths: ['kaggle/**', '.github/workflows/arc3-consequence-acquisition.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve original memory, runtime and transfer core
+        run: git diff --exit-code 846b3919f4b8cdf8e2ca414b41c7239c255419e7 HEAD -- kaggle/src/metalogic_arc3/memory_graph.py kaggle/src/metalogic_arc3/runtime.py kaggle/src/metalogic_arc3/memory_controller.py
+      - name: Reproduce RED regressions against baseline
+        run: |
+          mv kaggle/src/metalogic_arc3/consequence_controller.py /tmp/consequence_controller.py
+          set +e
+          python -m unittest discover -s kaggle/tests -p test_consequence_acquisition.py -v > red-tests.log 2>&1
+          code=$?
+          set -e
+          mv /tmp/consequence_controller.py kaggle/src/metalogic_arc3/consequence_controller.py
+          cat red-tests.log
+          test "$code" -ne 0
+          grep -q 'FAILED (failures=7)' red-tests.log
+      - name: All integration and acquisition contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build candidate and frozen baseline
+        run: |
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py kaggle/scripts/compare_consequences.py
+          mkdir -p /tmp/arc3-baseline
+          git archive 846b3919f4b8cdf8e2ca414b41c7239c255419e7 kaggle | tar -x -C /tmp/arc3-baseline
+          python /tmp/arc3-baseline/kaggle/scripts/build_agent.py
+          sha256sum /tmp/arc3-baseline/kaggle/agent/my_agent.py kaggle/agent/my_agent.py
+      - name: Install pinned SDK
+        run: python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Preserve exact bt33 SDK regression
+        run: |
+          python kaggle/scripts/play_local.py --offline-environments-dir upstream-arc-agi/test_environment_files --game bt33-a7c3f9d18b4e --max-steps 32 | tee sdk-regression.log
+          grep -q 'MAX_LEVELS_REACHED=3' sdk-regression.log
+      - name: Lock SDK fixture manifest
+        run: python kaggle/scripts/benchmark_audit.py prepare --fixtures --games bt11 --max-actions 128 --environments-dir upstream-arc-agi/test_environment_files --manifest kaggle/consequence-fixtures.json
+      - name: SDK control comparison
+        run: python kaggle/scripts/compare_consequences.py run --manifest kaggle/consequence-fixtures.json --baseline /tmp/arc3-baseline/kaggle/agent/my_agent.py --output kaggle/consequence-fixture-results
+      - name: Lock real public DEVELOPMENT games
+        run: python kaggle/scripts/benchmark_audit.py prepare --games ls20,ft09,vc33 --max-actions 400 --manifest kaggle/consequence-public.json
+      - name: Matched public comparison and ablations
+        run: python kaggle/scripts/compare_consequences.py run --manifest kaggle/consequence-public.json --baseline /tmp/arc3-baseline/kaggle/agent/my_agent.py --output kaggle/consequence-public-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-consequence-acquisition
+          path: |
+            kaggle/consequence-*.json
+            kaggle/consequence-*-results/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            red-tests.log
+            sdk-regression.log
+          if-no-files-found: error
