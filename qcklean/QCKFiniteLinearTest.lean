@@ -30,3 +30,11 @@ open QCK
 #check QCK.snapshotReserve_lower_bound
 #check QCK.snapshotReserveMap
 #check QCK.ker_prod_active_snapshotReserveMap
+
+#check QCK.snapshotSafe
+#check QCK.snapshotSafeInActive
+#check QCK.snapshotReserveFinrank
+#check QCK.snapshotReserveFinrank_eq_sub
+#check QCK.snapshotReserve_lower_bound
+#check QCK.snapshotReserveMap
+#check QCK.ker_prod_active_snapshotReserveMap
