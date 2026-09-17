@@ -61,6 +61,7 @@ class RecurrenceFactor:
         self._records: dict[
             ShapeKey, list[tuple[Grid, Grid, ActionKey]]
         ] = {}
+        self._transition_counts: dict[ShapeKey, int] = {}
         self._evaluated: set[ShapeKey] = set()
         self._specs: dict[ShapeKey, dict[str, Any]] = {}
 
@@ -253,7 +254,17 @@ class RecurrenceFactor:
         records.append((before, after, tuple(action)))
         if len(records) > self.history_limit:
             del records[: len(records) - self.history_limit]
-        self._evaluate(key)
+        count = self._transition_counts.get(key, 0) + 1
+        self._transition_counts[key] = count
+        if count >= self.activation_frames:
+            multiple = count // self.activation_frames
+            geometric_checkpoint = (
+                count % self.activation_frames == 0
+                and multiple > 0
+                and (multiple & (multiple - 1)) == 0
+            )
+            if geometric_checkpoint:
+                self._evaluate(key)
 
     def frozen(self, level: int, height: int, width: int) -> bool:
         return (int(level), int(height), int(width)) in self._evaluated
