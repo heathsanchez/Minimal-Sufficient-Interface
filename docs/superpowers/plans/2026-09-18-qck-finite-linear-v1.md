@@ -187,7 +187,7 @@ Prove `closureIter_mono` from `L ≤ closureStep S L`. Prove by induction on wor
 
 - [ ] **Step 6: Prove finite stabilization**
 
-Package the monotone chain as an order hom `ℕ →o Submodule 𝕜 (Module.Dual 𝕜 V)`. Use the finite-generation stabilization theorem `Submodule.FG.stabilizes_of_iSup_eq` with the equality from Step 5. The finite-dimensional ambient dual gives finite generation.
+Package the monotone chain as an order hom `ℕ →o Submodule 𝕜 (Module.Dual 𝕜 V)`. Use the finite-generation stabilization theorem `Submodule.FG.stabilizes_of_iSup_eq` with the equality from Step 5. Obtain finite generation of `futureObservableSpan S C` from `Submodule.fg_iff_finiteDimensional` and the inherited finite-dimensional instance.
 
 Target theorem:
 
@@ -416,13 +416,21 @@ git commit -m "Derive QCK rank and operation defect diagnostics"
 **Interfaces:**
 - Produces: `snapshotSafe`, quotient reserve dimension, necessity, and a concrete reserve map attaining the bound.
 
+Use local codomain variables:
+
+```lean
+variable {R0 RH : Type*}
+variable [AddCommGroup R0] [Module 𝕜 R0] [FiniteDimensional 𝕜 R0]
+variable [AddCommGroup RH] [Module 𝕜 RH] [FiniteDimensional 𝕜 RH]
+```
+
 - [ ] **Step 1: Define snapshot-safe forgetting**
 
 For a finite portfolio indexed by `ι`:
 
 ```lean
 def snapshotSafe
-    {ι : Type*} [Finite ι]
+    {ι : Type*} [Fintype ι]
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : Submodule 𝕜 V :=
   N0 ⊓ ⨅ i, N i
 ```
@@ -433,12 +441,12 @@ Prove `snapshotSafe N0 N ≤ N0`.
 
 ```lean
 def snapshotSafeInActive
-    {ι : Type*} [Finite ι]
+    {ι : Type*} [Fintype ι]
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : Submodule 𝕜 N0 :=
   (snapshotSafe N0 N).comap N0.subtype
 
 def snapshotReserveFinrank
-    {ι : Type*} [Finite ι]
+    {ι : Type*} [Fintype ι]
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) : ℕ :=
   Module.finrank 𝕜 (N0 ⧸ snapshotSafeInActive N0 N)
 ```
@@ -473,7 +481,7 @@ Let `NF := snapshotSafe N0 N`. Choose a complement of `N0` in `V` using `Submodu
 
 ```lean
 noncomputable def snapshotReserveMap
-    {ι : Type*} [Finite ι]
+    {ι : Type*} [Fintype ι]
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
     V →ₗ[𝕜] (N0 ⧸ snapshotSafeInActive N0 N)
 ```
@@ -598,6 +606,14 @@ git commit -m "Formalize QCK maintained optionality"
 - Consumes: Core `descendedOperation` and `operation_descends_iff`.
 - Produces: invariant first-component theorem and explicit block-triangular decomposition.
 
+Use local codomain variables:
+
+```lean
+variable {R0 RH : Type*}
+variable [AddCommGroup R0] [Module 𝕜 R0]
+variable [AddCommGroup RH] [Module 𝕜 RH]
+```
+
 - [ ] **Step 1: Define a combined active/reserve map**
 
 ```lean
@@ -664,6 +680,13 @@ git commit -m "Certify QCK active reserve block dynamics"
 
 **Interfaces:**
 - Produces: option-span rank, monotonicity, submodularity, and diminishing marginal dimension.
+
+Use:
+
+```lean
+variable {W : Type*} [AddCommGroup W] [Module 𝕜 W] [FiniteDimensional 𝕜 W]
+variable {ι : Type*} [DecidableEq ι]
+```
 
 - [ ] **Step 1: Define finite option span and rank**
 
