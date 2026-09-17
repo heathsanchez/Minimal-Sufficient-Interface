@@ -131,7 +131,9 @@ class AffordanceDeploymentContracts(unittest.TestCase):
         self.assertTrue(self.policy.is_done([start, won], won))
         self.assertEqual(c.effects.total_observations, 1)
         self.assertEqual(c.memory.capability_count, 1)
-        self.assertEqual(len(c.memory.certified_capability_candidates(1)), 1)
+        # A one-action endpoint success contains no pre-boundary process effect.
+        # Retain the witnessed capability, but do not fabricate portability.
+        self.assertEqual(c.memory.certified_capability_candidates(1), ())
         self.assertIsNone(c._pending_effect)
         self.assertTrue(self.policy.is_done([start, won], won))
         self.assertEqual(c.effects.total_observations, 1)
