@@ -116,6 +116,101 @@ theorem closureIter_stabilizes
   obtain ⟨n, hn⟩ := hfg.stabilizes_of_iSup_eq chain hsup
   exact ⟨n, hn.symm⟩
 
+
+/-- The future-observable dual space coannihilates exactly the context-stable nullspace. -/
+theorem futureObservableSpan_dualCoannihilator
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    (futureObservableSpan S C).dualCoannihilator = contextNullspace S C := by
+  ext x
+  rw [Submodule.mem_dualCoannihilator, mem_contextNullspace_iff]
+  constructor
+  · intro hx w
+    apply (Module.forall_dual_apply_eq_zero_iff 𝕜 (C (wordMap S w x))).1
+    intro ψ
+    have hmem :
+        (C.comp (wordMap S w)).dualMap ψ ∈ futureObservableSpan S C := by
+      apply
+        (le_iSup
+          (fun u : List A => LinearMap.range (C.comp (wordMap S u)).dualMap) w)
+      exact ⟨ψ, rfl⟩
+    simpa [LinearMap.dualMap_apply] using
+      hx ((C.comp (wordMap S w)).dualMap ψ) hmem
+  · intro hx φ hφ
+    have hle :
+        futureObservableSpan S C ≤
+          LinearMap.ker (Module.Dual.eval 𝕜 V x) := by
+      rw [futureObservableSpan]
+      refine iSup_le ?_
+      intro w
+      rintro η ⟨ψ, rfl⟩
+      rw [LinearMap.mem_ker]
+      simp [Module.Dual.eval_apply, LinearMap.dualMap_apply, hx w]
+    have hz := hle hφ
+    simpa [LinearMap.mem_ker, Module.Dual.eval_apply] using hz
+
+/-- In finite dimension, the future-observable span is the annihilator of the canonical nullspace. -/
+theorem futureObservableSpan_eq_dualAnnihilator
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    futureObservableSpan S C = (contextNullspace S C).dualAnnihilator := by
+  calc
+    futureObservableSpan S C =
+        (futureObservableSpan S C).dualCoannihilator.dualAnnihilator :=
+      (Subspace.dualCoannihilator_dualAnnihilator_eq).symm
+    _ = (contextNullspace S C).dualAnnihilator := by
+      rw [futureObservableSpan_dualCoannihilator S C]
+
+/-- Executable finite presentation: evaluate a source state against every retained future observable. -/
+def finitePresentation
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    V →ₗ[𝕜] Module.Dual 𝕜 (futureObservableSpan S C) :=
+  (futureObservableSpan S C).quotDualCoannihilatorToDual.comp
+    (futureObservableSpan S C).dualCoannihilator.mkQ
+
+@[simp]
+theorem finitePresentation_apply
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y)
+    (x : V) (φ : futureObservableSpan S C) :
+    finitePresentation S C x φ = φ.1 x := by
+  rfl
+
+/-- The finite presentation forgets exactly the canonical context-stable nullspace. -/
+theorem finitePresentation_ker
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    LinearMap.ker (finitePresentation S C) = contextNullspace S C := by
+  rw [← futureObservableSpan_dualCoannihilator S C]
+  ext x
+  rw [LinearMap.mem_ker, Submodule.mem_dualCoannihilator]
+  constructor
+  · intro hx φ hφ
+    have hp :=
+      congrArg
+        (fun f : Module.Dual 𝕜 (futureObservableSpan S C) => f ⟨φ, hφ⟩) hx
+    simpa using hp
+  · intro hx
+    apply LinearMap.ext
+    intro φ
+    simpa using hx φ.1 φ.2
+
+/-- The evaluation presentation reaches every linear functional on the finite future-observable space. -/
+theorem finitePresentation_surjective
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    Function.Surjective (finitePresentation S C) := by
+  exact
+    (futureObservableSpan S C).quotDualCoannihilatorToDual_bijective.2.comp
+      (Submodule.mkQ_surjective _)
+
+/-- The frozen canonical quotient is linearly equivalent to the executable finite presentation. -/
+noncomputable def canonicalEquivFinitePresentation
+    (S : A → V →ₗ[𝕜] V) (C : V →ₗ[𝕜] Y) :
+    Canonical S C ≃ₗ[𝕜] Module.Dual 𝕜 (futureObservableSpan S C) := by
+  rw [show contextNullspace S C =
+      (futureObservableSpan S C).dualCoannihilator from
+    (futureObservableSpan_dualCoannihilator S C).symm]
+  exact
+    LinearEquiv.ofBijective
+      (futureObservableSpan S C).quotDualCoannihilatorToDual
+      (futureObservableSpan S C).quotDualCoannihilatorToDual_bijective
+
 end
 
 end QCK
