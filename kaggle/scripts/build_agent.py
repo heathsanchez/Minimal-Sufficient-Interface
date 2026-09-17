@@ -5,20 +5,19 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
+MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
 ADAPTER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "agent_template.py"
 PROVENANCE = ROOT / "kaggle" / "provenance" / "sources.json"
 DEFAULT_OUTPUT = ROOT / "kaggle" / "agent" / "my_agent.py"
 
 
-def clean_runtime(text: str) -> str:
-    return text.replace("from __future__ import annotations\n\n", "", 1).rstrip() + "\n"
-
-
-def clean_adapter(text: str) -> str:
+def clean_module(text: str, remove: tuple[str, ...] = ()) -> str:
     text = text.replace("from __future__ import annotations\n\n", "", 1)
-    text = text.replace("from .runtime import OnlineController\n", "")
-    return text.strip() + "\n"
+    for line in remove:
+        text = text.replace(line, "")
+    return text.rstrip() + "\n"
 
 
 def render() -> str:
@@ -30,7 +29,20 @@ def render() -> str:
         "from __future__ import annotations\n\n"
         f"BUILD_PROVENANCE = {provenance!r}\n\n"
     )
-    return header + clean_runtime(RUNTIME.read_text()) + "\n" + clean_adapter(ADAPTER.read_text())
+    memory_graph = clean_module(MEMORY_GRAPH.read_text())
+    runtime = clean_module(RUNTIME.read_text())
+    memory_controller = clean_module(
+        MEMORY_CONTROLLER.read_text(),
+        remove=(
+            "from .memory_graph import ActionKey, ArcMemoryGraph, ContextKey\n",
+            "from .runtime import ActionToken, Observation, OnlineController, normalize_frame\n",
+        ),
+    )
+    adapter = clean_module(
+        ADAPTER.read_text(),
+        remove=("from .memory_controller import MemoryGraphController\n",),
+    )
+    return header + memory_graph + "\n" + runtime + "\n" + memory_controller + "\n" + adapter
 
 
 def build(output: Path) -> Path:
