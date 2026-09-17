@@ -64,8 +64,10 @@ theorem maintainedNullspace_invariant
       (maintainedNullspace S N₀ future).comap (S a) := by
   intro x hx
   change S a x ∈ maintainedNullspace S N₀ future
-  apply le_sInf
-  rintro U ⟨w, rfl⟩
+  rw [maintainedNullspace]
+  refine (Set.mem_sInter_iff).2 ?_
+  intro U hU
+  rcases hU with ⟨w, rfl⟩
   have hle : maintainedNullspace S N₀ future ≤
       (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := by
     apply sInf_le
