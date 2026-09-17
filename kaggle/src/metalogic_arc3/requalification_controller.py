@@ -321,7 +321,7 @@ class CertifiedConsequenceController(ConsequenceController):
         key = self._action_key(token)
         history = hashlib.sha256(repr(tuple(self._episode_program[-8:])).encode()).hexdigest()
         self._pending_effect = (
-            obs.evidence_sha256,
+            self._consequence_context(obs, self._grid),
             key,
             self._grid,
             self._descriptor(token),
