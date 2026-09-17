@@ -1,7 +1,9 @@
 """A source witness buys a bounded target hypothesis, not unlimited control.
 
-These tests exercise the actual controller. Raster/goal observations are a
-controlled interface, not an ARC benchmark or a world-equivalence certificate.
+These tests exercise the actual MG-ARC4 controller. Raster/goal observations are
+a controlled interface, not an ARC benchmark or a world-equivalence certificate.
+The generated policy has advanced to MG-ARC5, so its compatibility check asserts
+that a legacy bare capability cannot silently gain certified transfer authority.
 """
 from __future__ import annotations
 
@@ -88,7 +90,7 @@ class TransferContractTests(unittest.TestCase):
         self.assertEqual(sum(t.source == 'transfer' for t in second), 8)
         self.assertEqual(c.memory.capability_count, 2)
 
-    def test_generated_agent_obeys_same_cumulative_bound(self):
+    def test_generated_agent_requires_certificate_before_transfer(self):
         from test_affordance_deployment import load_generated, observation
         module = load_generated()
         policy = module.MyAgent()
@@ -98,11 +100,12 @@ class TransferContractTests(unittest.TestCase):
         source = c._memory_context(module.normalize_frame(observation(level=0)))
         c.memory.add_capability(source, ((3,None,None),), source_level=0,target_level=1)
         sources = []
-        for i in range(40):
+        for i in range(16):
             actual = policy.choose_action([], observation(i,level=1,full_reset=(i%5==0)))
-            # SDK actions are enum singletons: inspect at issue time.
             sources.append(actual.reasoning['source'])
-        self.assertEqual(sources.count('transfer'), 8)
+        self.assertEqual(c.memory.capability_count, 1)
+        self.assertEqual(c.memory.certified_capability_candidates(1), ())
+        self.assertFalse(any(source in ('transfer_probe', 'transfer') for source in sources))
 
     def test_increasing_runtime_limit_does_not_refund_a_started_contract(self):
         c = controller()
