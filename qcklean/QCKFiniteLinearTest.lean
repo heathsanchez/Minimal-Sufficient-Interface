@@ -15,3 +15,9 @@ open QCK
 #check QCK.finitePresentation_ker
 #check QCK.finitePresentation_surjective
 #check QCK.canonicalEquivFinitePresentation
+#check QCK.canonical_finrank_eq_futureObservableSpan
+#check QCK.sufficient_rank_ge_canonical
+#check QCK.stackedOperationMap
+#check QCK.operationDefect
+#check QCK.operationDefect_eq_zero_iff
+#check QCK.operationDefect_positive_witness
