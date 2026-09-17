@@ -236,9 +236,12 @@ theorem descendedOperation_intertwines
     (descendedOperation q hq Aop hstable).comp q = q.comp Aop := by
   ext x
   simp only [descendedOperation, LinearMap.comp_apply]
-  rw [LinearMap.quotKerEquivOfSurjective_symm_apply]
-  rw [Submodule.mapQ_apply]
-  rw [LinearMap.quotKerEquivOfSurjective_apply_mk]
+  have hx :
+      (q.quotKerEquivOfSurjective hq).symm (q x) =
+        Submodule.Quotient.mk x :=
+    LinearMap.quotKerEquivOfSurjective_symm_apply (f := q) hq x
+  rw [hx]
+  rfl
 
 /-- A source operation descends uniquely through a surjective representation exactly when its kernel is stable. -/
 theorem operation_descends_iff
