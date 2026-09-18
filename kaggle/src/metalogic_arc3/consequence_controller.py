@@ -193,12 +193,14 @@ class ConsequenceController(MemoryGraphController):
         consequence_enabled: bool = True,
         visual_grounding: bool = True,
         typed_factor_enabled: bool = True,
+        quotient_frontier_enabled: bool = True,
         effect_limit: int = 2048,
         **kwargs: Any,
     ) -> None:
         self.consequence_enabled = bool(consequence_enabled)
         self.visual_grounding = bool(visual_grounding)
         self.typed_factor_enabled = bool(typed_factor_enabled)
+        self.quotient_frontier_enabled = bool(quotient_frontier_enabled)
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
         self.typed_factor = BorderCompositionFactor()
@@ -421,7 +423,7 @@ class ConsequenceController(MemoryGraphController):
         # state is exhausted, follow the shortest known deterministic route to
         # another world state with an untried action. Raw observation contexts
         # keep the existing affordance-first policy.
-        if context.startswith("w:"):
+        if self.quotient_frontier_enabled and context.startswith("w:"):
             untried = [
                 token
                 for token in primary
