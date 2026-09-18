@@ -23,7 +23,7 @@ open QCK
 #check QCK.operationDefect_positive_witness
 
 #check QCK.snapshotSafe
-#check QCK.snapshotSafe_le_left
+#check QCK.snapshotSafe_le_active
 #check QCK.snapshotSafeInActive
 #check QCK.snapshotReserveFinrank
 #check QCK.snapshotReserveFinrank_eq_sub
@@ -31,10 +31,11 @@ open QCK
 #check QCK.snapshotReserveMap
 #check QCK.ker_prod_active_snapshotReserveMap
 
-#check QCK.snapshotSafe
-#check QCK.snapshotSafeInActive
-#check QCK.snapshotReserveFinrank
-#check QCK.snapshotReserveFinrank_eq_sub
-#check QCK.snapshotReserve_lower_bound
-#check QCK.snapshotReserveMap
-#check QCK.ker_prod_active_snapshotReserveMap
+#check QCK.snapshotNullspace
+#check QCK.snapshotNullspace_le
+#check QCK.maintainedNullspace
+#check QCK.maintainedNullspace_le_snapshot
+#check QCK.maintainedNullspace_invariant
+#check QCK.le_maintainedNullspace
+#check QCK.maintainedNullspace_le_active
+#check QCK.CanonicalMaintainedReserve
