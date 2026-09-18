@@ -181,6 +181,7 @@ def continue_from_level1(
     ledger,
     *,
     remaining_actions: int,
+    compiled_prefix: tuple[tuple[int, int | None, int | None], ...],
 ):
     policy = module.MyAgent(
         card_id="compiled-progress-continuation",
@@ -206,13 +207,9 @@ def continue_from_level1(
     milestones = []
     max_level = int(latest.levels_completed)
     zero_change = 0
-    prefix = tuple(
-        tuple(action)
-        for action in ledger.prefixes.get(
-            str(module.normalize_frame(latest).evidence_sha256),
-            (),
-        )
-    )
+    # Use the newly compiled RESET route as replay authority for descendants,
+    # not the longer historical prefix under which this target was first found.
+    prefix = tuple(compiled_prefix)
 
     while len(actions) < remaining_actions and audit.state_name(latest) != "WIN":
         if policy.is_done(frames, latest):
@@ -315,13 +312,20 @@ def main():
         raise AssertionError("compiled route diverged from exact ledger at an intermediate step")
 
     compiled_actions = len(route["actions"])
-    remaining = max(0, manifest["max_actions"] - compiled_actions)
+    # Benchmark convention reports actions as executed_steps + 1, so preserve
+    # the same 399 executed-step envelope used by the frozen 400-action arms.
+    remaining = max(0, manifest["max_actions"] - 1 - compiled_actions)
+    compiled_prefix = tuple(
+        (int(action_id), None, None)
+        for action_id in route["actions"]
+    )
     continuation = continue_from_level1(
         module,
         env,
         latest,
         ledger,
         remaining_actions=remaining,
+        compiled_prefix=compiled_prefix,
     )
     arc.close_scorecard()
 
