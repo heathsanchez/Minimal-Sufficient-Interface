@@ -88,6 +88,27 @@ class InterventionalQuotientContracts(unittest.TestCase):
             0,
         )
 
+    def test_parameterized_coordinates_are_distinct_interventions(self):
+        q = self.q()
+        for name in ("a", "b", "c"):
+            q.observe_node(
+                name,
+                protected=("NOT_FINISHED",),
+                legal_actions=(6,),
+            )
+        q.observe_transition(
+            "a", (6, 1, 1), "b", outcome=("CONTINUE", 0)
+        )
+        q.observe_transition(
+            "a", (6, 2, 2), "c", outcome=("CONTINUE", 0)
+        )
+        parts = q.partitions(max_depth=2)
+        stats = q.evidence_stats(parts[-1])
+        self.assertEqual(stats["ambiguous_observed_edges"], 0)
+        self.assertIn((6, 1, 1), q._observed_actions("a"))
+        self.assertIn((6, 2, 2), q._observed_actions("a"))
+        self.assertEqual(stats["fully_observed_merged_pairs"], 0)
+
     def test_conflicting_raw_contract_is_rejected(self):
         q = self.q()
         self.add(q, "a")
