@@ -343,7 +343,8 @@ def main():
             "probe": len(probes) + 1,
             "source": source,
             "source_prefix_actions": prefix_len,
-            "source_missing_actions": -neg_missing,\n            "source_dag_depth": -neg_depth,
+            "source_missing_actions": -neg_missing,
+            "source_dag_depth": -neg_depth,
             "action": action_id,
             "target": target,
             "target_protected": list(row["target_protected"]),
@@ -391,7 +392,8 @@ def main():
             )
 
     final_boundaries = len({
-        row[4]\n        for row in candidate_rows(ledger)
+        row[4]
+        for row in candidate_rows(ledger)
     })
 
     augmented = ledger.export(generation_rows=[])
