@@ -45,7 +45,7 @@ from typing import Any
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ls20-level1-deep-frontier-v2-results"
+OUT = ROOT / "kaggle" / "ls20-level1-scc-frontier-results"
 AGENT = OUT / "agent.py"
 LEDGER = OUT / "level-compounded-exact-replay-ledger.json"
 
@@ -58,7 +58,7 @@ EXPECTED_NODES = 3848
 EXPECTED_EDGES = 10308
 
 TARGET_LEVEL = 2
-MAX_PROBES = 700
+MAX_PROBES = 900
 MAX_REPLAY_ACTIONS = 90000
 ACTION_PRIORITY = {3: 0, 4: 1, 2: 2, 1: 3}
 
@@ -118,7 +118,18 @@ def shortest_reset_prefixes(ledger):
     return root, routes
 
 
+_LAST_SCC_STATS = {}
+
+
 def level1_depths(ledger):
+    """Return node -> depth in the SCC condensation DAG.
+
+    Raw Level-1 dynamics may become cyclic as the frontier expands. The
+    consequential progress coordinate is therefore depth after quotienting
+    exact strongly connected components, not raw-node DAG depth.
+    """
+    global _LAST_SCC_STATS
+
     level1 = {
         node
         for node, row in ledger.nodes.items()
@@ -126,41 +137,125 @@ def level1_depths(ledger):
         and int(row["protected"][1]) == TARGET_LEVEL - 1
     }
 
+    _root, compiled_routes = shortest_reset_prefixes(ledger)
+    reachable_level1 = {
+        node for node in level1 if node in compiled_routes
+    }
+    if not reachable_level1:
+        raise AssertionError("no reachable nonterminal Level-1 states")
+
     entry = min(
-        level1,
-        key=lambda node: (len(ledger.prefixes.get(node, (10**9,))), node),
+        reachable_level1,
+        key=lambda node: (len(compiled_routes[node]), node),
     )
 
-    adjacency = {node: [] for node in level1}
-    indegree = Counter()
+    adjacency = {node: [] for node in reachable_level1}
     for (source, _action), target in ledger.successor.items():
-        if source in level1 and target in level1:
+        if source in reachable_level1 and target in reachable_level1:
             adjacency[source].append(target)
-            indegree[target] += 1
 
-    queue = [node for node in level1 if indegree[node] == 0]
+    # Tarjan SCC decomposition over exact deterministic Level-1 edges.
+    index = 0
+    stack = []
+    on_stack = set()
+    indices = {}
+    lowlink = {}
+    components = []
+
+    def strongconnect(node):
+        nonlocal index
+        indices[node] = index
+        lowlink[node] = index
+        index += 1
+        stack.append(node)
+        on_stack.add(node)
+
+        for target in adjacency.get(node, ()):
+            if target not in indices:
+                strongconnect(target)
+                lowlink[node] = min(lowlink[node], lowlink[target])
+            elif target in on_stack:
+                lowlink[node] = min(lowlink[node], indices[target])
+
+        if lowlink[node] == indices[node]:
+            component = []
+            while True:
+                value = stack.pop()
+                on_stack.remove(value)
+                component.append(value)
+                if value == node:
+                    break
+            components.append(tuple(sorted(component)))
+
+    for node in sorted(reachable_level1):
+        if node not in indices:
+            strongconnect(node)
+
+    component_of = {}
+    for cid, component in enumerate(components):
+        for node in component:
+            component_of[node] = cid
+
+    cadj = {cid: set() for cid in range(len(components))}
+    indegree = Counter()
+    for source, targets in adjacency.items():
+        source_c = component_of[source]
+        for target in targets:
+            target_c = component_of[target]
+            if source_c == target_c or target_c in cadj[source_c]:
+                continue
+            cadj[source_c].add(target_c)
+            indegree[target_c] += 1
+
+    queue = [
+        cid for cid in range(len(components))
+        if indegree[cid] == 0
+    ]
     topo = []
     while queue:
-        node = queue.pop()
-        topo.append(node)
-        for target in adjacency.get(node, ()):
-            indegree[target] -= 1
-            if indegree[target] == 0:
-                queue.append(target)
-    if len(topo) != len(level1):
-        raise AssertionError("retained Level-1 graph is no longer acyclic")
+        cid = queue.pop()
+        topo.append(cid)
+        for target_c in cadj[cid]:
+            indegree[target_c] -= 1
+            if indegree[target_c] == 0:
+                queue.append(target_c)
 
-    depth = {entry: 0}
-    for node in topo:
-        if node not in depth:
+    if len(topo) != len(components):
+        raise AssertionError("SCC condensation graph must be acyclic")
+
+    entry_c = component_of[entry]
+    cdepth = {entry_c: 0}
+    for cid in topo:
+        if cid not in cdepth:
             continue
-        for target in adjacency.get(node, ()):
-            depth[target] = max(
-                depth.get(target, -1),
-                depth[node] + 1,
+        for target_c in cadj[cid]:
+            cdepth[target_c] = max(
+                cdepth.get(target_c, -1),
+                cdepth[cid] + 1,
             )
-    return entry, depth
 
+    depth = {
+        node: int(cdepth.get(component_of[node], -1))
+        for node in reachable_level1
+    }
+    nontrivial = [
+        component for component in components if len(component) > 1
+    ]
+    _LAST_SCC_STATS = {
+        "reachable_level1_states": len(reachable_level1),
+        "scc_count": len(components),
+        "nontrivial_scc_count": len(nontrivial),
+        "largest_scc": max((len(component) for component in components), default=0),
+        "nontrivial_scc_sizes": sorted(
+            (len(component) for component in nontrivial),
+            reverse=True,
+        )[:20],
+        "condensation_edges": sum(len(targets) for targets in cadj.values()),
+        "max_quotient_depth": max(depth.values(), default=-1),
+        "entry": entry,
+        "entry_prefix_actions": len(compiled_routes[entry]),
+    }
+    return entry, depth
 
 def candidate_rows(ledger):
     rows = []
@@ -364,7 +459,7 @@ def main():
             "source": source,
             "source_prefix_actions": prefix_len,
             "source_missing_actions": -neg_missing,
-            "source_dag_depth": -neg_depth,
+            "source_quotient_depth": -neg_depth,
             "action": action_id,
             "target": target,
             "target_protected": list(row["target_protected"]),
@@ -418,19 +513,19 @@ def main():
 
     augmented = ledger.export(generation_rows=[])
     audit.write_json(
-        OUT / "deep-frontier-v2-exact-replay-ledger.json",
+        OUT / "scc-frontier-exact-replay-ledger.json",
         augmented,
     )
 
     report = {
         "interpretation": (
-            "deepest-DAG-frontier exact counterfactual search using shortest composed "
-            "RESET prefixes from the retained ls20 replay ledger"
+            "deepest-SCC-condensation-frontier exact counterfactual search using "
+            "shortest composed RESET prefixes from the retained ls20 replay ledger"
         ),
         "claim_boundary": (
             "each probe begins with the shortest currently known deterministic RESET "
             "route and every intermediate digest must match the retained ledger; "
-            "DAG depth and action ordering are proposal-only"
+            "SCC-condensation depth and action ordering are proposal-only"
         ),
         "initial": {
             "ledger_nodes": len(payload["nodes"]),
@@ -441,6 +536,7 @@ def main():
             "max_probes": MAX_PROBES,
             "max_replay_actions": MAX_REPLAY_ACTIONS,
         },
+        "scc_quotient": dict(_LAST_SCC_STATS),
         "result": {
             "status": (
                 "PROGRESS_FOUND"
@@ -465,15 +561,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "ls20-level1-deep-frontier-v2.json",
+        OUT / "ls20-level1-scc-frontier.json",
         report,
     )
     print(
-        "LS20_LEVEL1_DEEP_FRONTIER_V2_RESULT="
+        "LS20_LEVEL1_SCC_FRONTIER_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_LS20_LEVEL1_DEEP_FRONTIER_V2=PASS", flush=True)
+    print("ARC3_LS20_LEVEL1_SCC_FRONTIER=PASS", flush=True)
 
 
 if __name__ == "__main__":
