@@ -202,6 +202,8 @@ class ConsequenceController(MemoryGraphController):
             certified_action_quotient_enabled
         )
         self.certified_action_quotient = CertifiedActionQuotient()
+        self.certified_action_quotient_activations = 0
+        self.certified_action_quotient_actions_removed = 0
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
         self._decision_tick = 0
@@ -272,6 +274,10 @@ class ConsequenceController(MemoryGraphController):
                 )
             )
             if reduced:
+                self.certified_action_quotient_activations += 1
+                self.certified_action_quotient_actions_removed += max(
+                    0, len(catalog) - len(reduced)
+                )
                 kept = {self._action_key(token) for token in reduced}
                 self._primary = tuple(
                     token for token in self._primary
