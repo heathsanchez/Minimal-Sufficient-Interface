@@ -8,6 +8,7 @@ from .causal_affordance import AffordanceMemory, effect_signature
 from .memory_controller import MemoryGraphController
 from .memory_graph import ActionKey
 from .runtime import ActionToken, Observation, normalize_frame
+from .border_scalar import BorderScalarFactor
 
 
 class EffectMemory:
@@ -191,13 +192,19 @@ class ConsequenceController(MemoryGraphController):
         *args: Any,
         consequence_enabled: bool = True,
         visual_grounding: bool = True,
+        border_factor_enabled: bool = True,
         effect_limit: int = 2048,
         **kwargs: Any,
     ) -> None:
         self.consequence_enabled = bool(consequence_enabled)
         self.visual_grounding = bool(visual_grounding)
+        self.border_factor_enabled = bool(border_factor_enabled)
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
+        self.world_effects = EffectMemory(effect_limit)
+        self.world_affordances = AffordanceMemory(effect_limit)
+        self.border_factor = BorderScalarFactor()
+        self._border_replayed: set[tuple[int, int, int]] = set()
         self._decision_tick = 0
         self._probe_serial = 0
         super().__init__(*args, **kwargs)
@@ -255,10 +262,113 @@ class ConsequenceController(MemoryGraphController):
         self._primary = tuple(catalog[: len(primary)])
         return tuple(catalog)
 
+    def _consequence_context(
+        self,
+        obs: Observation,
+        grid: tuple[tuple[int, ...], ...],
+    ) -> str:
+        if (
+            not self.border_factor_enabled
+            or not grid
+            or not self.border_factor.active(
+                obs.levels_completed, len(grid), len(grid[0])
+            )
+        ):
+            return obs.evidence_sha256
+        return (
+            f"w:{obs.levels_completed}:"
+            f"{self.border_factor.world_digest(obs.levels_completed, grid)}"
+        )
+
+    def _resource_signature(
+        self,
+        obs: Observation,
+        grid: tuple[tuple[int, ...], ...],
+    ):
+        if not self.border_factor_enabled or not grid:
+            return ()
+        return self.border_factor.scalar_signature(obs.levels_completed, grid)
+
+    def _ensure_border_replay(self, level: int, height: int, width: int) -> bool:
+        key = (int(level), int(height), int(width))
+        if (
+            not self.border_factor_enabled
+            or key in self._border_replayed
+            or not self.border_factor.active(*key)
+        ):
+            return False
+        rows = self.border_factor.buffered_transitions(*key)
+        for row in rows:
+            before = row["before"]
+            after = row["after"]
+            action = tuple(row["action"])
+            descriptor = str(row["descriptor"])
+            history = str(row["history"])
+            terminal = bool(row["terminal"])
+            source = f"w:{level}:{self.border_factor.world_digest(level, before)}"
+            target = f"w:{level}:{self.border_factor.world_digest(level, after)}"
+            p_before = self.border_factor.projected_grid(level, before)
+            p_after = self.border_factor.projected_grid(level, after)
+            signature = effect_signature(p_before, p_after, action)
+            changed = int(signature.changed)
+            self.world_effects.record(
+                source, action, target, descriptor, changed, history, terminal
+            )
+            self.world_affordances.record(
+                source,
+                action,
+                descriptor,
+                signature,
+                directness=signature.directness,
+                target=target,
+            )
+        self._border_replayed.add(key)
+        return True
+
+    def _active_effect_memories(
+        self,
+        obs: Observation,
+    ) -> tuple[EffectMemory, AffordanceMemory]:
+        grid = self._grid
+        if (
+            self.border_factor_enabled
+            and grid
+            and self.border_factor.active(
+                obs.levels_completed, len(grid), len(grid[0])
+            )
+        ):
+            self._ensure_border_replay(obs.levels_completed, len(grid), len(grid[0]))
+            return self.world_effects, self.world_affordances
+        return self.effects, self.affordances
+
     def _record_effect(self, frame: Any, obs: Observation) -> None:
         grid = settled_grid(frame)
         if self._pending_effect is not None:
             context, action, before, descriptor, history = self._pending_effect
+            previous_level = (
+                self._previous.levels_completed
+                if self._previous is not None
+                else obs.levels_completed
+            )
+            replayed_now = False
+            if (
+                self.border_factor_enabled
+                and previous_level == obs.levels_completed
+                and obs.state == "NOT_FINISHED"
+            ):
+                self.border_factor.observe(
+                    previous_level,
+                    before,
+                    grid,
+                    action,
+                    descriptor=descriptor,
+                    history=history,
+                    terminal=False,
+                )
+                if before:
+                    replayed_now = self._ensure_border_replay(
+                        previous_level, len(before), len(before[0])
+                    )
             if len(before) == len(grid) and (not grid or not before or len(before[0]) == len(grid[0])):
                 changed = sum(
                     left != right
@@ -291,6 +401,40 @@ class ConsequenceController(MemoryGraphController):
                 directness=directness,
                 target=obs.evidence_sha256,
             )
+            if (
+                not replayed_now
+                and self.border_factor_enabled
+                and previous_level == obs.levels_completed
+                and before
+                and self.border_factor.active(
+                    previous_level, len(before), len(before[0])
+                )
+            ):
+                source_world = (
+                    f"w:{previous_level}:"
+                    f"{self.border_factor.world_digest(previous_level, before)}"
+                )
+                target_world = self._consequence_context(obs, grid)
+                p_before = self.border_factor.projected_grid(previous_level, before)
+                p_after = self.border_factor.projected_grid(previous_level, grid)
+                world_signature = effect_signature(p_before, p_after, action)
+                self.world_effects.record(
+                    source_world,
+                    action,
+                    target_world,
+                    descriptor,
+                    int(world_signature.changed),
+                    history,
+                    terminal,
+                )
+                self.world_affordances.record(
+                    source_world,
+                    action,
+                    descriptor,
+                    world_signature,
+                    directness=world_signature.directness,
+                    target=target_world,
+                )
             self._pending_effect = None
         self._grid = grid
 
@@ -304,12 +448,13 @@ class ConsequenceController(MemoryGraphController):
     def _select_probe(
         self, obs: Observation, catalog: tuple[ActionToken, ...]
     ) -> ActionToken:
-        context = obs.evidence_sha256
+        effects, affordances = self._active_effect_memories(obs)
+        context = self._consequence_context(obs, self._grid)
         allowed_keys = {self._action_key(token) for token in catalog}
         primary = tuple(
             token for token in self._primary if self._action_key(token) in allowed_keys
         ) or catalog
-        self.effects.note_catalog(
+        effects.note_catalog(
             context, tuple(self._action_key(token) for token in primary)
         )
         if not self.consequence_enabled:
@@ -339,8 +484,8 @@ class ConsequenceController(MemoryGraphController):
             token = min(
                 catalog,
                 key=lambda candidate: (
-                    self.effects.descriptor_attempts(self._descriptor(candidate)),
-                    self.effects.attempts(context, self._action_key(candidate)),
+                    effects.descriptor_attempts(self._descriptor(candidate)),
+                    effects.attempts(context, self._action_key(candidate)),
                     self._candidate_key(candidate),
                 ),
             )
@@ -350,9 +495,9 @@ class ConsequenceController(MemoryGraphController):
         # change frequency. This is still a proposal score, not a goal claim.
         scored = [
             (
-                self.affordances.affordance_score(self._descriptor(token))
-                / (1 + self.effects.attempts(context, self._action_key(token))),
-                -self.effects.descriptor_attempts(self._descriptor(token)),
+                affordances.affordance_score(self._descriptor(token))
+                / (1 + effects.attempts(context, self._action_key(token))),
+                -effects.descriptor_attempts(self._descriptor(token)),
                 tuple(-1 if value is None else value for value in self._candidate_key(token)),
                 token,
             )
@@ -362,17 +507,17 @@ class ConsequenceController(MemoryGraphController):
             token = max(scored, key=lambda row: row[:3])[3]
             return self._token(self._action_key(token), "affordance")
 
-        if all(self.effects.attempts(context, self._action_key(token)) for token in primary):
-            first = self.effects.frontier_action(context)
+        if all(effects.attempts(context, self._action_key(token)) for token in primary):
+            first = effects.frontier_action(context)
             if first in allowed_keys:
                 return self._token(first, "consequence_frontier")
 
         token = max(
             primary,
             key=lambda candidate: (
-                self.effects.rate(self._descriptor(candidate))
-                / (1 + self.effects.attempts(context, self._action_key(candidate))),
-                -self.effects.descriptor_attempts(self._descriptor(candidate)),
+                effects.rate(self._descriptor(candidate))
+                / (1 + effects.attempts(context, self._action_key(candidate))),
+                -effects.descriptor_attempts(self._descriptor(candidate)),
             ),
         )
         return self._token(self._action_key(token), "consequence")
