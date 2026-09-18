@@ -1,0 +1,33 @@
+name: ARC3 resource dominance
+on:
+  push:
+    branches: [arc3-resource-dominance-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-resource-dominance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-resource-dominance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build standalone
+        run: |
+          python kaggle/scripts/build_agent.py
+          python -m py_compile kaggle/agent/my_agent.py
+          python kaggle/scripts/build_notebook.py
