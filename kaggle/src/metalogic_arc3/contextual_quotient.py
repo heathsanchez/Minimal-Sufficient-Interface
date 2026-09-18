@@ -33,6 +33,7 @@ class ContextualQuotient:
         evaluation_interval: int = 64,
         min_compression: float = 1.1,
         min_repeated_events: int = 32,
+        min_boundary_events: int = 1,
         candidate_depths: Iterable[int] = (1, 2, 3, 4, 6, 8),
         history_limit: int = 512,
     ) -> None:
@@ -40,7 +41,7 @@ class ContextualQuotient:
             raise ValueError("positive quotient horizons required")
         if min_compression < 1.0:
             raise ValueError("compression threshold must be at least one")
-        if min_repeated_events < 1 or history_limit < activation_transitions:
+        if min_repeated_events < 1 or min_boundary_events < 0 or history_limit < activation_transitions:
             raise ValueError("invalid quotient evidence bounds")
         depths = tuple(sorted({int(d) for d in candidate_depths if int(d) > 0}))
         if not depths:
@@ -49,6 +50,7 @@ class ContextualQuotient:
         self.evaluation_interval = int(evaluation_interval)
         self.min_compression = float(min_compression)
         self.min_repeated_events = int(min_repeated_events)
+        self.min_boundary_events = int(min_boundary_events)
         self.candidate_depths = depths
         self.history_limit = int(history_limit)
         self._history: dict[ShapeKey, list[dict[str, Any]]] = defaultdict(list)
@@ -125,6 +127,13 @@ class ContextualQuotient:
             key_counts[key] += 1
 
         outcome_conflicts = sum(len(values) > 1 for values in protected.values())
+        boundary_events = sum(
+            (
+                row["source_protected"][0] != row["target_protected"][0]
+                or str(row["target_protected"][1]) in ("GAME_OVER", "WIN")
+            )
+            for row in rows
+        )
         ambiguous_keys = sum(len(counter) > 1 for counter in transitions.values())
         conflicting_events = sum(
             sum(counter.values()) - max(counter.values())
@@ -145,6 +154,7 @@ class ContextualQuotient:
             "ambiguous_keys": int(ambiguous_keys),
             "conflicting_events": int(conflicting_events),
             "outcome_conflicts": int(outcome_conflicts),
+            "boundary_events": int(boundary_events),
             "ignored_cells": len(ignored),
             "status": "BOUNDED_EMPIRICAL_SUBSTITUTION",
         }
@@ -164,6 +174,7 @@ class ContextualQuotient:
                     and candidate["repeated_events"] >= self.min_repeated_events
                     and candidate["outcome_conflicts"] == 0
                     and candidate["conflicting_events"] == 0
+                    and candidate["boundary_events"] >= self.min_boundary_events
                 ):
                     eligible.append(candidate)
         if not eligible:
