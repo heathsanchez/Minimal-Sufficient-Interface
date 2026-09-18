@@ -62,7 +62,7 @@ STRATEGIES = (
     "known_first",
     "route_prior_b",
 )
-MAX_GRAPH_STATES = 4096\nFATAL_ACTION = (6, 54, 54)
+MAX_GRAPH_STATES = 4096\nFATAL_ACTION = (6, 54, 54)\nFATAL_CERTIFICATE = OUT / "ft09-fatal-basin-certificate.json"
 
 
 def deterministic_target(effects, context, action):
@@ -78,9 +78,6 @@ def deterministic_target(effects, context, action):
 def action_change_prior(effects, action):
     """Proposal score: controllability discounted by exact terminal evidence."""
     action = tuple(action)
-    if action == FATAL_ACTION:
-        return (0.0, 0, 0, 0, 10**9)
-
     observed = 0
     changed = 0
     contexts = 0
@@ -116,7 +113,7 @@ def choose_token(tokens, effects, key_fn):
     )
 
 
-def install_dynamic_planner(controller, counters, strategy):
+def install_dynamic_planner(controller, counters, strategy, fatal_contexts):
     original = controller._select_probe
     controller._dynamic_context_visits = Counter()
 
@@ -145,7 +142,7 @@ def install_dynamic_planner(controller, counters, strategy):
                 allowed[key]
                 for key in self.effects.catalogs.get(current, ())
                 if key in allowed
-                and tuple(key) != FATAL_ACTION
+                and not (current in fatal_contexts and tuple(key) == FATAL_ACTION)
                 and (current, tuple(key)) not in self.effects.edges
             ]
 
@@ -177,7 +174,7 @@ def install_dynamic_planner(controller, counters, strategy):
 
                 for action, target in self.effects.successors(context):
                     action = tuple(action)
-                    if action == FATAL_ACTION:
+                    if context in fatal_contexts and action == FATAL_ACTION:
                         continue
                     if context == current and action not in allowed:
                         continue
@@ -198,7 +195,7 @@ def install_dynamic_planner(controller, counters, strategy):
 
         moving = []
         for key, token in allowed.items():
-            if tuple(key) == FATAL_ACTION:
+            if current in fatal_contexts and tuple(key) == FATAL_ACTION:
                 continue
             target = deterministic_target(self.effects, current, key)
             if target is None or target == current:
@@ -280,6 +277,7 @@ def run_generation(
     bank,
     strategy,
     generation,
+    fatal_contexts,
 ):
     from arc_agi import Arcade, OperationMode
 
@@ -319,6 +317,7 @@ def run_generation(
         policy.controller,
         counters,
         strategy,
+        fatal_contexts,
     )
 
     start_edges = len(policy.controller.effects.edges)
@@ -429,6 +428,13 @@ def serializable_bank(bank):
 
 
 def main():
+    certificate = json.loads(FATAL_CERTIFICATE.read_text())
+    if certificate.get("status") != "CLOSED_BOUNDED_FATAL_BASIN_CERTIFICATE":
+        raise AssertionError("fatal-basin certificate status changed")
+    fatal_contexts = set(certificate.get("fatal_source_digests", ()))
+    if len(fatal_contexts) != int(certificate.get("fatal_source_states", -1)):
+        raise AssertionError("fatal-basin digest set/count mismatch")
+
     manifest = json.loads((OUT / "public.json").read_text())
     game = next(
         row for row in manifest["games"]
@@ -491,6 +497,7 @@ def main():
             bank=bank,
             strategy=strategy,
             generation=generation,
+            fatal_contexts=fatal_contexts,
         )
         if row["max_levels"] < 0:
             raise AssertionError("dynamic ft09 generation invalid")
@@ -520,6 +527,10 @@ def main():
         "trace": trace,
         "g1_common_action_count": len(common),
         "g1_class_sizes": [len(group) for group in classes],
+        "fatal_basin": {
+            "certified_contexts": len(fatal_contexts),
+            "suppressed_action": list(FATAL_ACTION),
+        },
         "initial_bank": {
             "edge_keys": initial_edges,
             "catalog_contexts": initial_catalogs,
