@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 
 from metalogic_arc3.consequence_controller import ConsequenceController
 from metalogic_arc3.runtime import ActionToken, normalize_frame
+from metalogic_arc3.border_scalar import BorderScalarFactor
 
 
 def frame(grid, *, level=0, actions=(3, 4), state="NOT_FINISHED"):
@@ -68,6 +69,53 @@ class ConsequenceAffordanceControllerContracts(unittest.TestCase):
         self.assertEqual(first.source, "consequence_delayed_probe")
         self.assertEqual(second.action_id, first.action_id)
         self.assertEqual(second.source, "consequence_delayed_probe")
+
+    def test_earned_world_factor_prioritizes_untried_world_action_over_affordance(self):
+        c = ConsequenceController((3, 4), archived_capabilities=())
+        c.border_factor = BorderScalarFactor(
+            activation_transitions=4,
+            min_changes=3,
+            min_action_classes=2,
+            min_sign_consistency=0.75,
+            min_projection_compression=1.5,
+        )
+
+        def g(remaining):
+            rows = [[4] * 8 for _ in range(8)]
+            for x in range(8):
+                rows[-1][x] = 12 if x < remaining else 11
+            rows[3][3] = 8
+            return tuple(tuple(row) for row in rows)
+
+        frames = [g(v) for v in (8, 7, 6, 5, 8)]
+        for i, (before, after) in enumerate(zip(frames, frames[1:])):
+            c.border_factor.observe(
+                0, before, after, (3 + i % 2, None, None),
+                descriptor=f"primitive:{3+i%2}", history=str(i), terminal=False,
+            )
+        self.assertTrue(c.border_factor.active(0, 8, 8))
+        c._ensure_border_replay(0, 8, 8)
+
+        c._grid = g(6)
+        obs = normalize_frame(frame(c._grid))
+        catalog = (ActionToken(3), ActionToken(4))
+        c._primary = catalog
+        c._decision_tick = 1
+        context = c._consequence_context(obs, c._grid)
+
+        for i in range(4):
+            c.world_affordances.record(
+                f"x{i}", (3, None, None), "primitive:3",
+                (1, 1, 1, 0, 0, 1), directness=1.0,
+            )
+        c.world_effects.record(
+            context, (3, None, None), context,
+            "primitive:3", 1, "h", False,
+        )
+
+        selected = c._select_probe(obs, catalog)
+        self.assertEqual(selected.action_id, 4)
+        self.assertEqual(selected.source, "consequence_frontier")
 
 
 if __name__ == "__main__":
