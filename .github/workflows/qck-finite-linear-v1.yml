@@ -8,6 +8,7 @@ on:
       - 'docs/superpowers/specs/2026-09-18-qck-finite-linear-v1-design.md'
       - 'docs/superpowers/plans/2026-09-18-qck-finite-linear-v1.md'
       - 'QCK_FINITE_LINEAR_V1.md'
+      - 'docs/QCKN_STACK_V1.md'
       - '.github/workflows/qck-finite-linear-v1.yml'
   workflow_dispatch:
 
