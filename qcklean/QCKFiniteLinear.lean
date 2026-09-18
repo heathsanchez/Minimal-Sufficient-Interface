@@ -587,6 +587,58 @@ abbrev CanonicalMaintainedReserve
     (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :=
   N₀ ⧸ (maintainedNullspace S N₀ future).comap N₀.subtype
 
+
+/-- Generic finite-dimensional fact used by reserve quotients: restricting a
+subspace to an ambient active subspace does not change its dimension. -/
+theorem comap_subtype_finrank
+    (N W : Submodule 𝕜 V) (hW : W ≤ N) :
+    Module.finrank 𝕜 (W.comap N.subtype) = Module.finrank 𝕜 W := by
+  let f : W.comap N.subtype →ₗ[𝕜] W :=
+    { toFun := fun x => ⟨x.1.1, x.2⟩
+      map_add' := by intro x y; rfl
+      map_smul' := by intro a x; rfl }
+  have hf : Function.Bijective f := by
+    constructor
+    · intro x y h
+      have hv : (f x : V) = (f y : V) :=
+        congrArg (fun z : W => (z : V)) h
+      apply Subtype.ext
+      apply Subtype.ext
+      simpa [f] using hv
+    · intro y
+      refine ⟨⟨⟨y.1, hW y.2⟩, y.2⟩, ?_⟩
+      rfl
+  exact (LinearEquiv.ofBijective f hf).finrank_eq
+
+/-- Exact dimension of optionality that must remain recoverable while waiting. -/
+def maintainedReserveFinrank
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) : ℕ :=
+  Module.finrank 𝕜 (CanonicalMaintainedReserve S N₀ future)
+
+/-- Maintained reserve dimension is precisely the active-kernel dimension
+minus the greatest waiting-invariant safely-forgettable dimension. -/
+theorem maintainedReserveFinrank_eq_sub
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    maintainedReserveFinrank S N₀ future =
+      Module.finrank 𝕜 N₀ -
+        Module.finrank 𝕜 (maintainedNullspace S N₀ future) := by
+  let M := (maintainedNullspace S N₀ future).comap N₀.subtype
+  have hq := M.finrank_quotient_add_finrank
+  have hs :
+      Module.finrank 𝕜 M =
+        Module.finrank 𝕜 (maintainedNullspace S N₀ future) := by
+    simpa [M] using
+      (comap_subtype_finrank N₀ (maintainedNullspace S N₀ future)
+        (maintainedNullspace_le_active S N₀ future))
+  rw [maintainedReserveFinrank]
+  change
+    Module.finrank 𝕜 (N₀ ⧸ M) =
+      Module.finrank 𝕜 N₀ -
+        Module.finrank 𝕜 (maintainedNullspace S N₀ future)
+  omega
+
 end
 
 end QCK
