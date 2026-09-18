@@ -106,6 +106,32 @@ def run_world(game_id,envdir,max_actions):
                 hist_to_patterns[hist].add(pat)
                 pair_to_full[(out_d,hist)].add(full_d)
 
+            # Conditional transition-independence certificate candidate:
+            # if the same outside-world state and same action are observed at
+            # multiple scalar values, do they always reach the same outside
+            # successor? This is the evidence needed before planning may ignore
+            # the scalar coordinate.
+            transition_targets=defaultdict(set)
+            transition_scalars=defaultdict(set)
+            for i,action in enumerate(actions):
+                if i+1 >= len(outside_digests):
+                    break
+                key=(outside_digests[i],tuple(action))
+                transition_targets[key].add(outside_digests[i+1])
+                transition_scalars[key].add(histograms[i])
+            cross_scalar_keys=[
+                key for key,values in transition_scalars.items()
+                if len(values)>=2
+            ]
+            independent_keys=[
+                key for key in cross_scalar_keys
+                if len(transition_targets[key])==1
+            ]
+            dependent_keys=[
+                key for key in cross_scalar_keys
+                if len(transition_targets[key])>1
+            ]
+
             changed_actions=set()
             scalar_changes=0
             for i,(a,b) in enumerate(zip(histograms,histograms[1:])):
@@ -132,6 +158,14 @@ def run_world(game_id,envdir,max_actions):
                 "histogram_pattern_collisions":hist_collisions,
                 "joint_reconstruction_collisions":joint_collisions,
                 "max_patterns_per_histogram":max((len(v) for v in hist_to_patterns.values()),default=0),
+                "transition_keys":len(transition_targets),
+                "cross_scalar_transition_keys":len(cross_scalar_keys),
+                "scalar_independent_transition_keys":len(independent_keys),
+                "scalar_dependent_transition_keys":len(dependent_keys),
+                "scalar_independence_fraction":(
+                    len(independent_keys)/len(cross_scalar_keys)
+                    if cross_scalar_keys else None
+                ),
             })
     candidates.sort(key=lambda r:(
         r["joint_reconstruction_collisions"]==0,
