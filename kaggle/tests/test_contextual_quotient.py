@@ -140,8 +140,11 @@ class ContextualQuotientContracts(unittest.TestCase):
         self.assertFalse(q.active(6, 6))
 
         terminal = (0, "GAME_OVER", (3, 4))
+        # Exercise a protected boundary without contradicting an already
+        # repeated projected state/action consequence.
+        boundary_source = grid(8, 88)
         target = grid(9, 99)
-        q.observe(current, (3, None, None), target, P0, terminal)
+        q.observe(boundary_source, (3, None, None), target, P0, terminal)
         cert = q.certificate(6, 6)
         self.assertIsNotNone(cert)
         self.assertEqual(cert["boundary_events"], 1)
