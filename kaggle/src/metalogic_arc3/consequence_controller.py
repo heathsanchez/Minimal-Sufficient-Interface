@@ -394,6 +394,15 @@ class ConsequenceController(MemoryGraphController):
             )
             return self._token(self._action_key(token), "consequence_fair_probe")
 
+        # A certified quotient has earned a reusable state graph. Once such a
+        # context is active, deterministic reachability to an unexplored
+        # successor outranks generic affordance preference. Explicit fair and
+        # delayed probes above still retain priority.
+        if context.startswith("cq:"):
+            first = self.effects.frontier_action(context)
+            if first in allowed_keys:
+                return self._token(first, "consequence_frontier")
+
         # Once there is repeated controllability evidence, prefer it over raw
         # change frequency. This is still a proposal score, not a goal claim.
         scored = [
