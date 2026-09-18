@@ -288,7 +288,8 @@ def main():
     audit.block_network()
 
     initial_level1_boundaries = len({
-        row[4]\n        for row in candidate_rows(ledger)
+        row[4]
+        for row in candidate_rows(ledger)
     })
 
     probes = []
