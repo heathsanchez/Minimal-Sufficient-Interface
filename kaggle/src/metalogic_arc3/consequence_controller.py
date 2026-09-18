@@ -5,6 +5,7 @@ import hashlib
 from typing import Any
 
 from .causal_affordance import AffordanceMemory, effect_signature
+from .certified_interventional_quotient import CertifiedInterventionalQuotient
 from .memory_controller import MemoryGraphController
 from .memory_graph import ActionKey
 from .runtime import ActionToken, Observation, normalize_frame
@@ -191,11 +192,16 @@ class ConsequenceController(MemoryGraphController):
         *args: Any,
         consequence_enabled: bool = True,
         visual_grounding: bool = True,
+        certified_interventional_quotient_enabled: bool = True,
         effect_limit: int = 2048,
         **kwargs: Any,
     ) -> None:
         self.consequence_enabled = bool(consequence_enabled)
         self.visual_grounding = bool(visual_grounding)
+        self.certified_interventional_quotient_enabled = bool(
+            certified_interventional_quotient_enabled
+        )
+        self.certified_interventional_quotient = CertifiedInterventionalQuotient()
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
         self._decision_tick = 0
@@ -255,6 +261,11 @@ class ConsequenceController(MemoryGraphController):
         self._primary = tuple(catalog[: len(primary)])
         return tuple(catalog)
 
+    def _consequence_context(self, obs: Observation) -> str:
+        if not self.certified_interventional_quotient_enabled:
+            return obs.evidence_sha256
+        return self.certified_interventional_quotient.context(obs.evidence_sha256)
+
     def _record_effect(self, frame: Any, obs: Observation) -> None:
         grid = settled_grid(frame)
         if self._pending_effect is not None:
@@ -276,7 +287,7 @@ class ConsequenceController(MemoryGraphController):
             self.effects.record(
                 context,
                 action,
-                obs.evidence_sha256,
+                self._consequence_context(obs),
                 descriptor,
                 changed,
                 history,
@@ -289,7 +300,7 @@ class ConsequenceController(MemoryGraphController):
                 descriptor,
                 signature,
                 directness=directness,
-                target=obs.evidence_sha256,
+                target=self._consequence_context(obs),
             )
             self._pending_effect = None
         self._grid = grid
@@ -304,7 +315,7 @@ class ConsequenceController(MemoryGraphController):
     def _select_probe(
         self, obs: Observation, catalog: tuple[ActionToken, ...]
     ) -> ActionToken:
-        context = obs.evidence_sha256
+        context = self._consequence_context(obs)
         allowed_keys = {self._action_key(token) for token in catalog}
         primary = tuple(
             token for token in self._primary if self._action_key(token) in allowed_keys
@@ -427,7 +438,7 @@ class ConsequenceController(MemoryGraphController):
         key = self._action_key(token)
         history = hashlib.sha256(repr(tuple(self._episode_program[-8:])).encode()).hexdigest()
         self._pending_effect = (
-            obs.evidence_sha256,
+            self._consequence_context(obs),
             key,
             self._grid,
             self._descriptor(token),
