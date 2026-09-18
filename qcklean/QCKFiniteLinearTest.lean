@@ -55,3 +55,8 @@ open QCK
 #check QCK.maintainedStateUpdate
 #check QCK.activeStateUpdate
 #check QCK.maintainedState_block_law
+#check QCK.observableVocabularyRank
+#check QCK.observableVocabularyRank_modular
+#check QCK.observableVocabularyRank_submodular
+#check QCK.uvGeneratedContextRank
+#check QCK.uvGeneratedContextRank_not_submodular
