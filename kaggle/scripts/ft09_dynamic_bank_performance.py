@@ -85,15 +85,13 @@ def action_change_prior(effects, action):
     changed = 0
     contexts = 0
     terminal_contexts = 0
-    for (context, candidate), row in effects.edges.items():
+    for (_context, candidate), row in effects.edges.items():
         if tuple(candidate) != action or row.get("ambiguous"):
             continue
         contexts += 1
         terminal_contexts += int(bool(row.get("terminal")))
-        for target, count in row.get("outcomes", {}).items():
-            count = int(count)
-            observed += count
-            changed += count * int(str(target) != str(context))
+        observed += int(row.get("n", 0))
+        changed += int(row.get("changed", 0))
 
     change_rate = (changed + 1.0) / (observed + 2.0)
     # One exact terminal context is enough to discount a coordinate strongly.
