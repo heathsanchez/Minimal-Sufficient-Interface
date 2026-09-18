@@ -55,8 +55,8 @@ from metalogic_arc3.consequence_controller import settled_grid
 
 GAMES = ("ls20-9607627b", "ft09-0d8bbf25", "vc33-5430563c")
 SHORTS = tuple(game.split("-")[0] for game in GAMES)
-TOTAL_BUDGET = 1200
-WARMUP_PER_GAME = 24
+TOTAL_BUDGET = 240
+WARMUP_PER_GAME = 8
 COORD_BINS = 4
 
 
@@ -1197,7 +1197,7 @@ def main() -> None:
 
     comparison = compare(arms)
     report = {
-        "schema": "arc3-global-flash-closure-v1",
+        "schema": "arc3-global-flash-closure-smoke-v1",
         "interpretation": (
             "three-game public developmental falsification: local exact closure "
             "is held common while scheduling and cross-game proposal evidence "
@@ -1259,7 +1259,7 @@ def main() -> None:
         ),
         flush=True,
     )
-    print("ARC3_GLOBAL_FLASH_CLOSURE_V1=PASS", flush=True)
+    print("ARC3_GLOBAL_FLASH_CLOSURE_SMOKE_V1=PASS", flush=True)
 
 
 if __name__ == "__main__":
