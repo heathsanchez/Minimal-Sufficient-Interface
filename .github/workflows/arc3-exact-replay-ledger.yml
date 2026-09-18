@@ -1,0 +1,22 @@
+name: ARC3 exact replay ledger contracts
+on:
+  push:
+    branches: [arc3-exact-replay-ledger-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-exact-replay-ledger.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ledger:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run exact replay ledger contracts
+        run: |
+          python -m unittest kaggle.tests.test_interventional_quotient -v
+          python -m unittest kaggle.tests.test_replay_ledger -v
