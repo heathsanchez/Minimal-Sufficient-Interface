@@ -44,7 +44,7 @@ aq.AGENT = AGENT
 
 TARGET_ACTION = (6, 54, 54)
 TAIL_STATES_PER_CHAIN = 6
-TAIL_OFFSET = 18
+TAIL_OFFSET = 24
 ALTERNATIVES_PER_STATE = 6
 MAX_RESUME = 40
 
@@ -397,7 +397,7 @@ def main():
 
     report = {
         "interpretation": (
-            "one-deviation counterfactual search on the third upstream band of exact "
+            "one-deviation counterfactual search on the final upstream band of exact "
             "states before the retained ft09 (54,54) fatal GAME_OVER chains"
         ),
         "claim_boundary": (
