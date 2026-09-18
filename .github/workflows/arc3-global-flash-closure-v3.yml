@@ -70,3 +70,5 @@ jobs:
 # V3 rerun after syntax repair
 
 # V3 rerun after literal-newline repair
+
+# V3 rerun after acquisition-floor constant repair
