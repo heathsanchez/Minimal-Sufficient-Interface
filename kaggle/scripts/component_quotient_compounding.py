@@ -26,7 +26,7 @@ import sys
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "component-quotient-compounding-v2-results"
+OUT = ROOT / "kaggle" / "component-quotient-compounding-v3-results"
 AGENT = OUT / "agent.py"
 sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 sys.path.insert(0, str(ROOT / "kaggle" / "scripts"))
@@ -49,8 +49,8 @@ closure.AGENT = AGENT
 BASE_RAW_STATE_BOUND = 256
 BASE_PROBE_BOUND = 1024
 TOTAL_EXTRA_PROBES = 4096
-PER_ROOT_PROBE_CAP = 384
-GENERATIONS = 20
+PER_ROOT_PROBE_CAP = 128
+GENERATIONS = 60
 
 
 class UnionFind:
@@ -453,7 +453,7 @@ def main():
 
     report = {
         "interpretation": (
-            "low-cost-first QCK/QCKN compounding in the exact ls20 primitive "
+            "micro-budget QCK/QCKN compounding in the exact ls20 primitive "
             "successor cone: every closed bisimulation pair earns a raw-state "
             "credit that is spent immediately on deeper exact frontier coverage"
         ),
@@ -461,7 +461,7 @@ def main():
             "partial quotient classes only rank attacks; only recursive replay "
             "closure earns credits; separator and capped roots remain distinct"
         ),
-        "prior_commit": "2420ed6096dac9538518e4c3bc3e8b625260c014",
+        "prior_commit": "61a129e775b4ede9882ae39884cb21a0f8a55b0e",
         "game_id": game_id,
         "source_trace": source_meta,
         "initial_candidate_pairs": len(candidates),
@@ -488,15 +488,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "component-quotient-compounding-v2.json",
+        OUT / "component-quotient-compounding-v3.json",
         report,
     )
     print(
-        "COMPONENT_QUOTIENT_COMPOUNDING_V2_RESULT="
+        "COMPONENT_QUOTIENT_COMPOUNDING_V3_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_COMPONENT_QUOTIENT_COMPOUNDING_V2=PASS", flush=True)
+    print("ARC3_COMPONENT_QUOTIENT_COMPOUNDING_V3=PASS", flush=True)
 
 
 if __name__ == "__main__":
