@@ -104,8 +104,12 @@ class EffectMemory:
         while queue and len(seen) <= 128:
             state, first = queue.popleft()
             catalog = self.catalogs.get(state, ())
-            if first is not None and any(self.attempts(state, action) == 0 for action in catalog):
-                return first
+            untried = [
+                action for action in catalog
+                if self.attempts(state, action) == 0
+            ]
+            if untried:
+                return min(untried, key=repr) if first is None else first
             for action, target in self.successors(state):
                 if target not in seen:
                     seen.add(target)
@@ -490,6 +494,20 @@ class ConsequenceController(MemoryGraphController):
                 ),
             )
             return self._token(self._action_key(token), "consequence_fair_probe")
+
+        # Once a consequence quotient has earned admission, complete its
+        # state-action frontier before allowing an already-known controllable
+        # affordance to monopolize the recurrent state.
+        if (
+            self.border_factor_enabled
+            and self._grid
+            and self.border_factor.active(
+                obs.levels_completed, len(self._grid), len(self._grid[0])
+            )
+        ):
+            first = effects.frontier_action(context)
+            if first in allowed_keys:
+                return self._token(first, "consequence_frontier")
 
         # Once there is repeated controllability evidence, prefer it over raw
         # change frequency. This is still a proposal score, not a goal claim.
