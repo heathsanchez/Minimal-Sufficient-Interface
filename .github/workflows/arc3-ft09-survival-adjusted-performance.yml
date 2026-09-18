@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: arc3-ft09-survival-adjusted-performance-${{ github.ref }}
   cancel-in-progress: true
@@ -19,6 +20,7 @@ jobs:
       ARC_API_KEY: ''
       OPERATION_MODE: ''
       MPLBACKEND: Agg
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -56,6 +58,13 @@ jobs:
               max_actions=400,
           ))
           PY
+      - name: Download and verify bounded fatal-basin certificate
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10564626208/zip > /tmp/hazard.zip
+          echo '22748bb909fae8087e90bc51bd26780466dd153dd1974782515e676d0d24bd05  /tmp/hazard.zip' | sha256sum --check
+          mkdir -p /tmp/hazard
+          unzip -q /tmp/hazard.zip -d /tmp/hazard
+          cp /tmp/hazard/ft09-fatal-basin-certificate-results/ft09-fatal-basin-certificate.json kaggle/ft09-survival-adjusted-performance-results/ft09-fatal-basin-certificate.json
       - name: Run survival-adjusted retained-bank generations
         run: python -u kaggle/scripts/ft09_dynamic_bank_performance.py
       - uses: actions/upload-artifact@v4
