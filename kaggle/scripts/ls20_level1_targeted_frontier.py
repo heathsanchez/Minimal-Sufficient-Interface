@@ -132,40 +132,97 @@ def level1_depths(ledger):
     )
 
     adjacency = {node: [] for node in level1}
-    indegree = Counter()
+    reverse = {node: [] for node in level1}
     for (source, _action), target in ledger.successor.items():
         if source in level1 and target in level1:
             adjacency[source].append(target)
-            indegree[target] += 1
+            reverse[target].append(source)
 
-    queue = [node for node in level1 if indegree[node] == 0]
+    # Exact feedback is structural evidence, not equivalence. Condense SCCs
+    # only for proposal-depth ranking while retaining every raw state/edge.
+    seen = set()
+    order = []
+
+    def dfs1(node):
+        seen.add(node)
+        for target in adjacency.get(node, ()):
+            if target not in seen:
+                dfs1(target)
+        order.append(node)
+
+    for node in level1:
+        if node not in seen:
+            dfs1(node)
+
+    component = {}
+    components = []
+
+    def dfs2(node, cid):
+        component[node] = cid
+        components[cid].append(node)
+        for source in reverse.get(node, ()):
+            if source not in component:
+                dfs2(source, cid)
+
+    for node in reversed(order):
+        if node in component:
+            continue
+        cid = len(components)
+        components.append([])
+        dfs2(node, cid)
+
+    cadj = {cid: set() for cid in range(len(components))}
+    indegree = Counter()
+    for source in level1:
+        cs = component[source]
+        for target in adjacency.get(source, ()):
+            ct = component[target]
+            if cs == ct or ct in cadj[cs]:
+                continue
+            cadj[cs].add(ct)
+            indegree[ct] += 1
+
+    queue = [
+        cid for cid in range(len(components))
+        if indegree[cid] == 0
+    ]
     topo = []
     while queue:
-        node = queue.pop()
-        topo.append(node)
-        for target in adjacency.get(node, ()):
+        cid = queue.pop()
+        topo.append(cid)
+        for target in cadj[cid]:
             indegree[target] -= 1
             if indegree[target] == 0:
                 queue.append(target)
-    if len(topo) != len(level1):
-        raise AssertionError("retained Level-1 graph is no longer acyclic")
 
-    depth = {entry: 0}
-    for node in topo:
-        if node not in depth:
+    if len(topo) != len(components):
+        raise AssertionError("SCC condensation graph unexpectedly cyclic")
+
+    entry_component = component[entry]
+    cdepth = {entry_component: 0}
+    for cid in topo:
+        if cid not in cdepth:
             continue
-        for target in adjacency.get(node, ()):
-            depth[target] = max(
-                depth.get(target, -1),
-                depth[node] + 1,
+        for target in cadj[cid]:
+            cdepth[target] = max(
+                cdepth.get(target, -1),
+                cdepth[cid] + 1,
             )
-    return entry, depth
 
+    depth = {
+        node: int(cdepth.get(component[node], -1))
+        for node in level1
+    }
+    scc_size = {
+        node: len(components[component[node]])
+        for node in level1
+    }
+    return entry, depth, scc_size, components
 
 def candidate_rows(ledger):
     rows = []
     attempted = set()
-    _entry, depth = level1_depths(ledger)
+    _entry, depth, scc_size, components = level1_depths(ledger)
     _root, compiled_routes = shortest_reset_prefixes(ledger)
 
     for node, row in ledger.nodes.items():
@@ -200,6 +257,7 @@ def candidate_rows(ledger):
         for action in missing:
             rows.append((
                 -node_depth,
+                -int(scc_size.get(str(node), 1)),
                 len(prefix),
                 -len(missing),
                 ACTION_PRIORITY.get(int(action), 99),
@@ -324,7 +382,7 @@ def main():
         if not rows:
             break
 
-        neg_depth, prefix_len, neg_missing, _action_rank, source, action_id, prefix = rows[0]
+        neg_depth, neg_scc_size, prefix_len, neg_missing, _action_rank, source, action_id, prefix = rows[0]
         cost = int(prefix_len) + 1
         if replay_actions + cost > MAX_REPLAY_ACTIONS:
             break
@@ -364,7 +422,8 @@ def main():
             "source": source,
             "source_prefix_actions": prefix_len,
             "source_missing_actions": -neg_missing,
-            "source_dag_depth": -neg_depth,
+            "source_condensation_depth": -neg_depth,
+            "source_scc_size": -neg_scc_size,
             "action": action_id,
             "target": target,
             "target_protected": list(row["target_protected"]),
@@ -424,13 +483,14 @@ def main():
 
     report = {
         "interpretation": (
-            "deepest-DAG-frontier exact counterfactual search using shortest composed "
-            "RESET prefixes from the retained ls20 replay ledger"
+            "deepest-condensation-frontier exact counterfactual search using shortest "
+            "composed RESET prefixes while preserving newly discovered exact SCCs"
         ),
         "claim_boundary": (
             "each probe begins with the shortest currently known deterministic RESET "
             "route and every intermediate digest must match the retained ledger; "
-            "DAG depth and action ordering are proposal-only"
+            "SCC-condensation depth and action ordering are proposal-only; SCC membership "
+            "is not treated as behavioral equivalence"
         ),
         "initial": {
             "ledger_nodes": len(payload["nodes"]),
