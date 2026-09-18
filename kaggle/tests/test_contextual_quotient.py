@@ -32,6 +32,7 @@ class ContextualQuotientContracts(unittest.TestCase):
             evaluation_interval=4,
             min_compression=2.0,
             min_repeated_events=6,
+            min_boundary_events=0,
             candidate_depths=(1, 2),
         )
         current = grid(1, 0)
@@ -84,6 +85,7 @@ class ContextualQuotientContracts(unittest.TestCase):
             evaluation_interval=4,
             min_compression=1.1,
             min_repeated_events=2,
+            min_boundary_events=0,
             candidate_depths=(2,),
         )
         source = grid(1, 0)
@@ -102,6 +104,7 @@ class ContextualQuotientContracts(unittest.TestCase):
             evaluation_interval=4,
             min_compression=1.1,
             min_repeated_events=2,
+            min_boundary_events=0,
             candidate_depths=(2,),
         )
         current = grid(1, 0)
@@ -118,6 +121,30 @@ class ContextualQuotientContracts(unittest.TestCase):
         cert = q.certificate(6, 6)
         self.assertEqual(cert["status"], "BOUNDED_EMPIRICAL_SUBSTITUTION")
         self.assertEqual(cert["sample_transitions"], 8)
+
+    def test_default_admission_waits_for_protected_boundary(self):
+        q = ContextualQuotient(
+            activation_transitions=8,
+            evaluation_interval=1,
+            min_compression=2.0,
+            min_repeated_events=6,
+            candidate_depths=(1, 2),
+        )
+        current = grid(1, 0)
+        for i in range(8):
+            action = (3, None, None) if i % 2 == 0 else (4, None, None)
+            target_world = 2 if i % 2 == 0 else 1
+            nxt = grid(target_world, i + 1)
+            q.observe(current, action, nxt, P0, P0)
+            current = nxt
+        self.assertFalse(q.active(6, 6))
+
+        terminal = (0, "GAME_OVER", (3, 4))
+        target = grid(9, 99)
+        q.observe(current, (3, None, None), target, P0, terminal)
+        cert = q.certificate(6, 6)
+        self.assertIsNotNone(cert)
+        self.assertEqual(cert["boundary_events"], 1)
 
 
 if __name__ == "__main__":
