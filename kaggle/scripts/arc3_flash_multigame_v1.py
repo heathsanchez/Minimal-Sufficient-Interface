@@ -287,7 +287,7 @@ def execute_flash(inputs: dict[str, Any], *, sham: bool=False) -> tuple[GlobalLe
         ))
         source = 'sham:irrelevant-source'
 
-    validate_transfer_result(
+    transfer = validate_transfer_result(
         ledger,
         source_capability_id=source,
         destination_game='vc33',
@@ -316,6 +316,8 @@ def execute_flash(inputs: dict[str, Any], *, sham: bool=False) -> tuple[GlobalLe
         }
 
     event = run_to_fixed_point(ledger, new_evidence=[keys['vc33']])
+    event.transfer_proposals_created.append(f'{source}->vc33')
+    event.transfer_proposals_refuted.append(transfer.capability_id)
     cancelled = [p for p in ledger.probes.values() if p.status == 'CANCELLED']
     cross_cancelled = [
         p for p in cancelled
