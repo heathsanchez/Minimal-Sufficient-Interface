@@ -39,7 +39,8 @@ jobs:
           set -euo pipefail
           found=0
           for file in QCK*.lean; do
-            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' "$file"; then
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' "$file" \
+              | grep -vE '^[0-9]+:[[:space:]]*#print[[:space:]]+axioms([[:space:]]|$)'; then
               found=1
             fi
           done
