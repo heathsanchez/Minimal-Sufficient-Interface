@@ -416,6 +416,24 @@ class ConsequenceController(MemoryGraphController):
             )
             return self._token(self._action_key(token), "consequence_fair_probe")
 
+        # In a learned factored world, recurrence has earned the right to
+        # redirect search. Spend local untried actions first; once the current
+        # state is exhausted, follow the shortest known deterministic route to
+        # another world state with an untried action. Raw observation contexts
+        # keep the existing affordance-first policy.
+        if context.startswith("w:"):
+            untried = [
+                token
+                for token in primary
+                if self.effects.attempts(context, self._action_key(token)) == 0
+            ]
+            if untried:
+                token = min(untried, key=self._candidate_key)
+                return self._token(self._action_key(token), "quotient_frontier")
+            first = self.effects.frontier_action(context)
+            if first in allowed_keys:
+                return self._token(first, "quotient_frontier")
+
         # Once there is repeated controllability evidence, prefer it over raw
         # change frequency. This is still a proposal score, not a goal claim.
         scored = [
