@@ -107,6 +107,38 @@ class ContextualQuotientContracts(unittest.TestCase):
             )
         self.assertIsNone(q.active_candidate(0, 8, 8))
 
+    def test_projection_search_is_deferred_until_evidence_horizon(self):
+        q = ContextualQuotient(
+            activation_transitions=8,
+            min_compression=1.1,
+            min_repeated_events=2,
+            depths=(1,),
+        )
+        for resource in range(8, 2, -1):
+            q.observe(
+                0,
+                grid(0, resource),
+                grid(1, resource - 1),
+                (3, None, None),
+                "CONTINUE",
+            )
+        self.assertEqual(q.evaluation_rounds, 0)
+        q.observe(
+            0,
+            grid(0, 2),
+            grid(1, 1),
+            (3, None, None),
+            "CONTINUE",
+        )
+        q.observe(
+            0,
+            grid(1, 1),
+            grid(0, 0),
+            (4, None, None),
+            "CONTINUE",
+        )
+        self.assertEqual(q.evaluation_rounds, 1)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
