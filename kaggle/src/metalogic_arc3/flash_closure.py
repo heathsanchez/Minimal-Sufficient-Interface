@@ -164,6 +164,118 @@ def transfer_proposal_blocked(
     return bool(row and row.get('kind') == 'exact_transfer_refutation')
 
 
+def _evidence_ref_payload(ref: Any) -> dict[str, Any]:
+    return {
+        'game': ref.game,
+        'kind': ref.kind,
+        'artifact_or_run': ref.artifact_or_run,
+        'local_key': ref.local_key,
+        'sha256': ref.sha256,
+    }
+
+
+def export_compiled_transfer_obstructions(ledger: GlobalLedger) -> str:
+    rows: list[dict[str, Any]] = []
+    for obstruction_key, row in sorted(ledger.obstructions.items()):
+        if row.get('kind') != 'exact_transfer_refutation':
+            continue
+        evidence_id = row.get('destination_evidence_id')
+        if evidence_id not in ledger.raw_evidence:
+            raise ValueError('compiled obstruction missing destination evidence')
+        rows.append({
+            'obstruction_key': obstruction_key,
+            'kind': 'exact_transfer_refutation',
+            'source_capability_id': row['source_capability_id'],
+            'source_consequence_signature': list(row['source_consequence_signature']),
+            'destination_game': row['destination_game'],
+            'exact_scope': dict(row.get('exact_scope') or {}),
+            'destination_evidence_id': evidence_id,
+            'destination_evidence': _evidence_ref_payload(
+                ledger.raw_evidence[evidence_id]
+            ),
+            'capability_id': row.get('capability_id'),
+        })
+    payload = {
+        'schema': 'qckn-transfer-obstructions-v1',
+        'obstructions': rows,
+    }
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(',', ':'),
+        ensure_ascii=True,
+    ) + '\n'
+
+
+def import_compiled_transfer_obstructions(
+    ledger: GlobalLedger,
+    text: str,
+) -> int:
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError('invalid compiled obstruction present') from exc
+    canonical = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(',', ':'),
+        ensure_ascii=True,
+    ) + '\n'
+    if canonical != text:
+        raise ValueError('noncanonical compiled obstruction present')
+    if payload.get('schema') != 'qckn-transfer-obstructions-v1':
+        raise ValueError('compiled obstruction schema mismatch')
+    rows = payload.get('obstructions')
+    if not isinstance(rows, list):
+        raise ValueError('compiled obstruction rows missing')
+
+    imported = 0
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict) or row.get('kind') != 'exact_transfer_refutation':
+            raise ValueError('invalid compiled obstruction row')
+        source_id = str(row.get('source_capability_id') or '')
+        if source_id not in ledger.capabilities:
+            raise ValueError('compiled obstruction source capability missing')
+        source = ledger.capabilities[source_id]
+        if list(source.consequence_signature) != list(row.get('source_consequence_signature') or []):
+            raise ValueError('compiled obstruction source consequence mismatch')
+
+        destination_game = str(row.get('destination_game') or '')
+        exact_scope = dict(row.get('exact_scope') or {})
+        expected_key = transfer_obstruction_key(
+            ledger,
+            source_capability_id=source_id,
+            destination_game=destination_game,
+            exact_scope=exact_scope,
+        )
+        obstruction_key = str(row.get('obstruction_key') or '')
+        if obstruction_key != expected_key or obstruction_key in seen:
+            raise ValueError('compiled obstruction key mismatch')
+        seen.add(obstruction_key)
+
+        evidence_id = str(row.get('destination_evidence_id') or '')
+        current_ref = ledger.raw_evidence.get(evidence_id)
+        if current_ref is None:
+            raise ValueError('destination evidence mismatch')
+        if _evidence_ref_payload(current_ref) != row.get('destination_evidence'):
+            raise ValueError('destination evidence mismatch')
+        if current_ref.game != destination_game:
+            raise ValueError('destination evidence mismatch')
+
+        ledger.obstructions[obstruction_key] = {
+            'kind': 'exact_transfer_refutation',
+            'source_capability_id': source_id,
+            'source_consequence_signature': list(source.consequence_signature),
+            'destination_game': destination_game,
+            'exact_scope': exact_scope,
+            'destination_evidence_id': evidence_id,
+            'capability_id': row.get('capability_id'),
+        }
+        imported += 1
+    return imported
+
+
 def validate_transfer_result(
     ledger: GlobalLedger,
     *,
