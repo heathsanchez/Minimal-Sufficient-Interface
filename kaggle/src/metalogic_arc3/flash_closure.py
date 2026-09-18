@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import hashlib
+import json
 from typing import Any
 
 from .flash_ledger import FlashEvent, GlobalCapability, GlobalLedger
@@ -126,6 +128,42 @@ def run_to_fixed_point(
     raise RuntimeError('Flash closure failed to converge')
 
 
+def transfer_obstruction_key(
+    ledger: GlobalLedger,
+    *,
+    source_capability_id: str,
+    destination_game: str,
+    exact_scope: dict[str, Any] | None = None,
+) -> str:
+    source = ledger.capabilities[source_capability_id]
+    payload = {
+        'schema': 'qckn-exact-transfer-refutation-v1',
+        'source_capability_id': source_capability_id,
+        'source_consequence_signature': source.consequence_signature,
+        'destination_game': destination_game,
+        'exact_scope': dict(exact_scope or {}),
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str).encode()
+    return 'transfer-obstruction:' + hashlib.sha256(raw).hexdigest()
+
+
+def transfer_proposal_blocked(
+    ledger: GlobalLedger,
+    *,
+    source_capability_id: str,
+    destination_game: str,
+    exact_scope: dict[str, Any] | None = None,
+) -> bool:
+    key = transfer_obstruction_key(
+        ledger,
+        source_capability_id=source_capability_id,
+        destination_game=destination_game,
+        exact_scope=exact_scope,
+    )
+    row = ledger.obstructions.get(key)
+    return bool(row and row.get('kind') == 'exact_transfer_refutation')
+
+
 def validate_transfer_result(
     ledger: GlobalLedger,
     *,
@@ -160,4 +198,20 @@ def validate_transfer_result(
     )
     ledger.add_capability(cap)
     source.destination_status[destination_game] = suffix
+    if not verified:
+        obstruction_key = transfer_obstruction_key(
+            ledger,
+            source_capability_id=source_capability_id,
+            destination_game=destination_game,
+            exact_scope=exact_scope,
+        )
+        ledger.obstructions[obstruction_key] = {
+            'kind': 'exact_transfer_refutation',
+            'source_capability_id': source_capability_id,
+            'source_consequence_signature': list(source.consequence_signature),
+            'destination_game': destination_game,
+            'exact_scope': dict(exact_scope or {}),
+            'destination_evidence_id': destination_evidence_id,
+            'capability_id': cap.capability_id,
+        }
     return cap
