@@ -62,7 +62,9 @@ STRATEGIES = (
     "known_first",
     "route_prior_b",
 )
-MAX_GRAPH_STATES = 4096\nFATAL_ACTION = (6, 54, 54)\nFATAL_CERTIFICATE = OUT / "ft09-fatal-basin-certificate.json"
+MAX_GRAPH_STATES = 4096
+FATAL_ACTION = (6, 54, 54)
+FATAL_CERTIFICATE = OUT / "ft09-fatal-basin-certificate.json"
 
 
 def deterministic_target(effects, context, action):
