@@ -1,20 +1,19 @@
-"""Compound QCK/QCKN inside the ls20 primitive-action successor cone.
+"""QCK/QCKN cone compounding V2: certify cheap merges, spend immediately.
 
-The earlier dead-component run spent 991 exact replay probes and stopped at a
-raw-state bound of 256.  This experiment turns that residual into a developmental
-loop:
+V1 attacks the largest partial quotient classes. V2 uses a stronger economic
+policy: harvest the cheapest high-confidence certificates first. In particular,
+a pair of fully observed states whose four primitive actions have identical
+outcomes and identical raw successors is a zero-frontier replay-bisimulation
+obligation and should be banked before spending hundreds of probes on a deep
+uncertain pair.
 
-  raw cone
-    -> partial consequential quotient
-    -> attack the largest surviving merged class
-    -> separator or replay-bisimulation certificate
-    -> count certified duplicate states as recovered state budget
-    -> spend that budget on deeper frontier states
-    -> recompute and repeat.
+Each successful certificate immediately earns one raw-state budget credit.
+Those credits are spent in the same generation on previously unexpanded
+reachable frontier states. The quotient is then recomputed and the process
+repeats.
 
-No visual factor, guessed ontology, or hidden environment state is used.  Every
-new edge still comes from exact RESET replay and a legal primitive intervention.
-UNKNOWN never becomes equivalence merely because a per-root probe budget ends.
+Only CLOSED_BOUNDED_REPLAY_BISIMULATION earns credit. UNKNOWN and separators
+never do.
 """
 from __future__ import annotations
 
@@ -27,7 +26,7 @@ import sys
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "component-quotient-compounding-results"
+OUT = ROOT / "kaggle" / "component-quotient-compounding-v2-results"
 AGENT = OUT / "agent.py"
 sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 sys.path.insert(0, str(ROOT / "kaggle" / "scripts"))
@@ -50,9 +49,8 @@ closure.AGENT = AGENT
 BASE_RAW_STATE_BOUND = 256
 BASE_PROBE_BOUND = 1024
 TOTAL_EXTRA_PROBES = 4096
-PER_ROOT_PROBE_CAP = 512
-ROUNDS = 4
-ROOTS_PER_ROUND = 4
+PER_ROOT_PROBE_CAP = 384
+GENERATIONS = 20
 
 
 class UnionFind:
@@ -72,30 +70,36 @@ class UnionFind:
         lo, hi = sorted((ra, rb))
         self.parent[hi] = lo
 
+    def same(self, a, b):
+        return self.find(a) == self.find(b)
+
     def components(self):
         groups = defaultdict(list)
         for node in list(self.parent):
             groups[self.find(node)].append(node)
-        return [sorted(group) for group in groups.values() if len(group) > 1]
-
-    def same(self, a, b):
-        return self.find(a) == self.find(b)
+        return [
+            sorted(group)
+            for group in groups.values()
+            if len(group) > 1
+        ]
 
 
 def fully_observed(q, node):
-    record = q.nodes[node]
-    legal = set(record.legal_actions)
-    observed = q._observed_actions(node)
-    return bool(legal) and legal <= observed
+    if node not in q.nodes:
+        return False
+    legal = set(q.nodes[node].legal_actions)
+    return bool(legal) and legal <= q._observed_actions(node)
 
 
 def primitive_contract(q, node):
-    record = q.nodes[node]
-    legal = tuple(record.legal_actions)
+    if node not in q.nodes:
+        return False
+    row = q.nodes[node]
+    legal = tuple(row.legal_actions)
     return (
         bool(legal)
         and not any(action in (0, 6) for action in legal)
-        and str(record.protected[0]) not in ("WIN", "GAME_OVER")
+        and str(row.protected[0]) not in ("WIN", "GAME_OVER")
     )
 
 
@@ -115,17 +119,17 @@ def reachable(q):
 def quotient_groups(q, nodes):
     parts = q.partitions(max_depth=max(8, len(q.nodes)))
     classes = parts[-1]
-    groups = defaultdict(list)
+    grouped = defaultdict(list)
     for node in nodes:
         if node in classes:
-            groups[int(classes[node])].append(node)
-    merged = [
+            grouped[int(classes[node])].append(node)
+    groups = [
         sorted(group)
-        for group in groups.values()
+        for group in grouped.values()
         if len(group) > 1
     ]
-    merged.sort(key=lambda group: (-len(group), group))
-    return parts, classes, merged
+    groups.sort(key=lambda group: (-len(group), group))
+    return parts, classes, groups
 
 
 def group_stats(groups):
@@ -133,7 +137,7 @@ def group_stats(groups):
     return {
         "merged_group_count": len(groups),
         "merged_state_count": sum(sizes),
-        "largest_groups": sizes[:12],
+        "largest_groups": sizes[:16],
         "pair_count": sum(size * (size - 1) // 2 for size in sizes),
     }
 
@@ -150,73 +154,123 @@ def certified_stats(uf):
     }
 
 
+def prefix_length(prefix_by_digest, node):
+    prefix = prefix_by_digest.get(node)
+    return len(prefix) if prefix is not None else 10**9
+
+
+def one_step_pair_cost(q, left, right, uf):
+    """Estimate unresolved closure work from already observed one-step edges."""
+    frontier = 0
+    unresolved = 0
+    identical_successors = 0
+    outcome_mismatch = 0
+
+    legal = tuple(q.nodes[left].legal_actions)
+    if legal != tuple(q.nodes[right].legal_actions):
+        return (10**6, 10**6, 0, 1)
+
+    for action in legal:
+        lrows = q.edges.get(left, {}).get(int(action), set())
+        rrows = q.edges.get(right, {}).get(int(action), set())
+        if len(lrows) != 1 or len(rrows) != 1:
+            frontier += 10
+            unresolved += 10
+            continue
+
+        lout, ltarget = next(iter(lrows))
+        rout, rtarget = next(iter(rrows))
+        if lout != rout:
+            outcome_mismatch += 1
+            continue
+        if ltarget == rtarget:
+            identical_successors += 1
+            continue
+        if uf.same(ltarget, rtarget):
+            continue
+
+        unresolved += 1
+        if not fully_observed(q, ltarget) or not fully_observed(q, rtarget):
+            frontier += 1
+
+    return frontier, unresolved, identical_successors, outcome_mismatch
+
+
 def choose_pair(q, prefix_by_digest, uf, blocked):
-    candidates = {
+    candidate_nodes = {
         node
         for node in reachable(q)
-        if fully_observed(q, node)
-        and primitive_contract(q, node)
+        if fully_observed(q, node) and primitive_contract(q, node)
     }
-    _parts, _classes, groups = quotient_groups(q, candidates)
+    _parts, _classes, groups = quotient_groups(q, candidate_nodes)
 
+    ranked = []
     for group in groups:
-        ordered = sorted(
-            group,
-            key=lambda node: (len(prefix_by_digest.get(node, (10**9,))), node),
-        )
-        for left, right in combinations(ordered, 2):
+        for left, right in combinations(group, 2):
             pair = tuple(sorted((left, right)))
             if pair in blocked or uf.same(left, right):
                 continue
-            return pair, len(group), group
-    return None, 0, []
+            cost = one_step_pair_cost(q, left, right, uf)
+            ranked.append((
+                cost[0],                        # unexpanded successor obligations
+                cost[1],                        # distinct unresolved target pairs
+                -cost[2],                       # prefer identical raw successors
+                -len(group),                    # then larger potential class
+                prefix_length(prefix_by_digest, left)
+                + prefix_length(prefix_by_digest, right),
+                pair,
+                len(group),
+                group,
+                cost,
+            ))
 
-
-def expand_reinvestment_frontier(
-    q,
-    prefix_by_digest,
-    explorer,
-    allowed_extra_states,
-    probe_ceiling,
-):
-    if allowed_extra_states <= 0:
-        return {
-            "allowed_extra_states": int(allowed_extra_states),
-            "expanded_states": 0,
-            "new_probes": 0,
-        }
-
-    before_probes = explorer.new_probes
-    expanded = 0
-
-    while expanded < allowed_extra_states and explorer.new_probes < probe_ceiling:
-        frontier = [
-            node
-            for node in reachable(q)
-            if node in q.nodes
-            and not fully_observed(q, node)
-            and primitive_contract(q, node)
-            and node in prefix_by_digest
-        ]
-        if not frontier:
-            break
-        frontier.sort(key=lambda node: (len(prefix_by_digest[node]), node))
-        node = frontier[0]
-
-        for action in q.nodes[node].legal_actions:
-            if explorer.new_probes >= probe_ceiling:
-                break
-            explorer.ensure_action(node, int(action))
-
-        if fully_observed(q, node):
-            expanded += 1
-        else:
-            break
-
+    if not ranked:
+        return None
+    ranked.sort(key=lambda row: row[:6])
+    row = ranked[0]
     return {
-        "allowed_extra_states": int(allowed_extra_states),
-        "expanded_states": expanded,
-        "new_probes": explorer.new_probes - before_probes,
+        "pair": row[5],
+        "partial_group_size": row[6],
+        "partial_group": row[7],
+        "cost": {
+            "frontier_obligations": row[8][0],
+            "unresolved_target_pairs": row[8][1],
+            "identical_raw_successors": row[8][2],
+            "outcome_mismatch": row[8][3],
+        },
+    }
+
+
+def expand_one_frontier_state(q, prefix_by_digest, explorer, probe_ceiling):
+    frontier = [
+        node
+        for node in reachable(q)
+        if node in prefix_by_digest
+        and primitive_contract(q, node)
+        and not fully_observed(q, node)
+    ]
+    if not frontier:
+        return None
+    frontier.sort(key=lambda node: (prefix_length(prefix_by_digest, node), node))
+    node = frontier[0]
+    before = explorer.new_probes
+
+    for action in q.nodes[node].legal_actions:
+        if explorer.new_probes >= probe_ceiling:
+            break
+        explorer.ensure_action(node, int(action))
+
+    if not fully_observed(q, node):
+        return {
+            "state": node,
+            "status": "PARTIAL_PROBE_BOUND",
+            "new_probes": explorer.new_probes - before,
+        }
+    return {
+        "state": node,
+        "status": "EXPANDED",
+        "new_probes": explorer.new_probes - before,
+        "prefix_length": prefix_length(prefix_by_digest, node),
     }
 
 
@@ -259,17 +313,17 @@ def main():
         manifest["environments_dir"],
     )
     if baseline["status"] != "UNKNOWN_STATE_BOUND":
-        raise AssertionError("dead-component baseline no longer hits state bound")
+        raise AssertionError("dead-component baseline no longer hits raw-state bound")
     if baseline["states"] != BASE_RAW_STATE_BOUND:
         raise AssertionError("dead-component baseline state count changed")
 
-    baseline_sources = {row["source"] for row in baseline["edges"]}
     initial_reachable = reachable(q)
     initial_full = {
-        node for node in initial_reachable
-        if node in q.nodes and fully_observed(q, node)
+        node
+        for node in initial_reachable
+        if fully_observed(q, node)
     }
-    _parts, _classes, initial_groups = quotient_groups(q, initial_full)
+    _p, _c, initial_groups = quotient_groups(q, initial_full)
 
     uf = UnionFind()
     blocked = set()
@@ -283,23 +337,20 @@ def main():
     closer.new_probes = 0
     closure.MAX_PAIR_OBLIGATIONS = 4096
 
-    rounds = []
-    total_reinvested_expansions = 0
+    generations = []
+    reinvested_states = 0
 
-    for round_index in range(1, ROUNDS + 1):
-        round_start_probes = closer.new_probes
-        attacks = []
+    for generation in range(1, GENERATIONS + 1):
+        if closer.new_probes >= TOTAL_EXTRA_PROBES:
+            break
 
-        for _ in range(ROOTS_PER_ROUND):
-            if closer.new_probes >= TOTAL_EXTRA_PROBES:
-                break
-            pair, partial_group_size, partial_group = choose_pair(
-                q, prefix_by_digest, uf, blocked
-            )
-            if pair is None:
-                break
+        before_cert = certified_stats(uf)
+        choice = choose_pair(q, prefix_by_digest, uf, blocked)
+        attack = None
 
-            before = closer.new_probes
+        if choice is not None:
+            pair = choice["pair"]
+            before_probes = closer.new_probes
             closure.MAX_NEW_PROBES = min(
                 TOTAL_EXTRA_PROBES,
                 closer.new_probes + PER_ROOT_PROBE_CAP,
@@ -312,91 +363,105 @@ def main():
                     "status": "UNKNOWN_ROOT_PROBE_CAP",
                     "error": str(exc),
                     "pair_obligations": None,
-                    "edges": [],
+                    "separator_word": None,
+                    "reason": None,
                 }
 
-            spent = closer.new_probes - before
             status = result["status"]
             if status == "CLOSED_BOUNDED_REPLAY_BISIMULATION":
                 uf.union(*pair)
             else:
                 blocked.add(pair)
 
-            attacks.append({
+            attack = {
                 "root": list(pair),
-                "partial_group_size": partial_group_size,
-                "partial_group_head": partial_group[:12],
+                "partial_group_size": choice["partial_group_size"],
+                "cost": choice["cost"],
                 "status": status,
-                "new_probes": spent,
+                "new_probes": closer.new_probes - before_probes,
                 "pair_obligations": result.get("pair_obligations"),
                 "separator_word": result.get("separator_word"),
                 "reason": result.get("reason"),
-            })
+            }
 
-            if closer.new_probes >= TOTAL_EXTRA_PROBES:
-                break
-
-        cert = certified_stats(uf)
-        allowed_total_reinvest = cert["saved_raw_states"]
-        remaining_reinvest = max(
-            0, allowed_total_reinvest - total_reinvested_expansions
+        after_cert = certified_stats(uf)
+        newly_earned = max(
+            0,
+            after_cert["saved_raw_states"] - before_cert["saved_raw_states"],
         )
 
+        # Credits are cumulative. Spend every unspent credit immediately.
+        unspent = max(
+            0,
+            after_cert["saved_raw_states"] - reinvested_states,
+        )
+        expansion_rows = []
         closure.MAX_NEW_PROBES = TOTAL_EXTRA_PROBES
-        reinvest = expand_reinvestment_frontier(
-            q,
-            prefix_by_digest,
-            closer,
-            remaining_reinvest,
-            TOTAL_EXTRA_PROBES,
-        )
-        total_reinvested_expansions += reinvest["expanded_states"]
+        while unspent > 0 and closer.new_probes < TOTAL_EXTRA_PROBES:
+            row = expand_one_frontier_state(
+                q, prefix_by_digest, closer, TOTAL_EXTRA_PROBES
+            )
+            if row is None:
+                break
+            expansion_rows.append(row)
+            if row["status"] != "EXPANDED":
+                break
+            reinvested_states += 1
+            unspent -= 1
 
         now_reachable = reachable(q)
         now_full = {
-            node for node in now_reachable
-            if node in q.nodes and fully_observed(q, node)
+            node
+            for node in now_reachable
+            if fully_observed(q, node)
         }
-        _p, _c, groups = quotient_groups(q, now_full)
+        _parts, _classes, groups = quotient_groups(q, now_full)
 
-        rounds.append({
-            "round": round_index,
-            "attacks": attacks,
-            "certified": cert,
-            "reinvestment": reinvest,
+        generations.append({
+            "generation": generation,
+            "attack": attack,
+            "newly_earned_state_credits": newly_earned,
+            "certified": after_cert,
+            "reinvestment": {
+                "expanded_states": len([
+                    row for row in expansion_rows
+                    if row["status"] == "EXPANDED"
+                ]),
+                "rows": expansion_rows,
+                "total_reinvested_states": reinvested_states,
+                "unspent_credits": max(
+                    0,
+                    after_cert["saved_raw_states"] - reinvested_states,
+                ),
+            },
             "reachable_states": len(now_reachable),
             "fully_observed_reachable_states": len(now_full),
             "partial_quotient": group_stats(groups),
-            "round_new_probes": closer.new_probes - round_start_probes,
             "total_extra_probes": closer.new_probes,
         })
 
-        if closer.new_probes >= TOTAL_EXTRA_PROBES:
-            break
-        if not attacks and reinvest["expanded_states"] == 0:
+        if choice is None and not expansion_rows:
             break
 
     final_reachable = reachable(q)
     final_full = {
         node for node in final_reachable
-        if node in q.nodes and fully_observed(q, node)
+        if fully_observed(q, node)
     }
-    _parts, _classes, final_groups = quotient_groups(q, final_full)
-    cert = certified_stats(uf)
+    _p, _c, final_groups = quotient_groups(q, final_full)
+    final_cert = certified_stats(uf)
 
     report = {
         "interpretation": (
-            "QCK/QCKN compounding inside the exact ls20 primitive-action cone: "
-            "partial quotient candidates are actively attacked; only recursively "
-            "closed pairs earn reusable state-budget savings, which are immediately "
-            "spent on deeper exact frontier expansion"
+            "low-cost-first QCK/QCKN compounding in the exact ls20 primitive "
+            "successor cone: every closed bisimulation pair earns a raw-state "
+            "credit that is spent immediately on deeper exact frontier coverage"
         ),
         "claim_boundary": (
-            "partial quotient groups are hypotheses only; certified savings count "
-            "only CLOSED_BOUNDED_REPLAY_BISIMULATION results; capped/unknown roots "
-            "remain unmerged"
+            "partial quotient classes only rank attacks; only recursive replay "
+            "closure earns credits; separator and capped roots remain distinct"
         ),
-        "prior_commit": "51ebf9e532ad6c9d8bae47d57d4b5d88757ec564",
+        "prior_commit": "2420ed6096dac9538518e4c3bc3e8b625260c014",
         "game_id": game_id,
         "source_trace": source_meta,
         "initial_candidate_pairs": len(candidates),
@@ -407,29 +472,31 @@ def main():
             "raw_states": baseline["states"],
             "new_probes": baseline["new_probes"],
             "edge_count": len(baseline["edges"]),
-            "terminal_states": len(baseline["terminal_states"]),
-            "fully_observed_reachable_states": len(initial_full),
             "reachable_states": len(initial_reachable),
+            "fully_observed_reachable_states": len(initial_full),
             "partial_quotient": group_stats(initial_groups),
         },
-        "rounds": rounds,
+        "generations": generations,
         "final": {
             "extra_probes": closer.new_probes,
             "reachable_states": len(final_reachable),
             "fully_observed_reachable_states": len(final_full),
-            "certified": cert,
-            "reinvested_frontier_states": total_reinvested_expansions,
+            "certified": final_cert,
+            "reinvested_frontier_states": reinvested_states,
             "partial_quotient": group_stats(final_groups),
         },
     }
 
-    audit.write_json(OUT / "component-quotient-compounding.json", report)
+    audit.write_json(
+        OUT / "component-quotient-compounding-v2.json",
+        report,
+    )
     print(
-        "COMPONENT_QUOTIENT_COMPOUNDING_RESULT="
+        "COMPONENT_QUOTIENT_COMPOUNDING_V2_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_COMPONENT_QUOTIENT_COMPOUNDING=PASS", flush=True)
+    print("ARC3_COMPONENT_QUOTIENT_COMPOUNDING_V2=PASS", flush=True)
 
 
 if __name__ == "__main__":
