@@ -365,23 +365,19 @@ theorem snapshotSafeInActive_finrank
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
     Module.finrank 𝕜 (snapshotSafeInActive N0 N) =
       Module.finrank 𝕜 (snapshotSafe N0 N) := by
-  let f :
-      snapshotSafeInActive N0 N →ₗ[𝕜] snapshotSafe N0 N :=
-    LinearMap.codRestrict
-      (snapshotSafe N0 N)
-      (N0.subtype.comp (snapshotSafeInActive N0 N).subtype)
-      (by
-        intro x
-        exact x.2)
+  let f : snapshotSafeInActive N0 N →ₗ[𝕜] snapshotSafe N0 N :=
+    { toFun := fun x => ⟨x.1.1, x.2⟩
+      map_add' := by intro x y; rfl
+      map_smul' := by intro a x; rfl }
   have hf : Function.Bijective f := by
     constructor
     · intro x y h
       apply Subtype.ext
-      exact congrArg Subtype.val (congrArg Subtype.val h)
+      apply Subtype.ext
+      exact congrArg Subtype.val h
     · intro y
-      refine ⟨⟨⟨y.1, snapshotSafe_le_active N0 N y.2⟩, ?_⟩, ?_⟩
-      · exact y.2
-      · rfl
+      refine ⟨⟨⟨y.1, snapshotSafe_le_active N0 N y.2⟩, y.2⟩, ?_⟩
+      rfl
   exact (LinearEquiv.ofBijective f hf).finrank_eq
 
 theorem snapshotReserveFinrank_eq_sub
@@ -392,6 +388,7 @@ theorem snapshotReserveFinrank_eq_sub
   have hq := (snapshotSafeInActive N0 N).finrank_quotient_add_finrank
   have hs := snapshotSafeInActive_finrank N0 N
   rw [snapshotReserveFinrank]
+  have hs := snapshotSafeInActive_finrank N0 N
   omega
 
 /-- Any supplementary record whose combined kernel preserves all promised future distinctions
@@ -410,25 +407,25 @@ theorem snapshotReserve_lower_bound
       Module.finrank 𝕜 (LinearMap.range H) := by
   have hkerprod :
       LinearMap.ker (LinearMap.prod O0 H) =
-        N0 ⊓ LinearMap.ker H := by
+        N0 ⊓ (LinearMap.ker H : Submodule 𝕜 V) := by
     rw [LinearMap.ker_prod, hO0]
-  have hprod_le : N0 ⊓ LinearMap.ker H ≤ snapshotSafe N0 N := by
+  have hprod_le : N0 ⊓ (LinearMap.ker H : Submodule 𝕜 V) ≤ snapshotSafe N0 N := by
     rw [← hkerprod]
     exact hcombined
   have hdimprod :
-      Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) ≤
+      Module.finrank 𝕜 (N0 ⊓ (LinearMap.ker H : Submodule 𝕜 V)) ≤
         Module.finrank 𝕜 (snapshotSafe N0 N) :=
     Submodule.finrank_mono hprod_le
   have hH := H.finrank_range_add_finrank_ker
   have hsup :=
     Submodule.finrank_sup_add_finrank_inf_eq N0 (LinearMap.ker H)
   have hsup_le :
-      Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) ≤
+      Module.finrank 𝕜 (N0 ⊔ (LinearMap.ker H : Submodule 𝕜 V)) ≤
         Module.finrank 𝕜 V :=
-    (N0 ⊔ LinearMap.ker H).finrank_le
+    (N0 ⊔ (LinearMap.ker H : Submodule 𝕜 V)).finrank_le
   have hN0ker :
       Module.finrank 𝕜 N0 ≤
-        Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) +
+        Module.finrank 𝕜 (N0 ⊓ (LinearMap.ker H : Submodule 𝕜 V)) +
           Module.finrank 𝕜 (LinearMap.range H) := by
     omega
   rw [snapshotReserveFinrank_eq_sub N0 N]
@@ -468,27 +465,118 @@ theorem ker_prod_active_snapshotReserveMap
     (O0 : V →ₗ[𝕜] R0) (hO0 : LinearMap.ker O0 = N0) :
     LinearMap.ker (LinearMap.prod O0 (snapshotReserveMap N0 N)) =
       snapshotSafe N0 N := by
-  rw [LinearMap.ker_prod, hO0]
-  apply le_antisymm
-  · intro x hx
-    have hx0 : x ∈ N0 := hx.1
-    have hxH : snapshotReserveMap N0 N x = 0 := by
-      simpa [LinearMap.mem_ker] using hx.2
+  ext x
+  constructor
+  · intro hx
+    have hp := (LinearMap.mem_ker).1 hx
+    have hx0 : x ∈ N0 := by
+      rw [← hO0, LinearMap.mem_ker]
+      exact congrArg Prod.fst hp
+    have hxH : snapshotReserveMap N0 N x = 0 := congrArg Prod.snd hp
     let xn : N0 := ⟨x, hx0⟩
     have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
       simpa [xn, snapshotReserveMap_on_active] using hxH
     have hxin : xn ∈ snapshotSafeInActive N0 N := by
-      simpa [LinearMap.mem_ker] using hq
+      exact (Submodule.Quotient.mk_eq_zero _).mp hq
     exact hxin
-  · intro x hx
-    refine ⟨snapshotSafe_le_active N0 N hx, ?_⟩
+  · intro hx
     rw [LinearMap.mem_ker]
-    let xn : N0 := ⟨x, snapshotSafe_le_active N0 N hx⟩
-    have hxin : xn ∈ snapshotSafeInActive N0 N := hx
-    have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
-      simpa [LinearMap.mem_ker] using hxin
-    simpa [xn, snapshotReserveMap_on_active] using hq
+    apply Prod.ext
+    · simp only [LinearMap.prod_apply, Prod.fst_zero, Prod.fst]
+      rw [← LinearMap.mem_ker, hO0]
+      exact snapshotSafe_le_active N0 N hx
+    · simp only [LinearMap.prod_apply, Prod.snd_zero, Prod.snd]
+      let xn : N0 := ⟨x, snapshotSafe_le_active N0 N hx⟩
+      have hxin : xn ∈ snapshotSafeInActive N0 N := hx
+      have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 :=
+        (Submodule.Quotient.mk_eq_zero _).2 hxin
+      simpa [xn, snapshotReserveMap_on_active] using hq
 
+
+/-! ## Maintained optionality (reconciled from qck-core-v1) -/
+
+def snapshotNullspace
+    {I : Type*} (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) : Submodule 𝕜 V :=
+  N₀ ⊓ ⨅ i, LinearMap.ker (future i)
+
+theorem snapshotNullspace_le
+    {I : Type*} (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    snapshotNullspace N₀ future ≤ N₀ := by
+  intro x hx
+  exact hx.1
+
+def maintainedNullspace
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) : Submodule 𝕜 V :=
+  sInf (Set.range (fun w : List B =>
+    (snapshotNullspace N₀ future).comap (wordMap S w)))
+
+theorem maintainedNullspace_le_snapshot
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    maintainedNullspace S N₀ future ≤ snapshotNullspace N₀ future := by
+  intro x hx
+  have hle : maintainedNullspace S N₀ future ≤
+      (snapshotNullspace N₀ future).comap (wordMap S ([] : List B)) := by
+    apply sInf_le
+    exact ⟨[], rfl⟩
+  have h := hle hx
+  simpa [wordMap] using h
+
+theorem maintainedNullspace_invariant
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) (a : B) :
+    maintainedNullspace S N₀ future ≤
+      (maintainedNullspace S N₀ future).comap (S a) := by
+  intro x hx
+  change S a x ∈ maintainedNullspace S N₀ future
+  change S a x ∈ sInf (Set.range (fun w : List B =>
+    (snapshotNullspace N₀ future).comap (wordMap S w)))
+  have hsub : (Submodule.span 𝕜 {S a x}) ≤
+      sInf (Set.range (fun w : List B =>
+        (snapshotNullspace N₀ future).comap (wordMap S w))) := by
+    apply le_sInf
+    intro U hU
+    rcases hU with ⟨w, rfl⟩
+    apply Submodule.span_le.2
+    intro z hz
+    simp only [Set.mem_singleton_iff] at hz
+    subst z
+    have hle : maintainedNullspace S N₀ future ≤
+        (snapshotNullspace N₀ future).comap (wordMap S (a :: w)) := by
+      apply sInf_le
+      exact ⟨a :: w, rfl⟩
+    have h := hle hx
+    simpa [wordMap] using h
+  exact hsub (Submodule.subset_span (Set.mem_singleton (S a x)))
+
+theorem le_maintainedNullspace
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (W : Submodule 𝕜 V)
+    (hWsafe : W ≤ snapshotNullspace N₀ future)
+    (hWinv : ∀ a, W ≤ W.comap (S a)) :
+    W ≤ maintainedNullspace S N₀ future := by
+  apply le_sInf
+  rintro U ⟨w, rfl⟩
+  intro x hx
+  induction w generalizing x with
+  | nil => simpa [wordMap] using hWsafe hx
+  | cons a w ih =>
+      change wordMap S w (S a x) ∈ snapshotNullspace N₀ future
+      exact ih (hWinv a hx)
+
+theorem maintainedNullspace_le_active
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    maintainedNullspace S N₀ future ≤ N₀ :=
+  (maintainedNullspace_le_snapshot S N₀ future).trans
+    (snapshotNullspace_le N₀ future)
+
+abbrev CanonicalMaintainedReserve
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :=
+  N₀ ⧸ (maintainedNullspace S N₀ future).comap N₀.subtype
 
 end
 
