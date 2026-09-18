@@ -71,3 +71,21 @@ RealityGraph / .mg retention
    redefine what counts as consequence-preserving substitution.
 5. Old overlapping predicates remain compatibility shims until their callers
    migrate, then should be removed or made aliases.
+
+
+## MDA boundary
+
+The first policy layer now lives in `qckn.mda`.
+
+It receives typed QCK-aligned outcomes and returns only interventions licensed
+for that outcome.  The final choice is made by an explicit prospective-cost
+function, so semantic classification and economic/search policy remain
+separate.
+
+For example, a `NewContextDefect` can license `SPLIT`, `EXPAND`,
+`RESTRUCTURE`, `CONSTRUCT`, or `VERIFY`; MDA chooses the cheapest
+currently warranted option instead of baking one repair into QCK semantics.
+
+The focused workflow `QCK v1 downstream migration` enforces two invariants:
+the frozen `qcklean` theorem surface is byte-for-byte unchanged from the
+qualified v1 commit, and the finite adapter/MDA tests pass.
