@@ -1,0 +1,68 @@
+name: ARC3 ft09 dynamic bank performance
+on:
+  push:
+    branches: [arc3-ft09-dynamic-bank-performance-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-ft09-dynamic-bank-performance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-ft09-dynamic-bank-performance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dynamic-bank:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and verify exact frozen MG-ARC5
+        run: |
+          mkdir -p kaggle/ft09-dynamic-bank-performance-results
+          python kaggle/scripts/build_agent.py --output kaggle/ft09-dynamic-bank-performance-results/agent.py
+          echo 'd9f0b95dfee14613425e8f557808e129b25e8a055ad481800b1024ce45281ead  kaggle/ft09-dynamic-bank-performance-results/agent.py' | sha256sum --check
+          python -m py_compile kaggle/scripts/ft09_dynamic_bank_performance.py
+      - name: Install pinned SDK
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/ft09-dynamic-bank-performance-results/requirements-resolved.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - name: Prepare exact ft09 world
+        run: |
+          python - <<'PY'
+          from types import SimpleNamespace
+          import sys
+          sys.path.insert(0, 'kaggle/scripts')
+          import benchmark_audit as a
+          a.AGENT = a.Path('kaggle/ft09-dynamic-bank-performance-results/agent.py')
+          a.prepare(SimpleNamespace(
+              fixtures=False,
+              games='ft09',
+              environments_dir='kaggle/ft09-dynamic-bank-performance-results/envs',
+              manifest='kaggle/ft09-dynamic-bank-performance-results/public.json',
+              max_actions=400,
+          ))
+          PY
+      - name: Run four retained exact-bank performance generations
+        run: python -u kaggle/scripts/ft09_dynamic_bank_performance.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-ft09-dynamic-bank-performance
+          path: |
+            kaggle/ft09-dynamic-bank-performance-results/
+            kaggle/scripts/ft09_dynamic_bank_performance.py
+          if-no-files-found: warn
