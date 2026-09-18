@@ -1330,7 +1330,8 @@ def main() -> None:
         ),
         "games": list(GAMES),
         "total_budget_per_arm": TOTAL_BUDGET,
-        "warmup_per_game": WARMUP_PER_GAME,\n        "minimum_game_share": MIN_GAME_SHARE,
+        "warmup_per_game": WARMUP_PER_GAME,
+        "minimum_game_share": MIN_GAME_SHARE,
         "arms": arms,
         "comparison": comparison,
         "hypothesis_status": {
