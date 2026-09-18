@@ -36,7 +36,7 @@ UNKNOWN/ambiguous edges are never treated as deterministic evidence.
 """
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, deque
 import json
 from pathlib import Path
 import sys
@@ -45,7 +45,7 @@ from typing import Any
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ls20-level1-deep-frontier-results"
+OUT = ROOT / "kaggle" / "ls20-level1-deep-frontier-v2-results"
 AGENT = OUT / "agent.py"
 LEDGER = OUT / "level-compounded-exact-replay-ledger.json"
 
@@ -54,11 +54,11 @@ import ls20_dynamic_ledger_performance as dyn
 
 EXPECTED_AGENT_SHA = dyn.EXPECTED_AGENT_SHA
 EXPECTED_GAME = dyn.EXPECTED_GAME
-EXPECTED_NODES = 3735
-EXPECTED_EDGES = 9982
+EXPECTED_NODES = 3848
+EXPECTED_EDGES = 10308
 
 TARGET_LEVEL = 2
-MAX_PROBES = 512
+MAX_PROBES = 700
 MAX_REPLAY_ACTIONS = 90000
 ACTION_PRIORITY = {3: 0, 4: 1, 2: 2, 1: 3}
 
@@ -89,6 +89,33 @@ def make_action(action_id: int):
     if action.is_complex():
         raise AssertionError("ls20 targeted frontier expected primitive actions")
     return action, action.action_data.model_dump()
+
+
+def shortest_reset_prefixes(ledger):
+    roots = [
+        node
+        for node, prefix in ledger.prefixes.items()
+        if len(prefix) == 0
+    ]
+    if len(roots) != 1:
+        raise AssertionError("expected one RESET ledger root")
+    root = roots[0]
+
+    routes = {root: ()}
+    queue = deque([root])
+    while queue:
+        source = queue.popleft()
+        prefix = routes[source]
+        for action in ledger.legal(source):
+            target = ledger.successor.get((source, int(action)))
+            if target is None or target in routes:
+                continue
+            protected = ledger.protected(target)
+            if protected and str(protected[0]) in ("GAME_OVER", "WIN"):
+                continue
+            routes[target] = prefix + ((int(action), None, None),)
+            queue.append(target)
+    return root, routes
 
 
 def level1_depths(ledger):
@@ -139,6 +166,7 @@ def candidate_rows(ledger):
     rows = []
     attempted = set()
     _entry, depth = level1_depths(ledger)
+    _root, compiled_routes = shortest_reset_prefixes(ledger)
 
     for node, row in ledger.nodes.items():
         protected = tuple(row["protected"])
@@ -149,17 +177,9 @@ def candidate_rows(ledger):
         ):
             continue
 
-        prefix_rows = ledger.prefixes.get(node)
-        if prefix_rows is None:
+        prefix = compiled_routes.get(str(node))
+        if prefix is None:
             continue
-        prefix = tuple(
-            (
-                int(action_id),
-                None if x is None else int(x),
-                None if y is None else int(y),
-            )
-            for action_id, x, y in prefix_rows
-        )
 
         legal = tuple(
             int(action)
@@ -398,19 +418,19 @@ def main():
 
     augmented = ledger.export(generation_rows=[])
     audit.write_json(
-        OUT / "deep-frontier-exact-replay-ledger.json",
+        OUT / "deep-frontier-v2-exact-replay-ledger.json",
         augmented,
     )
 
     report = {
         "interpretation": (
-            "deepest-DAG-frontier exact counterfactual search over unresolved Level-1 "
-            "primitive interventions in the retained ls20 replay ledger"
+            "deepest-DAG-frontier exact counterfactual search using shortest composed "
+            "RESET prefixes from the retained ls20 replay ledger"
         ),
         "claim_boundary": (
-            "each probe begins with an exact deterministic RESET replay whose "
-            "intermediate digests must match the retained ledger; DAG depth and "
-            "action ordering are proposal-only"
+            "each probe begins with the shortest currently known deterministic RESET "
+            "route and every intermediate digest must match the retained ledger; "
+            "DAG depth and action ordering are proposal-only"
         ),
         "initial": {
             "ledger_nodes": len(payload["nodes"]),
@@ -445,15 +465,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "ls20-level1-deep-frontier.json",
+        OUT / "ls20-level1-deep-frontier-v2.json",
         report,
     )
     print(
-        "LS20_LEVEL1_DEEP_FRONTIER_RESULT="
+        "LS20_LEVEL1_DEEP_FRONTIER_V2_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_LS20_LEVEL1_DEEP_FRONTIER=PASS", flush=True)
+    print("ARC3_LS20_LEVEL1_DEEP_FRONTIER_V2=PASS", flush=True)
 
 
 if __name__ == "__main__":
