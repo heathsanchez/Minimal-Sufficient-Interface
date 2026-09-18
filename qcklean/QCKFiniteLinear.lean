@@ -639,6 +639,75 @@ theorem maintainedReserveFinrank_eq_sub
         Module.finrank 𝕜 (maintainedNullspace S N₀ future)
   omega
 
+
+/-- An attained maintained reserve: project into the active kernel and retain
+exactly the quotient by the greatest waiting-invariant safely-forgettable subspace. -/
+noncomputable def maintainedReserveMap
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    V →ₗ[𝕜] CanonicalMaintainedReserve S N₀ future :=
+  ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ.comp
+    (N₀.projectionOnto (activeComplement N₀) (active_isCompl N₀))
+
+@[simp]
+theorem maintainedReserveMap_on_active
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (x : N₀) :
+    maintainedReserveMap S N₀ future x =
+      ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ x := by
+  simp [maintainedReserveMap, Submodule.projectionOnto_apply_left]
+
+/-- Pairing any active interface with the attained maintained reserve forgets
+exactly the maintained-safe distinctions. -/
+theorem ker_prod_active_maintainedReserveMap
+    {B I : Type*} {R0 : Type*}
+    [AddCommGroup R0] [Module 𝕜 R0]
+    (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (O0 : V →ₗ[𝕜] R0) (hO0 : LinearMap.ker O0 = N₀) :
+    LinearMap.ker (LinearMap.prod O0 (maintainedReserveMap S N₀ future)) =
+      maintainedNullspace S N₀ future := by
+  ext x
+  constructor
+  · intro hx
+    have hp := (LinearMap.mem_ker).1 hx
+    have hx0 : x ∈ N₀ := by
+      rw [← hO0, LinearMap.mem_ker]
+      exact congrArg Prod.fst hp
+    have hxH : maintainedReserveMap S N₀ future x = 0 :=
+      congrArg Prod.snd hp
+    let xn : N₀ := ⟨x, hx0⟩
+    have hxH' : maintainedReserveMap S N₀ future (xn : V) = 0 := by
+      simpa [xn] using hxH
+    have hq :
+        ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ xn = 0 := by
+      rw [← maintainedReserveMap_on_active S N₀ future xn]
+      exact hxH'
+    have hxin :
+        xn ∈ (maintainedNullspace S N₀ future).comap N₀.subtype :=
+      (Submodule.Quotient.mk_eq_zero _).mp hq
+    exact hxin
+  · intro hx
+    rw [LinearMap.mem_ker]
+    apply Prod.ext
+    · change O0 x = 0
+      rw [← LinearMap.mem_ker, hO0]
+      exact maintainedNullspace_le_active S N₀ future hx
+    · change maintainedReserveMap S N₀ future x = 0
+      let xn : N₀ := ⟨x, maintainedNullspace_le_active S N₀ future hx⟩
+      have hxin :
+          xn ∈ (maintainedNullspace S N₀ future).comap N₀.subtype := hx
+      have hq :
+          ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ xn = 0 :=
+        (Submodule.Quotient.mk_eq_zero _).2 hxin
+      calc
+        maintainedReserveMap S N₀ future x =
+            maintainedReserveMap S N₀ future (xn : V) := by rfl
+        _ = ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ xn :=
+          maintainedReserveMap_on_active S N₀ future xn
+        _ = 0 := hq
+
 end
 
 end QCK
