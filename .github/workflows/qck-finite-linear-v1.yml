@@ -59,7 +59,12 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean QCKAxiomAudit.lean 2>&1 | tee /tmp/qck-axioms.log
-          ! grep -E 'sorryAx|QCK\.[A-Za-z0-9_]+.*axiom' /tmp/qck-axioms.log
+          ! grep -E 'sorryAx' /tmp/qck-axioms.log
+          if grep -F 'depends on axioms:' /tmp/qck-axioms.log \
+            | grep -vE "depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$"; then
+            echo "Unexpected foundational dependency detected"
+            exit 1
+          fi
       - name: Compile every QCK Lean source
         working-directory: qcklean
         run: |
