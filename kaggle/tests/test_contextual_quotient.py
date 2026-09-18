@@ -13,9 +13,11 @@ from metalogic_arc3.contextual_quotient import ContextualQuotient
 def grid(world: int, nuisance: int, *, h=6, w=6):
     rows = [[0 for _ in range(w)] for _ in range(h)]
     rows[2][2] = world
-    # Two-column right-side nuisance display, changing every encounter.
-    rows[0][w-2] = nuisance
-    rows[0][w-1] = nuisance + 20
+    # Two-column right-side nuisance display spanning separated rows, so a
+    # horizontal crop cannot accidentally satisfy the same contract.
+    for y in (0, 2, 4):
+        rows[y][w-2] = nuisance
+        rows[y][w-1] = nuisance + 20
     return tuple(tuple(row) for row in rows)
 
 
