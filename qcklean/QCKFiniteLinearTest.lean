@@ -39,3 +39,6 @@ open QCK
 #check QCK.le_maintainedNullspace
 #check QCK.maintainedNullspace_le_active
 #check QCK.CanonicalMaintainedReserve
+#check QCK.comap_subtype_finrank
+#check QCK.maintainedReserveFinrank
+#check QCK.maintainedReserveFinrank_eq_sub
