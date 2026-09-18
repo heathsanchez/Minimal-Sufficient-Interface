@@ -69,6 +69,20 @@ class QuotientFrontierContracts(unittest.TestCase):
         self.assertEqual((token.action_id, token.x, token.y), a3)
         self.assertEqual(token.source, "quotient_frontier")
 
+    def test_frontier_can_be_ablated_without_disabling_factor(self):
+        c = self._controller()
+        c.quotient_frontier_enabled = False
+        c._consequence_context = lambda obs, grid: "w:s0"
+        c.effects.record("w:s0", (3, None, None), "w:s1", "primitive:3", 1, "h", False)
+        for i in range(4):
+            c.affordances.record(
+                f"a{i}", (3, None, None), "primitive:3",
+                (1, 1, 1, 0, 0, 1), directness=1.0,
+            )
+        token = c._select_probe(normalize_frame(frame()), c._primary)
+        self.assertEqual(token.action_id, 3)
+        self.assertEqual(token.source, "affordance")
+
     def test_raw_context_keeps_existing_affordance_priority(self):
         c = self._controller()
         c._consequence_context = lambda obs, grid: "raw:s0"
