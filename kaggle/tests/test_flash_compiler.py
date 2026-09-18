@@ -193,6 +193,86 @@ class FlashCompilerTests(unittest.TestCase):
             exact_scope=scope,
         ))
 
+    def test_exact_transfer_refutation_survives_canonical_restart(self):
+        from metalogic_arc3.flash_closure import (
+            export_compiled_transfer_obstructions,
+            import_compiled_transfer_obstructions,
+            transfer_proposal_blocked,
+        )
+        source_ledger, _ka, kb, ea, eb = self.base()
+        source_ledger.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},{'intervention_language':'complex_action6'},
+            ('fatal-family',),[ea]
+        ))
+        scope={'intervention_language':'complex_action6','claim':'generic fatal-family transfer'}
+        validate_transfer_result(
+            source_ledger,
+            source_capability_id='src',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=scope,
+        )
+        text = export_compiled_transfer_obstructions(source_ledger)
+
+        restarted = GlobalLedger(['a','b'])
+        ea2 = EvidenceRef('a','exact','run-a','1','aa')
+        eb2 = EvidenceRef('b','exact','run-b','1','bb')
+        restarted.add_evidence(ea2)
+        restarted.add_evidence(eb2)
+        restarted.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},{'intervention_language':'complex_action6'},
+            ('fatal-family',),[ea2]
+        ))
+        imported = import_compiled_transfer_obstructions(restarted, text)
+        self.assertEqual(imported, 1)
+        self.assertTrue(transfer_proposal_blocked(
+            restarted,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        ))
+        self.assertEqual(export_compiled_transfer_obstructions(restarted), text)
+
+    def test_restart_rejects_stale_destination_evidence(self):
+        from metalogic_arc3.flash_closure import (
+            export_compiled_transfer_obstructions,
+            import_compiled_transfer_obstructions,
+        )
+        source_ledger, _ka, kb, ea, _eb = self.base()
+        source_ledger.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},{},('fatal-family',),[ea]
+        ))
+        scope={'claim':'generic fatal-family transfer'}
+        validate_transfer_result(
+            source_ledger,
+            source_capability_id='src',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=scope,
+        )
+        text = export_compiled_transfer_obstructions(source_ledger)
+
+        stale = GlobalLedger(['a','b'])
+        ea2 = EvidenceRef('a','exact','run-a','1','aa')
+        stale.add_evidence(ea2)
+        stale.add_evidence(EvidenceRef('b','exact','run-b','1','STALE'))
+        stale.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},{},('fatal-family',),[ea2]
+        ))
+        with self.assertRaisesRegex(ValueError, 'destination evidence mismatch'):
+            import_compiled_transfer_obstructions(stale, text)
+
+    def test_restart_rejects_noncanonical_obstruction_present(self):
+        from metalogic_arc3.flash_closure import import_compiled_transfer_obstructions
+        ledger, _ka, _kb, _ea, _eb = self.base()
+        with self.assertRaisesRegex(ValueError, 'noncanonical compiled obstruction present'):
+            import_compiled_transfer_obstructions(
+                ledger,
+                '{"schema": "qckn-transfer-obstructions-v1", "obstructions": []}',
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
