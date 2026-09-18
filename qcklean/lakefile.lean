@@ -11,4 +11,4 @@ require mathlib from git
 @[default_target]
 lean_lib QCK where
   srcDir := "."
-  roots := #[`QCKCore, `QCKCoreTest, `QCKFiniteLinear, `QCKFiniteLinearTest, `QCKAPI, `QCKAPITest]
+  roots := #[`QCKCore, `QCKCoreTest, `QCKFiniteLinear, `QCKFiniteLinearTest, `QCKAPI, `QCKAPITest, `QCKAxiomAudit]
