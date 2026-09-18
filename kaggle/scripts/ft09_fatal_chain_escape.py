@@ -336,7 +336,7 @@ def main():
     game_id = game["game_id"]
 
     audit.AGENT = AGENT
-    module = aq.load_agent()
+    audit.AGENT = AGENT\n    module = audit.load_agent()
     audit.block_network()
 
     specs = source_specs(progression)
