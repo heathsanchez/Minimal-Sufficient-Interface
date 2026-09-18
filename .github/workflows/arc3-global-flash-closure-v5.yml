@@ -1,0 +1,114 @@
+name: ARC3 Global Flash Closure V5
+
+on:
+  push:
+    branches: [arc3-global-flash-closure-v5]
+    paths:
+      - 'kaggle/src/metalogic_arc3/flash_*.py'
+      - 'kaggle/scripts/arc3_flash_multigame_v1.py'
+      - 'kaggle/tests/test_flash_closure.py'
+      - '.github/workflows/arc3-global-flash-closure-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: arc3-global-flash-closure-v5-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flash-v5:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen agent and compile Flash
+        run: |
+          mkdir -p kaggle/flash-v5-results/inputs
+          python kaggle/scripts/build_agent.py --output kaggle/flash-v5-results/agent.py
+          echo 'd9f0b95dfee14613425e8f557808e129b25e8a055ad481800b1024ce45281ead  kaggle/flash-v5-results/agent.py' | sha256sum --check
+          python -m py_compile             kaggle/src/metalogic_arc3/flash_ledger.py             kaggle/src/metalogic_arc3/flash_closure.py             kaggle/src/metalogic_arc3/flash_scheduler.py             kaggle/scripts/arc3_flash_multigame_v1.py
+
+      - name: Run Flash contracts
+        run: python -m unittest kaggle.tests.test_flash_closure -v
+
+      - name: Record pinned runtime
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/flash-v5-results/requirements-resolved.txt
+
+      - name: Fetch and verify pinned retained evidence
+        run: |
+          fetch_artifact () {
+            local id="$1"
+            local digest="$2"
+            local output="$3"
+            gh api "/repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/$id/zip" > "$output"
+            echo "$digest  $output" | sha256sum --check
+          }
+
+          fetch_artifact 10560148232 b46a9c5c844d4dc7b87d6d0f91ad20f5600e1469183b1515d1ff5eafe692dc37 /tmp/ls20-compiled.zip
+          fetch_artifact 10566897440 f681be0076967e48c6a87c6930a9fd7389d5201b5914809bfb7f6a78a9f51aeb /tmp/ls20-v3.zip
+          fetch_artifact 10564626208 22748bb909fae8087e90bc51bd26780466dd153dd1974782515e676d0d24bd05 /tmp/ft09-fatal.zip
+          fetch_artifact 10544713870 a90191671cff5fd1646edc0d605add58bfee582769d5387ccae379374bbca549 /tmp/vc33-grounded.zip
+          fetch_artifact 10540642632 005d910cc9cc01b684944ca0e3cf4b402314fda42bb458f4779ce35ef6d705cc /tmp/interventional.zip
+
+          unzip -j /tmp/ls20-compiled.zip '*/ls20-compiled-progress.json' -d kaggle/flash-v5-results/inputs
+          unzip -j /tmp/ls20-v3.zip '*/ls20-level1-scc-frontier-v3.json' -d kaggle/flash-v5-results/inputs
+          unzip -j /tmp/ft09-fatal.zip '*/ft09-fatal-basin-certificate.json' -d kaggle/flash-v5-results/inputs
+          unzip -j /tmp/vc33-grounded.zip '*/grounded-interventional-v2.json' -d kaggle/flash-v5-results/inputs
+          unzip -j /tmp/interventional.zip '*/interventional-quotient.json' -d kaggle/flash-v5-results/inputs
+
+          cat > kaggle/flash-v5-results/input-artifacts.json <<'JSON'
+          {
+            "ls20_compiled": {"run":"35376545566","artifact":"10560148232","sha256":"b46a9c5c844d4dc7b87d6d0f91ad20f5600e1469183b1515d1ff5eafe692dc37"},
+            "ls20_frontier_v3": {"run":"35393183037","artifact":"10566897440","sha256":"f681be0076967e48c6a87c6930a9fd7389d5201b5914809bfb7f6a78a9f51aeb"},
+            "ft09_fatal": {"run":"35387362885","artifact":"10564626208","sha256":"22748bb909fae8087e90bc51bd26780466dd153dd1974782515e676d0d24bd05"},
+            "vc33_grounded": {"run":"35341468771","artifact":"10544713870","sha256":"a90191671cff5fd1646edc0d605add58bfee582769d5387ccae379374bbca549"},
+            "interventional_diag": {"run":"35330229606","artifact":"10540642632","sha256":"005d910cc9cc01b684944ca0e3cf4b402314fda42bb458f4779ce35ef6d705cc"}
+          }
+          JSON
+
+      - name: Run nonlinear multi-game consequence compiler
+        run: python -u kaggle/scripts/arc3_flash_multigame_v1.py
+
+      - name: Enforce causal performance falsifier
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('kaggle/flash-v5-results/comparison.json')
+          c = json.loads(p.read_text())
+          assert c['verdict'] == 'PASS'
+          assert c['delta']['same_protected_milestones'] is True
+          assert c['delta']['acquisition_saved'] > 0
+          assert c['delta']['future_probes_eliminated'] >= 2
+          assert c['delta']['sham_acquisition_saved'] == 0
+          assert c['order_robustness']['confluent_for_tested_event_order'] is True
+          print('ARC3_GLOBAL_FLASH_CLOSURE_V5=PASS')
+          print('ACQUISITION_SAVED=' + str(c['delta']['acquisition_saved']))
+          print('FUTURE_PROBES_ELIMINATED=' + str(c['delta']['future_probes_eliminated']))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-global-flash-closure-v5
+          path: |
+            kaggle/flash-v5-results/
+            kaggle/src/metalogic_arc3/flash_ledger.py
+            kaggle/src/metalogic_arc3/flash_closure.py
+            kaggle/src/metalogic_arc3/flash_scheduler.py
+            kaggle/scripts/arc3_flash_multigame_v1.py
+            kaggle/tests/test_flash_closure.py
+          if-no-files-found: error
