@@ -1,0 +1,81 @@
+name: ARC3 ft09 fatal-basin certificate
+on:
+  push:
+    branches: [arc3-ft09-fatal-basin-certificate-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-ft09-fatal-basin-certificate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: arc3-ft09-fatal-basin-certificate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare certificate directory
+        run: |
+          mkdir -p kaggle/ft09-fatal-basin-certificate-results
+          python -m py_compile kaggle/scripts/ft09_fatal_basin_certificate.py
+      - name: Download pinned progression evidence
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10561833386/zip > /tmp/progression.zip
+          echo 'e129247178e039de8dfcf1d7b33e21cc37abf304f5bf59cfeba0bab64d72d818  /tmp/progression.zip' | sha256sum --check
+          mkdir -p /tmp/progression
+          unzip -q /tmp/progression.zip -d /tmp/progression
+          cp /tmp/progression/ft09-5454-progression-results/ft09-5454-progression.json kaggle/ft09-fatal-basin-certificate-results/progression.json
+      - name: Download pinned band 0
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10562600718/zip > /tmp/b0.zip
+          echo '9ec0b02570b3c10f2ddcdc2091a4bd900c4f2101cc5e89bbf50ce993e4b7d6c8  /tmp/b0.zip' | sha256sum --check
+          mkdir -p /tmp/b0
+          unzip -q /tmp/b0.zip -d /tmp/b0
+          cp /tmp/b0/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-0.json
+      - name: Download pinned band 6
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10562556088/zip > /tmp/b6.zip
+          echo '2333c08e22e2ddd0a3326dbf4a07090ca6efe8cc87fea35db93d20d263989540  /tmp/b6.zip' | sha256sum --check
+          mkdir -p /tmp/b6
+          unzip -q /tmp/b6.zip -d /tmp/b6
+          cp /tmp/b6/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-6.json
+      - name: Download pinned band 12
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10563951052/zip > /tmp/b12.zip
+          echo '9ddf4d59bb0aa13f8c9e297894e99b4412312c9c1fe7430af383d1d21a48b9a2  /tmp/b12.zip' | sha256sum --check
+          mkdir -p /tmp/b12
+          unzip -q /tmp/b12.zip -d /tmp/b12
+          cp /tmp/b12/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-12.json
+      - name: Download pinned band 18
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10564046377/zip > /tmp/b18.zip
+          echo 'b11a77297f326757153a8e7099d0aa74ba057c67c8ad5a7d62c57d29263a8f6f  /tmp/b18.zip' | sha256sum --check
+          mkdir -p /tmp/b18
+          unzip -q /tmp/b18.zip -d /tmp/b18
+          cp /tmp/b18/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-18.json
+      - name: Download pinned band 24
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10563449247/zip > /tmp/b24.zip
+          echo 'b9de02cb48b5724d42d08812ee59647c4e5d8932f8fb3dcf726a703bd0bac854  /tmp/b24.zip' | sha256sum --check
+          mkdir -p /tmp/b24
+          unzip -q /tmp/b24.zip -d /tmp/b24
+          cp /tmp/b24/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-24.json
+      - name: Build bounded fatal-basin certificate
+        run: python -u kaggle/scripts/ft09_fatal_basin_certificate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-ft09-fatal-basin-certificate
+          path: |
+            kaggle/ft09-fatal-basin-certificate-results/
+            kaggle/scripts/ft09_fatal_basin_certificate.py
+          if-no-files-found: warn
