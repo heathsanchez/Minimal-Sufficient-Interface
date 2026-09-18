@@ -1,0 +1,35 @@
+name: QCK v1 downstream migration
+
+on:
+  push:
+    branches: [qck-v1-migration]
+    paths:
+      - 'qckn/**'
+      - 'tests/test_qck*.py'
+      - 'docs/QCK_V1_MIGRATION.md'
+      - 'docs/QCKN_STACK_V1.md'
+      - '.github/workflows/qck-v1-migration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verify frozen QCK theorem surface is untouched
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin fc112771bd0a24e40e31e4eaef61ca0442103dd4
+          git diff --exit-code fc112771bd0a24e40e31e4eaef61ca0442103dd4 HEAD -- qcklean
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Qualify finite QCK adapter
+        run: python -m unittest tests.test_qck_v1_finite_adapter -v
+      - name: Qualify typed MDA policy
+        run: python -m unittest tests.test_qckn_mda -v
