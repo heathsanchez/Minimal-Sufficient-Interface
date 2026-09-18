@@ -88,13 +88,20 @@ def schema_for(
     obs: Any,
 ) -> tuple[Any, ...]:
     aid, x, y = key
+    # Transfer is typed by the public intervention language and coarse protected
+    # phase. This prevents action-id coincidence from becoming a false shared
+    # capability across unrelated games.
+    context_type = (
+        "L0" if int(obs.levels_completed) == 0 else "L+",
+        tuple(int(v) for v in obs.available_actions),
+    )
     if x is None or y is None:
-        return ("primitive", int(aid))
+        return ("primitive", int(aid), context_type)
     width = max(1, int(obs.width))
     height = max(1, int(obs.height))
     xb = min(COORD_BINS - 1, max(0, int(x) * COORD_BINS // width))
     yb = min(COORD_BINS - 1, max(0, int(y) * COORD_BINS // height))
-    return ("complex", int(aid), int(xb), int(yb))
+    return ("complex", int(aid), int(xb), int(yb), context_type)
 
 
 def outcome_signature(before: Any, after: Any) -> str:
@@ -156,47 +163,115 @@ class ProposalModel:
         *,
         shared: bool,
     ) -> tuple[float, dict[str, Any]]:
-        local_counter = self.local[game].get(schema, Counter())
+        local_counter = Counter(self.local[game].get(schema, Counter()))
         local = self._features(local_counter)
 
-        if shared:
-            evidence = self.counts.get(schema, Counter())
-            feat = self._features(evidence)
-            other_obs = int(
-                sum(
-                    count
-                    for source_game, count in self.games.get(schema, Counter()).items()
-                    if source_game != game
-                )
-            )
-            games_seen = len(self.games.get(schema, {}))
-        else:
-            feat = local
-            other_obs = 0
-            games_seen = int(bool(sum(local_counter.values())))
-
-        n = feat["n"]
-        # Proposal score only. Positive consequences are attractive, terminal
-        # evidence is costly, and uncertain schemas receive information value.
-        score = (
+        # The market-local score is the floor. Shared evidence is never allowed
+        # to replace local evidence; it can only add a bounded typed term.
+        base = (
             2.0
-            + 7.0 * feat["progress"]
-            + 1.75 * feat["change"]
-            - 4.5 * feat["terminal"]
-            - 1.5 * feat["noop"]
-            + 1.8 * feat["uncertainty"]
-            + 1.25 / math.sqrt(1.0 + n)
-            + 0.35 * math.log1p(other_obs)
-            + 0.15 * max(0, games_seen - 1)
+            + 7.0 * local["progress"]
+            + 1.75 * local["change"]
+            - 4.5 * local["terminal"]
+            - 1.5 * local["noop"]
+            + 1.8 * local["uncertainty"]
+            + 1.25 / math.sqrt(1.0 + local["n"])
             + 0.75 / math.sqrt(1.0 + local["n"])
         )
-        return score, {
-            "schema_observations": int(n),
-            "local_schema_observations": int(local["n"]),
-            "other_game_observations": other_obs,
-            "games_seen": games_seen,
-            "schema_features": feat,
+
+        if not shared:
+            return base, {
+                "schema_observations": int(local["n"]),
+                "local_schema_observations": int(local["n"]),
+                "other_game_observations": 0,
+                "games_seen": int(bool(local["n"])),
+                "cross_mode": "local_only",
+                "schema_features": local,
+            }
+
+        total_counter = Counter(self.counts.get(schema, Counter()))
+        other_counter = Counter(total_counter)
+        for sig, count in local_counter.items():
+            other_counter[sig] -= count
+            if other_counter[sig] <= 0:
+                del other_counter[sig]
+
+        other_games = {
+            source_game: count
+            for source_game, count in self.games.get(schema, Counter()).items()
+            if source_game != game and count > 0
         }
+        other = self._features(other_counter)
+        other_obs = int(other["n"])
+        local_obs = int(local["n"])
+
+        cross_mode = "none"
+        cross_term = 0.0
+        dominant_other = (
+            other_counter.most_common(1)[0][0]
+            if other_counter
+            else None
+        )
+        dominant_local = (
+            local_counter.most_common(1)[0][0]
+            if local_counter
+            else None
+        )
+        other_agreement = (
+            other_counter[dominant_other] / max(1, sum(other_counter.values()))
+            if dominant_other is not None
+            else 0.0
+        )
+        local_agreement = (
+            local_counter[dominant_local] / max(1, sum(local_counter.values()))
+            if dominant_local is not None
+            else 0.0
+        )
+
+        corroborated = False
+        if other_obs:
+            if local_obs:
+                corroborated = (
+                    dominant_local == dominant_other
+                    and local_agreement >= 0.80
+                    and other_agreement >= 0.80
+                )
+            else:
+                corroborated = (
+                    len(other_games) >= 2
+                    and other_agreement >= 0.90
+                )
+
+        if corroborated:
+            utility = (
+                4.0 * other["progress"]
+                + 0.8 * other["change"]
+                - 2.5 * other["terminal"]
+                - 0.8 * other["noop"]
+            )
+            # Bounded influence: shared evidence may break near-ties, never
+            # swamp the local market.
+            cross_term = max(-0.75, min(0.75, 0.35 * utility))
+            cross_mode = "promoted"
+        elif other_obs:
+            # Contradiction or insufficient corroboration creates an
+            # obstruction-typed split. We retain a tiny information bonus for
+            # one destination check, but do not transfer desirability.
+            cross_term = min(0.12, 0.04 * math.log1p(other_obs))
+            cross_mode = "obstruction_split"
+
+        return base + cross_term, {
+            "schema_observations": int(sum(total_counter.values())),
+            "local_schema_observations": local_obs,
+            "other_game_observations": other_obs,
+            "games_seen": len(self.games.get(schema, {})),
+            "other_games_seen": len(other_games),
+            "cross_mode": cross_mode,
+            "cross_term": cross_term,
+            "other_agreement": other_agreement,
+            "schema_features": self._features(total_counter),
+        }
+
 
 
 @dataclass
@@ -830,8 +905,12 @@ def execute_and_close(
     metrics: Counter[str],
 ) -> dict[str, Any]:
     if candidate.kind == "probe" and candidate.schema is not None and shared:
-        if candidate.metadata.get("other_game_observations", 0):
+        cross_mode = candidate.metadata.get("cross_mode", "none")
+        if cross_mode == "promoted":
+            metrics["typed_cross_game_promotions"] += 1
             metrics["cross_game_prior_uses"] += 1
+        elif cross_mode == "obstruction_split":
+            metrics["typed_obstruction_splits"] += 1
 
     revalued = 0
     if (
@@ -859,13 +938,10 @@ def execute_and_close(
         if revalued:
             metrics["flash_events_with_cross_game_effect"] += 1
 
-        # A shared schema that has materially different observed consequences
-        # across games creates a named proposal obstruction rather than an
-        # authority-level merge.
-        if shared_model is not None:
-            counter = shared_model.counts[candidate.schema]
-            if len(counter) > 1 and len(shared_model.games[candidate.schema]) > 1:
-                metrics["cross_game_obstruction_events"] += 1
+        # Count only newly activated typed obstruction situations, not every
+        # subsequent observation in an already-split schema.
+        if shared_model is not None and candidate.metadata.get("cross_mode") == "obstruction_split":
+            metrics["cross_game_obstruction_events"] += 1
 
     closure = world.closure()
     metrics["local_closure_events"] += 1
@@ -1197,16 +1273,16 @@ def main() -> None:
 
     comparison = compare(arms)
     report = {
-        "schema": "arc3-global-flash-closure-v1",
+        "schema": "arc3-global-flash-closure-v2",
         "interpretation": (
-            "three-game public developmental falsification: local exact closure "
-            "is held common while scheduling and cross-game proposal evidence "
-            "are added separately"
+            "three-game public developmental falsification: local exact closure is "
+            "held common while global scheduling and obstruction-typed, "
+            "corroboration-gated cross-game proposal evidence are added separately"
         ),
         "claim_boundary": (
-            "cross-game information can rank experiments only; exact edges, "
-            "fatality, equivalence and compiled routes remain destination-local "
-            "and require destination execution"
+            "cross-game information can rank experiments only after public-context typing "
+            "and corroboration; contradictions split the schema and exact edges, "
+            "fatality, equivalence and compiled routes remain destination-local"
         ),
         "games": list(GAMES),
         "total_budget_per_arm": TOTAL_BUDGET,
@@ -1259,7 +1335,7 @@ def main() -> None:
         ),
         flush=True,
     )
-    print("ARC3_GLOBAL_FLASH_CLOSURE_V1=PASS", flush=True)
+    print("ARC3_GLOBAL_FLASH_CLOSURE_V2=PASS", flush=True)
 
 
 if __name__ == "__main__":
