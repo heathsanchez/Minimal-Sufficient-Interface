@@ -1,0 +1,63 @@
+name: ARC3 resource dominance diagnostic
+on:
+  push:
+    branches: [arc3-resource-dominance-diagnostic-v1]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-resource-dominance-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-resource-dominance-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build frozen MG-ARC9
+        run: |
+          mkdir -p kaggle/resource-dominance-results
+          python kaggle/scripts/build_agent.py --output kaggle/resource-dominance-results/agent.py
+          echo '1c781c35c5a75d656ed222c06f2e0986db205a9cf2872afb3bf4e404b4afbee0  kaggle/resource-dominance-results/agent.py' | sha256sum --check
+      - name: Install pinned SDK
+        run: python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Prepare exact worlds
+        run: |
+          mkdir -p kaggle/agent
+          cp kaggle/resource-dominance-results/agent.py kaggle/agent/my_agent.py
+          python - <<'PY'
+          from types import SimpleNamespace
+          import sys
+          sys.path.insert(0,'kaggle/scripts')
+          import benchmark_audit as a
+          a.prepare(SimpleNamespace(fixtures=True,games='bt11',environments_dir='upstream-arc-agi/test_environment_files',manifest='kaggle/resource-dominance-results/fixture.json',max_actions=128))
+          a.prepare(SimpleNamespace(fixtures=False,games='ft09,ls20,vc33',environments_dir='kaggle/resource-dominance-results/envs',manifest='kaggle/resource-dominance-results/public.json',max_actions=400))
+          PY
+      - name: Measure resource dominance
+        run: python kaggle/scripts/resource_dominance_diagnostic.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-resource-dominance-diagnostic
+          path: kaggle/resource-dominance-results/
