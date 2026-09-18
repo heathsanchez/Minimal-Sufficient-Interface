@@ -57,10 +57,10 @@ gen1.stable.transfer.AGENT = AGENT
 aq = gen1.stable.aq
 
 STRATEGIES = (
-    "local_min",
-    "local_max",
-    "route_first_min",
-    "route_first_max",
+    "prior_local_a",
+    "route_prior_a",
+    "known_first",
+    "route_prior_b",
 )
 MAX_GRAPH_STATES = 4096
 
@@ -75,10 +75,38 @@ def deterministic_target(effects, context, action):
     return next(iter(outcomes))
 
 
-def choose_token(tokens, strategy, key_fn):
-    if strategy.endswith("_max"):
-        return max(tokens, key=key_fn)
-    return min(tokens, key=key_fn)
+def action_change_prior(effects, action):
+    action = tuple(action)
+    observed = 0
+    changed = 0
+    contexts = 0
+    for (context, candidate), row in effects.edges.items():
+        if tuple(candidate) != action or row.get("ambiguous"):
+            continue
+        contexts += 1
+        for target, count in row.get("outcomes", {}).items():
+            count = int(count)
+            observed += count
+            changed += count * int(str(target) != str(context))
+    # Smoothed proposal score. This is never used as authority.
+    return (
+        (changed + 1.0) / (observed + 2.0),
+        contexts,
+        observed,
+        changed,
+    )
+
+
+def choose_token(tokens, effects, key_fn):
+    return max(
+        tokens,
+        key=lambda token: (
+            action_change_prior(effects, key_fn(token))[0],
+            action_change_prior(effects, key_fn(token))[1],
+            action_change_prior(effects, key_fn(token))[2],
+            tuple(-1 if value is None else value for value in key_fn(token)),
+        ),
+    )
 
 
 def install_dynamic_planner(controller, counters, strategy):
@@ -116,18 +144,28 @@ def install_dynamic_planner(controller, counters, strategy):
         def route_to_frontier():
             queue = deque([(current, None, 0)])
             seen = {current}
+            candidates = []
             while queue and len(seen) <= MAX_GRAPH_STATES:
                 context, first, depth = queue.popleft()
                 known_catalog = tuple(self.effects.catalogs.get(context, ()))
-                if (
-                    first is not None
-                    and any(
-                        (context, tuple(action)) not in self.effects.edges
-                        for action in known_catalog
+                unknown = [
+                    tuple(action)
+                    for action in known_catalog
+                    if (context, tuple(action)) not in self.effects.edges
+                ]
+                if first is not None and unknown and first in allowed:
+                    best_prior = max(
+                        action_change_prior(self.effects, action)
+                        for action in unknown
                     )
-                ):
-                    if first in allowed:
-                        return first, depth
+                    candidates.append((
+                        best_prior[0],
+                        best_prior[1],
+                        best_prior[2],
+                        -depth,
+                        first,
+                        depth,
+                    ))
 
                 for action, target in self.effects.successors(context):
                     action = tuple(action)
@@ -142,9 +180,33 @@ def install_dynamic_planner(controller, counters, strategy):
                         action if first is None else first,
                         depth + 1,
                     ))
-            return None
+            if not candidates:
+                return None
+            candidates.sort(reverse=True)
+            _score, _contexts, _obs, _neg_depth, first, depth = candidates[0]
+            return first, depth
 
-        if strategy.startswith("route_first"):
+        moving = []
+        for key, token in allowed.items():
+            target = deterministic_target(self.effects, current, key)
+            if target is None or target == current:
+                continue
+            moving.append((
+                int(self._dynamic_context_visits.get(str(target), 0)),
+                self._candidate_key(token),
+                token,
+            ))
+
+        if strategy == "known_first" and moving:
+            moving.sort(key=lambda row: (row[0], row[1]))
+            _visits, _key, token = moving[0]
+            counters["known_route"] += 1
+            return self._token(
+                self._action_key(token),
+                "dynamic_known_route",
+            )
+
+        if strategy.startswith("route_prior"):
             routed = route_to_frontier()
             if routed is not None:
                 first, depth = routed
@@ -154,8 +216,11 @@ def install_dynamic_planner(controller, counters, strategy):
 
         local = local_untried_tokens()
         if local:
-            token = choose_token(local, strategy, self._candidate_key)
+            token = choose_token(local, self.effects, self._action_key)
+            prior = action_change_prior(self.effects, self._action_key(token))
             counters["frontier_local"] += 1
+            counters["frontier_local_prior_milli_sum"] += int(prior[0] * 1000)
+            counters["frontier_local_support_sum"] += int(prior[2])
             return self._token(
                 self._action_key(token),
                 "dynamic_frontier_local",
@@ -168,7 +233,6 @@ def install_dynamic_planner(controller, counters, strategy):
             counters["frontier_route_depth_sum"] += depth
             return self._token(first, "dynamic_frontier_route")
 
-        moving = []
         for key, token in allowed.items():
             target = deterministic_target(self.effects, current, key)
             if target is None or target == current:
@@ -433,11 +497,13 @@ def main():
     report = {
         "interpretation": (
             "performance compounding by retaining exact ft09 effect evidence "
-            "and quotient-aware primary catalogs across successive RESET episodes"
+            "across RESET episodes while ranking new primary coordinates by "
+            "their exact historical state-change rate as proposal-only evidence"
         ),
         "claim_boundary": (
             "only exact context/action outcomes and exact primary catalogs persist; "
-            "no descriptor or visual generalization is inherited"
+            "cross-context coordinate change-rate is proposal-only and never "
+            "used as equivalence or authority"
         ),
         "trace": trace,
         "g1_common_action_count": len(common),
