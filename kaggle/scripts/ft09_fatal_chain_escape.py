@@ -44,7 +44,7 @@ aq.AGENT = AGENT
 
 TARGET_ACTION = (6, 54, 54)
 TAIL_STATES_PER_CHAIN = 6
-TAIL_OFFSET = 24
+TAIL_OFFSET = -1
 ALTERNATIVES_PER_STATE = 6
 MAX_RESUME = 40
 
@@ -113,20 +113,20 @@ def source_specs(progression):
         if not extension or extension[-1]["state"] != "GAME_OVER":
             raise AssertionError("expected exact fatal chain ending in GAME_OVER")
 
-        nonterminal = extension[:-1]
-        end = max(0, len(nonterminal) - TAIL_OFFSET)
-        start = max(0, end - TAIL_STATES_PER_CHAIN)
-        for row in nonterminal[start:end]:
-            step = int(row["step"])
-            source = str(row["source"])
-            prefix = route + (TARGET_ACTION,) * (step - 1)
-            specs.append({
-                "chain": chain_index,
-                "source": source,
-                "fatal_step": step,
-                "prefix": prefix,
-                "distance_to_game_over": len(extension) - step + 1,
-            })
+        # Final coverage band: the immediate predecessor to GAME_OVER.
+        # Earlier bands intentionally used extension[:-1], so this exact source
+        # was the one remaining uncovered state on each fatal chain.
+        row = extension[-1]
+        step = int(row["step"])
+        source = str(row["source"])
+        prefix = route + (TARGET_ACTION,) * (step - 1)
+        specs.append({
+            "chain": chain_index,
+            "source": source,
+            "fatal_step": step,
+            "prefix": prefix,
+            "distance_to_game_over": 1,
+        })
     specs.sort(key=lambda row: (row["distance_to_game_over"], row["chain"], row["source"]))
     return specs
 
@@ -397,7 +397,7 @@ def main():
 
     report = {
         "interpretation": (
-            "one-deviation counterfactual search on the final upstream band of exact "
+            "one-deviation counterfactual search on the immediate pre-terminal exact "
             "states before the retained ft09 (54,54) fatal GAME_OVER chains"
         ),
         "claim_boundary": (
@@ -406,7 +406,7 @@ def main():
             "is observed live"
         ),
         "source_chain_count": 3,
-        "tail_offset": TAIL_OFFSET,
+        "tail_offset": "preterminal",
         "source_state_count": len(specs),
         "alternatives_per_state": ALTERNATIVES_PER_STATE,
         "resume_bound": MAX_RESUME,
