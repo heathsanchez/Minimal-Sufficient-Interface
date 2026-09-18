@@ -154,6 +154,7 @@ def main():
         "source_chain_count": len(progression["endpoint_results"]),
         "fatal_source_states": len(expected_sources),
         "tested_source_states": len(tested_sources),
+        "fatal_source_digests": sorted(expected_sources),
         "alternatives_per_source": ALTERNATIVES_PER_STATE,
         "probe_count": len(probe_rows),
         "status_counts": dict(status_counts),
