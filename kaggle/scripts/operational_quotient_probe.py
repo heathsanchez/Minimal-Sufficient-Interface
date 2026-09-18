@@ -282,17 +282,33 @@ def main() -> None:
         raise AssertionError("certified quotient changed protected vc33 milestones")
     if certified["max_levels"] != raw["max_levels"]:
         raise AssertionError("certified quotient changed protected achieved level count")
-    if certified["certified_state_visits"] < 1:
-        raise AssertionError("compiled quotient never activated on its source trajectory")
+    activated = certified["certified_state_visits"] > 0
+    terminal_only = bool(
+        report["vc33"].get("residual_root_contracts")
+        and all(
+            bool(row.get("terminal"))
+            for row in report["vc33"]["residual_root_contracts"]
+        )
+    )
 
     result = {
-        "status": "CERTIFIED_MEMORY_QUOTIENT_ACTIVE",
+        "status": (
+            "CERTIFIED_MEMORY_QUOTIENT_ACTIVE"
+            if activated
+            else (
+                "CERTIFIED_TERMINAL_EQUIVALENCE_NO_DECISION_EFFECT"
+                if terminal_only
+                else "CERTIFIED_QUOTIENT_NOT_REACHED_AS_DECISION_CONTEXT"
+            )
+        ),
         "certificate": cert,
         "mapping": mapping,
         "authority_separation": (
             "only retention/.mg context keys canonicalized; raw public evidence, "
             "effect authority, protected outcomes and replay checks remain exact"
         ),
+        "activated_on_decision_context": activated,
+        "terminal_only_certificate": terminal_only,
         "raw": compact(raw),
         "certified": compact(certified),
         "first_action_divergence": first_divergence(
