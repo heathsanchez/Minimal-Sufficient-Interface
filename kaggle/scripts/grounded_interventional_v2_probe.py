@@ -668,6 +668,15 @@ def main() -> None:
             "parameterization_split_before_new_probes": len(parameter_split),
             "parameterization_split_pairs": parameter_split,
             "residual_grounded_pairs_before_active_closure": len(residual_grounded_pairs),
+            "residual_root_contracts": [
+                {
+                    "pair": list(pair),
+                    "protected": list(vc["grounded"].nodes[pair[0]].protected),
+                    "legal_action_count": len(vc["grounded"].nodes[pair[0]].legal_actions),
+                    "terminal": terminal_protected(vc["grounded"].nodes[pair[0]].protected),
+                }
+                for pair in roots
+            ],
             "closure_roots_attempted": len(roots),
             "closure_new_probes": closer.new_probes,
             "closure_results": closure_results,
