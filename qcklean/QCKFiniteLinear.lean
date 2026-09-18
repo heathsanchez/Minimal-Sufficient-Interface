@@ -360,26 +360,29 @@ theorem snapshotSafe_le_active
     snapshotSafe N0 N ≤ N0 :=
   inf_le_left
 
-theorem finrank_snapshotSafeInActive
+theorem snapshotSafeInActive_finrank
     {ι : Type*} [Fintype ι]
     (N0 : Submodule 𝕜 V) (N : ι → Submodule 𝕜 V) :
     Module.finrank 𝕜 (snapshotSafeInActive N0 N) =
       Module.finrank 𝕜 (snapshotSafe N0 N) := by
-  let e : snapshotSafeInActive N0 N ≃ₗ[𝕜] snapshotSafe N0 N :=
-    LinearEquiv.ofBijective
-      (LinearMap.codRestrict
-        (snapshotSafe N0 N)
-        N0.subtype
-        (fun x hx => hx))
-      ⟨by
-        intro x y h
-        exact Subtype.ext (congrArg Subtype.val h),
-       by
+  let f :
+      snapshotSafeInActive N0 N →ₗ[𝕜] snapshotSafe N0 N :=
+    LinearMap.codRestrict
+      (snapshotSafe N0 N)
+      (N0.subtype.comp (snapshotSafeInActive N0 N).subtype)
+      (by
         intro x
-        refine ⟨⟨⟨x.1, snapshotSafe_le_active N0 N x.2⟩, ?_⟩, ?_⟩
-        · exact x.2
-        · rfl⟩
-  exact e.finrank_eq
+        exact x.2)
+  have hf : Function.Bijective f := by
+    constructor
+    · intro x y h
+      apply Subtype.ext
+      exact congrArg Subtype.val (congrArg Subtype.val h)
+    · intro y
+      refine ⟨⟨⟨y.1, snapshotSafe_le_active N0 N y.2⟩, ?_⟩, ?_⟩
+      · exact y.2
+      · rfl
+  exact (LinearEquiv.ofBijective f hf).finrank_eq
 
 theorem snapshotReserveFinrank_eq_sub
     {ι : Type*} [Fintype ι]
@@ -387,7 +390,8 @@ theorem snapshotReserveFinrank_eq_sub
     snapshotReserveFinrank N0 N =
       Module.finrank 𝕜 N0 - Module.finrank 𝕜 (snapshotSafe N0 N) := by
   have hq := (snapshotSafeInActive N0 N).finrank_quotient_add_finrank
-  rw [snapshotReserveFinrank, finrank_snapshotSafeInActive N0 N]
+  have hs := snapshotSafeInActive_finrank N0 N
+  rw [snapshotReserveFinrank]
   omega
 
 /-- Any supplementary record whose combined kernel preserves all promised future distinctions
@@ -409,28 +413,23 @@ theorem snapshotReserve_lower_bound
         N0 ⊓ LinearMap.ker H := by
     rw [LinearMap.ker_prod, hO0]
   have hprod_le : N0 ⊓ LinearMap.ker H ≤ snapshotSafe N0 N := by
-    simpa [hkerprod] using hcombined
-  have hsafe_le : snapshotSafe N0 N ≤ N0 := snapshotSafe_le_active N0 N
+    rw [← hkerprod]
+    exact hcombined
   have hdimprod :
       Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) ≤
         Module.finrank 𝕜 (snapshotSafe N0 N) :=
     Submodule.finrank_mono hprod_le
   have hH := H.finrank_range_add_finrank_ker
+  have hsup :=
+    Submodule.finrank_sup_add_finrank_inf_eq N0 (LinearMap.ker H)
+  have hsup_le :
+      Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) ≤
+        Module.finrank 𝕜 V :=
+    (N0 ⊔ LinearMap.ker H).finrank_le
   have hN0ker :
       Module.finrank 𝕜 N0 ≤
         Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) +
           Module.finrank 𝕜 (LinearMap.range H) := by
-    have hsup :
-        Module.finrank 𝕜 N0 +
-            Module.finrank 𝕜 (LinearMap.ker H) =
-          Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) +
-            Module.finrank 𝕜 (N0 ⊓ LinearMap.ker H) := by
-      simpa [add_comm, add_left_comm, add_assoc] using
-        (Submodule.finrank_sup_add_finrank_inf_eq N0 (LinearMap.ker H)).symm
-    have hsup_le :
-        Module.finrank 𝕜 (N0 ⊔ LinearMap.ker H) ≤
-          Module.finrank 𝕜 V :=
-      (N0 ⊔ LinearMap.ker H).finrank_le
     omega
   rw [snapshotReserveFinrank_eq_sub N0 N]
   omega
@@ -469,30 +468,26 @@ theorem ker_prod_active_snapshotReserveMap
     (O0 : V →ₗ[𝕜] R0) (hO0 : LinearMap.ker O0 = N0) :
     LinearMap.ker (LinearMap.prod O0 (snapshotReserveMap N0 N)) =
       snapshotSafe N0 N := by
-  ext x
-  rw [LinearMap.mem_ker, LinearMap.prod_apply, Prod.mk_eq_zero,
-    LinearMap.mem_ker]
-  constructor
-  · rintro ⟨hx0, hxH⟩
-    have hxN0 : x ∈ N0 := by
-      rw [← hO0, LinearMap.mem_ker]
-      exact hx0
-    let xn : N0 := ⟨x, hxN0⟩
+  rw [LinearMap.ker_prod, hO0]
+  apply le_antisymm
+  · intro x hx
+    have hx0 : x ∈ N0 := hx.1
+    have hxH : snapshotReserveMap N0 N x = 0 := by
+      simpa [LinearMap.mem_ker] using hx.2
+    let xn : N0 := ⟨x, hx0⟩
     have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
       simpa [xn, snapshotReserveMap_on_active] using hxH
-    have hxsafeSub : xn ∈ snapshotSafeInActive N0 N := by
+    have hxin : xn ∈ snapshotSafeInActive N0 N := by
       simpa [LinearMap.mem_ker] using hq
-    exact hxsafeSub
-  · intro hxsafe
-    have hxN0 : x ∈ N0 := snapshotSafe_le_active N0 N hxsafe
-    constructor
-    · rw [← LinearMap.mem_ker, hO0]
-      exact hxN0
-    · let xn : N0 := ⟨x, hxN0⟩
-      have hxin : xn ∈ snapshotSafeInActive N0 N := hxsafe
-      have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
-        simpa [LinearMap.mem_ker] using hxin
-      simpa [xn, snapshotReserveMap_on_active] using hq
+    exact hxin
+  · intro x hx
+    refine ⟨snapshotSafe_le_active N0 N hx, ?_⟩
+    rw [LinearMap.mem_ker]
+    let xn : N0 := ⟨x, snapshotSafe_le_active N0 N hx⟩
+    have hxin : xn ∈ snapshotSafeInActive N0 N := hx
+    have hq : (snapshotSafeInActive N0 N).mkQ xn = 0 := by
+      simpa [LinearMap.mem_ker] using hxin
+    simpa [xn, snapshotReserveMap_on_active] using hq
 
 
 end
