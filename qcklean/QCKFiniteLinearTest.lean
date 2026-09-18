@@ -49,3 +49,9 @@ open QCK
 #check QCK.maintainedReserveKernel_invariant
 #check QCK.maintainedReserveUpdate
 #check QCK.maintainedReserveUpdate_mkQ
+#check QCK.CanonicalActiveState
+#check QCK.CanonicalMaintainedState
+#check QCK.maintainedStateToActive
+#check QCK.maintainedStateUpdate
+#check QCK.activeStateUpdate
+#check QCK.maintainedState_block_law
