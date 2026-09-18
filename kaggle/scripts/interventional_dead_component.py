@@ -38,6 +38,7 @@ closure.AGENT = AGENT
 TARGET = "a119b0226fa1f7a53705a4eadd418c01a1b78d1dd850c2621ce7825f70046a89"
 MAX_STATES = 256
 MAX_NEW_PROBES = 1024
+closure.MAX_NEW_PROBES = MAX_NEW_PROBES
 
 
 def prepare_certificate_context(module, q, prefix_by_digest, game_id, envdir, candidates):
@@ -168,6 +169,15 @@ def explore_component(module, q, prefix_by_digest, game_id, envdir):
             }
 
         for action in legal:
+            if explorer.new_probes >= MAX_NEW_PROBES:
+                return {
+                    "status": "UNKNOWN_PROBE_BOUND",
+                    "root": TARGET,
+                    "states": len(seen),
+                    "new_probes": explorer.new_probes,
+                    "edges": edges,
+                    "terminal_states": terminal_states,
+                }
             rows = explorer.ensure_action(node, int(action))
             if len(rows) != 1:
                 return {
