@@ -112,6 +112,7 @@ class ConsequenceAffordanceControllerContracts(unittest.TestCase):
             context, (3, None, None), context,
             "primitive:3", 1, "h", False,
         )
+        c.world_effects.edges.pop((context, (4, None, None)), None)
 
         selected = c._select_probe(obs, catalog)
         self.assertEqual(selected.action_id, 4)
