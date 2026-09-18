@@ -8,6 +8,7 @@ from typing import Any, Hashable
 
 NodeKey = Hashable
 Outcome = Hashable
+ActionLabel = Hashable
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,7 @@ class PartialInterventionalQuotient:
     def __init__(self) -> None:
         self.nodes: dict[NodeKey, NodeRecord] = {}
         self.edges: dict[
-            NodeKey, dict[int, set[tuple[Outcome, NodeKey]]]
+            NodeKey, dict[ActionLabel, set[tuple[Outcome, NodeKey]]]
         ] = defaultdict(lambda: defaultdict(set))
 
     def observe_node(
@@ -51,20 +52,28 @@ class PartialInterventionalQuotient:
             raise ValueError("same raw observation has conflicting protected contract")
         self.nodes[node] = row
 
+    @staticmethod
+    def _action_family(action: ActionLabel) -> int:
+        if isinstance(action, tuple):
+            if not action:
+                raise ValueError("empty action label")
+            return int(action[0])
+        return int(action)
+
     def observe_transition(
         self,
         source: NodeKey,
-        action_family: int,
+        action_label: ActionLabel,
         target: NodeKey,
         *,
         outcome: Outcome,
     ) -> None:
         if source not in self.nodes or target not in self.nodes:
             raise ValueError("transition endpoints must be observed first")
-        action = int(action_family)
-        if action not in self.nodes[source].legal_actions and action != 0:
+        family = self._action_family(action_label)
+        if family not in self.nodes[source].legal_actions and family != 0:
             raise ValueError("observed action absent from legal action contract")
-        self.edges[source][action].add((outcome, target))
+        self.edges[source][action_label].add((outcome, target))
 
     @staticmethod
     def _class_ids(signatures: dict[NodeKey, Any]) -> dict[NodeKey, int]:
@@ -85,9 +94,16 @@ class PartialInterventionalQuotient:
         signatures: dict[NodeKey, Any] = {}
         for node, row in self.nodes.items():
             action_rows = []
-            admitted_actions = tuple(sorted(
-                set(row.legal_actions) | self._observed_actions(node)
-            ))
+            admitted: set[ActionLabel] = set(self._observed_actions(node))
+            for family in row.legal_actions:
+                if int(family) == 6:
+                    # Coordinate actions are an intervention family, not one
+                    # operation. Keep an explicit UNKNOWN parameter-space
+                    # obligation even after some coordinates are observed.
+                    admitted.add(("UNOBSERVED_PARAMETER_SPACE", 6))
+                else:
+                    admitted.add(int(family))
+            admitted_actions = tuple(sorted(admitted, key=repr))
             for action in admitted_actions:
                 observed = self.edges.get(node, {}).get(action, set())
                 if not observed:
@@ -150,22 +166,28 @@ class PartialInterventionalQuotient:
             out[int(class_id)].append(node)
         return out
 
-    def _observed_actions(self, node: NodeKey) -> set[int]:
+    def _observed_actions(self, node: NodeKey) -> set[ActionLabel]:
         return {
-            int(action)
+            action
             for action, rows in self.edges.get(node, {}).items()
             if rows
+        }
+
+    def _observed_families(self, node: NodeKey) -> set[int]:
+        return {
+            self._action_family(action)
+            for action in self._observed_actions(node)
         }
 
     def _action_relation(
         self,
         node: NodeKey,
-        action: int,
+        action: ActionLabel,
         classes: dict[NodeKey, int],
     ) -> set[tuple[str, int]]:
         return {
             (repr(outcome), int(classes[target]))
-            for outcome, target in self.edges.get(node, {}).get(int(action), set())
+            for outcome, target in self.edges.get(node, {}).get(action, set())
         }
 
     def evidence_stats(self, classes: dict[NodeKey, int]) -> dict[str, int | float]:
@@ -192,8 +214,13 @@ class PartialInterventionalQuotient:
 
                 legal = set(self.nodes[left].legal_actions)
                 if legal == set(self.nodes[right].legal_actions):
-                    if legal and legal <= left_actions and legal <= right_actions:
-                        fully_observed_pairs += 1
+                    # A parameterized family is never declared fully observed
+                    # merely because a finite subset of coordinates was tried.
+                    if 6 not in legal:
+                        left_families = self._observed_families(left)
+                        right_families = self._observed_families(right)
+                        if legal and legal <= left_families and legal <= right_families:
+                            fully_observed_pairs += 1
 
         ambiguous_edges = 0
         for source, by_action in self.edges.items():
