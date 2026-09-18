@@ -366,7 +366,7 @@ def main():
     audit.block_network()
 
     initial_level1_boundaries = len({
-        row[4]
+        row[5]
         for row in candidate_rows(ledger)
     })
 
@@ -462,7 +462,7 @@ def main():
                         "ledger_nodes": len(ledger.nodes),
                         "ledger_edges": len(ledger.edge_records),
                         "remaining_level1_boundaries": len({
-                            item[4] for item in candidate_rows(ledger)
+                            item[5] for item in candidate_rows(ledger)
                         }),
                     },
                     sort_keys=True,
@@ -471,7 +471,7 @@ def main():
             )
 
     final_boundaries = len({
-        row[4]
+        row[5]
         for row in candidate_rows(ledger)
     })
 
