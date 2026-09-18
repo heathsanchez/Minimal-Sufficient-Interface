@@ -33,6 +33,7 @@ BANDS = [
     (12, OUT / "band-12.json"),
     (18, OUT / "band-18.json"),
     (24, OUT / "band-24.json"),
+    ("preterminal", OUT / "band-preterminal.json"),
 ]
 ALTERNATIVES_PER_STATE = 6
 
@@ -76,7 +77,9 @@ def main():
         if data["result"]["status"] != "NO_PROTECTED_PROGRESS":
             raise AssertionError(f"band {expected_offset} unexpectedly found progress")
 
-        actual_offset = int(data.get("tail_offset", 0))
+        actual_offset = data.get("tail_offset", 0)
+        if expected_offset != "preterminal":
+            actual_offset = int(actual_offset)
         if actual_offset != expected_offset:
             raise AssertionError(
                 f"band offset mismatch: expected {expected_offset}, got {actual_offset}"
