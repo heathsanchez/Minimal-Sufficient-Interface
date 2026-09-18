@@ -42,3 +42,6 @@ open QCK
 #check QCK.comap_subtype_finrank
 #check QCK.maintainedReserveFinrank
 #check QCK.maintainedReserveFinrank_eq_sub
+#check QCK.maintainedReserveMap
+#check QCK.maintainedReserveMap_on_active
+#check QCK.ker_prod_active_maintainedReserveMap
