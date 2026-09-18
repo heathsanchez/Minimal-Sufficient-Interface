@@ -5,6 +5,7 @@ import hashlib
 from typing import Any
 
 from .causal_affordance import AffordanceMemory, effect_signature
+from .certified_action_quotient import CertifiedActionQuotient
 from .memory_controller import MemoryGraphController
 from .memory_graph import ActionKey
 from .runtime import ActionToken, Observation, normalize_frame
@@ -191,11 +192,16 @@ class ConsequenceController(MemoryGraphController):
         *args: Any,
         consequence_enabled: bool = True,
         visual_grounding: bool = True,
+        certified_action_quotient_enabled: bool = True,
         effect_limit: int = 2048,
         **kwargs: Any,
     ) -> None:
         self.consequence_enabled = bool(consequence_enabled)
         self.visual_grounding = bool(visual_grounding)
+        self.certified_action_quotient_enabled = bool(
+            certified_action_quotient_enabled
+        )
+        self.certified_action_quotient = CertifiedActionQuotient()
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
         self._decision_tick = 0
@@ -253,6 +259,25 @@ class ConsequenceController(MemoryGraphController):
             if len(catalog) >= self.max_grounded_actions:
                 break
         self._primary = tuple(catalog[: len(primary)])
+        if (
+            self.certified_action_quotient_enabled
+            and self.certified_action_quotient.active(obs.evidence_sha256)
+        ):
+            reduced = tuple(
+                token
+                for token in catalog
+                if self.certified_action_quotient.keep(
+                    obs.evidence_sha256,
+                    self._action_key(token),
+                )
+            )
+            if reduced:
+                kept = {self._action_key(token) for token in reduced}
+                self._primary = tuple(
+                    token for token in self._primary
+                    if self._action_key(token) in kept
+                ) or reduced
+                return reduced
         return tuple(catalog)
 
     def _record_effect(self, frame: Any, obs: Observation) -> None:
