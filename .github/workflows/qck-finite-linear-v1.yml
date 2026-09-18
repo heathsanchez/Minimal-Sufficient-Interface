@@ -50,6 +50,15 @@ jobs:
       - name: Check FiniteLinear interface
         working-directory: qcklean
         run: lake env lean QCKFiniteLinearTest.lean
+      - name: Check QCK API interface
+        working-directory: qcklean
+        run: lake env lean QCKAPITest.lean
+      - name: Audit bounded QCK v1 axioms
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          lake env lean QCKAxiomAudit.lean 2>&1 | tee /tmp/qck-axioms.log
+          ! grep -E 'sorryAx|QCK\.[A-Za-z0-9_]+.*axiom' /tmp/qck-axioms.log
       - name: Compile every QCK Lean source
         working-directory: qcklean
         run: |
