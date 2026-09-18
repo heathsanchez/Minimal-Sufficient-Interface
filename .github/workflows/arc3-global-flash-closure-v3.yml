@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   flash-closure-v3:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 150
     env:
       ARC_API_KEY: ''
@@ -72,3 +72,5 @@ jobs:
 # V3 rerun after literal-newline repair
 
 # V3 rerun after acquisition-floor constant repair
+
+# V3 runner-availability reroute
