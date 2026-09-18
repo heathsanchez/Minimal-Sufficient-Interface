@@ -1,0 +1,68 @@
+name: ARC3 exact frontier performance V2
+on:
+  push:
+    branches: [arc3-exact-frontier-performance-v2]
+    paths:
+      - 'kaggle/**'
+      - '.github/workflows/arc3-exact-frontier-performance-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: arc3-exact-frontier-performance-v2-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  performance-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and verify exact frozen MG-ARC5
+        run: |
+          mkdir -p kaggle/exact-frontier-performance-v2-results
+          python kaggle/scripts/build_agent.py --output kaggle/exact-frontier-performance-v2-results/agent.py
+          echo 'd9f0b95dfee14613425e8f557808e129b25e8a055ad481800b1024ce45281ead  kaggle/exact-frontier-performance-v2-results/agent.py' | sha256sum --check
+          python -m py_compile kaggle/scripts/exact_frontier_performance.py
+      - name: Install pinned SDK
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/exact-frontier-performance-v2-results/requirements-resolved.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - name: Prepare exact ft09 world
+        run: |
+          python - <<'PY'
+          from types import SimpleNamespace
+          import sys
+          sys.path.insert(0, 'kaggle/scripts')
+          import benchmark_audit as a
+          a.AGENT = a.Path('kaggle/exact-frontier-performance-v2-results/agent.py')
+          a.prepare(SimpleNamespace(
+              fixtures=False,
+              games='ft09',
+              environments_dir='kaggle/exact-frontier-performance-v2-results/envs',
+              manifest='kaggle/exact-frontier-performance-v2-results/public.json',
+              max_actions=400,
+          ))
+          PY
+      - name: Build portfolio bank and run primary-frontier planner
+        run: python -u kaggle/scripts/exact_frontier_performance.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-exact-frontier-performance-v2
+          path: |
+            kaggle/exact-frontier-performance-v2-results/
+            kaggle/scripts/exact_frontier_performance.py
+          if-no-files-found: warn
