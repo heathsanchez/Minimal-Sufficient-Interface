@@ -85,7 +85,10 @@ class PartialInterventionalQuotient:
         signatures: dict[NodeKey, Any] = {}
         for node, row in self.nodes.items():
             action_rows = []
-            for action in row.legal_actions:
+            admitted_actions = tuple(sorted(
+                set(row.legal_actions) | self._observed_actions(node)
+            ))
+            for action in admitted_actions:
                 observed = self.edges.get(node, {}).get(action, set())
                 if not observed:
                     action_rows.append((action, self.UNKNOWN))
