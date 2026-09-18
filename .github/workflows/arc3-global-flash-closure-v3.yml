@@ -68,3 +68,5 @@ jobs:
           if-no-files-found: warn
 
 # V3 rerun after syntax repair
+
+# V3 rerun after literal-newline repair
