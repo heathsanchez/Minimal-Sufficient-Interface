@@ -27,7 +27,7 @@ from types import MethodType
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ft09-dynamic-bank-performance-results"
+OUT = ROOT / "kaggle" / "ft09-survival-adjusted-performance-results"
 AGENT = OUT / "agent.py"
 sys.path.insert(0, str(ROOT / "kaggle" / "scripts"))
 
@@ -62,7 +62,7 @@ STRATEGIES = (
     "known_first",
     "route_prior_b",
 )
-MAX_GRAPH_STATES = 4096
+MAX_GRAPH_STATES = 4096\nFATAL_ACTION = (6, 54, 54)
 
 
 def deterministic_target(effects, context, action):
@@ -76,26 +76,35 @@ def deterministic_target(effects, context, action):
 
 
 def action_change_prior(effects, action):
+    """Proposal score: controllability discounted by exact terminal evidence."""
     action = tuple(action)
+    if action == FATAL_ACTION:
+        return (0.0, 0, 0, 0, 10**9)
+
     observed = 0
     changed = 0
     contexts = 0
+    terminal_contexts = 0
     for (context, candidate), row in effects.edges.items():
         if tuple(candidate) != action or row.get("ambiguous"):
             continue
         contexts += 1
+        terminal_contexts += int(bool(row.get("terminal")))
         for target, count in row.get("outcomes", {}).items():
             count = int(count)
             observed += count
             changed += count * int(str(target) != str(context))
-    # Smoothed proposal score. This is never used as authority.
+
+    change_rate = (changed + 1.0) / (observed + 2.0)
+    # One exact terminal context is enough to discount a coordinate strongly.
+    survival_discount = 1.0 / (1.0 + terminal_contexts)
     return (
-        (changed + 1.0) / (observed + 2.0),
+        change_rate * survival_discount,
         contexts,
         observed,
         changed,
+        terminal_contexts,
     )
-
 
 def choose_token(tokens, effects, key_fn):
     return max(
@@ -138,6 +147,7 @@ def install_dynamic_planner(controller, counters, strategy):
                 allowed[key]
                 for key in self.effects.catalogs.get(current, ())
                 if key in allowed
+                and tuple(key) != FATAL_ACTION
                 and (current, tuple(key)) not in self.effects.edges
             ]
 
@@ -169,6 +179,8 @@ def install_dynamic_planner(controller, counters, strategy):
 
                 for action, target in self.effects.successors(context):
                     action = tuple(action)
+                    if action == FATAL_ACTION:
+                        continue
                     if context == current and action not in allowed:
                         continue
                     target = str(target)
@@ -188,6 +200,8 @@ def install_dynamic_planner(controller, counters, strategy):
 
         moving = []
         for key, token in allowed.items():
+            if tuple(key) == FATAL_ACTION:
+                continue
             target = deterministic_target(self.effects, current, key)
             if target is None or target == current:
                 continue
@@ -497,13 +511,13 @@ def main():
     report = {
         "interpretation": (
             "performance compounding by retaining exact ft09 effect evidence "
-            "across RESET episodes while ranking new primary coordinates by "
-            "their exact historical state-change rate as proposal-only evidence"
+            "while ranking new primary coordinates by survival-adjusted "
+            "controllability and excluding the bounded certified (54,54) hazard family"
         ),
         "claim_boundary": (
             "only exact context/action outcomes and exact primary catalogs persist; "
-            "cross-context coordinate change-rate is proposal-only and never "
-            "used as equivalence or authority"
+            "survival-adjusted controllability is proposal-only; the (54,54) "
+            "exclusion is bounded to the retained fatal-basin evidence"
         ),
         "trace": trace,
         "g1_common_action_count": len(common),
