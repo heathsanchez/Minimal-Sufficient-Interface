@@ -102,6 +102,97 @@ class FlashCompilerTests(unittest.TestCase):
         ledger.probes['p2'].status='EXECUTED'
         self.assertEqual([p.probe_id for p in choose_wave(ledger,width=2)],['p1'])
 
+    def test_refuted_transfer_compiles_exact_online_obstruction(self):
+        from metalogic_arc3.flash_closure import (
+            transfer_proposal_blocked,
+            transfer_obstruction_key,
+        )
+        ledger, _ka, kb, ea, _eb = self.base()
+        ledger.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},
+            {'intervention_language':'complex_action6','claim':'generic fatal-family transfer'},
+            ('fatal-family',),[ea]
+        ))
+        scope={'intervention_language':'complex_action6','claim':'generic fatal-family transfer'}
+
+        self.assertFalse(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        ))
+
+        refuted = validate_transfer_result(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=scope,
+        )
+        key = transfer_obstruction_key(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        )
+        self.assertIn(key, ledger.obstructions)
+        self.assertEqual(ledger.obstructions[key]['capability_id'], refuted.capability_id)
+        self.assertTrue(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        ))
+
+        changed_scope={'intervention_language':'complex_action6','claim':'different claim'}
+        self.assertFalse(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=changed_scope,
+        ))
+
+    def test_obstruction_ablation_restores_destination_verification_path(self):
+        from metalogic_arc3.flash_closure import (
+            transfer_proposal_blocked,
+            transfer_obstruction_key,
+        )
+        ledger, _ka, kb, ea, _eb = self.base()
+        ledger.add_capability(GlobalCapability(
+            'src','fatal_basin',{'a'},
+            {'intervention_language':'complex_action6'},
+            ('fatal-family',),[ea]
+        ))
+        scope={'intervention_language':'complex_action6','claim':'generic fatal-family transfer'}
+        validate_transfer_result(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=scope,
+        )
+        key = transfer_obstruction_key(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        )
+        self.assertTrue(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        ))
+        del ledger.obstructions[key]
+        self.assertFalse(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src',
+            destination_game='b',
+            exact_scope=scope,
+        ))
+
 
 if __name__ == '__main__':
     unittest.main()
