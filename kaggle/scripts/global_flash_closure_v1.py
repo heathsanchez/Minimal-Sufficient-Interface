@@ -1,4 +1,4 @@
-"""ARC3 Global Flash Closure V1.
+"""ARC3 Global Flash Closure V3.
 
 A falsification experiment for non-linear, cross-game developmental search.
 
@@ -11,17 +11,23 @@ environment-step budget across public ls20, ft09 and vc33:
    A global probe market reallocates the same total budget dynamically, but
    proposal statistics remain game-local.
 3. flash_shared
-   The same global market additionally shares consequence *proposal* evidence
-   across games. Every returned observation triggers immediate global
-   revaluation ("flash") of matching action schemas in the other games.
+   The same global market shares only destination-verified consequence
+   capabilities. Cross-game evidence may nominate a schema, but it cannot
+   alter a destination's ranking until that destination has executed the
+   schema and corroborated the consequence. Every authoritative return then
+   triggers global reclosure and live-plan invalidation ("flash").
 
 Authority boundary:
 - Raw public-state/action consequences are always game-local.
-- Cross-game evidence may rank proposals only.
+- Raw cross-game evidence may nominate destination experiments only.
+- Cross-game evidence may alter a destination ranking only after destination
+  execution corroborates the typed consequence.
 - Exact equivalence, fatal closure, ambiguity, and compiled routes are computed
   from exact same-game evidence only.
 - No cross-game consequence is installed as an edge or certificate without
   destination execution.
+- Contradiction creates a typed transfer obstruction; it does not create a
+  desirability bonus.
 
 Local closure after every new exact edge:
 - retain deterministic/ambiguous exact edges;
@@ -229,18 +235,18 @@ class ProposalModel:
         )
 
         corroborated = False
-        if other_obs:
-            if local_obs:
-                corroborated = (
-                    dominant_local == dominant_other
-                    and local_agreement >= 0.80
-                    and other_agreement >= 0.80
-                )
-            else:
-                corroborated = (
-                    len(other_games) >= 2
-                    and other_agreement >= 0.90
-                )
+        contradicted = False
+        if other_obs and local_obs:
+            corroborated = (
+                dominant_local == dominant_other
+                and local_agreement >= 0.80
+                and other_agreement >= 0.80
+            )
+            contradicted = (
+                dominant_local != dominant_other
+                and local_agreement >= 0.80
+                and other_agreement >= 0.80
+            )
 
         if corroborated:
             utility = (
@@ -249,16 +255,24 @@ class ProposalModel:
                 - 2.5 * other["terminal"]
                 - 0.8 * other["noop"]
             )
-            # Bounded influence: shared evidence may break near-ties, never
-            # swamp the local market.
-            cross_term = max(-0.75, min(0.75, 0.35 * utility))
-            cross_mode = "promoted"
+            # V3: after destination verification the consequence is allowed to
+            # become a stronger compiled proposal capability. It still cannot
+            # install an exact destination edge.
+            cross_term = max(-1.25, min(1.25, 0.55 * utility))
+            cross_mode = "destination_verified"
+        elif contradicted:
+            # A verified mismatch is capital: split the transfer type and stop
+            # spending influence on it. No positive bonus is paid for failure.
+            cross_term = 0.0
+            cross_mode = "verified_obstruction"
+        elif other_obs and not local_obs:
+            # Cross-game evidence can nominate a destination check but cannot
+            # change its desirability before local authority exists.
+            cross_term = 0.0
+            cross_mode = "destination_check_required"
         elif other_obs:
-            # Contradiction or insufficient corroboration creates an
-            # obstruction-typed split. We retain a tiny information bonus for
-            # one destination check, but do not transfer desirability.
-            cross_term = min(0.12, 0.04 * math.log1p(other_obs))
-            cross_mode = "obstruction_split"
+            cross_term = 0.0
+            cross_mode = "insufficient_corroboration"
 
         return base + cross_term, {
             "schema_observations": int(sum(total_counter.values())),
@@ -894,22 +908,64 @@ def select_market_candidate(
     return rows[0][3]
 
 
+def _candidate_identity(candidate: Candidate | None) -> tuple[Any, ...] | None:
+    if candidate is None:
+        return None
+    return (
+        candidate.game,
+        candidate.kind,
+        candidate.key,
+        candidate.schema,
+    )
+
+
+def _live_plan_snapshot(
+    worlds: dict[str, World],
+    local_models: dict[str, ProposalModel],
+    shared_model: ProposalModel | None,
+    *,
+    shared: bool,
+) -> dict[str, tuple[Any, ...] | None]:
+    out = {}
+    for game_id, world in worlds.items():
+        if world.exhausted:
+            out[game_id] = None
+            continue
+        model = shared_model if shared else local_models[game_id]
+        assert model is not None
+        candidates = world.candidates(model, shared=shared)
+        out[game_id] = _candidate_identity(candidates[0] if candidates else None)
+    return out
+
+
 def execute_and_close(
     world: World,
     candidate: Candidate,
     *,
     local_model: ProposalModel,
+    local_models: dict[str, ProposalModel],
     shared_model: ProposalModel | None,
     worlds: dict[str, World],
     shared: bool,
     metrics: Counter[str],
 ) -> dict[str, Any]:
+    plans_before = (
+        _live_plan_snapshot(
+            worlds,
+            local_models,
+            shared_model,
+            shared=shared,
+        )
+        if shared
+        else {}
+    )
+
     if candidate.kind == "probe" and candidate.schema is not None and shared:
         cross_mode = candidate.metadata.get("cross_mode", "none")
-        if cross_mode == "promoted":
+        if cross_mode == "destination_verified":
             metrics["typed_cross_game_promotions"] += 1
             metrics["cross_game_prior_uses"] += 1
-        elif cross_mode == "obstruction_split":
+        elif cross_mode == "verified_obstruction":
             metrics["typed_obstruction_splits"] += 1
 
     revalued = 0
@@ -940,11 +996,36 @@ def execute_and_close(
 
         # Count only newly activated typed obstruction situations, not every
         # subsequent observation in an already-split schema.
-        if shared_model is not None and candidate.metadata.get("cross_mode") == "obstruction_split":
+        if shared_model is not None and candidate.metadata.get("cross_mode") == "verified_obstruction":
             metrics["cross_game_obstruction_events"] += 1
 
-    closure = world.closure()
-    metrics["local_closure_events"] += 1
+    if shared:
+        closures = {
+            game_id: item.closure()
+            for game_id, item in worlds.items()
+        }
+        metrics["global_reclosure_events"] += 1
+        metrics["local_closure_events"] += len(worlds)
+        plans_after = _live_plan_snapshot(
+            worlds,
+            local_models,
+            shared_model,
+            shared=True,
+        )
+        changed = sum(
+            plans_before.get(game_id) != plans_after.get(game_id)
+            for game_id in worlds
+            if game_id != world.game_id
+        )
+        metrics["live_plan_invalidations"] += changed
+        if changed:
+            metrics["flash_events_with_plan_invalidation"] += 1
+        closure = closures[world.game_id]
+        event["global_closure"] = closures
+    else:
+        closure = world.closure()
+        metrics["local_closure_events"] += 1
+
     metrics["fatal_states_total_snapshot"] = sum(
         len(item.fatal) for item in worlds.values()
     )
@@ -983,6 +1064,7 @@ def run_sequential(
                     world,
                     candidates[0],
                     local_model=model,
+                    local_models=models,
                     shared_model=None,
                     worlds=worlds,
                     shared=False,
@@ -1030,6 +1112,7 @@ def run_market(
                     world,
                     candidates[0],
                     local_model=local_models[game_id],
+                    local_models=local_models,
                     shared_model=shared_model,
                     worlds=worlds,
                     shared=shared,
@@ -1053,6 +1136,7 @@ def run_market(
                 world,
                 candidate,
                 local_model=local_models[candidate.game],
+                local_models=local_models,
                 shared_model=shared_model,
                 worlds=worlds,
                 shared=shared,
@@ -1273,16 +1357,17 @@ def main() -> None:
 
     comparison = compare(arms)
     report = {
-        "schema": "arc3-global-flash-closure-v2",
+        "schema": "arc3-global-flash-closure-v3",
         "interpretation": (
-            "three-game public developmental falsification: local exact closure is "
-            "held common while global scheduling and obstruction-typed, "
-            "corroboration-gated cross-game proposal evidence are added separately"
+            "three-game public developmental falsification: local exact authority is "
+            "held common while destination-verified cross-game capabilities, "
+            "global reclosure, and live-plan invalidation are added separately"
         ),
         "claim_boundary": (
-            "cross-game information can rank experiments only after public-context typing "
-            "and corroboration; contradictions split the schema and exact edges, "
-            "fatality, equivalence and compiled routes remain destination-local"
+            "cross-game information can rank destination experiments only after local "
+            "execution corroborates it; verified contradictions split transfer "
+            "types, while exact edges, fatality, equivalence and compiled routes "
+            "remain destination-local"
         ),
         "games": list(GAMES),
         "total_budget_per_arm": TOTAL_BUDGET,
@@ -1302,6 +1387,16 @@ def main() -> None:
             "flash_cross_game_revaluation_activated": (
                 arms["flash_shared"]["metrics"].get(
                     "cross_game_revaluations", 0
+                ) > 0
+            ),
+            "flash_global_reclosure_activated": (
+                arms["flash_shared"]["metrics"].get(
+                    "global_reclosure_events", 0
+                ) > 0
+            ),
+            "flash_live_plan_invalidation_activated": (
+                arms["flash_shared"]["metrics"].get(
+                    "live_plan_invalidations", 0
                 ) > 0
             ),
         },
@@ -1335,7 +1430,7 @@ def main() -> None:
         ),
         flush=True,
     )
-    print("ARC3_GLOBAL_FLASH_CLOSURE_V2=PASS", flush=True)
+    print("ARC3_GLOBAL_FLASH_CLOSURE_V3=PASS", flush=True)
 
 
 if __name__ == "__main__":
