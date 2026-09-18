@@ -58,13 +58,13 @@ jobs:
               max_actions=400,
           ))
           PY
-      - name: Download and verify Level-1 compounded ledger
+      - name: Download and verify short-frontier augmented ledger
         run: |
-          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10561185942/zip > /tmp/level1.zip
-          echo '363db48a7fc3a238b10cb58b9934209ab169f9cc59b5a93154ef962bd5747031  /tmp/level1.zip' | sha256sum --check
-          mkdir -p /tmp/level1
-          unzip -q /tmp/level1.zip -d /tmp/level1
-          cp /tmp/level1/ls20-level1-performance-compounding-results/level-compounded-exact-replay-ledger.json kaggle/ls20-level1-deep-frontier-results/level-compounded-exact-replay-ledger.json
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10561393850/zip > /tmp/short.zip
+          echo 'a65a7ab108715fb50eba23869e27a0aaaf73fab0105c5dcd923ecb75670620a0  /tmp/short.zip' | sha256sum --check
+          mkdir -p /tmp/short
+          unzip -q /tmp/short.zip -d /tmp/short
+          cp /tmp/short/ls20-level1-targeted-frontier-results/targeted-frontier-exact-replay-ledger.json kaggle/ls20-level1-deep-frontier-results/level-compounded-exact-replay-ledger.json
       - name: Probe deepest acyclic Level-1 frontier
         run: python -u kaggle/scripts/ls20_level1_targeted_frontier.py
       - uses: actions/upload-artifact@v4
