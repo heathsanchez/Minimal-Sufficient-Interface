@@ -118,9 +118,10 @@ def run_world(game_id: str, envdir: str, max_actions: int) -> dict:
             "LEVEL_INCREMENT" if delta_level > 0 else audit.state_name(latest),
             int(delta_level),
         )
+        action_label = key if aid == 6 else aid
         q.observe_transition(
             before_digest,
-            aid,
+            action_label,
             current,
             outcome=outcome,
         )
