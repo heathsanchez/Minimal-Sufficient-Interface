@@ -1,4 +1,15 @@
-"""Targeted exact Level-1 frontier search for ls20.
+"""Deep-frontier exact Level-1 search for ls20.
+
+The retained Level-1 transition graph contains 811 nonterminal Level-1 states
+and 2,468 known Level-1→Level-1 edges. It is a DAG: there are no nontrivial
+strongly connected components. From the compiled L1 entry, the current known
+DAG reaches depth 65.
+
+This experiment therefore targets the deepest unresolved Level-1 boundary
+first, rather than the cheapest replay prefix. If Level-1 dynamics are a
+monotone progression, the deepest unresolved frontier is the most
+performance-relevant place to look for L2.
+
 
 The retained performance ledger already pays RESET->L1 in 56 primitive actions
 and contains thousands of exact Level-1 transitions. Eight sequential
@@ -34,7 +45,7 @@ from typing import Any
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ls20-level1-targeted-frontier-results"
+OUT = ROOT / "kaggle" / "ls20-level1-deep-frontier-results"
 AGENT = OUT / "agent.py"
 LEDGER = OUT / "level-compounded-exact-replay-ledger.json"
 
@@ -47,8 +58,8 @@ EXPECTED_NODES = 3520
 EXPECTED_EDGES = 9214
 
 TARGET_LEVEL = 2
-MAX_PROBES = 768
-MAX_REPLAY_ACTIONS = 80000
+MAX_PROBES = 512
+MAX_REPLAY_ACTIONS = 90000
 ACTION_PRIORITY = {3: 0, 4: 1, 2: 2, 1: 3}
 
 
@@ -80,9 +91,54 @@ def make_action(action_id: int):
     return action, action.action_data.model_dump()
 
 
+def level1_depths(ledger):
+    level1 = {
+        node
+        for node, row in ledger.nodes.items()
+        if str(row["protected"][0]) == "NOT_FINISHED"
+        and int(row["protected"][1]) == TARGET_LEVEL - 1
+    }
+
+    entry = min(
+        level1,
+        key=lambda node: (len(ledger.prefixes.get(node, (10**9,))), node),
+    )
+
+    adjacency = {node: [] for node in level1}
+    indegree = Counter()
+    for (source, _action), target in ledger.successor.items():
+        if source in level1 and target in level1:
+            adjacency[source].append(target)
+            indegree[target] += 1
+
+    queue = [node for node in level1 if indegree[node] == 0]
+    topo = []
+    while queue:
+        node = queue.pop()
+        topo.append(node)
+        for target in adjacency.get(node, ()):
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                queue.append(target)
+    if len(topo) != len(level1):
+        raise AssertionError("retained Level-1 graph is no longer acyclic")
+
+    depth = {entry: 0}
+    for node in topo:
+        if node not in depth:
+            continue
+        for target in adjacency.get(node, ()):
+            depth[target] = max(
+                depth.get(target, -1),
+                depth[node] + 1,
+            )
+    return entry, depth
+
+
 def candidate_rows(ledger):
     rows = []
     attempted = set()
+    _entry, depth = level1_depths(ledger)
 
     for node, row in ledger.nodes.items():
         protected = tuple(row["protected"])
@@ -120,8 +176,10 @@ def candidate_rows(ledger):
         if not missing:
             continue
 
+        node_depth = int(depth.get(str(node), -1))
         for action in missing:
             rows.append((
+                -node_depth,
                 len(prefix),
                 -len(missing),
                 ACTION_PRIORITY.get(int(action), 99),
@@ -230,8 +288,7 @@ def main():
     audit.block_network()
 
     initial_level1_boundaries = len({
-        row[3]
-        for row in candidate_rows(ledger)
+        row[4]\n        for row in candidate_rows(ledger)
     })
 
     probes = []
@@ -246,7 +303,7 @@ def main():
         if not rows:
             break
 
-        prefix_len, neg_missing, _action_rank, source, action_id, prefix = rows[0]
+        neg_depth, prefix_len, neg_missing, _action_rank, source, action_id, prefix = rows[0]
         cost = int(prefix_len) + 1
         if replay_actions + cost > MAX_REPLAY_ACTIONS:
             break
@@ -285,7 +342,7 @@ def main():
             "probe": len(probes) + 1,
             "source": source,
             "source_prefix_actions": prefix_len,
-            "source_missing_actions": -neg_missing,
+            "source_missing_actions": -neg_missing,\n            "source_dag_depth": -neg_depth,
             "action": action_id,
             "target": target,
             "target_protected": list(row["target_protected"]),
@@ -324,7 +381,7 @@ def main():
                         "ledger_nodes": len(ledger.nodes),
                         "ledger_edges": len(ledger.edge_records),
                         "remaining_level1_boundaries": len({
-                            item[3] for item in candidate_rows(ledger)
+                            item[4] for item in candidate_rows(ledger)
                         }),
                     },
                     sort_keys=True,
@@ -333,25 +390,24 @@ def main():
             )
 
     final_boundaries = len({
-        row[3]
-        for row in candidate_rows(ledger)
+        row[4]\n        for row in candidate_rows(ledger)
     })
 
     augmented = ledger.export(generation_rows=[])
     audit.write_json(
-        OUT / "targeted-frontier-exact-replay-ledger.json",
+        OUT / "deep-frontier-exact-replay-ledger.json",
         augmented,
     )
 
     report = {
         "interpretation": (
-            "shortest-prefix exact counterfactual search over unresolved Level-1 "
+            "deepest-DAG-frontier exact counterfactual search over unresolved Level-1 "
             "primitive interventions in the retained ls20 replay ledger"
         ),
         "claim_boundary": (
             "each probe begins with an exact deterministic RESET replay whose "
-            "intermediate digests must match the retained ledger; action priority "
-            "is proposal-only"
+            "intermediate digests must match the retained ledger; DAG depth and "
+            "action ordering are proposal-only"
         ),
         "initial": {
             "ledger_nodes": len(payload["nodes"]),
@@ -386,15 +442,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "ls20-level1-targeted-frontier.json",
+        OUT / "ls20-level1-deep-frontier.json",
         report,
     )
     print(
-        "LS20_LEVEL1_TARGETED_FRONTIER_RESULT="
+        "LS20_LEVEL1_DEEP_FRONTIER_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_LS20_LEVEL1_TARGETED_FRONTIER=PASS", flush=True)
+    print("ARC3_LS20_LEVEL1_DEEP_FRONTIER=PASS", flush=True)
 
 
 if __name__ == "__main__":
