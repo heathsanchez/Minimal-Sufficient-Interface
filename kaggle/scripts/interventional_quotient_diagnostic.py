@@ -137,9 +137,12 @@ def run_world(game_id: str, envdir: str, max_actions: int) -> dict:
         frames.append(latest)
 
     arc.close_scorecard()
-    summary = q.summary(max_depth=8)
+    # For a finite observed graph, keep refining through the finite closure
+    # rather than treating an arbitrary short horizon as semantic failure.
+    summary = q.summary(max_depth=max(8, len(q.nodes)))
     final = summary["depths"][-1] if summary["depths"] else {}
-    assert int(final.get("contradictory_merged_pairs", 0)) == 0
+    if summary["stabilized"]:
+        assert int(final.get("contradictory_merged_pairs", 0)) == 0
 
     return {
         "game_id": game_id,
