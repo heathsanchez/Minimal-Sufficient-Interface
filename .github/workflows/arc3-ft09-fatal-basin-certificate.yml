@@ -69,6 +69,13 @@ jobs:
           mkdir -p /tmp/b24
           unzip -q /tmp/b24.zip -d /tmp/b24
           cp /tmp/b24/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-24.json
+      - name: Download pinned pre-terminal band
+        run: |
+          gh api /repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10564067280/zip > /tmp/bpre.zip
+          echo '821675db3e6c2a2c21f8a11d8250a6a315cf9e8dff41365741ab1d99b17e785f  /tmp/bpre.zip' | sha256sum --check
+          mkdir -p /tmp/bpre
+          unzip -q /tmp/bpre.zip -d /tmp/bpre
+          cp /tmp/bpre/ft09-fatal-chain-escape-results/ft09-fatal-chain-escape.json kaggle/ft09-fatal-basin-certificate-results/band-preterminal.json
       - name: Build bounded fatal-basin certificate
         run: python -u kaggle/scripts/ft09_fatal_basin_certificate.py
       - uses: actions/upload-artifact@v4
