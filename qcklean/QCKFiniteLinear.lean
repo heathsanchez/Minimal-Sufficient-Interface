@@ -864,7 +864,8 @@ theorem observableVocabularyRank_modular
     observableVocabularyRank X + observableVocabularyRank Y =
       observableVocabularyRank (X ⊔ Y) +
         observableVocabularyRank (X ⊓ Y) := by
-  exact Submodule.finrank_sup_add_finrank_inf_eq X Y
+  simpa [observableVocabularyRank] using
+    (Submodule.finrank_sup_add_finrank_inf_eq X Y).symm
 
 theorem observableVocabularyRank_submodular
     (X Y : Submodule 𝕜 V) :
@@ -876,8 +877,9 @@ theorem observableVocabularyRank_submodular
 /-- Exact rank profile of the U/V generated-context counterexample.
 true is capability U and false is capability V:
 g(∅)=0, g({U})=1, g({V})=0, g({U,V})=2. -/
-def uvGeneratedContextRank (K : Set Bool) : ℕ :=
-  if true ∈ K then
+noncomputable def uvGeneratedContextRank (K : Set Bool) : ℕ := by
+  classical
+  exact if true ∈ K then
     if false ∈ K then 2 else 1
   else 0
 
