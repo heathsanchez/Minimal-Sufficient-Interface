@@ -30,7 +30,7 @@ from types import MethodType
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "exact-frontier-performance-results"
+OUT = ROOT / "kaggle" / "exact-frontier-performance-v2-results"
 AGENT = OUT / "agent.py"
 sys.path.insert(0, str(ROOT / "kaggle" / "scripts"))
 
@@ -84,11 +84,17 @@ def install_exact_frontier_planner(controller, counters):
             for token in catalog
         }
 
-        # Cheapest genuinely new evidence: an exact action at the current
-        # context with no retained consequence yet.
+        # Spend only inside the retained PRIMARY catalog. V1 incorrectly
+        # treated every 256-entry fallback coordinate as equally valuable and
+        # burned almost the entire episode on local no-ops.
+        primary_keys = {
+            tuple(action)
+            for action in self.effects.catalogs.get(current, ())
+            if tuple(action) in allowed
+        }
         local_untried = [
-            token
-            for key, token in allowed.items()
+            allowed[key]
+            for key in primary_keys
             if (current, key) not in self.effects.edges
         ]
         if local_untried:
@@ -105,10 +111,8 @@ def install_exact_frontier_planner(controller, counters):
         seen = {current}
         while queue and len(seen) <= MAX_GRAPH_STATES:
             context, first, depth = queue.popleft()
-            known_catalog = (
-                tuple(allowed)
-                if context == current
-                else tuple(self.effects.catalogs.get(context, ()))
+            known_catalog = tuple(
+                self.effects.catalogs.get(context, ())
             )
             if first is not None and any(
                 (context, tuple(action)) not in self.effects.edges
@@ -396,7 +400,7 @@ def main():
             "planning uses exact raw context digests, exact actions, exact "
             "deterministic retained successors and exact catalogs only"
         ),
-        "prior_commit": "62bec7279a9bfb7d1f1dcdda878d01156d501118",
+        "prior_commit": "0a46a6c7132360f1cc10bb29504e7e74917b8b40",
         "game_id": game_id,
         "trace": trace,
         "g1_common_action_count": len(common),
@@ -442,15 +446,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "exact-frontier-performance.json",
+        OUT / "exact-frontier-performance-v2.json",
         report,
     )
     print(
-        "EXACT_FRONTIER_PERFORMANCE_RESULT="
+        "EXACT_FRONTIER_PERFORMANCE_V2_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_EXACT_FRONTIER_PERFORMANCE=PASS", flush=True)
+    print("ARC3_EXACT_FRONTIER_PERFORMANCE_V2=PASS", flush=True)
 
 
 if __name__ == "__main__":
