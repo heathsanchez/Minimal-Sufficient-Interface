@@ -65,6 +65,7 @@ GAMES = ("ls20-9607627b", "ft09-0d8bbf25", "vc33-5430563c")
 SHORTS = tuple(game.split("-")[0] for game in GAMES)
 TOTAL_BUDGET = 1200
 WARMUP_PER_GAME = 24
+MIN_GAME_SHARE = 0.12
 COORD_BINS = 4
 
 
