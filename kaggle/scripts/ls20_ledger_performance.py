@@ -34,7 +34,7 @@ from types import MethodType
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ls20-ledger-performance-results"
+OUT = ROOT / "kaggle" / "ls20-ledger-performance-portfolio-results"
 AGENT = OUT / "agent.py"
 LEDGER = OUT / "exact-replay-ledger.json"
 
@@ -132,7 +132,7 @@ class ExactLedgerGraph:
         return tuple(rows)
 
 
-def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counter):
+def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counter, strategy: str):
     original = controller._select_probe
     controller._ledger_attempted_missing: set[tuple[str, int]] = set()
     controller._ledger_context_visits = Counter()
@@ -163,7 +163,7 @@ def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counte
             if action in token_by_action
         ]
         if missing:
-            action = min(missing)
+            action = max(missing) if strategy.endswith("_max") else min(missing)
             self._ledger_attempted_missing.add((current, action))
             counters["boundary_local"] += 1
             return self._token(
@@ -171,27 +171,26 @@ def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counte
                 "ledger_boundary_local",
             )
 
-        # Route through retained exact transitions to the nearest context that
-        # still has an unspent unresolved primitive action.
+        # Search the retained graph for unresolved exact boundaries.
         queue = deque([(current, None, 0)])
         seen = {current}
+        candidates = []
         while queue and len(seen) <= len(graph.nodes):
             context, first, depth = queue.popleft()
-
-            if (
-                first is not None
-                and graph.missing_actions(
+            unresolved = graph.missing_actions(
+                context,
+                self._ledger_attempted_missing,
+            )
+            if first is not None and unresolved and first in token_by_action:
+                candidates.append((
                     context,
-                    self._ledger_attempted_missing,
-                )
-            ):
-                if first in token_by_action:
-                    counters["boundary_route"] += 1
-                    counters["boundary_route_depth_sum"] += depth
-                    return self._token(
-                        (first, None, None),
-                        "ledger_boundary_route",
-                    )
+                    first,
+                    depth,
+                    tuple(unresolved),
+                    len(graph.prefixes.get(context, ())),
+                ))
+                if strategy.startswith("nearest_"):
+                    break
 
             for action, target in graph.deterministic_successors(context):
                 if context == current and action not in token_by_action:
@@ -207,6 +206,22 @@ def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counte
                     action if first is None else first,
                     depth + 1,
                 ))
+
+        if candidates:
+            if strategy.startswith("maxmissing_"):
+                candidates.sort(
+                    key=lambda row: (-len(row[3]), row[2], -row[4], row[0])
+                )
+            else:
+                candidates.sort(key=lambda row: (row[2], row[0]))
+            context, first, depth, unresolved, _prefix_depth = candidates[0]
+            counters["boundary_route"] += 1
+            counters["boundary_route_depth_sum"] += depth
+            counters["boundary_target_missing_sum"] += len(unresolved)
+            return self._token(
+                (first, None, None),
+                "ledger_boundary_route",
+            )
 
         # No unresolved boundary is reachable in the retained graph. Prefer a
         # verified state-changing edge toward the least revisited context.
@@ -236,7 +251,7 @@ def install_ledger_planner(controller, graph: ExactLedgerGraph, counters: Counte
     controller._select_probe = MethodType(select, controller)
 
 
-def run_arm(module, game_id, envdir, max_actions, *, graph=None):
+def run_arm(module, game_id, envdir, max_actions, *, graph=None, strategy="nearest_min"):
     from arc_agi import Arcade, OperationMode
 
     arc = Arcade(
@@ -260,7 +275,7 @@ def run_arm(module, game_id, envdir, max_actions, *, graph=None):
 
     counters = Counter()
     if graph is not None:
-        install_ledger_planner(policy.controller, graph, counters)
+        install_ledger_planner(policy.controller, graph, counters, strategy)
 
     latest = policy._convert_raw_frame_data(env.observation_space)
     frames = [latest]
@@ -354,26 +369,35 @@ def main():
         manifest["max_actions"],
         graph=None,
     )
-    planned = run_arm(
-        module,
-        game["game_id"],
-        manifest["environments_dir"],
-        manifest["max_actions"],
-        graph=graph,
+    strategies = (
+        "nearest_min",
+        "nearest_max",
+        "maxmissing_min",
+        "maxmissing_max",
     )
+    arms = {}
+    for strategy in strategies:
+        arms[strategy] = run_arm(
+            module,
+            game["game_id"],
+            manifest["environments_dir"],
+            manifest["max_actions"],
+            graph=graph,
+            strategy=strategy,
+        )
+        if arms[strategy]["stats"]["max_levels"] < baseline["stats"]["max_levels"]:
+            raise AssertionError(f"{strategy} regressed protected progress")
+        if sum(arms[strategy]["stats"]["planner"].values()) < 1:
+            raise AssertionError(f"{strategy} planner never activated")
 
     if baseline["stats"]["max_levels"] != 0:
         raise AssertionError("frozen ls20 baseline changed")
-    if planned["stats"]["max_levels"] < baseline["stats"]["max_levels"]:
-        raise AssertionError("ledger planner regressed protected progress")
-    if sum(planned["stats"]["planner"].values()) < 1:
-        raise AssertionError("ledger planner never activated")
 
     report = {
         "interpretation": (
-            "score-facing planning over the persisted exact ls20 replay ledger; "
-            "the frozen controller is routed toward unresolved exact primitive "
-            "action boundaries before heuristic fallback"
+            "score-facing portfolio over the persisted exact ls20 replay ledger; "
+            "nearest-boundary and max-unresolved-boundary policies are crossed "
+            "with low/high missing-action ordering"
         ),
         "claim_boundary": (
             "the ledger is pinned to the exact public game and frozen agent; "
@@ -389,40 +413,41 @@ def main():
             "reinvestment_extra_probes": ledger["metadata"].get("reinvestment_extra_probes"),
         },
         "baseline": baseline["stats"],
-        "planned": planned["stats"],
-        "performance_delta": {
-            "levels": planned["stats"]["max_levels"] - baseline["stats"]["max_levels"],
-            "unique_states": (
-                planned["stats"]["unique_state_count"]
-                - baseline["stats"]["unique_state_count"]
-            ),
-            "zero_change_actions": (
-                planned["stats"]["zero_observation_change"]
-                - baseline["stats"]["zero_observation_change"]
-            ),
+        "arms": {
+            strategy: {
+                "stats": row["stats"],
+                "performance_delta": {
+                    "levels": row["stats"]["max_levels"] - baseline["stats"]["max_levels"],
+                    "unique_states": row["stats"]["unique_state_count"] - baseline["stats"]["unique_state_count"],
+                    "zero_change_actions": row["stats"]["zero_observation_change"] - baseline["stats"]["zero_observation_change"],
+                },
+                "novel_states_vs_baseline": len(row["states"] - baseline["states"]),
+                "novel_actions_vs_baseline": [
+                    list(action)
+                    for action in sorted(
+                        set(row["actions_raw"]) - set(baseline["actions_raw"])
+                    )
+                ],
+            }
+            for strategy, row in arms.items()
         },
-        "novel_states_vs_baseline": len(
-            planned["states"] - baseline["states"]
+        "max_level_reached": max(row["stats"]["max_levels"] for row in arms.values()),
+        "union_states": len(set().union(*(row["states"] for row in arms.values()))),
+        "union_novel_states_vs_baseline": len(
+            set().union(*(row["states"] for row in arms.values())) - baseline["states"]
         ),
-        "novel_actions_vs_baseline": [
-            list(action)
-            for action in sorted(
-                set(planned["actions_raw"])
-                - set(baseline["actions_raw"])
-            )
-        ],
     }
 
     audit.write_json(
-        OUT / "ls20-ledger-performance.json",
+        OUT / "ls20-ledger-performance-portfolio.json",
         report,
     )
     print(
-        "LS20_LEDGER_PERFORMANCE_RESULT="
+        "LS20_LEDGER_PERFORMANCE_PORTFOLIO_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_LS20_LEDGER_PERFORMANCE=PASS", flush=True)
+    print("ARC3_LS20_LEDGER_PERFORMANCE_PORTFOLIO=PASS", flush=True)
 
 
 if __name__ == "__main__":
