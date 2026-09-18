@@ -758,6 +758,98 @@ theorem maintainedReserveUpdate_mkQ
         (restrictedWaitingAction S N₀ hactive a x) := by
   rfl
 
+
+/-! ## Active + reserve state dynamics -/
+
+/-- Canonical active state determined by the current active kernel. -/
+abbrev CanonicalActiveState (N₀ : Submodule 𝕜 V) :=
+  V ⧸ N₀
+
+/-- Canonical total maintained state: active information plus exactly the
+maintained reserve, with maintained-safe distinctions quotiented away. -/
+abbrev CanonicalMaintainedState
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :=
+  V ⧸ maintainedNullspace S N₀ future
+
+/-- Forget the reserve and recover the active state. -/
+def maintainedStateToActive
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜) :
+    CanonicalMaintainedState S N₀ future →ₗ[𝕜] CanonicalActiveState N₀ :=
+  Submodule.factor (maintainedNullspace_le_active S N₀ future)
+
+@[simp]
+theorem maintainedStateToActive_mkQ
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (x : V) :
+    maintainedStateToActive S N₀ future
+        ((maintainedNullspace S N₀ future).mkQ x) =
+      N₀.mkQ x := by
+  rfl
+
+/-- Waiting dynamics on the total maintained state. -/
+def maintainedStateUpdate
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (a : B) :
+    CanonicalMaintainedState S N₀ future →ₗ[𝕜]
+      CanonicalMaintainedState S N₀ future :=
+  (maintainedNullspace S N₀ future).mapQ
+    (maintainedNullspace S N₀ future) (S a)
+    (maintainedNullspace_invariant S N₀ future a)
+
+@[simp]
+theorem maintainedStateUpdate_mkQ
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (a : B) (x : V) :
+    maintainedStateUpdate S N₀ future a
+        ((maintainedNullspace S N₀ future).mkQ x) =
+      (maintainedNullspace S N₀ future).mkQ (S a x) := by
+  rfl
+
+/-- Waiting dynamics on the active quotient, when the active kernel itself is
+stable under the waiting action. -/
+def activeStateUpdate
+    {B : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) :
+    CanonicalActiveState N₀ →ₗ[𝕜] CanonicalActiveState N₀ :=
+  N₀.mapQ N₀ (S a) (hactive a)
+
+@[simp]
+theorem activeStateUpdate_mkQ
+    {B : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) (x : V) :
+    activeStateUpdate S N₀ hactive a (N₀.mkQ x) =
+      N₀.mkQ (S a x) := by
+  rfl
+
+/-- Basis-free block-triangular law: total maintained dynamics projects to
+active dynamics without depending on the reserve coordinate. Any chosen
+splitting therefore yields a block-triangular matrix with zero reserve-to-active
+block. -/
+theorem maintainedState_block_law
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) :
+    (maintainedStateToActive S N₀ future).comp
+        (maintainedStateUpdate S N₀ future a) =
+      (activeStateUpdate S N₀ hactive a).comp
+        (maintainedStateToActive S N₀ future) := by
+  apply LinearMap.ext
+  intro z
+  refine Submodule.Quotient.induction_on
+    (maintainedNullspace S N₀ future) z ?_
+  intro x
+  rfl
+
 end
 
 end QCK
