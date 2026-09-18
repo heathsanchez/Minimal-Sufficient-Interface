@@ -61,6 +61,33 @@ class InterventionalQuotientContracts(unittest.TestCase):
         self.assertNotEqual(parts[1]["c"], parts[1]["d"])
         self.assertNotEqual(parts[2]["a"], parts[2]["b"])
 
+    def test_short_depth_bound_remains_unstabilized_not_refutation(self):
+        q = self.q()
+        names = [f"n{i}" for i in range(12)]
+        for name in names:
+            self.add(q, name)
+        for i in range(10):
+            q.observe_transition(
+                names[i],
+                3,
+                names[i + 1],
+                outcome=("CONTINUE", 0),
+            )
+        q.observe_transition(
+            names[10],
+            3,
+            names[11],
+            outcome=("LEVEL_INCREMENT", 1),
+        )
+        short = q.summary(max_depth=2)
+        self.assertFalse(short["stabilized"])
+        deep = q.summary(max_depth=len(names))
+        self.assertTrue(deep["stabilized"])
+        self.assertEqual(
+            deep["depths"][-1]["contradictory_merged_pairs"],
+            0,
+        )
+
     def test_conflicting_raw_contract_is_rejected(self):
         q = self.q()
         self.add(q, "a")
