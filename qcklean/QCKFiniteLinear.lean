@@ -708,6 +708,56 @@ theorem ker_prod_active_maintainedReserveMap
           maintainedReserveMap_on_active S N₀ future xn
         _ = 0 := hq
 
+
+/-- Restrict a waiting action to the active kernel when that kernel is itself
+stable under the waiting contract. -/
+def restrictedWaitingAction
+    {B : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) : N₀ →ₗ[𝕜] N₀ :=
+  LinearMap.codRestrict N₀ ((S a).comp N₀.subtype) (by
+    intro x
+    exact hactive a x.2)
+
+/-- The maintained-safe kernel remains invariant under the restricted waiting
+action, so waiting can be updated entirely inside the reserve quotient. -/
+theorem maintainedReserveKernel_invariant
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) :
+    (maintainedNullspace S N₀ future).comap N₀.subtype ≤
+      ((maintainedNullspace S N₀ future).comap N₀.subtype).comap
+        (restrictedWaitingAction S N₀ hactive a) := by
+  intro x hx
+  change S a x.1 ∈ maintainedNullspace S N₀ future
+  exact maintainedNullspace_invariant S N₀ future a hx
+
+/-- Canonical self-maintenance dynamics on the maintained reserve. -/
+noncomputable def maintainedReserveUpdate
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) :
+    CanonicalMaintainedReserve S N₀ future →ₗ[𝕜]
+      CanonicalMaintainedReserve S N₀ future :=
+  let M := (maintainedNullspace S N₀ future).comap N₀.subtype
+  M.mapQ M (restrictedWaitingAction S N₀ hactive a)
+    (maintainedReserveKernel_invariant S N₀ future hactive a)
+
+@[simp]
+theorem maintainedReserveUpdate_mkQ
+    {B I : Type*} (S : B → V →ₗ[𝕜] V)
+    (N₀ : Submodule 𝕜 V) (future : I → V →ₗ[𝕜] 𝕜)
+    (hactive : ∀ a, N₀ ≤ N₀.comap (S a))
+    (a : B) (x : N₀) :
+    maintainedReserveUpdate S N₀ future hactive a
+        (((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ x) =
+      ((maintainedNullspace S N₀ future).comap N₀.subtype).mkQ
+        (restrictedWaitingAction S N₀ hactive a x) := by
+  rfl
+
 end
 
 end QCK
