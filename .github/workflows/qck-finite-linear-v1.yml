@@ -2,7 +2,7 @@ name: QCK FiniteLinear v1
 
 on:
   push:
-    branches: [qck-finite-linear-v1]
+    branches: [qck-finite-linear-v1, qck-unified-v1]
     paths:
       - 'qcklean/**'
       - 'docs/superpowers/specs/2026-09-18-qck-finite-linear-v1-design.md'
