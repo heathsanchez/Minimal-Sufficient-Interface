@@ -1,0 +1,139 @@
+name: ARC3 QCKN Flash Multigame V1
+on:
+  push:
+    branches: [arc3-qckn-flash-multigame-v1]
+    paths:
+      - 'kaggle/src/metalogic_arc3/flash_*.py'
+      - 'kaggle/tests/test_flash_compiler.py'
+      - 'kaggle/scripts/arc3_flash_multigame_v1.py'
+      - '.github/workflows/arc3-qckn-flash-multigame-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: arc3-qckn-flash-multigame-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARC_API_KEY: ''
+      OPERATION_MODE: ''
+      MPLBACKEND: Agg
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build and verify frozen MG-ARC5
+        run: |
+          mkdir -p kaggle/agent kaggle/flash-inputs kaggle/qckn-flash-multigame-v1-results
+          python kaggle/scripts/build_agent.py --output kaggle/agent/my_agent.py
+          echo 'd9f0b95dfee14613425e8f557808e129b25e8a055ad481800b1024ce45281ead  kaggle/agent/my_agent.py' | sha256sum --check
+          python -m py_compile \
+            kaggle/src/metalogic_arc3/flash_ledger.py \
+            kaggle/src/metalogic_arc3/flash_scheduler.py \
+            kaggle/src/metalogic_arc3/flash_closure.py \
+            kaggle/scripts/arc3_flash_multigame_v1.py
+
+      - name: Install pinned SDK
+        run: |
+          python -m pip install arc-agi==0.9.9 arcengine==0.9.3 python-dotenv
+          python -m pip freeze > kaggle/qckn-flash-multigame-v1-results/requirements-resolved.txt
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+
+      - run: python kaggle/scripts/slim_framework.py
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+
+      - name: Verify pinned retained artifacts before reuse
+        run: |
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10566897440 --jq .digest)" = "sha256:f681be0076967e48c6a87c6930a9fd7389d5201b5914809bfb7f6a78a9f51aeb"
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10564626208 --jq .digest)" = "sha256:22748bb909fae8087e90bc51bd26780466dd153dd1974782515e676d0d24bd05"
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10569651788 --jq .digest)" = "sha256:4e00a55675ea50c5f5b772b670d8651345ef712a053b4e7c283423b448fabdc2"
+
+      - name: Reuse pinned exact evidence without reacquisition
+        run: |
+          mkdir -p kaggle/flash-inputs/ls20 kaggle/flash-inputs/ft09 kaggle/flash-inputs/v2
+          gh run download 35393183037 -R heathsanchez/Minimal-Sufficient-Interface -n arc3-ls20-level1-scc-frontier-v3 -D kaggle/flash-inputs/ls20
+          gh run download 35387362885 -R heathsanchez/Minimal-Sufficient-Interface -n arc3-ft09-fatal-basin-certificate -D kaggle/flash-inputs/ft09
+          gh run download 35398347557 -R heathsanchez/Minimal-Sufficient-Interface -n arc3-global-flash-closure-v2 -D kaggle/flash-inputs/v2
+
+      - name: Acquire bt11 SDK-fixture control only
+        run: |
+          python kaggle/scripts/benchmark_audit.py prepare \
+            --fixtures \
+            --games bt11 \
+            --max-actions 128 \
+            --environments-dir upstream-arc-agi/test_environment_files \
+            --manifest kaggle/flash-inputs/bt11-manifest.json
+          python - <<'PY'
+          import json, subprocess, sys
+          manifest='kaggle/flash-inputs/bt11-manifest.json'
+          game=json.load(open(manifest))['games'][0]['game_id']
+          subprocess.run([
+              sys.executable,'kaggle/scripts/benchmark_audit.py','cell',
+              '--manifest',manifest,'--game',game,'--seed','0','--arm','full',
+              '--output','kaggle/flash-inputs/bt11-full.json'
+          ],check=True)
+          PY
+
+      - name: Flash compiler contracts
+        env:
+          PYTHONPATH: kaggle/src
+        run: python -m unittest discover -s kaggle/tests -p 'test_flash_compiler.py' -v
+
+      - name: Run Independent vs Flash vs SHAM retained-evidence audit
+        env:
+          PYTHONPATH: kaggle/src
+        run: |
+          python -u kaggle/scripts/arc3_flash_multigame_v1.py \
+            --ls20-dir kaggle/flash-inputs/ls20 \
+            --ft09-dir kaggle/flash-inputs/ft09 \
+            --v2-dir kaggle/flash-inputs/v2 \
+            --bt11-json kaggle/flash-inputs/bt11-full.json \
+            --out kaggle/qckn-flash-multigame-v1-results
+
+      - name: Qualification checks
+        run: |
+          python - <<'PY'
+          import json
+          p='kaggle/qckn-flash-multigame-v1-results/comparison.json'
+          r=json.load(open(p))
+          assert r['flash_verdict'] in {'PASS','FAIL'}
+          assert r['sham']['actions_eliminated'] == 0
+          assert r['flash']['verified_transfers'] + r['flash']['refuted_transfers'] >= 1
+          assert r['flash']['raw_evidence_refs'] == 4
+          print('QCKN_FLASH_MULTIGAME_V1_QUALIFIED=' + r['flash_verdict'])
+          print('HYPOTHESIS_STATUS=' + r['hypothesis_status'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-qckn-flash-multigame-v1
+          path: |
+            kaggle/qckn-flash-multigame-v1-results/
+            kaggle/flash-inputs/bt11-manifest.json
+            kaggle/flash-inputs/bt11-full.json
+            kaggle/src/metalogic_arc3/flash_ledger.py
+            kaggle/src/metalogic_arc3/flash_scheduler.py
+            kaggle/src/metalogic_arc3/flash_closure.py
+            kaggle/tests/test_flash_compiler.py
+            kaggle/scripts/arc3_flash_multigame_v1.py
+          if-no-files-found: error
