@@ -15,8 +15,9 @@ from metalogic_arc3.runtime import normalize_frame
 def grid(world: int, nuisance: int):
     rows = [[0 for _ in range(6)] for _ in range(6)]
     rows[2][2] = world
-    rows[0][4] = nuisance
-    rows[0][5] = nuisance + 20
+    for y in (0, 2, 4):
+        rows[y][4] = nuisance
+        rows[y][5] = nuisance + 20
     return tuple(tuple(row) for row in rows)
 
 
