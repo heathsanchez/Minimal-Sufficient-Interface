@@ -372,10 +372,11 @@ theorem snapshotSafeInActive_finrank
   have hf : Function.Bijective f := by
     constructor
     · intro x y h
-      change x.1.1 = y.1.1 at h
+      have hv : (f x : V) = (f y : V) :=
+        congrArg (fun z : snapshotSafe N0 N => (z : V)) h
       apply Subtype.ext
       apply Subtype.ext
-      exact h
+      simpa [f] using hv
     · intro y
       refine ⟨⟨⟨y.1, snapshotSafe_le_active N0 N y.2⟩, y.2⟩, ?_⟩
       rfl
