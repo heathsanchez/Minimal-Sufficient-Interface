@@ -396,6 +396,7 @@ class World:
         ] = set()
         self.compiled_noop_groups: set[tuple[str, tuple[Any, ...]]] = set()
         self.structural_pruned_count = 0
+        self.structural_revocations = 0
         self.structural_constructor_probe_uses = 0
 
         self._observe_current()
@@ -674,6 +675,26 @@ class World:
             ]
 
         token_by_key = {action_key(token): token for token in tokens}
+
+        # Constructors are revocable. If later cross-game evidence breaks a
+        # portable NOOP family, restore any still-unverified destination actions
+        # to the acquisition frontier immediately.
+        if shared and self.structural_pruned:
+            for pair in list(self.structural_pruned):
+                node, key = pair
+                if node != digest:
+                    continue
+                schema = self.schemas.get(pair)
+                if schema is None:
+                    continue
+                if model.portable_noop_constructor(self.game_id, schema) is None:
+                    self.structural_pruned.remove(pair)
+                    self.structural_pruned_count = max(
+                        0, self.structural_pruned_count - 1
+                    )
+                    self.structural_revocations += 1
+                    self.compiled_noop_groups.discard((digest, schema))
+
         unknown = [
             key
             for key in self.catalogs.get(digest, ())
@@ -947,6 +968,7 @@ class World:
             "compiled_route_actions": self.compiled_route_actions,
             "closure_events": self.closure_events,
             "structural_pruned_actions": self.structural_pruned_count,
+            "structural_revocations": self.structural_revocations,
             "compiled_noop_groups": len(self.compiled_noop_groups),
             "structural_constructor_probe_uses": self.structural_constructor_probe_uses,
             "exhausted": self.exhausted,
