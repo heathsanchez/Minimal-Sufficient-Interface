@@ -8,6 +8,7 @@ from .causal_affordance import AffordanceMemory, effect_signature
 from .memory_controller import MemoryGraphController
 from .memory_graph import ActionKey
 from .runtime import ActionToken, Observation, normalize_frame
+from .contextual_quotient import ContextualQuotient
 
 
 class EffectMemory:
@@ -191,13 +192,16 @@ class ConsequenceController(MemoryGraphController):
         *args: Any,
         consequence_enabled: bool = True,
         visual_grounding: bool = True,
+        contextual_quotient_enabled: bool = True,
         effect_limit: int = 2048,
         **kwargs: Any,
     ) -> None:
         self.consequence_enabled = bool(consequence_enabled)
         self.visual_grounding = bool(visual_grounding)
+        self.contextual_quotient_enabled = bool(contextual_quotient_enabled)
         self.effects = EffectMemory(effect_limit)
         self.affordances = AffordanceMemory(effect_limit)
+        self.contextual_quotient = ContextualQuotient()
         self._decision_tick = 0
         self._probe_serial = 0
         super().__init__(*args, **kwargs)
@@ -255,10 +259,54 @@ class ConsequenceController(MemoryGraphController):
         self._primary = tuple(catalog[: len(primary)])
         return tuple(catalog)
 
+    def _consequence_context(
+        self,
+        obs: Observation,
+        grid: tuple[tuple[int, ...], ...],
+    ) -> str:
+        if not self.contextual_quotient_enabled:
+            return obs.evidence_sha256
+        return self.contextual_quotient.context(
+            obs.levels_completed,
+            grid,
+            obs.evidence_sha256,
+        )
+
     def _record_effect(self, frame: Any, obs: Observation) -> None:
         grid = settled_grid(frame)
         if self._pending_effect is not None:
             context, action, before, descriptor, history = self._pending_effect
+            previous_level = (
+                self._previous.levels_completed
+                if self._previous is not None
+                else obs.levels_completed
+            )
+            if obs.levels_completed > previous_level:
+                protected_outcome = "LEVEL_INCREMENT"
+            elif obs.state == "GAME_OVER":
+                protected_outcome = "GAME_OVER"
+            elif obs.state == "WIN":
+                protected_outcome = "WIN"
+            else:
+                protected_outcome = "CONTINUE"
+            if self.contextual_quotient_enabled:
+                self.contextual_quotient.observe(
+                    previous_level,
+                    before,
+                    grid,
+                    action,
+                    protected_outcome,
+                )
+            source_context = (
+                self.contextual_quotient.context(
+                    previous_level,
+                    before,
+                    context,
+                )
+                if self.contextual_quotient_enabled
+                else context
+            )
+            target_context = self._consequence_context(obs, grid)
             if len(before) == len(grid) and (not grid or not before or len(before[0]) == len(grid[0])):
                 changed = sum(
                     left != right
@@ -274,9 +322,9 @@ class ConsequenceController(MemoryGraphController):
                 signature = (changed, 0, 0, 0, 0, 0)
             terminal = obs.state in ("WIN", "GAME_OVER")
             self.effects.record(
-                context,
+                source_context,
                 action,
-                obs.evidence_sha256,
+                target_context,
                 descriptor,
                 changed,
                 history,
@@ -284,12 +332,12 @@ class ConsequenceController(MemoryGraphController):
             )
             directness = getattr(signature, "directness", 0.0)
             self.affordances.record(
-                context,
+                source_context,
                 action,
                 descriptor,
                 signature,
                 directness=directness,
-                target=obs.evidence_sha256,
+                target=target_context,
             )
             self._pending_effect = None
         self._grid = grid
@@ -304,7 +352,7 @@ class ConsequenceController(MemoryGraphController):
     def _select_probe(
         self, obs: Observation, catalog: tuple[ActionToken, ...]
     ) -> ActionToken:
-        context = obs.evidence_sha256
+        context = self._consequence_context(obs, self._grid)
         allowed_keys = {self._action_key(token) for token in catalog}
         primary = tuple(
             token for token in self._primary if self._action_key(token) in allowed_keys
@@ -427,7 +475,7 @@ class ConsequenceController(MemoryGraphController):
         key = self._action_key(token)
         history = hashlib.sha256(repr(tuple(self._episode_program[-8:])).encode()).hexdigest()
         self._pending_effect = (
-            obs.evidence_sha256,
+            self._consequence_context(obs, self._grid),
             key,
             self._grid,
             self._descriptor(token),
