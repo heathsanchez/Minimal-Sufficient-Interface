@@ -110,6 +110,25 @@ class PartialInterventionalQuotient:
             )
         return signatures
 
+    @staticmethod
+    def _same_partition(
+        left: dict[NodeKey, int],
+        right: dict[NodeKey, int],
+    ) -> bool:
+        if set(left) != set(right):
+            return False
+        left_groups: dict[int, set[NodeKey]] = defaultdict(set)
+        right_groups: dict[int, set[NodeKey]] = defaultdict(set)
+        for node, class_id in left.items():
+            left_groups[int(class_id)].add(node)
+        for node, class_id in right.items():
+            right_groups[int(class_id)].add(node)
+        return {
+            frozenset(group) for group in left_groups.values()
+        } == {
+            frozenset(group) for group in right_groups.values()
+        }
+
     def partitions(self, max_depth: int = 8) -> list[dict[NodeKey, int]]:
         if max_depth < 0:
             raise ValueError("nonnegative quotient depth required")
@@ -120,7 +139,7 @@ class PartialInterventionalQuotient:
         for _depth in range(max_depth):
             nxt = self._class_ids(self._step_signatures(classes))
             out.append(nxt)
-            if nxt == classes:
+            if self._same_partition(nxt, classes):
                 break
             classes = nxt
         return out
@@ -202,9 +221,20 @@ class PartialInterventionalQuotient:
 
     def summary(self, max_depth: int = 8) -> dict[str, Any]:
         partitions = self.partitions(max_depth=max_depth)
-        rows = []
-        for depth, classes in enumerate(partitions):
-            rows.append({"depth": depth, **self.evidence_stats(classes)})
+        stabilized = bool(
+            len(partitions) >= 2
+            and self._same_partition(partitions[-1], partitions[-2])
+        )
+        final_depth = max(0, len(partitions) - 1)
+        selected = {
+            depth
+            for depth in (0, 1, 2, 4, 8, 16, 32, 64, final_depth)
+            if depth < len(partitions)
+        }
+        rows = [
+            {"depth": depth, **self.evidence_stats(partitions[depth])}
+            for depth in sorted(selected)
+        ]
         return {
             "nodes": len(self.nodes),
             "observed_transitions": sum(
@@ -213,5 +243,7 @@ class PartialInterventionalQuotient:
                 for rows in by_action.values()
             ),
             "depths": rows,
-            "stabilized": len(partitions) < max_depth + 1,
+            "stabilized": stabilized,
+            "stabilization_depth": final_depth if stabilized else None,
+            "depth_bound": max_depth,
         }
