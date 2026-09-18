@@ -6,7 +6,7 @@ QCKN is the unified developmental stack for consequence-governed substitution:
 
 > detect what blocks useful consequence flow, preserve what matters, remove or restructure the obstruction, certify the change, compile the lesson, and reuse it.
 
-This document is the architectural source of truth while QCK v1 is being formalized.
+This document is the architectural source of truth. Bounded QCK v1 is now formalized, audited, qualified, and frozen; current work is downstream migration onto that frozen surface.
 
 ## Constitutional layers
 
@@ -52,7 +52,7 @@ All previously parallel FiniteLinear development is to be reconciled here. Do no
 
 ### 4. QCK API — typed epistemic outcomes
 
-The API layer will expose stable result types such as:
+The API layer exposes stable result types such as:
 - `CertifiedSubstitution`;
 - `NewContextDefect`;
 - `ReserveRequired`;
@@ -181,7 +181,7 @@ The compounding invariant is:
 ## Consolidation rules
 
 1. `QCKCore.lean` remains frozen unless a genuine semantic obstruction forces a constitutional change.
-2. There is one authoritative FiniteLinear line: `qck-unified-v1` during qualification.
+2. The authoritative bounded QCK v1 theorem surface is frozen on `qck-v1-frozen` at commit `fc112771bd0a24e40e31e4eaef61ca0442103dd4`. Downstream work proceeds elsewhere.
 3. Parallel definitions are aliases or migrations, not new competing semantics.
 4. Every RED should become a typed residual or reusable separator when possible.
 5. Every promoted capability must record its contract, verifier evidence, dependencies, and prospective cost effect.
@@ -189,22 +189,18 @@ The compounding invariant is:
 7. New domains integrate through adapters rather than recreating the stack.
 8. Formalization and consolidation proceed together: when a theorem fixes a canonical concept, surrounding code and terminology converge on that concept.
 
-## Current formalization path
+## Current migration phase
 
-The bounded QCK v1 completion path is:
+The bounded QCK v1 completion path is complete. The migration phase is now:
 
-1. freeze Core;
-2. finite contextual closure;
-3. basis-free finite presentation;
-4. rank minimality and operation defect;
-5. snapshot optionality, lower bound, and attainment;
-6. maintained optionality and maintained reserve dimension;
-7. recovery/update maps and block form;
-8. fixed-context submodularity;
-9. U/V capability-generated non-submodularity counterexample;
-10. typed QCK API;
-11. whole-stack no-placeholder and axiom audit;
-12. freeze QCK v1 and migrate downstream users to the consolidated interfaces.
+1. keep `qck-v1-frozen` immutable;
+2. route finite/discrete MSI users through the QCKN adapter vocabulary;
+3. migrate residual handling onto the typed QCK API meanings;
+4. make MDA consume typed residuals rather than infer semantics from ad hoc failures;
+5. make RealityGraph/.mg store promoted contracts, certificates, separators, reserve obligations, dependencies, and cost effects;
+6. convert domain projects into adapters over `observe / propose / verify / cost / counterexample / promote`;
+7. remove or alias overlapping legacy semantic predicates once callers have migrated;
+8. challenge retained structure by ablation and re-minimize after composition.
 
 The intended result is one stack whose normal operation is:
 
