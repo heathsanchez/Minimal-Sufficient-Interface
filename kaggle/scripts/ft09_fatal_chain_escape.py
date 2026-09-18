@@ -44,6 +44,7 @@ aq.AGENT = AGENT
 
 TARGET_ACTION = (6, 54, 54)
 TAIL_STATES_PER_CHAIN = 6
+TAIL_OFFSET = 6
 ALTERNATIVES_PER_STATE = 6
 MAX_RESUME = 40
 
@@ -113,7 +114,9 @@ def source_specs(progression):
             raise AssertionError("expected exact fatal chain ending in GAME_OVER")
 
         nonterminal = extension[:-1]
-        for row in nonterminal[-TAIL_STATES_PER_CHAIN:]:
+        end = max(0, len(nonterminal) - TAIL_OFFSET)
+        start = max(0, end - TAIL_STATES_PER_CHAIN)
+        for row in nonterminal[start:end]:
             step = int(row["step"])
             source = str(row["source"])
             prefix = route + (TARGET_ACTION,) * (step - 1)
@@ -394,8 +397,8 @@ def main():
 
     report = {
         "interpretation": (
-            "one-deviation counterfactual search on the last exact states before "
-            "the retained ft09 (54,54) fatal GAME_OVER chains"
+            "one-deviation counterfactual search on the next upstream band of exact "
+            "states before the retained ft09 (54,54) fatal GAME_OVER chains"
         ),
         "claim_boundary": (
             "alternative ranking uses historical exact change support as proposal-only; "
@@ -403,6 +406,7 @@ def main():
             "is observed live"
         ),
         "source_chain_count": 3,
+        "tail_offset": TAIL_OFFSET,
         "source_state_count": len(specs),
         "alternatives_per_state": ALTERNATIVES_PER_STATE,
         "resume_bound": MAX_RESUME,
