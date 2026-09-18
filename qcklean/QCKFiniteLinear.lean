@@ -850,6 +850,62 @@ theorem maintainedState_block_law
   intro x
   rfl
 
+
+/-! ## Fixed-vocabulary submodularity and generated-context negative control -/
+
+/-- Rank of a fixed retained observable vocabulary. -/
+def observableVocabularyRank (L : Submodule 𝕜 V) : ℕ :=
+  Module.finrank 𝕜 L
+
+/-- Fixed linear vocabularies obey the modular rank identity, hence the usual
+submodularity inequality. -/
+theorem observableVocabularyRank_modular
+    (X Y : Submodule 𝕜 V) :
+    observableVocabularyRank X + observableVocabularyRank Y =
+      observableVocabularyRank (X ⊔ Y) +
+        observableVocabularyRank (X ⊓ Y) := by
+  exact Submodule.finrank_sup_add_finrank_inf_eq X Y
+
+theorem observableVocabularyRank_submodular
+    (X Y : Submodule 𝕜 V) :
+    observableVocabularyRank (X ⊔ Y) +
+        observableVocabularyRank (X ⊓ Y) ≤
+      observableVocabularyRank X + observableVocabularyRank Y := by
+  rw [observableVocabularyRank_modular X Y]
+
+/-- Exact rank profile of the U/V generated-context counterexample.
+true is capability U and false is capability V:
+g(∅)=0, g({U})=1, g({V})=0, g({U,V})=2. -/
+def uvGeneratedContextRank (K : Set Bool) : ℕ :=
+  if true ∈ K then
+    if false ∈ K then 2 else 1
+  else 0
+
+@[simp] theorem uvGeneratedContextRank_empty :
+    uvGeneratedContextRank (∅ : Set Bool) = 0 := by
+  simp [uvGeneratedContextRank]
+
+@[simp] theorem uvGeneratedContextRank_U :
+    uvGeneratedContextRank ({true} : Set Bool) = 1 := by
+  simp [uvGeneratedContextRank]
+
+@[simp] theorem uvGeneratedContextRank_V :
+    uvGeneratedContextRank ({false} : Set Bool) = 0 := by
+  simp [uvGeneratedContextRank]
+
+@[simp] theorem uvGeneratedContextRank_UV :
+    uvGeneratedContextRank ({true, false} : Set Bool) = 2 := by
+  simp [uvGeneratedContextRank]
+
+/-- Capability-generated context growth need not be submodular: the U/V
+profile violates the diminishing-returns inequality. -/
+theorem uvGeneratedContextRank_not_submodular :
+    uvGeneratedContextRank ({true} : Set Bool) +
+        uvGeneratedContextRank ({false} : Set Bool) <
+      uvGeneratedContextRank ({true, false} : Set Bool) +
+        uvGeneratedContextRank (∅ : Set Bool) := by
+  simp
+
 end
 
 end QCK
