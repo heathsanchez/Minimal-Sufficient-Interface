@@ -45,3 +45,7 @@ open QCK
 #check QCK.maintainedReserveMap
 #check QCK.maintainedReserveMap_on_active
 #check QCK.ker_prod_active_maintainedReserveMap
+#check QCK.restrictedWaitingAction
+#check QCK.maintainedReserveKernel_invariant
+#check QCK.maintainedReserveUpdate
+#check QCK.maintainedReserveUpdate_mkQ
