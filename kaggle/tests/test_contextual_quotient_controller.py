@@ -38,6 +38,7 @@ class ContextualQuotientControllerContracts(unittest.TestCase):
             evaluation_interval=2,
             min_compression=1.5,
             min_repeated_events=2,
+            min_boundary_events=0,
             candidate_depths=(1, 2),
         )
         return c
