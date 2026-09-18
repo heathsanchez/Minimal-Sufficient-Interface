@@ -45,7 +45,7 @@ from typing import Any
 import benchmark_audit as audit
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "kaggle" / "ls20-level1-scc-frontier-v2-results"
+OUT = ROOT / "kaggle" / "ls20-level1-scc-frontier-v3-results"
 AGENT = OUT / "agent.py"
 LEDGER = OUT / "level-compounded-exact-replay-ledger.json"
 
@@ -54,12 +54,12 @@ import ls20_dynamic_ledger_performance as dyn
 
 EXPECTED_AGENT_SHA = dyn.EXPECTED_AGENT_SHA
 EXPECTED_GAME = dyn.EXPECTED_GAME
-EXPECTED_NODES = 4029
-EXPECTED_EDGES = 10948
+EXPECTED_NODES = 4195
+EXPECTED_EDGES = 11599
 
 TARGET_LEVEL = 2
-MAX_PROBES = 1100
-MAX_REPLAY_ACTIONS = 90000
+MAX_PROBES = 1500
+MAX_REPLAY_ACTIONS = 120000
 ACTION_PRIORITY = {3: 0, 4: 1, 2: 2, 1: 3}
 
 
@@ -513,7 +513,7 @@ def main():
 
     augmented = ledger.export(generation_rows=[])
     audit.write_json(
-        OUT / "scc-frontier-v2-exact-replay-ledger.json",
+        OUT / "scc-frontier-v3-exact-replay-ledger.json",
         augmented,
     )
 
@@ -561,15 +561,15 @@ def main():
     }
 
     audit.write_json(
-        OUT / "ls20-level1-scc-frontier-v2.json",
+        OUT / "ls20-level1-scc-frontier-v3.json",
         report,
     )
     print(
-        "LS20_LEVEL1_SCC_FRONTIER_V2_RESULT="
+        "LS20_LEVEL1_SCC_FRONTIER_V3_RESULT="
         + json.dumps(report, sort_keys=True),
         flush=True,
     )
-    print("ARC3_LS20_LEVEL1_SCC_FRONTIER_V2=PASS", flush=True)
+    print("ARC3_LS20_LEVEL1_SCC_FRONTIER_V3=PASS", flush=True)
 
 
 if __name__ == "__main__":
