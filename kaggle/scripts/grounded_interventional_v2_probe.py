@@ -606,14 +606,21 @@ def main() -> None:
         pair for pair in vc_full_pairs
         if before_grounded_classes[pair[0]] != before_grounded_classes[pair[1]]
     ]
-    roots = [
-        pair for pair in vc_full_pairs
-        if pair not in parameter_split
-    ]
-    roots.sort(key=lambda pair: (
-        len(vc["prefixes"].get(pair[0], ())) + len(vc["prefixes"].get(pair[1], ())),
-        pair,
-    ))
+
+    # Do not stop at the old family-level candidates. Exact parameterization can
+    # reveal a different residual pair after refinement. Attack every remaining
+    # merged source-state pair under the declared grounded intervention contract.
+    residual_grounded_pairs = merged_pairs(
+        before_grounded_classes,
+        set(vc["grounded"].nodes),
+    )
+    roots = sorted(
+        residual_grounded_pairs,
+        key=lambda pair: (
+            len(vc["prefixes"].get(pair[0], ())) + len(vc["prefixes"].get(pair[1], ())),
+            pair,
+        ),
+    )
 
     closer = ClosureProbe(
         module,
@@ -660,10 +667,12 @@ def main() -> None:
             "family_fully_observed_candidate_pairs": len(vc_full_pairs),
             "parameterization_split_before_new_probes": len(parameter_split),
             "parameterization_split_pairs": parameter_split,
+            "residual_grounded_pairs_before_active_closure": len(residual_grounded_pairs),
             "closure_roots_attempted": len(roots),
             "closure_new_probes": closer.new_probes,
             "closure_results": closure_results,
-            "separated_roots": len(parameter_split) + sum(
+            "family_candidates_split_by_parameterization": len(parameter_split),
+            "residual_separated_roots": sum(
                 row["status"] == "SEPARATED" for row in closure_results
             ),
             "closed_roots": sum(
