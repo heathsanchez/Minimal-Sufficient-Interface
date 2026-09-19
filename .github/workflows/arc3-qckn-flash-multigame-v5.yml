@@ -1,0 +1,20 @@
+name: ARC3 QCKN Flash Multigame V5
+
+on:
+  push:
+    branches: [arc3-qckn-flash-multigame-v5]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  red-green:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Flash compiler tests
+        env:
+          PYTHONPATH: kaggle/src
+        run: python -m unittest discover -s kaggle/tests -p 'test_flash_compiler.py' -v
