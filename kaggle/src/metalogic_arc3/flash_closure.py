@@ -137,9 +137,12 @@ def transfer_obstruction_key(
 ) -> str:
     source = ledger.capabilities[source_capability_id]
     payload = {
-        'schema': 'qckn-exact-transfer-refutation-v1',
-        'source_capability_id': source_capability_id,
+        'schema': 'qckn-consequence-transfer-refutation-v2',
+        'source_kind': source.kind,
+        'source_games': sorted(source.source_games),
+        'source_scope': dict(source.scope),
         'source_consequence_signature': source.consequence_signature,
+        'source_protected_effect': source.protected_effect,
         'destination_game': destination_game,
         'exact_scope': dict(exact_scope or {}),
     }
