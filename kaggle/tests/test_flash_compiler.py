@@ -344,6 +344,74 @@ class FlashCompilerTests(unittest.TestCase):
             exact_scope=transfer_scope,
         ))
 
+    def test_consequence_quotiented_refutation_survives_restart_without_original_source_id(self):
+        from metalogic_arc3.flash_closure import (
+            export_compiled_transfer_obstructions,
+            import_compiled_transfer_obstructions,
+            transfer_proposal_blocked,
+        )
+        first, _ka, kb, ea, _eb = self.base()
+        boundary_scope={'phase':'L0','intervention_language':'complex_action6'}
+        first.add_capability(GlobalCapability(
+            'src-a','fatal_basin',{'a'},boundary_scope,('fatal-family',),[ea],
+            protected_effect=('blocked-family',),acquisition_cost=7,
+            notes={'history':'first'}
+        ))
+        transfer_scope={'claim':'generic fatal-family transfer'}
+        validate_transfer_result(
+            first,
+            source_capability_id='src-a',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=transfer_scope,
+        )
+        present=export_compiled_transfer_obstructions(first)
+
+        restarted, _ka2, _kb2, ea2, _eb2 = self.base()
+        restarted.add_capability(GlobalCapability(
+            'src-b','fatal_basin',{'a'},dict(boundary_scope),('fatal-family',),[ea2],
+            protected_effect=('blocked-family',),acquisition_cost=99,
+            notes={'history':'different'}
+        ))
+        self.assertNotIn('src-a', restarted.capabilities)
+
+        imported=import_compiled_transfer_obstructions(restarted,present)
+        self.assertEqual(imported,1)
+        self.assertTrue(transfer_proposal_blocked(
+            restarted,
+            source_capability_id='src-b',
+            destination_game='b',
+            exact_scope=transfer_scope,
+        ))
+
+    def test_restart_rejects_missing_source_authority_for_quotiented_refutation(self):
+        from metalogic_arc3.flash_closure import (
+            export_compiled_transfer_obstructions,
+            import_compiled_transfer_obstructions,
+        )
+        first, _ka, kb, ea, _eb = self.base()
+        first.add_capability(GlobalCapability(
+            'src-a','fatal_basin',{'a'},{'phase':'L0'},('fatal-family',),[ea],
+            protected_effect=('blocked-family',)
+        ))
+        validate_transfer_result(
+            first,
+            source_capability_id='src-a',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope={'claim':'x'},
+        )
+        present=export_compiled_transfer_obstructions(first)
+
+        restarted=GlobalLedger(['a','b'])
+        # Destination authority exists, source authority deliberately does not.
+        eb=EvidenceRef('b','exact','run-b','1','bb')
+        restarted.add_evidence(eb)
+        with self.assertRaisesRegex(ValueError, "source evidence mismatch"):
+            import_compiled_transfer_obstructions(restarted,present)
+
 
 if __name__ == '__main__':
     unittest.main()
