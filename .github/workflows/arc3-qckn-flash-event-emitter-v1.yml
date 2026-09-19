@@ -1,0 +1,36 @@
+name: ARC3 QCKN Flash event emitter v1
+
+on:
+  push:
+    branches: [arc3-qckn-flash-event-emitter-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  emit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify qualified source run and artifact
+        run: |
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/runs/35404864326 --jq .conclusion)" = success
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/runs/35404864326 --jq .head_sha)" = 86e540b2bb9a0fbb91805d3735333048d05c2a92
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10571982632 --jq .digest)" = sha256:a0cd3c2088931f1411684156a3d83f55c0533e85e8a9d38f3bf301bc3cadd058
+      - name: Run emitter tests
+        working-directory: kaggle/scripts
+        run: python -m unittest test_emit_qckn_flash_event -v
+      - name: Emit canonical Flash event
+        run: |
+          mkdir -p /tmp/qckn-flash-event
+          python kaggle/scripts/emit_qckn_flash_event.py --commit "$GITHUB_SHA" --out /tmp/qckn-flash-event
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-qckn-flash-event-v1
+          path: /tmp/qckn-flash-event/
+          if-no-files-found: error
