@@ -3,18 +3,70 @@ name: ARC3 QCKN Flash Multigame V5
 on:
   push:
     branches: [arc3-qckn-flash-multigame-v5]
+    paths:
+      - 'kaggle/src/metalogic_arc3/flash_*.py'
+      - 'kaggle/tests/test_flash_compiler.py'
+      - 'kaggle/scripts/arc3_flash_multigame_v2.py'
+      - 'kaggle/scripts/arc3_flash_multigame_v5.py'
+      - '.github/workflows/arc3-qckn-flash-multigame-v5.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  red-green:
+  qualify:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Run Flash compiler tests
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify pinned retained artifacts
+        run: |
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10564626208 --jq .digest)" = "sha256:22748bb909fae8087e90bc51bd26780466dd153dd1974782515e676d0d24bd05"
+          test "$(gh api repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/10569651788 --jq .digest)" = "sha256:4e00a55675ea50c5f5b772b670d8651345ef712a053b4e7c283423b448fabdc2"
+      - name: Reuse exact evidence without reacquisition
+        run: |
+          mkdir -p kaggle/flash-v5-inputs/ft09 kaggle/flash-v5-inputs/v2 kaggle/qckn-flash-multigame-v5-results
+          gh run download 35387362885 -R heathsanchez/Minimal-Sufficient-Interface -n arc3-ft09-fatal-basin-certificate -D kaggle/flash-v5-inputs/ft09
+          gh run download 35398347557 -R heathsanchez/Minimal-Sufficient-Interface -n arc3-global-flash-closure-v2 -D kaggle/flash-v5-inputs/v2
+      - name: Identity-free restart contracts
         env:
           PYTHONPATH: kaggle/src
         run: python -m unittest discover -s kaggle/tests -p 'test_flash_compiler.py' -v
+      - name: Run identity-free restart qualification
+        env:
+          PYTHONPATH: kaggle/src
+        run: |
+          python -u kaggle/scripts/arc3_flash_multigame_v5.py \
+            --ft09-dir kaggle/flash-v5-inputs/ft09 \
+            --v2-dir kaggle/flash-v5-inputs/v2 \
+            --out kaggle/qckn-flash-multigame-v5-results
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('kaggle/qckn-flash-multigame-v5-results/identity-free-restart.json'))
+          assert r['verdict']=='PASS_IDENTITY_FREE_RESTARTED_REFUTATION_COMPOUNDING'
+          assert r['original_source_present_after_restart'] is False
+          assert r['destination_verifier_calls_after_restart']==0
+          assert r['post_restart_blocked']==8
+          assert r['changed_consequence_blocked'] is False
+          assert r['ablation_destination_verifier_calls_restored']==1
+          print('QCKN_FLASH_MULTIGAME_V5_QUALIFIED=PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-qckn-flash-multigame-v5
+          path: |
+            kaggle/qckn-flash-multigame-v5-results/
+            kaggle/src/metalogic_arc3/flash_closure.py
+            kaggle/tests/test_flash_compiler.py
+            kaggle/scripts/arc3_flash_multigame_v5.py
+          if-no-files-found: error
