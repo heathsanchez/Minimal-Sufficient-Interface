@@ -273,6 +273,77 @@ class FlashCompilerTests(unittest.TestCase):
                 '{"schema": "qckn-transfer-obstructions-v1", "obstructions": []}',
             )
 
+    def test_transfer_refutation_quotients_source_history_by_certified_consequence(self):
+        from metalogic_arc3.flash_closure import transfer_proposal_blocked
+        ledger, _ka, kb, ea, _eb = self.base()
+        common_scope={'phase':'L0','intervention_language':'complex_action6'}
+        common_sig=('fatal-family',)
+        ledger.add_capability(GlobalCapability(
+            'src-a','fatal_basin',{'a'},common_scope,common_sig,[ea],
+            protected_effect=('blocked-family',),acquisition_cost=7,
+            notes={'history':'a'}
+        ))
+        ledger.add_capability(GlobalCapability(
+            'src-b','fatal_basin',{'a'},dict(common_scope),common_sig,[ea],
+            protected_effect=('blocked-family',),acquisition_cost=99,
+            notes={'history':'different'}
+        ))
+        transfer_scope={
+            'intervention_language':'complex_action6',
+            'claim':'generic fatal-family transfer',
+        }
+
+        self.assertFalse(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src-b',
+            destination_game='b',
+            exact_scope=transfer_scope,
+        ))
+
+        validate_transfer_result(
+            ledger,
+            source_capability_id='src-a',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=transfer_scope,
+        )
+
+        self.assertTrue(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src-b',
+            destination_game='b',
+            exact_scope=transfer_scope,
+        ))
+
+    def test_transfer_refutation_does_not_cross_real_consequence_difference(self):
+        from metalogic_arc3.flash_closure import transfer_proposal_blocked
+        ledger, _ka, kb, ea, _eb = self.base()
+        scope={'phase':'L0','intervention_language':'complex_action6'}
+        ledger.add_capability(GlobalCapability(
+            'src-a','fatal_basin',{'a'},scope,('fatal-family',),[ea],
+            protected_effect=('blocked-family',)
+        ))
+        ledger.add_capability(GlobalCapability(
+            'src-different','fatal_basin',{'a'},scope,('different-family',),[ea],
+            protected_effect=('blocked-family',)
+        ))
+        transfer_scope={'claim':'generic fatal-family transfer'}
+        validate_transfer_result(
+            ledger,
+            source_capability_id='src-a',
+            destination_game='b',
+            destination_evidence_id=kb,
+            verified=False,
+            exact_scope=transfer_scope,
+        )
+        self.assertFalse(transfer_proposal_blocked(
+            ledger,
+            source_capability_id='src-different',
+            destination_game='b',
+            exact_scope=transfer_scope,
+        ))
+
 
 if __name__ == '__main__':
     unittest.main()
