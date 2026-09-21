@@ -48,7 +48,7 @@ class ArcMemoryGraphContracts(unittest.TestCase):
         self.assertEqual(mg.capability_programs(), (program,))
 
         text = mg.text()
-        self.assertTrue(text.startswith("MG-ARC3\n"))
+        self.assertTrue(text.startswith("DUCKTAPE-ARC3\n"))
         restarted = ArcMemoryGraph.parse(text)
         self.assertEqual(restarted.text(), text)
         self.assertEqual(restarted.digest(), mg.digest())
@@ -75,12 +75,26 @@ class ArcMemoryGraphContracts(unittest.TestCase):
         self.assertEqual(mg.forbidden_next(context, (a3,)), {a4})
 
         text = mg.text()
-        self.assertTrue(text.startswith("MG-ARC3\n"))
         restarted = ArcMemoryGraph.parse(text)
         self.assertEqual(restarted.text(), text)
         self.assertEqual(restarted.digest(), mg.digest())
         self.assertEqual(restarted.forbidden_next(context, ()), set())
         self.assertEqual(restarted.forbidden_next(context, (a3,)), {a4})
+
+    def test_ducktape_authority_is_one_immutable_log_and_inputs_cannot_mutate_history(self):
+        mg = ArcMemoryGraph()
+        raw_context = [0, {"object": "blue"}, [3, 4]]
+        action = (3, None, None)
+
+        mg.note_attempt(raw_context, action)
+        before = mg.digest()
+        raw_context[1]["object"] = "red"
+        raw_context[2].append(5)
+
+        self.assertEqual(set(vars(mg)), {"_log"})
+        self.assertIsInstance(mg.log, tuple)
+        self.assertEqual(mg.digest(), before)
+        self.assertEqual(mg.attempt_count((0, (("object", "blue"),), (3, 4)), action), 1)
 
 
 if __name__ == "__main__":
