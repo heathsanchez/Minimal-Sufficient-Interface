@@ -9,7 +9,7 @@ from .memory_controller import MemoryGraphController
 
 
 class MyAgent(Agent):
-    """Thin ARC-AGI-3 framework adapter around the online MSI + .mg controller."""
+    """DuckTape: a thin ARC adapter around earned consequential state."""
 
     MAX_ACTIONS = 400
 
@@ -24,7 +24,7 @@ class MyAgent(Agent):
 
     @property
     def name(self) -> str:
-        return f"{super().name}.metalogic-mg-v1"
+        return f"{super().name}.ducktape-v1"
 
     def is_done(self, frames: list[FrameData], latest_frame: FrameData) -> bool:
         return latest_frame.state is GameState.WIN
@@ -34,13 +34,13 @@ class MyAgent(Agent):
     ) -> GameAction:
         # The official local/offline wrapper performs RESET during arc.make().
         # That returned observation has full_reset=True and is already playable,
-        # so full_reset is a memory boundary, not a request to RESET again.
+        # so full_reset is a trajectory boundary, not a memory-erasure request.
         if latest_frame.full_reset:
             self.controller.reset_episode()
 
         if latest_frame.state is GameState.GAME_OVER:
-            # Terminal consequence is evidence. Commit the failed prefix to the
-            # compressed consequential present before clearing trajectory state.
+            # Terminal consequence is earned state. Append it before clearing
+            # the disposable trajectory so the next episode cannot pay twice.
             self.controller.record_terminal_failure("GAME_OVER")
             self.controller.reset_episode()
             return GameAction.RESET
@@ -59,14 +59,14 @@ class MyAgent(Agent):
                 raise ValueError("complex action requires coordinates")
             action.set_data({"x": int(token.x), "y": int(token.y)})
             action.reasoning = {
-                "agent": "metalogic-mg-v1",
+                "agent": "ducktape-v1",
                 "source": token.source,
                 "x": int(token.x),
                 "y": int(token.y),
             }
         else:
             action.reasoning = {
-                "agent": "metalogic-mg-v1",
+                "agent": "ducktape-v1",
                 "source": token.source,
             }
         return action
