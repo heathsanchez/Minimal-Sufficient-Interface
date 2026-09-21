@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Verify frozen QCK sources
         run: |
           test "$(git hash-object qcklean/QCKCore.lean)" = "b9b1921c49c9947a02009be124286cfe3c723cb4"
