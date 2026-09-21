@@ -36,6 +36,11 @@ def G : FiniteQuiver where
 
 example :
     (primitiveEdge G E.left).toPath ≠ (primitiveEdge G E.right).toPath := by
-  decide
+  intro h
+  have he : primitiveEdge G E.left = primitiveEdge G E.right :=
+    eq_of_heq (Quiver.Path.cons.inj h).2.1
+  have hv : (primitiveEdge G E.left).val = (primitiveEdge G E.right).val :=
+    congrArg Subtype.val he
+  cases hv
 
 end FreeFixture
