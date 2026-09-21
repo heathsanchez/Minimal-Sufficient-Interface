@@ -227,6 +227,22 @@ class ArcMemoryGraph:
                 out.append(program)
         return tuple(out)
 
+    def capability_programs_for_source(
+        self, source_context: ContextKey
+    ) -> tuple[ProgramKey, ...]:
+        """Return programs actually witnessed from this exact public context."""
+        context_key = self._context(source_context)
+        _attempts, _refuted, _legal, capabilities = self._live()
+        rows = [row for row in capabilities if row[0] == context_key]
+        rows.sort(key=lambda row: (-row[3], len(row[1]), repr(row[1])))
+        seen: set[ProgramKey] = set()
+        out: list[ProgramKey] = []
+        for _context, program, _source_level, _target_level in rows:
+            if program not in seen:
+                seen.add(program)
+                out.append(program)
+        return tuple(out)
+
     @staticmethod
     def _terminally_refuted(
         refuted: set[tuple[ContextKey, ProgramKey, str]],
