@@ -143,12 +143,25 @@ class ArcMemoryGraph:
         _attempts, _refuted, _legal, capabilities = self._live()
         return len(capabilities)
 
+    @classmethod
+    def _proposal_context(cls, context: ContextKey) -> ContextKey:
+        return ("__DUCKTAPE_PROPOSAL__",) + cls._context(context)
+
     def note_attempt(self, context: ContextKey, action: ActionKey) -> None:
         self._append("ATTEMPT", self._context(context), self._action(action))
 
     def attempt_count(self, context: ContextKey, action: ActionKey) -> int:
         attempts, _refuted, _legal, _capabilities = self._live()
         return attempts.get((self._context(context), self._action(action)), 0)
+
+    def note_proposal(self, context: ContextKey, action: ActionKey) -> None:
+        # Proposal pressure is earned state too, but is intentionally namespaced
+        # from executed attempts. This reproduces the successful two-stage
+        # search geometry without a second mutable visit store.
+        self.note_attempt(self._proposal_context(context), action)
+
+    def proposal_count(self, context: ContextKey, action: ActionKey) -> int:
+        return self.attempt_count(self._proposal_context(context), action)
 
     def note_legal(
         self,
