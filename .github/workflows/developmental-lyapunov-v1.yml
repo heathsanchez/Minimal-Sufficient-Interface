@@ -1,0 +1,39 @@
+name: Developmental Lyapunov V1
+
+on:
+  push:
+    branches: [developmental-lyapunov-v1]
+    paths:
+      - 'lean/DevelopmentalLyapunov.lean'
+      - 'lean/DevelopmentalCategory.lean'
+      - 'lean/TypedBehaviouralCongruence.lean'
+      - '.github/workflows/developmental-lyapunov-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check typed behavioural congruence
+        env:
+          LEAN_PATH: lean
+        run: lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+      - name: Check developmental category
+        env:
+          LEAN_PATH: lean
+        run: lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+      - name: Check developmental Lyapunov theorem
+        env:
+          LEAN_PATH: lean
+        run: lean lean/DevelopmentalLyapunov.lean
+      - name: Reject placeholders
+        run: |
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' lean/DevelopmentalLyapunov.lean
