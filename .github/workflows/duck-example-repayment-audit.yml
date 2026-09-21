@@ -1,0 +1,50 @@
+name: Duck example repayment probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-ducktape-duck-v1]
+    paths:
+      - '.github/workflows/duck-example-repayment-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - name: Probe bundled benchmark schema
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("vendor/duck-harness/example-run/benchmark.json")
+          data = json.loads(p.read_text())
+
+          def shape(x, depth=0, max_depth=4):
+              ind = "  " * depth
+              if isinstance(x, dict):
+                  print(f"{ind}dict keys={list(x)[:40]}")
+                  if depth < max_depth:
+                      for k, v in list(x.items())[:12]:
+                          print(f"{ind}{k!r}:")
+                          shape(v, depth + 1, max_depth)
+              elif isinstance(x, list):
+                  print(f"{ind}list len={len(x)}")
+                  if x and depth < max_depth:
+                      print(f"{ind}[0]:")
+                      shape(x[0], depth + 1, max_depth)
+              else:
+                  value = repr(x)
+                  print(f"{ind}{type(x).__name__}: {value[:240]}")
+
+          shape(data)
+          PY
