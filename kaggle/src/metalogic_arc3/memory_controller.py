@@ -188,16 +188,32 @@ class MemoryGraphController(OnlineController):
             ]
             guard = self._exploration_guard(obs)
 
-            if token.source == "explore" and allowed:
-                # Ignore the inherited visit store: DuckTape's earned attempts
-                # are the sole cross-episode exploration authority.
-                token = min(
-                    allowed,
+            if token.source == "explore" and catalog:
+                # Keep the successful two-stage search geometry, but encode
+                # both stages in the single immutable DuckTape log:
+                #
+                #   proposal pressure -> exact consequence override -> actual attempt.
+                #
+                # The first signal controls broad exploration. The second says
+                # which sibling has really been paid for when a known-dead
+                # branch is skipped.
+                proposal = min(
+                    catalog,
                     key=lambda candidate: (
-                        self.memory.attempt_count(guard, self._action_key(candidate)),
+                        self.memory.proposal_count(guard, self._action_key(candidate)),
                         self._candidate_key(candidate),
                     ),
                 )
+                self.memory.note_proposal(guard, self._action_key(proposal))
+                token = proposal
+                if self._action_key(proposal) in forbidden and allowed:
+                    token = min(
+                        allowed,
+                        key=lambda candidate: (
+                            self.memory.attempt_count(guard, self._action_key(candidate)),
+                            self._candidate_key(candidate),
+                        ),
+                    )
                 self._last_action = token
             elif self._action_key(token) in forbidden and allowed:
                 token = min(
