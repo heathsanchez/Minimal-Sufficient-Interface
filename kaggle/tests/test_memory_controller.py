@@ -33,6 +33,28 @@ class MemoryGraphControllerContracts(unittest.TestCase):
         second_episode = [c.observe_and_choose(start).action_id for _ in range(4)]
         self.assertEqual(second_episode, [3, 4, 3, 3])
 
+    def test_ducktape_never_pays_twice_for_known_terminal_leaf(self):
+        start = frame()
+
+        duck = MemoryGraphController((3, 4), archived_capabilities=())
+        paid_once = [duck.observe_and_choose(start).action_id for _ in range(4)]
+        self.assertEqual(paid_once, [3, 4, 3, 4])
+        duck.record_terminal_failure("GAME_OVER")
+        duck.reset_episode()
+
+        # DuckTape keeps the earned terminal consequence and changes only the
+        # first decision whose known child is closed.
+        with_ducktape = [duck.observe_and_choose(start).action_id for _ in range(4)]
+        self.assertEqual(with_ducktape, [3, 4, 3, 3])
+
+        # The ablation has the same controller but no earned log. It pays for
+        # the exact failed leaf again.
+        forgetful = MemoryGraphController((3, 4), archived_capabilities=())
+        without_ducktape = [forgetful.observe_and_choose(start).action_id for _ in range(4)]
+        self.assertEqual(without_ducktape, paid_once)
+        self.assertNotEqual(with_ducktape, without_ducktape)
+        self.assertGreater(duck.memory.log_size, 0)
+
     def test_progress_program_becomes_prospective_option_and_repeats_without_becoming_a_rule(self):
         c = MemoryGraphController((3, 4), archived_capabilities=(), max_transfer_depth=8)
         start = frame(level=0)
@@ -42,7 +64,7 @@ class MemoryGraphControllerContracts(unittest.TestCase):
         second = c.observe_and_choose(start)
         self.assertEqual([first.action_id, second.action_id], [3, 4])
 
-        # The next public observation proves progress.  The successful source
+        # The next public observation proves progress. The successful source
         # suffix is promoted, then proposed at the new level as a hypothesis.
         transfer1 = c.observe_and_choose(frame(level=1))
         self.assertEqual(c.memory.capability_count, 1)
