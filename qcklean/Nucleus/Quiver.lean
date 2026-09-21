@@ -1,5 +1,6 @@
 import Mathlib.CategoryTheory.PathCategory.Basic
 import Mathlib.CategoryTheory.Category.Quiv
+import Mathlib.Data.Fintype.Basic
 
 namespace Nucleus
 
