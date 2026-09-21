@@ -162,6 +162,37 @@ The proof composes an arbitrary future transport out of `B` with `a` and applies
 
 The graph theorem below consumes the merge-safety judgment. Its compressed graph is a certified structural projection, not a claim that an original whole-boundary transport can automatically be retyped over a boundary whose nodes have been collapsed.
 
+### 6.1 Closed-loop continuation neutrality
+
+A certified closed continuation may return to the same form without being behaviorally trivial. V0 therefore distinguishes syntactic return from protected behavioral return.
+
+For an endotransport `loop : VerifiedTransport Ωauth A A`, define:
+
+```lean
+ContinuationNeutral loop :=
+  ∀ x : A.State, ContinuationSafe Ωauth A (loop.mapState x) x
+```
+
+This is deliberately stronger than immediate protected agreement: a loop is neutral only when no accepted future continuation and protected test can expose a difference between the looped state and the original state.
+
+For `a : A ⇒ B` and `r : B ⇒ A`, define a behavioral inverse witness by neutrality of both composites:
+
+```lean
+structure BehavioralInverse
+    (a : VerifiedTransport Ωauth A B)
+    (r : VerifiedTransport Ωauth B A) : Prop where
+  sourceLoop : ContinuationNeutral (a.comp r)
+  targetLoop : ContinuationNeutral (r.comp a)
+```
+
+The induced quotient maps must then be mutual inverses on protected behavior. V0 proves:
+
+- a continuation-neutral loop induces the identity map on `ProtectedBehavior Ωauth A`;
+- a `BehavioralInverse a r` makes `behaviorMap a` and `behaviorMap r` inverse maps;
+- if a closed loop has a future protected witness that distinguishes `loop.mapState x` from `x`, the loop is not continuation-neutral and cannot witness behavioral reversibility.
+
+This theorem is a generic path-independence/closed-loop obstruction result. It introduces no new nucleus primitive, no factorization assumption, and no claim that every syntactically reversible transport is behaviorally reversible.
+
 ## 7. Certified nonlinear lineage
 
 ### 7.1 Nodes and whole-boundary hyperedges
