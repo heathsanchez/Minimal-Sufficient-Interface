@@ -1,4 +1,3 @@
-import Mathlib.Tactic.DeriveFintype
 import Nucleus.Quiver
 
 open CategoryTheory
@@ -8,8 +7,16 @@ open Nucleus
 #check Vertex
 #check primitiveEdge
 
-inductive V | a | b deriving DecidableEq, Fintype, Repr
-inductive E | left | right deriving DecidableEq, Fintype, Repr
+inductive V | a | b deriving DecidableEq, Repr
+inductive E | left | right deriving DecidableEq, Repr
+
+instance : Fintype V where
+  elems := {.a, .b}
+  complete := by intro x; cases x <;> simp
+
+instance : Fintype E where
+  elems := {.left, .right}
+  complete := by intro x; cases x <;> simp
 
 def G : FiniteQuiver where
   V := V
