@@ -265,13 +265,21 @@ open Nucleus.Fixtures
 #check pathBehEq_postcomp
 #check pathBehEq_congruence
 
-example : ¬ ImmediateObsEq futureFixtureAction futureFixtureObs
-    futureP futureQ := by
-  exact futureImmediateWeakness
+example : ImmediateObsEq futureFixtureAction futureFixtureObs
+    futureP futureQ :=
+  futureImmediateWeakness.1
 
-example : ¬ OneStateEq sourceFixtureAction sourceFixtureObs
-    sourceChosen sourceP sourceQ := by
-  exact sourceStateWeakness
+example : ¬ PathBehEq futureFixtureAction futureFixtureObs futureObserve
+    futureP futureQ :=
+  futureImmediateWeakness.2
+
+example : OneStateEq sourceFixtureAction sourceFixtureObs
+    sourceChosen sourceP sourceQ :=
+  sourceStateWeakness.1
+
+example : ¬ PathBehEq sourceFixtureAction sourceFixtureObs sourceObserve
+    sourceP sourceQ :=
+  sourceStateWeakness.2
 \`\`\`
 
 The public negative names intentionally state that the corresponding weak relation is inadequate; the fixture definitions below must make these proofs executable rather than axiomatic.
