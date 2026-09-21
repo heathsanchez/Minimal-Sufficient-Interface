@@ -56,6 +56,7 @@ V0 deliberately excludes:
 - empirical truth or complete real-world provenance;
 - unrestricted generation of fresh identifier types at runtime;
 - arbitrary cyclic proof dependencies;
+- arbitrary factorization of whole-boundary tests into node-local component tests;
 - infinite traces, final coalgebras, fairness, and eternal-productivity theorems;
 - approximate, probabilistic, or nondeterministic evaluators;
 - a universal query-preservation claim;
@@ -123,12 +124,14 @@ For forms `A` and `B`, `TransportData A B` contains:
 
 `VerifiedTransport Ωauth A B` extends this runtime data with erased proofs that the authority-snapshot checker accepts the certificate and that the certificate is live at `Ωauth`.
 
-The V0 snapshot interface supplies canonical identity-certificate data and certificate composition with checker/liveness closure laws. This is an abstract authority boundary, not a cryptographic implementation.
+The V0 snapshot interface supplies canonical identity-certificate data, certificate composition with checker/liveness closure laws, and a declared semantic certificate equality `CertEq`. `CertEq` is an equivalence, acceptance and liveness respect it, composition is congruent under it, and the identity/associativity laws hold under it. This is an abstract authority boundary, not a cryptographic implementation or a requirement that certificate bytes be literally equal.
+
+`TransportEq a b` is the declared equality for verified transports. It requires pointwise equality of `mapState` and `pullTest`, equality of the underlying lifted protected-test values, and `CertEq a.cert b.cert`. Proof fields and raw certificate representation are not compared by Lean structure equality.
 
 V0 defines identity and composition and proves:
 
-- left and right identity;
-- associativity up to extensional equality of state/test/lift maps and the declared proof equality for certificate composition;
+- left and right identity under `TransportEq`;
+- associativity under `TransportEq`;
 - preservation of protected decisive verdicts;
 - closure of verification under identity and composition.
 
@@ -171,7 +174,7 @@ A certified source node has:
 - a rank;
 - an append-only base-support family.
 
-A source lineage carries a finite family `formAt : FormCode → Form`. For a canonically ordered finite node boundary, its boundary form is the finite dependent product of the assigned node forms: states are component tuples, tests select one component test, and evaluation is componentwise. This makes a whole-boundary transport an ordinary `VerifiedTransport` rather than an informal annotation.
+A source lineage carries a finite family `formAt : FormCode → Form`. V0 also declares an explicit `ComponentwiseBoundaryModel` instance: for a canonically ordered finite node boundary, states are dependent tuples, tests select one component test, and evaluation is componentwise. This is a restricted executable reference model. It is **not** a theorem that arbitrary CLC whole-boundary forms or tests factor into node-local products; replacing it requires a separately certified boundary model and factorization law.
 
 An active source hyperedge has stable finite input and output **ports**, not just node sets:
 
@@ -316,7 +319,7 @@ flashStep_congr (h : C ≈ᶜ D) (e : CheckedViewEvent C.raw) :
     flashStep D (rebaseChecked h.rawEq e)
 ```
 
-The implementation may adjust implicit-argument order, but these are the required dependent types. The lemmas contain no query premise.
+Use the displayed dependent types and argument order. The lemmas contain no query premise.
 
 `AllowedTrace Ωauth q C E` is recursive: each event must be an `AllowedStep` at the closed state where it occurs, and the tail is checked against the result of `flashStep`. V0 proves admissibility and `ViewEq` after every step. `projectTrace` threads that simulation witness, rebases each next projected delta onto the actual projected pre-state, and returns a dependent checked projected trace rather than a plain `List.map`. `Grow` is the corresponding total fold over a proof-carrying allowed trace.
 
