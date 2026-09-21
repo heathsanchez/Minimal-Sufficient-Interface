@@ -14,12 +14,12 @@ open NucleusPresentedCategory
 /-- Generators for adjoining one genuinely new arrow to an existing category:
     every old morphism is retained as a generator, plus one new seed. -/
 inductive AdjoinEdge (C : SmallCategory.{u, v}) (X₀ Y₀ : C.Obj) :
-    C.Obj → C.Obj → Type v
+    C.Obj → C.Obj → Type (max u v)
   | old {X Y : C.Obj} : C.Hom X Y → AdjoinEdge C X₀ Y₀ X Y
   | seed : AdjoinEdge C X₀ Y₀ X₀ Y₀
 
 def adjoinQuiver (C : SmallCategory.{u, v}) (X₀ Y₀ : C.Obj) :
-    NucleusQuiver where
+    NucleusQuiver.{u, max u v} where
   Obj := C.Obj
   Edge := AdjoinEdge C X₀ Y₀
 
@@ -48,7 +48,7 @@ def equations (C : SmallCategory.{u, v}) (X₀ Y₀ : C.Obj) :
 /-- The free category obtained by adjoining exactly one new arrow X₀→Y₀
     to C, while quotienting by the old category laws. -/
 def category (C : SmallCategory.{u, v}) (X₀ Y₀ : C.Obj) :
-    SmallCategory :=
+    SmallCategory.{u, max u v} :=
   NucleusPresentedCategory.category (equations C X₀ Y₀)
 
 /-- Canonical image of an old morphism in the free adjunction. -/
@@ -104,9 +104,8 @@ theorem interpretation_satisfies
     Satisfies (interpretation F a) (equations C X₀ Y₀) := by
   intro X Y p q h
   cases h with
-  | id Z =>
-      rw [eval_gen, eval_nil]
-      exact F.map_id Z
+  | id =>
+      simpa [interpretation] using F.map_id _
   | comp g f =>
       rw [eval_append, eval_gen, eval_gen, eval_gen]
       exact (F.map_comp g f).symm
