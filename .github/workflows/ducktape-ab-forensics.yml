@@ -1,0 +1,74 @@
+name: DuckTape A/B forensics
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-ducktape-duck-v1]
+    paths:
+      - '.github/workflows/ducktape-ab-forensics.yml'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: duck-vs-ducktape-bt11
+          path: evidence
+          github-token: ${{ github.token }}
+          run-id: 35665378271
+      - name: Inspect matched A/B evidence
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          root = Path("evidence")
+          print("FILES")
+          for p in sorted(root.rglob("*")):
+              if p.is_file():
+                  print(p, p.stat().st_size)
+
+          report = root / "ducktape-duck-ab.json"
+          if report.exists():
+              print("\nREPORT")
+              print(report.read_text())
+
+          dt = list(root.rglob("ducktape.jsonl"))
+          print("\nDUCKTAPE_LOGS", len(dt))
+          for p in dt:
+              print("LOG", p)
+              kinds = {}
+              rows = []
+              for line in p.read_text().splitlines():
+                  if not line.strip(): continue
+                  row = json.loads(line)
+                  kinds[row.get("kind")] = kinds.get(row.get("kind"), 0) + 1
+                  rows.append(row)
+              print("KINDS", json.dumps(kinds, sort_keys=True))
+              for i,row in enumerate(rows):
+                  print("EVENT", i, json.dumps(row, sort_keys=True)[:2000])
+
+          for name in ("duck-baseline.log","duck-ducktape.log"):
+              p = root / name
+              if not p.exists(): continue
+              text = p.read_text(errors="replace")
+              print("\nLOGSUMMARY", name)
+              for pattern in [
+                  r"\[finished\].*",
+                  r"retryable[^\n]*",
+                  r"timed? out[^\n]*",
+                  r"timeout[^\n]*",
+                  r"yield[^\n]*",
+                  r"HTTP[^\n]*",
+                  r"error[^\n]*",
+                  r"tokens=[^\n]*",
+                  r"actions=[^\n]*",
+              ]:
+                  hits = re.findall(pattern, text, flags=re.I)
+                  if hits:
+                      print(pattern, "COUNT", len(hits))
+                      for h in hits[-20:]:
+                          print(" ", h[:1000])
+          PY
