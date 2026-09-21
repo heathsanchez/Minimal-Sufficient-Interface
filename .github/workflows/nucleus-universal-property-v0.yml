@@ -1,0 +1,74 @@
+name: Nucleus Universal Property V0
+
+on:
+  push:
+    branches: [nucleus-universal-property-v0]
+    paths:
+      - 'qcklean/**'
+      - 'docs/superpowers/specs/2026-09-21-nucleus-universal-property-v0-design.md'
+      - 'docs/superpowers/plans/2026-09-21-nucleus-universal-property-v0.md'
+      - '.github/workflows/nucleus-universal-property-v0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nucleus-v0:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen QCK and CLC sources
+        run: |
+          set -euo pipefail
+          test "$(git hash-object qcklean/QCKCore.lean)" = "b9b1921c49c9947a02009be124286cfe3c723cb4"
+          git diff --exit-code 900a73c1d386ee0eee1205a1cf31d270f3311ef7 --             'qcklean/QCK*.lean' 'qcklean/CLC/**'
+
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch pinned Mathlib
+        working-directory: qcklean
+        run: |
+          lake update
+          lake exe cache get
+
+      - name: Reject placeholders and local axioms
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          if [ -d Nucleus ]; then
+            ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' Nucleus               | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#print[[:space:]]+axioms([[:space:]]|$)'
+          fi
+
+      - name: Build QCK and existing registered roots
+        working-directory: qcklean
+        run: lake build QCK
+
+      - name: Run every present Nucleus interface and fixture test
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(Nucleus/*Test.lean)
+          for file in "${files[@]}"; do
+            lake env lean "$file"
+          done
+
+      - name: Audit Nucleus theorem dependencies when present
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          if [ -f Nucleus/Audit.lean ]; then
+            lake env lean Nucleus/Audit.lean 2>&1 | tee /tmp/nucleus-axioms.log
+            ! grep -E 'sorryAx' /tmp/nucleus-axioms.log
+            if grep -F 'depends on axioms:' /tmp/nucleus-axioms.log               | grep -vE "depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$"; then
+              echo "Unexpected foundational dependency detected"
+              exit 1
+            fi
+          fi
