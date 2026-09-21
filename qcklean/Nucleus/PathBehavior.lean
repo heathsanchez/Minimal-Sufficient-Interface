@@ -99,8 +99,9 @@ theorem pathBehEq_congruence
     {W X Y Z : FreeCategory G} {p q : X ⟶ Y}
     (h : PathBehEq A Obs observe p q)
     (f : W ⟶ X) (g : Y ⟶ Z) :
-    PathBehEq A Obs observe (f ≫ p ≫ g) (f ≫ q ≫ g) :=
-  pathBehEq_postcomp (pathBehEq_precomp h f) g
+    PathBehEq A Obs observe (f ≫ p ≫ g) (f ≫ q ≫ g) := by
+  simpa only [Category.assoc] using
+    (pathBehEq_postcomp (pathBehEq_precomp h f) g)
 
 instance pathHomRelCongruence
     {G : FiniteQuiver.{u, v}}
