@@ -69,7 +69,7 @@ theorem oldMap_id (C : SmallCategory.{u, v}) {X₀ Y₀ : C.Obj}
     oldMap C (X₀ := X₀) (Y₀ := Y₀) (C.id Z) =
       (category C X₀ Y₀).id Z := by
   exact Quotient.sound
-    (GeneratedCongruence.equation (AdjoinEquation.id C X₀ Y₀ Z))
+    (GeneratedCongruence.equation (AdjoinEquation.id (C := C) (X₀ := X₀) (Y₀ := Y₀) Z))
 
 theorem oldMap_comp (C : SmallCategory.{u, v}) {X₀ Y₀ : C.Obj}
     {A B D : C.Obj} (g : C.Hom B D) (f : C.Hom A B) :
@@ -79,7 +79,7 @@ theorem oldMap_comp (C : SmallCategory.{u, v}) {X₀ Y₀ : C.Obj}
         (oldMap C (X₀ := X₀) (Y₀ := Y₀) f) := by
   exact (Quotient.sound
     (GeneratedCongruence.equation
-      (AdjoinEquation.comp C X₀ Y₀ g f))).symm
+      (AdjoinEquation.comp (C := C) (X₀ := X₀) (Y₀ := Y₀) g f))).symm
 
 /-- Given an interpretation F of the old category and one candidate arrow
     a : F(X₀)→F(Y₀), interpret the generators of the free adjunction. -/
