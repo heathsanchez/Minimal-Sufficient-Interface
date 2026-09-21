@@ -163,9 +163,12 @@ theorem extension_on_path_unique
       E.mapQ (project (Ω := Ω) p) = eval I p := by
   intro X Y p
   induction p with
-  | nil X =>
-      exact E.map_id X
-  | @snoc X Y Z p e ih =>
+  | nil =>
+      calc
+        E.mapQ (project (Ω := Ω) (.nil X)) =
+            C.id (I.obj X) := E.map_id X
+        _ = eval I (.nil X) := (eval_nil I X).symm
+  | snoc p e ih =>
       calc
         E.mapQ (project (Ω := Ω) (.snoc p e)) =
             E.mapQ ((category Ω).comp
@@ -195,7 +198,9 @@ theorem presented_universal
   intro E' X Y q
   refine Quotient.inductionOn q ?_
   intro p
-  rw [extension_on_path_unique E']
-  rfl
+  calc
+    E'.mapQ (project (Ω := Ω) p) = eval I p :=
+      extension_on_path_unique E' p
+    _ = (descend I Ω hSat).mapQ (project (Ω := Ω) p) := rfl
 
 end NucleusPresentedCategory
