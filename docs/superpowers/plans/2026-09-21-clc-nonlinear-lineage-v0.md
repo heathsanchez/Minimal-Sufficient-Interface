@@ -349,6 +349,11 @@ open CLC
 #check observeProtected
 #check behaviorMap
 #check behaviorMap_naturality
+#check ContinuationNeutral
+#check BehavioralInverse
+#check behaviorMap_neutral
+#check behaviorMap_inverse_left
+#check behaviorMap_inverse_right
 ```
 
 Reuse the finite form/authority fixture from `TransportTest` by moving shared fixture definitions into a private namespace duplicated in this test, not into production code. Add examples that reflexivity, symmetry, transitivity, and one-step forward mapping compile.
@@ -403,11 +408,48 @@ abbrev ProtectedBehavior (Ωauth : AuthoritySnapshot Cert) (A : Form) :=
 
 Define `observeProtected Ωauth A p` with `Quotient.lift`; well-definedness follows by applying continuation safety to `VerifiedTransport.id Ωauth A`. Define `behaviorMap a` with `Quotient.map a.mapState` and `continuationSafe_map`. Prove naturality on representatives with `Quotient.inductionOn`; the result must state that mapping a representative and then quotienting equals quotienting and then applying `behaviorMap`.
 
+Add the generic closed-loop obstruction layer without introducing any domain-specific semantics:
+
+```lean
+def ContinuationNeutral
+    (loop : VerifiedTransport Ωauth A A) : Prop :=
+  ∀ x : A.State, ContinuationSafe Ωauth A (loop.mapState x) x
+
+structure BehavioralInverse
+    (a : VerifiedTransport Ωauth A B)
+    (r : VerifiedTransport Ωauth B A) : Prop where
+  sourceLoop : ContinuationNeutral (a.comp r)
+  targetLoop : ContinuationNeutral (r.comp a)
+```
+
+Prove:
+
+```lean
+theorem behaviorMap_neutral
+    (loop : VerifiedTransport Ωauth A A)
+    (h : ContinuationNeutral loop) :
+    behaviorMap loop = id
+
+theorem behaviorMap_inverse_left
+    (a : VerifiedTransport Ωauth A B)
+    (r : VerifiedTransport Ωauth B A)
+    (h : BehavioralInverse a r) :
+    Function.LeftInverse (behaviorMap r) (behaviorMap a)
+
+theorem behaviorMap_inverse_right
+    (a : VerifiedTransport Ωauth A B)
+    (r : VerifiedTransport Ωauth B A)
+    (h : BehavioralInverse a r) :
+    Function.RightInverse (behaviorMap r) (behaviorMap a)
+```
+
+The proofs must live at the continuation-safe quotient level: a syntactic return to the same form is not enough. Add one positive strict re-encoding fixture whose forward/reverse composites are continuation-neutral, and one negative closed-loop fixture with an explicit future protected witness separating the looped state from the original state. The negative fixture must fail solely because the closed loop is behaviorally non-neutral; do not add any fixture-specific semantics.
+
 - [ ] **Step 4: Run continuation tests**
 
 Run: `cd qcklean && lake env lean CLC/ContinuationTest.lean`
 
-Expected: PASS; no `Fintype` or `DecidableEq` instance is asserted for `ProtectedBehavior`.
+Expected: PASS; no `Fintype` or `DecidableEq` instance is asserted for `ProtectedBehavior`; the neutral-loop quotient action is identity, the strict re-encoding pair is behaviorally invertible, and the non-neutral loop fixture is rejected.
 
 - [ ] **Step 5: Commit continuation safety**
 
