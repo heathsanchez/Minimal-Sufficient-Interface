@@ -1,0 +1,161 @@
+name: Duck vs DuckTape A/B
+on:
+  push:
+    branches: [arc3-ducktape-duck-v1]
+    paths:
+      - 'kaggle/ducktape_duck_patch.py'
+      - '.github/workflows/ducktape-duck-ab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require a configured OpenRouter key without exposing it
+        shell: bash
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "DUCK_AB_BLOCKED=no_openrouter_secret"
+            exit 2
+          fi
+          echo "DUCK_AB_KEY_PRESENT=PASS"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply DuckTape without changing Duck's model or tool count
+        run: |
+          python kaggle/ducktape_duck_patch.py             --root vendor/duck-harness/ARC3-Inference
+          grep -q 'DuckTapeToolAgent'             vendor/duck-harness/ARC3-Inference/inference/framework/solver.py
+          test -f vendor/duck-harness/ARC3-Inference/inference/agent/ducktape.py
+          echo "DUCKTAPE_PUBLIC_DUCK_PATCH=PASS"
+
+      - name: Install public Duck exactly from its lockfile
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          import inference
+          import taaf
+          from inference.agent.ducktape import DuckTapeToolAgent
+          print("PUBLIC_DUCK_IMPORT=PASS")
+          PY
+
+      - name: Baseline public Duck - ls20
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          DUCKTAPE_ENABLED: "0"
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out/baseline"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/baseline"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=ls20           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-baseline-ls20           make interactive | tee "$GITHUB_WORKSPACE/duck-baseline.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/baseline" make score_run             | tee "$GITHUB_WORKSPACE/duck-baseline-score.log"
+
+      - name: Candidate public Duck plus DuckTape - ls20
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          DUCKTAPE_ENABLED: "1"
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out/ducktape"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/ducktape"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=ls20           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-ducktape-ls20           make interactive | tee "$GITHUB_WORKSPACE/duck-ducktape.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/ducktape" make score_run             | tee "$GITHUB_WORKSPACE/duck-ducktape-score.log"
+
+      - name: Compare matched A/B
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          def load_eval(root):
+              p = Path(root) / "evaluation.json"
+              if not p.exists():
+                  raise SystemExit(f"missing {p}")
+              data = json.loads(p.read_text())
+              game = data["games"][0]
+              return {
+                  "score": float(data["score"]),
+                  "game_score": float(game["score"]),
+                  "levels": float(game["levels_completed_mean"]),
+                  "total_levels": int(game["total_levels"]),
+              }
+
+          baseline = load_eval("out/baseline")
+          candidate = load_eval("out/ducktape")
+
+          dt_files = list(Path("out/ducktape").rglob("ducktape.jsonl"))
+          blocked = 0
+          consequences = 0
+          capabilities = 0
+          for p in dt_files:
+              for line in p.read_text().splitlines():
+                  if not line.strip():
+                      continue
+                  event = json.loads(line)
+                  kind = event.get("kind")
+                  blocked += kind == "BLOCKED"
+                  consequences += kind == "CONSEQUENCE"
+                  capabilities += kind == "CAPABILITY"
+
+          report = {
+              "tufa_head": "7652836056c59e044f093e3c13ed7438c814169e",
+              "game": "ls20",
+              "model": "Qwen/Qwen3.6-27B",
+              "temperature": 0,
+              "max_actions": 180,
+              "baseline": baseline,
+              "ducktape": candidate,
+              "delta_score": candidate["score"] - baseline["score"],
+              "delta_levels": candidate["levels"] - baseline["levels"],
+              "ducktape_events": {
+                  "consequences": consequences,
+                  "capabilities": capabilities,
+                  "blocked_repayments": blocked,
+              },
+          }
+          Path("ducktape-duck-ab.json").write_text(json.dumps(report, indent=2))
+          print(json.dumps(report, indent=2))
+          print("DUCK_VS_DUCKTAPE_AB=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: duck-vs-ducktape-ls20
+          path: |
+            ducktape-duck-ab.json
+            duck-baseline.log
+            duck-baseline-score.log
+            duck-ducktape.log
+            duck-ducktape-score.log
+            out/baseline/evaluation.json
+            out/ducktape/evaluation.json
+            out/ducktape/**/ducktape.jsonl
+          if-no-files-found: warn
