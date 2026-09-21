@@ -33,7 +33,7 @@ inductive AdjoinEquation
   | id (Z : C.Obj) :
       AdjoinEquation C X₀ Y₀
         (Path.gen (AdjoinEdge.old (C.id Z)))
-        (.nil Z)
+        (Path.nil (G := adjoinQuiver C X₀ Y₀) Z)
   | comp {A B D : C.Obj} (g : C.Hom B D) (f : C.Hom A B) :
       AdjoinEquation C X₀ Y₀
         (Path.append
