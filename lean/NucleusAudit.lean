@@ -1,0 +1,8 @@
+import NucleusUniversal
+
+#print axioms NucleusFreeCategory.free_universal
+#print axioms NucleusPresentedCategory.presented_universal
+#print axioms NucleusResidualExtension.free_adjoin_universal
+#print axioms NucleusDevelopmental.generation_universal
+#print axioms NucleusUniversal.nucleus_universal
+#print axioms NucleusUniversal.developmental_universal
