@@ -15,7 +15,7 @@ open Nucleus.Fixtures
 #check pathBehEq_postcomp
 #check pathBehEq_congruence
 
-example : ImmediateObsEq futureFixtureAction futureFixtureObs
+example : ImmediateObsEq futureFixtureAction futureFixtureObs futureObserve
     futureP futureQ :=
   futureImmediateWeakness.1
 
@@ -23,7 +23,7 @@ example : ¬ PathBehEq futureFixtureAction futureFixtureObs futureObserve
     futureP futureQ :=
   futureImmediateWeakness.2
 
-example : OneStateEq sourceFixtureAction sourceFixtureObs
+example : OneStateEq sourceFixtureAction sourceFixtureObs sourceObserve
     sourceChosen sourceP sourceQ :=
   sourceStateWeakness.1
 
