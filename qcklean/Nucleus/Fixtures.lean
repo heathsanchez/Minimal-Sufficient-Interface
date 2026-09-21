@@ -15,16 +15,14 @@ def actionOfPrefunctor
   map := fun p x => (CategoryTheory.Paths.lift φ).map p x
   map_id := by
     intro X x
-    change (ConcreteCategory.hom ((CategoryTheory.Paths.lift φ).map (𝟙 X))) x = x
-    rw [Functor.map_id]
-    rfl
+    change ((CategoryTheory.Paths.lift φ).map (𝟙 X)) x = x
+    simp
   map_comp := by
     intro X Y Z p q x
-    change (ConcreteCategory.hom ((CategoryTheory.Paths.lift φ).map (p ≫ q))) x =
-      (ConcreteCategory.hom ((CategoryTheory.Paths.lift φ).map q))
-        ((ConcreteCategory.hom ((CategoryTheory.Paths.lift φ).map p)) x)
-    rw [Functor.map_comp]
-    rfl
+    change ((CategoryTheory.Paths.lift φ).map (p ≫ q)) x =
+      ((CategoryTheory.Paths.lift φ).map q)
+        (((CategoryTheory.Paths.lift φ).map p) x)
+    simp
 
 def ImmediateObsEq
     {G : FiniteQuiver.{u, v}}
@@ -94,47 +92,27 @@ def p : (show FreeCategory G from V.x) ⟶ (show FreeCategory G from V.y) :=
 def q : (show FreeCategory G from V.x) ⟶ (show FreeCategory G from V.y) :=
   (primitiveEdge G E.q).toPath
 
-@[simp] theorem map_p (b : Bool) : action.map p b = b := by
-  change (ConcreteCategory.hom
-    ((CategoryTheory.Paths.lift prefunctor).map
-      (primitiveEdge G E.p).toPath)) b = b
-  rw [CategoryTheory.Paths.lift_toPath]
-  rfl
-
-@[simp] theorem map_q (b : Bool) : action.map q b = false := by
-  change (ConcreteCategory.hom
-    ((CategoryTheory.Paths.lift prefunctor).map
-      (primitiveEdge G E.q).toPath)) b = false
-  rw [CategoryTheory.Paths.lift_toPath]
-  rfl
-
 def r : (show FreeCategory G from V.y) ⟶ (show FreeCategory G from V.z) :=
   (primitiveEdge G E.r).toPath
 
 @[simp] theorem map_p (b : Bool) : action.map p b = false := by
-  change (ConcreteCategory.hom
-    ((CategoryTheory.Paths.lift prefunctor).map
-      (primitiveEdge G E.p).toPath)) b = false
-  rw [CategoryTheory.Paths.lift_toPath]
-  rfl
+  change ((CategoryTheory.Paths.lift prefunctor).map
+    (primitiveEdge G E.p).toPath) b = false
+  simp [prefunctor, edgeFn]
 
 @[simp] theorem map_q (b : Bool) : action.map q b = true := by
-  change (ConcreteCategory.hom
-    ((CategoryTheory.Paths.lift prefunctor).map
-      (primitiveEdge G E.q).toPath)) b = true
-  rw [CategoryTheory.Paths.lift_toPath]
-  rfl
+  change ((CategoryTheory.Paths.lift prefunctor).map
+    (primitiveEdge G E.q).toPath) b = true
+  simp [prefunctor, edgeFn]
 
 @[simp] theorem map_r (b : Bool) : action.map r b = b := by
-  change (ConcreteCategory.hom
-    ((CategoryTheory.Paths.lift prefunctor).map
-      (primitiveEdge G E.r).toPath)) b = b
-  rw [CategoryTheory.Paths.lift_toPath]
-  rfl
+  change ((CategoryTheory.Paths.lift prefunctor).map
+    (primitiveEdge G E.r).toPath) b = b
+  simp [prefunctor, edgeFn]
 
 theorem immediate : ImmediateObsEq action Obs observe p q := by
   intro b
-  rfl
+  simp [ImmediateObsEq, observe]
 
 theorem not_pathBehEq : ¬ PathBehEq action Obs observe p q := by
   intro h
@@ -199,10 +177,20 @@ def p : (show FreeCategory G from V.x) ⟶ (show FreeCategory G from V.y) :=
 def q : (show FreeCategory G from V.x) ⟶ (show FreeCategory G from V.y) :=
   (primitiveEdge G E.q).toPath
 
+@[simp] theorem map_p (b : Bool) : action.map p b = b := by
+  change ((CategoryTheory.Paths.lift prefunctor).map
+    (primitiveEdge G E.p).toPath) b = b
+  simp [prefunctor, edgeFn]
+
+@[simp] theorem map_q (b : Bool) : action.map q b = false := by
+  change ((CategoryTheory.Paths.lift prefunctor).map
+    (primitiveEdge G E.q).toPath) b = false
+  simp [prefunctor, edgeFn]
+
 def chosen : action.State (show FreeCategory G from V.x) := false
 
 theorem chosen_equal : OneStateEq action Obs observe chosen p q := by
-  rfl
+  simp [OneStateEq, chosen, observe]
 
 theorem not_pathBehEq : ¬ PathBehEq action Obs observe p q := by
   intro h
