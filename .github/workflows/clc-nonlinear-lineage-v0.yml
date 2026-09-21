@@ -1,0 +1,58 @@
+name: CLC Nonlinear Lineage V0
+
+on:
+  push:
+    branches: [clc-nonlinear-lineage-v0]
+    paths:
+      - 'qcklean/**'
+      - 'docs/superpowers/specs/2026-09-20-clc-nonlinear-lineage-v0-design.md'
+      - 'docs/superpowers/plans/2026-09-21-clc-nonlinear-lineage-v0.md'
+      - '.github/workflows/clc-nonlinear-lineage-v0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clc-v0:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen QCK sources
+        run: |
+          test "$(git hash-object qcklean/QCKCore.lean)" = "b9b1921c49c9947a02009be124286cfe3c723cb4"
+          git diff --exit-code baef39cd7b32c860e2d7aa80a95f3826b8a52738 -- 'qcklean/QCK*.lean'
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Fetch pinned Mathlib
+        working-directory: qcklean
+        run: |
+          lake update
+          lake exe cache get
+      - name: Reject placeholders and local axioms
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' CLC \
+            | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#print[[:space:]]+axioms([[:space:]]|$)'
+      - name: Build QCK and CLC
+        working-directory: qcklean
+        run: lake build QCK
+      - name: Run every CLC interface and fixture test
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          for file in CLC/*Test.lean; do lake env lean "$file"; done
+      - name: Audit CLC theorem dependencies
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          lake env lean CLC/Audit.lean 2>&1 | tee /tmp/clc-axioms.log
+          ! grep -E 'sorryAx' /tmp/clc-axioms.log
+          if grep -F 'depends on axioms:' /tmp/clc-axioms.log \
+            | grep -vE "depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$"; then
+            echo "Unexpected foundational dependency detected"
+            exit 1
+          fi
