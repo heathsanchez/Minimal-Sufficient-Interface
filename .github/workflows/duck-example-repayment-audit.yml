@@ -47,4 +47,9 @@ jobs:
                   print(f"{ind}{type(x).__name__}: {value[:240]}")
 
           shape(data)
+          run = data["game_runs"][0]
+          print("\nFIRST_HISTORY_ENTRIES")
+          for i, entry in enumerate(run.get("history", [])[:3]):
+              print(f"history[{i}]")
+              shape(entry, 1, 8)
           PY
