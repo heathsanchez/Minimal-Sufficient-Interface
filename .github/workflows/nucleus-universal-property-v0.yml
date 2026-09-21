@@ -50,6 +50,27 @@ jobs:
         working-directory: qcklean
         run: lake build QCK
 
+      - name: Compile present Nucleus sources in dependency order
+        working-directory: qcklean
+        run: |
+          set -euo pipefail
+          modules=(
+            Nucleus/Quiver.lean
+            Nucleus/Free.lean
+            Nucleus/PathBehavior.lean
+            Nucleus/Quotient.lean
+            Nucleus/Universal.lean
+            Nucleus/ResidualAdjoin.lean
+            Nucleus/Development.lean
+            Nucleus/Temporal.lean
+            Nucleus/Fixtures.lean
+          )
+          for file in "${modules[@]}"; do
+            if [ -f "$file" ]; then
+              lake env lean -o "${file%.lean}.olean" "$file"
+            fi
+          done
+
       - name: Run every present Nucleus interface and fixture test
         working-directory: qcklean
         run: |
