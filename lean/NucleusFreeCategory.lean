@@ -63,13 +63,13 @@ def category (G : NucleusQuiver.{u, v}) : SmallCategory where
     intro W X Y Z h g f
     exact Path.append_assoc h g f
 
-variable {G : NucleusQuiver.{u, v}} {C : SmallCategory}
+variable {G : NucleusQuiver.{u, v}} {C : SmallCategory.{w, x}}
 
 /-- Interpret every generated path in a target category. -/
-def eval (I : Interpretation G C) :
-    {X Y : G.Obj} → Path G X Y → C.Hom (I.obj X) (I.obj Y)
-  | _, _, .nil X => C.id (I.obj X)
-  | _, _, .snoc p e => C.comp (I.edge e) (eval I p)
+def eval (I : Interpretation G C) {X Y : G.Obj} :
+    Path G X Y → C.Hom (I.obj X) (I.obj Y)
+  | .nil _ => C.id (I.obj X)
+  | .snoc p e => C.comp (I.edge e) (eval I p)
 
 @[simp] theorem eval_nil (I : Interpretation G C) (X : G.Obj) :
     eval I (.nil X) = C.id (I.obj X) := rfl
@@ -84,6 +84,7 @@ theorem eval_append (I : Interpretation G C)
     eval I (Path.append q p) = C.comp (eval I q) (eval I p) := by
   induction q with
   | nil =>
+      rw [eval_nil]
       exact (C.id_comp (eval I p)).symm
   | snoc q e ih =>
       simp only [Path.append, eval]
@@ -110,9 +111,11 @@ theorem extension_unique (I : Interpretation G C) (E : Extension I) :
     ∀ {X Y : G.Obj} (p : Path G X Y), E.mapPath p = eval I p := by
   intro X Y p
   induction p with
-  | nil X =>
-      exact E.map_id X
-  | @snoc X Y Z p e ih =>
+  | nil =>
+      calc
+        E.mapPath (.nil X) = C.id (I.obj X) := E.map_id X
+        _ = eval I (.nil X) := (eval_nil I X).symm
+  | snoc p e ih =>
       calc
         E.mapPath (.snoc p e) =
             E.mapPath (Path.append (Path.gen e) p) := rfl
