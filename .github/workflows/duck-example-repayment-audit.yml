@@ -63,3 +63,18 @@ jobs:
               print(f"event[{i}]")
               shape(event, 1, 6)
           PY
+
+      - name: Audit all 500 bundled Duck runs
+        run: |
+          python kaggle/audit_public_duck_repayments.py \
+            vendor/duck-harness/example-run/artifacts \
+            --out duck-repayment-audit.json | tee duck-repayment-audit.log
+          grep -q 'DUCK_REPAYMENT_AUDIT=PASS' duck-repayment-audit.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: duck-repayment-audit
+          path: |
+            duck-repayment-audit.json
+            duck-repayment-audit.log
+          if-no-files-found: error
