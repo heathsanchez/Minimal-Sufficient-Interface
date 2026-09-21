@@ -29,9 +29,19 @@ jobs:
           LEAN_PATH: lean
         run: |
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean -o lean/GeneratedStage.olean lean/GeneratedStage.lean
           lean -o lean/NucleusQuiver.olean lean/NucleusQuiver.lean
           lean -o lean/NucleusFunctor.olean lean/NucleusFunctor.lean
           lean -o lean/NucleusFreeCategory.olean lean/NucleusFreeCategory.lean
           lean -o lean/NucleusPresentedCategory.olean lean/NucleusPresentedCategory.lean
           lean -o lean/NucleusResidualExtension.olean lean/NucleusResidualExtension.lean
           lean -o lean/NucleusDevelopmental.olean lean/NucleusDevelopmental.lean
+          lean -o lean/NucleusUniversal.olean lean/NucleusUniversal.lean
+          lean lean/NucleusAudit.lean 2>&1 | tee /tmp/nucleus-axioms.log
+          ! grep -E 'sorryAx' /tmp/nucleus-axioms.log
+          if grep -F 'depends on axioms:' /tmp/nucleus-axioms.log \
+            | grep -vE "depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]$"; then
+            echo "Unexpected foundational dependency detected"
+            exit 1
+          fi
