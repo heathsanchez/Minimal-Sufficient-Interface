@@ -7,28 +7,33 @@ from .runtime import ActionToken, Observation, OnlineController, normalize_frame
 
 
 class MemoryGraphController(OnlineController):
-    """Online controller whose retained developmental present is ARC .mg.
+    """DuckTape controller: all retained developmental state comes from the log.
 
-    Exact-context retention remains the authority for replaying a capability in
-    the state where it was witnessed.  MG-ARC3 additionally exposes witnessed
-    progress programs as *prospective constructors* at later levels.  Those
-    constructors are hypotheses only: exact refutation evidence may override a
-    transfer action at the first closed child, and no target-context success is
-    installed without an observed level increment.
+    The inherited controller supplies public observation normalization, archived
+    evidence gates and bounded action catalogues. Cross-episode attempts,
+    refutations and learned progress programs are authoritative only when they
+    are derivable from self.memory. The inherited mutable visit/retained stores
+    are cleared at every reset and never used for retained replay.
     """
 
     def __init__(
         self,
         *args: Any,
         max_transfer_depth: int = 32,
+        preserve_memory: bool = True,
         **kwargs: Any,
     ) -> None:
         if max_transfer_depth < 1:
             raise ValueError("max_transfer_depth must be positive")
         self.max_transfer_depth = int(max_transfer_depth)
+        self.preserve_memory = bool(preserve_memory)
         self.memory = ArcMemoryGraph()
         self._episode_context: ContextKey | None = None
         self._episode_program: list[ActionKey] = []
+        self._exact_replay: ProgramKey = ()
+        self._exact_replay_index = 0
+        self._active_transfer: ProgramKey = ()
+        self._transfer_index = 0
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -51,15 +56,28 @@ class MemoryGraphController(OnlineController):
         action_id, x, y = program_action
         return ActionToken(action_id, x, y, source)
 
+    def _clear_exact(self) -> None:
+        self._exact_replay = ()
+        self._exact_replay_index = 0
+
     def _clear_transfer(self) -> None:
-        self._active_transfer: ProgramKey = ()
+        self._active_transfer = ()
         self._transfer_index = 0
 
     def reset_episode(self) -> None:
-        # Intentionally does NOT clear self.memory.
+        if not self.preserve_memory:
+            self.memory = ArcMemoryGraph()
+
         super().reset_episode()
+
+        # The inherited stores are deliberately not developmental authority in
+        # DuckTape. Clearing them makes that falsifiable rather than rhetorical.
+        self._retained = {}
+        self._visits = {}
+
         self._episode_context = None
         self._episode_program = []
+        self._clear_exact()
         self._clear_transfer()
 
     def _process_previous_outcome(self, obs: Observation) -> None:
@@ -78,10 +96,9 @@ class MemoryGraphController(OnlineController):
                     source_level=int(previous_level),
                     target_level=int(obs.levels_completed),
                 )
-            # Everything before this boundary earned progress, so future
-            # failure evidence belongs only to the new level suffix.
             self._episode_context = self._memory_context(obs)
             self._episode_program = []
+            self._clear_exact()
             self._clear_transfer()
 
     def record_terminal_failure(self, consequence: str = "GAME_OVER") -> None:
@@ -93,6 +110,29 @@ class MemoryGraphController(OnlineController):
             consequence=consequence,
         )
 
+    def _next_exact(self, obs: Observation) -> ActionToken | None:
+        if self._exact_replay and self._exact_replay_index < len(self._exact_replay):
+            action = self._exact_replay[self._exact_replay_index]
+            if action[0] not in self._legal_ids(obs):
+                self._clear_exact()
+                return None
+            self._exact_replay_index += 1
+            return self._token(action, "retained")
+
+        self._clear_exact()
+        programs = self.memory.capability_programs_for_source(self._memory_context(obs))
+        if not programs:
+            return None
+        self._exact_replay = programs[0]
+        if not self._exact_replay:
+            return None
+        action = self._exact_replay[0]
+        if action[0] not in self._legal_ids(obs):
+            self._clear_exact()
+            return None
+        self._exact_replay_index = 1
+        return self._token(action, "retained")
+
     def _start_transfer(self, obs: Observation) -> None:
         if self._active_transfer:
             return
@@ -100,10 +140,6 @@ class MemoryGraphController(OnlineController):
         if not programs:
             return
 
-        # The freshest witnessed program is the first hypothesis.  Repetition
-        # is a generic constructor from the frozen multilevel ARC lineage.  It
-        # is bounded by primitive length and remains interruptible by external
-        # progress, terminal consequence, illegality, or exact trie closure.
         base = programs[0]
         if not base:
             return
@@ -125,10 +161,9 @@ class MemoryGraphController(OnlineController):
         return self._token(action, "transfer")
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
-        # Exact replay always outranks speculative cross-level transfer.
-        retained = super()._next_retained(obs)
-        if retained is not None:
-            return retained
+        exact = self._next_exact(obs)
+        if exact is not None:
+            return exact
         return self._next_transfer(obs)
 
     def observe_and_choose(self, frame: Any) -> ActionToken | None:
@@ -140,24 +175,22 @@ class MemoryGraphController(OnlineController):
         if token is None:
             return None
 
-        # Archived and exact retained operations keep their own evidence gates.
-        # Both primitive exploration and prospective transfer are target-context
-        # hypotheses and therefore pass through the exact refutation trie.
         if token.source in ("explore", "transfer"):
             prefix = tuple(self._episode_program)
             catalog = self._action_catalog(obs)
             legal_keys = tuple(self._action_key(candidate) for candidate in catalog)
             self.memory.note_legal(self._episode_context, prefix, legal_keys)
             forbidden = self.memory.forbidden_next(self._episode_context, prefix)
-            selected_key = self._action_key(token)
             allowed = [
                 candidate
                 for candidate in catalog
                 if self._action_key(candidate) not in forbidden
             ]
+            guard = self._exploration_guard(obs)
 
-            if selected_key in forbidden and allowed:
-                guard = self._exploration_guard(obs)
+            if token.source == "explore" and allowed:
+                # Ignore the inherited visit store: DuckTape's earned attempts
+                # are the sole cross-episode exploration authority.
                 token = min(
                     allowed,
                     key=lambda candidate: (
@@ -165,14 +198,19 @@ class MemoryGraphController(OnlineController):
                         self._candidate_key(candidate),
                     ),
                 )
-                selected_key = self._action_key(token)
                 self._last_action = token
-                # Once exact consequence evidence forces a sibling, the
-                # speculative macro no longer describes the live path.
+            elif self._action_key(token) in forbidden and allowed:
+                token = min(
+                    allowed,
+                    key=lambda candidate: (
+                        self.memory.attempt_count(guard, self._action_key(candidate)),
+                        self._candidate_key(candidate),
+                    ),
+                )
+                self._last_action = token
                 self._clear_transfer()
 
-            guard = self._exploration_guard(obs)
-            self.memory.note_attempt(guard, selected_key)
+            self.memory.note_attempt(guard, self._action_key(token))
 
         self._episode_program.append(self._action_key(token))
         return token
