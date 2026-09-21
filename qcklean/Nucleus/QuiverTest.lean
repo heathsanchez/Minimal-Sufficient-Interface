@@ -1,3 +1,4 @@
+import Mathlib.Tactic.DeriveFintype
 import Nucleus.Quiver
 
 open CategoryTheory
