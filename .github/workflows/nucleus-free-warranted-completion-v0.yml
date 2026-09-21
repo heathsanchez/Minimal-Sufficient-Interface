@@ -30,5 +30,7 @@ jobs:
         run: |
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/NucleusQuiver.olean lean/NucleusQuiver.lean
+          lean -o lean/NucleusFunctor.olean lean/NucleusFunctor.lean
           lean -o lean/NucleusFreeCategory.olean lean/NucleusFreeCategory.lean
           lean -o lean/NucleusPresentedCategory.olean lean/NucleusPresentedCategory.lean
+          lean -o lean/NucleusResidualExtension.olean lean/NucleusResidualExtension.lean
