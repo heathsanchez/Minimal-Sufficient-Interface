@@ -59,6 +59,20 @@ jobs:
           test -f vendor/duck-harness/ARC3-Inference/inference/agent/ducktape.py
           echo "DUCKTAPE_PUBLIC_DUCK_PATCH=PASS"
 
+      - name: Admit pinned public bt11 to Duck's explicit game selector
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text = p.read_text()
+          marker = "DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          row = '    "bt11-fd9df0622a1a",\n'
+          assert marker in text
+          if row not in text:
+              p.write_text(text.replace(marker, marker + row, 1))
+          print("DUCK_BT11_SELECTOR_PATCH=PASS")
+          PY
+
       - name: Install public Duck exactly from its lockfile
         working-directory: vendor/duck-harness/ARC3-Inference
         run: |
@@ -70,22 +84,22 @@ jobs:
           print("PUBLIC_DUCK_IMPORT=PASS")
           PY
 
-      - name: Baseline public Duck - ls20
+      - name: Baseline public Duck - bt11
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
           DUCKTAPE_ENABLED: "0"
         run: |
           rm -rf "$GITHUB_WORKSPACE/out/baseline"
-          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/baseline"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=tu93           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-baseline-tu93           make interactive | tee "$GITHUB_WORKSPACE/duck-baseline.log"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/baseline"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=bt11           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-baseline-bt11           make interactive | tee "$GITHUB_WORKSPACE/duck-baseline.log"
           SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/baseline" make score_run             | tee "$GITHUB_WORKSPACE/duck-baseline-score.log"
 
-      - name: Candidate public Duck plus DuckTape - ls20
+      - name: Candidate public Duck plus DuckTape - bt11
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
           DUCKTAPE_ENABLED: "1"
         run: |
           rm -rf "$GITHUB_WORKSPACE/out/ducktape"
-          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/ducktape"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=tu93           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-ducktape-tu93           make interactive | tee "$GITHUB_WORKSPACE/duck-ducktape.log"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/ducktape"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=bt11           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-ducktape-bt11           make interactive | tee "$GITHUB_WORKSPACE/duck-ducktape.log"
           SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/ducktape" make score_run             | tee "$GITHUB_WORKSPACE/duck-ducktape-score.log"
 
       - name: Compare matched A/B
@@ -126,7 +140,7 @@ jobs:
 
           report = {
               "tufa_head": "7652836056c59e044f093e3c13ed7438c814169e",
-              "game": "tu93",
+              "game": "bt11",
               "model": "Qwen/Qwen3.6-27B",
               "temperature": 0,
               "max_actions": 180,
@@ -148,7 +162,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: duck-vs-ducktape-tu93
+          name: duck-vs-ducktape-bt11
           path: |
             ducktape-duck-ab.json
             duck-baseline.log
