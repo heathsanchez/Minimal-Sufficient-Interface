@@ -34,3 +34,4 @@ jobs:
           lean -o lean/NucleusFreeCategory.olean lean/NucleusFreeCategory.lean
           lean -o lean/NucleusPresentedCategory.olean lean/NucleusPresentedCategory.lean
           lean -o lean/NucleusResidualExtension.olean lean/NucleusResidualExtension.lean
+          lean -o lean/NucleusDevelopmental.olean lean/NucleusDevelopmental.lean
