@@ -76,7 +76,7 @@ jobs:
           DUCKTAPE_ENABLED: "0"
         run: |
           rm -rf "$GITHUB_WORKSPACE/out/baseline"
-          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/baseline"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=ls20           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-baseline-ls20           make interactive | tee "$GITHUB_WORKSPACE/duck-baseline.log"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/baseline"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=tu93           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-baseline-tu93           make interactive | tee "$GITHUB_WORKSPACE/duck-baseline.log"
           SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/baseline" make score_run             | tee "$GITHUB_WORKSPACE/duck-baseline-score.log"
 
       - name: Candidate public Duck plus DuckTape - ls20
@@ -85,7 +85,7 @@ jobs:
           DUCKTAPE_ENABLED: "1"
         run: |
           rm -rf "$GITHUB_WORKSPACE/out/ducktape"
-          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/ducktape"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=ls20           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-ducktape-ls20           make interactive | tee "$GITHUB_WORKSPACE/duck-ducktape.log"
+          CONFIG_PATH=configs/inference.openrouter.json           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out/ducktape"           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"           GAME=tu93           N_PASSES=1           CONCURRENT_JOBS=1           MAX_ACTIONS=180           MAX_RUNTIME_MINUTES=18           RUN_NAME=duck-ducktape-tu93           make interactive | tee "$GITHUB_WORKSPACE/duck-ducktape.log"
           SCORE_RUN_DIR="$GITHUB_WORKSPACE/out/ducktape" make score_run             | tee "$GITHUB_WORKSPACE/duck-ducktape-score.log"
 
       - name: Compare matched A/B
@@ -126,7 +126,7 @@ jobs:
 
           report = {
               "tufa_head": "7652836056c59e044f093e3c13ed7438c814169e",
-              "game": "ls20",
+              "game": "tu93",
               "model": "Qwen/Qwen3.6-27B",
               "temperature": 0,
               "max_actions": 180,
@@ -148,7 +148,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: duck-vs-ducktape-ls20
+          name: duck-vs-ducktape-tu93
           path: |
             ducktape-duck-ab.json
             duck-baseline.log
