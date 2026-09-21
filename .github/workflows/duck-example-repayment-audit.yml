@@ -52,4 +52,14 @@ jobs:
           for i, entry in enumerate(run.get("history", [])[:3]):
               print(f"history[{i}]")
               shape(entry, 1, 8)
+
+          print("\nFIRST_VIEWER_EVENTS")
+          event_file = sorted(Path("vendor/duck-harness/example-run/artifacts").glob("*_events.jsonl"))[0]
+          print("event_file", event_file.name)
+          for i, line in enumerate(event_file.open()):
+              if i >= 6:
+                  break
+              event = json.loads(line)
+              print(f"event[{i}]")
+              shape(event, 1, 6)
           PY
