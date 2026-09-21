@@ -11,4 +11,14 @@ require mathlib from git
 @[default_target]
 lean_lib QCK where
   srcDir := "."
-  roots := #[`QCKCore, `QCKCoreTest, `QCKFiniteLinear, `QCKFiniteLinearTest, `QCKAPI, `QCKAPITest, `QCKAxiomAudit]
+  roots := #[`QCKCore, `QCKCoreTest, `QCKFiniteLinear, `QCKFiniteLinearTest, `QCKAPI, `QCKAPITest, `QCKAxiomAudit,
+    `CLC.Verdict, `CLC.VerdictTest,
+    `CLC.Transport, `CLC.TransportTest,
+    `CLC.Continuation, `CLC.ContinuationTest,
+    `CLC.Support, `CLC.SupportTest,
+    `CLC.Hypergraph, `CLC.HypergraphTest,
+    `CLC.Query, `CLC.QueryTest,
+    `CLC.Quotient, `CLC.QuotientTest,
+    `CLC.Flash, `CLC.FlashTest,
+    `CLC.Grow, `CLC.GrowTest,
+    `CLC.Fixtures, `CLC.Audit]
