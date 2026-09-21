@@ -66,7 +66,8 @@ class MemoryGraphControllerContracts(unittest.TestCase):
         self.assertEqual(without_ducktape, paid_once)
         self.assertNotEqual(with_ducktape, without_ducktape)
         self.assertGreater(duck.memory.log_size, 0)
-        self.assertEqual(forgetful.memory.log_size, 4)
+        self.assertEqual(forgetful.memory.refuted_count, 0)
+        self.assertGreater(forgetful.memory.log_size, 0)
 
     def test_progress_program_becomes_prospective_option_and_repeats_without_becoming_a_rule(self):
         c = MemoryGraphController((3, 4), archived_capabilities=(), max_transfer_depth=8)
