@@ -45,7 +45,7 @@ theorem countTrue_mono {α : Type u} {p q : α → Bool}
       | true =>
           have hqt : q a = true := h a hp
           simp [countTrue, hp, hqt]
-          exact Nat.succ_le_succ ih
+          simpa [countTrue, hp, hqt] using ih
 
 /-- If q contains p pointwise and is true at one listed witness where p is
     false, then q has strictly larger count. -/
@@ -54,11 +54,13 @@ theorem countTrue_lt_of_witness {α : Type u} {p q : α → Bool}
     {w : α} :
     ∀ xs, w ∈ xs → p w = false → q w = true →
       countTrue p xs < countTrue q xs := by
-  intro xs hw hpw hqw
+  intro xs
   induction xs with
   | nil =>
+      intro hw hpw hqw
       simp at hw
   | cons a xs ih =>
+      intro hw hpw hqw
       have hm := List.mem_cons.mp hw
       cases hm with
       | inl hwa =>
@@ -123,7 +125,7 @@ def hidden {X : C.Obj}
     distinctions on the declared finite carrier. -/
 def potential {S : Stage C} {X : C.Obj}
     (V : FiniteView C A Obs observe S X) : Nat :=
-  countTrue (hidden A V.stageEq V.fullEq) (pairs V.states)
+  countTrue (hidden C A V.stageEq V.fullEq) (pairs V.states)
 
 /-- Under stage extension, exact hidden-residual predicates are pointwise
     monotone: a residual hidden later was already hidden earlier. -/
@@ -134,8 +136,8 @@ theorem hidden_mono
     (VT : FiniteView C A Obs observe T X)
     (hsameFull : ∀ x y, VS.fullEq x y = VT.fullEq x y)
     {p : A.State X × A.State X}
-    (h : hidden A VT.stageEq VT.fullEq p = true) :
-    hidden A VS.stageEq VS.fullEq p = true := by
+    (h : hidden C A VT.stageEq VT.fullEq p = true) :
+    hidden C A VS.stageEq VS.fullEq p = true := by
   simp [hidden] at h ⊢
   have hT : BehEqAt C A Obs observe T X p.1 p.2 :=
     (VT.stageEq_spec p.1 p.2).mp h.1
@@ -187,21 +189,21 @@ theorem new_separator_strictly_decreases
     (VS.stageEq_spec x y).mpr hold
   have hfullFalse : VS.fullEq x y = false := by
     cases hfull : VS.fullEq x y with
-    | false => exact hfull
+    | false => rfl
     | true =>
         have hb : BehEq C A Obs observe X x y :=
           (VS.fullEq_spec x y).mp hfull
         exact False.elim (hsep (hb Y f))
   have hTfalse : VT.stageEq x y = false := by
     cases ht : VT.stageEq x y with
-    | false => exact ht
+    | false => rfl
     | true =>
         have hb : BehEqAt C A Obs observe T X x y :=
           (VT.stageEq_spec x y).mp ht
         exact False.elim (hsep (hb Y f hnew))
-  have hSf : hidden A VS.stageEq VS.fullEq (x, y) = true := by
+  have hSf : hidden C A VS.stageEq VS.fullEq (x, y) = true := by
     simp [hidden, hStrue, hfullFalse]
-  have hTf : hidden A VT.stageEq VT.fullEq (x, y) = false := by
+  have hTf : hidden C A VT.stageEq VT.fullEq (x, y) = false := by
     simp [hidden, hTfalse]
   unfold potential
   rw [← hstates]
@@ -232,7 +234,7 @@ theorem potential_eq_zero_iff_complete
         cases hfull : V.fullEq x y with
         | true => exact hfull
         | false =>
-            have : hidden A V.stageEq V.fullEq (x, y) = true := by
+            have : hidden C A V.stageEq V.fullEq (x, y) = true := by
               simp [hidden, hs, hfull]
             rw [this] at hhidden
             contradiction
@@ -255,12 +257,12 @@ theorem potential_eq_zero_iff_complete
         simp [hidden, hs, hf]
 
 /-- The strict developmental relation induced by the potential. -/
-def StrictDevelopment {Sdummy : Stage C} {X : C.Obj}
+def StrictDevelopment {X : C.Obj}
     (U : List (A.State X))
     (fullEq : A.State X → A.State X → Bool)
     (T S : A.State X → A.State X → Bool) : Prop :=
-  countTrue (hidden A T fullEq) (pairs U) <
-    countTrue (hidden A S fullEq) (pairs U)
+  countTrue (hidden C A T fullEq) (pairs U) <
+    countTrue (hidden C A S fullEq) (pairs U)
 
 /-- Strict potential descent is well-founded: an infinite chain of strict
     certified decreases on a fixed finite carrier is impossible. -/
@@ -269,10 +271,10 @@ theorem strictDevelopment_wellFounded
     (U : List (A.State X))
     (fullEq : A.State X → A.State X → Bool) :
     WellFounded
-      (StrictDevelopment C A Obs observe U fullEq) := by
+      (StrictDevelopment C A U fullEq) := by
   unfold StrictDevelopment
   exact measure_wf
     (fun stageEq : A.State X → A.State X → Bool =>
-      countTrue (hidden A stageEq fullEq) (pairs U))
+      countTrue (hidden C A stageEq fullEq) (pairs U))
 
 end DevelopmentalLyapunov
