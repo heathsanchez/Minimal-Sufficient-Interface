@@ -42,18 +42,31 @@ class MemoryGraphControllerContracts(unittest.TestCase):
         duck.record_terminal_failure("GAME_OVER")
         duck.reset_episode()
 
-        # DuckTape keeps the earned terminal consequence and changes only the
-        # first decision whose known child is closed.
+        # Hidden inherited memory has been erased. Only the DuckTape log may
+        # explain a different second episode.
+        self.assertEqual(duck._visits, {})
+        self.assertEqual(duck._retained, {})
         with_ducktape = [duck.observe_and_choose(start).action_id for _ in range(4)]
         self.assertEqual(with_ducktape, [3, 4, 3, 3])
 
-        # The ablation has the same controller but no earned log. It pays for
-        # the exact failed leaf again.
-        forgetful = MemoryGraphController((3, 4), archived_capabilities=())
-        without_ducktape = [forgetful.observe_and_choose(start).action_id for _ in range(4)]
+        # Same controller, same reset semantics, but erase the DuckTape log.
+        # It now pays for the exact failed leaf again.
+        forgetful = MemoryGraphController(
+            (3, 4), archived_capabilities=(), preserve_memory=False
+        )
+        first_forgetful = [
+            forgetful.observe_and_choose(start).action_id for _ in range(4)
+        ]
+        forgetful.record_terminal_failure("GAME_OVER")
+        forgetful.reset_episode()
+        without_ducktape = [
+            forgetful.observe_and_choose(start).action_id for _ in range(4)
+        ]
+        self.assertEqual(first_forgetful, paid_once)
         self.assertEqual(without_ducktape, paid_once)
         self.assertNotEqual(with_ducktape, without_ducktape)
         self.assertGreater(duck.memory.log_size, 0)
+        self.assertEqual(forgetful.memory.log_size, 4)
 
     def test_progress_program_becomes_prospective_option_and_repeats_without_becoming_a_rule(self):
         c = MemoryGraphController((3, 4), archived_capabilities=(), max_transfer_depth=8)
