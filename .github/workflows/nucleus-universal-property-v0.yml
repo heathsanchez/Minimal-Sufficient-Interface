@@ -46,10 +46,6 @@ jobs:
             ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|constant|unsafe)([^[:alnum:]_]|$)' Nucleus               | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#print[[:space:]]+axioms([[:space:]]|$)'
           fi
 
-      - name: Build QCK and existing registered roots
-        working-directory: qcklean
-        run: lake build QCK
-
       - name: Compile present Nucleus sources in dependency order
         working-directory: qcklean
         run: |
@@ -67,7 +63,9 @@ jobs:
           )
           for file in "${modules[@]}"; do
             if [ -f "$file" ]; then
-              lake env lean -o "${file%.lean}.olean" "$file"
+              out=".lake/build/lib/lean/${file%.lean}.olean"
+              mkdir -p "$(dirname "$out")"
+              lake env lean -o "$out" "$file"
             fi
           done
 
@@ -80,6 +78,10 @@ jobs:
           for file in "${files[@]}"; do
             lake env lean "$file"
           done
+
+      - name: Build QCK and existing registered roots
+        working-directory: qcklean
+        run: lake build QCK
 
       - name: Audit Nucleus theorem dependencies when present
         working-directory: qcklean
