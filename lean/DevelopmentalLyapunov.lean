@@ -17,6 +17,12 @@ variable (observe : ∀ X, A.State X → Obs X)
 def pairs {α : Type u} (U : List α) : List (α × α) :=
   U.flatMap (fun x => U.map (fun y => (x, y)))
 
+/-- Membership in the ordered-pair enumeration is exactly componentwise
+    membership in the underlying carrier. -/
+theorem mem_pairs_iff {α : Type u} (U : List α) (x y : α) :
+    (x, y) ∈ pairs U ↔ x ∈ U ∧ y ∈ U := by
+  simp [pairs]
+
 /-- Count the elements of a list accepted by a Boolean predicate. -/
 def countTrue {α : Type u} (p : α → Bool) : List α → Nat
   | [] => 0
@@ -81,7 +87,7 @@ theorem countTrue_lt_of_witness {α : Type u} {p q : α → Bool}
           | true =>
               have hqat : q a = true := h a hpa
               simp [countTrue, hpa, hqat]
-              exact Nat.succ_lt_succ ihlt
+              simpa [countTrue, hpa, hqat] using ihlt
 
 /-- Count zero means no listed element satisfies the predicate. -/
 theorem countTrue_eq_zero_iff {α : Type u} (p : α → Bool) :
@@ -232,7 +238,7 @@ theorem potential_eq_zero_iff_complete
       have hhidden := h (x, y) hp
       have hf : V.fullEq x y = true := by
         cases hfull : V.fullEq x y with
-        | true => exact hfull
+        | true => rfl
         | false =>
             have : hidden C A V.stageEq V.fullEq (x, y) = true := by
               simp [hidden, hs, hfull]
@@ -241,8 +247,8 @@ theorem potential_eq_zero_iff_complete
       exact (V.fullEq_spec x y).mp hf
     · exact full_implies_stage C A Obs observe S
   · intro hexact p hp
-    have hpairs := hp
-    simp [pairs] at hpairs
+    have hpairs : p.1 ∈ V.states ∧ p.2 ∈ V.states := by
+      exact (mem_pairs_iff V.states p.1 p.2).mp hp
     rcases hpairs with ⟨hx, hy⟩
     cases hs : V.stageEq p.1 p.2 with
     | false =>
@@ -273,8 +279,9 @@ theorem strictDevelopment_wellFounded
     WellFounded
       (StrictDevelopment C A U fullEq) := by
   unfold StrictDevelopment
-  exact measure_wf
+  exact InvImage.wf
     (fun stageEq : A.State X → A.State X → Bool =>
       countTrue (hidden C A stageEq fullEq) (pairs U))
+    Nat.lt_wfRel.wf
 
 end DevelopmentalLyapunov
