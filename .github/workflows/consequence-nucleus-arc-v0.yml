@@ -1,0 +1,260 @@
+name: Consequence Nucleus ARC V0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-consequential-atlas-v0]
+    paths:
+      - 'kaggle/consequence_nucleus_patch.py'
+      - '.github/workflows/consequence-nucleus-arc-v0.yml'
+      - 'kaggle/ducktape_metatron_patch.py'
+      - 'kaggle/flash_ducktape_patch.py'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  game:
+    name: ${{ matrix.game }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {game: bt11, kind: fixture}
+          - {game: bt33, kind: fixture}
+          - {game: tn36-ef4dde99, kind: official}
+          - {game: tu93-0768757b, kind: official}
+          - {game: m0r0-492f87ba, kind: official}
+          - {game: lf52-271a04aa, kind: official}
+          - {game: sc25-635fd71a, kind: official}
+
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      DUCKTAPE_PROMOTION_POLICY: constitutional
+      DUCKTAPE_GAME_ID: ${{ matrix.game }}
+      LOCAL_ANALYZER_PROVIDER: openrouter
+      LOCAL_ANALYZER_MODEL_ID: openrouter/free
+      LOCAL_ANALYZER_MAX_OUTPUT: "1800"
+      LOCAL_ANALYZER_CONTEXT_WINDOW: "32768"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_STEPS: "4"
+      LOCAL_ANALYZER_TOOL_TIMEOUT: "25"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "768"
+      LOCAL_ANALYZER_TIMEOUT: "120"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        if: matrix.kind == 'fixture'
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply consequence-first runtime
+        run: |
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_nucleus_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo "CONSEQUENCE_NUCLEUS_STACK=PASS"
+
+      - name: Prepare fixture games
+        if: matrix.kind == 'fixture'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text=p.read_text()
+          marker="DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          for row in reversed(['    "bt11-fd9df0622a1a",\n','    "bt33-a7c3f9d18b4e",\n']):
+              if row not in text:
+                  text=text.replace(marker,marker+row,1)
+          p.write_text(text)
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data=json.loads(m.read_text())
+          data["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(data,indent=2)+"\n")
+          print("CONSEQUENCE_NUCLEUS_FIXTURES=PASS")
+          PY
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.agent.consequence_nucleus import ConsequenceNucleusAgent
+          print("CONSEQUENCE_NUCLEUS_IMPORT=PASS")
+          PY
+
+      - name: Download exact public game
+        if: matrix.kind == 'official'
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: ${{ matrix.game }}
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root=Path(os.environ["ENV_DIR"])
+          root.mkdir(parents=True,exist_ok=True)
+          arcade=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(root))
+          env=arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS",env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+
+      - name: Run consequence-first controller
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          if [ "${{ matrix.kind }}" = "fixture" ]; then
+            ENVROOT="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"
+            MAXA=180
+          else
+            ENVROOT="$GITHUB_WORKSPACE/public-env"
+            MAXA=120
+          fi
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$ENVROOT" \
+          GAME="${{ matrix.game }}" \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS="$MAXA" \
+          MAX_RUNTIME_MINUTES=7 \
+          MODEL=openrouter/free \
+          LOCAL_ANALYZER_MODEL_ID=openrouter/free \
+          ANALYZER_TIMEOUT=120 \
+          RUN_NAME="consequence-nucleus-${{ matrix.game }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal game result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          game="${{ matrix.game }}"; kind="${{ matrix.kind }}"
+          out={"game":game,"kind":kind,"score":None,"levels":None,"total_levels":None,
+               "state":None,"actions":None,"reported_tokens":None,"events":{},"won":False}
+          p=Path("out/evaluation.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              if d.get("games"):
+                  g=d["games"][0]
+                  out["score"]=float(d["score"])
+                  out["levels"]=float(g["levels_completed_mean"])
+                  out["total_levels"]=int(g["total_levels"])
+          p=Path("out/benchmark.json")
+          if p.exists():
+              d=json.loads(p.read_text()); runs=d.get("game_runs") or []
+              if runs:
+                  r=runs[0]
+                  out["state"]=r.get("state")
+                  out["actions"]=len(r.get("history") or [])
+                  m=re.search(r"tokens=(\d+)",str(r.get("solver_note") or ""))
+                  out["reported_tokens"]=int(m.group(1)) if m else None
+          counts={}
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if line.strip():
+                      k=str(json.loads(line).get("kind"))
+                      counts[k]=counts.get(k,0)+1
+          out["events"]=counts
+          out["won"]=out["total_levels"] is not None and out["levels"]==out["total_levels"]
+          Path(f"result-{game}.json").write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          print("CONSEQUENCE_NUCLEUS_GAME=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequence-nucleus-${{ matrix.game }}
+          path: |
+            result-${{ matrix.game }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize Consequence Nucleus ARC V0
+    needs: game
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: consequence-nucleus-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json,statistics
+          from pathlib import Path
+          rows=[json.loads(p.read_text()) for p in sorted(Path("evidence").rglob("result-*.json"))]
+          def vals(rs,k): return [r[k] for r in rs if r.get(k) is not None]
+          summary={"rows":rows,"groups":{}}
+          for kind in sorted({r["kind"] for r in rows}):
+              rs=[r for r in rows if r["kind"]==kind]
+              summary["groups"][kind]={
+                  "n":len(rs),
+                  "wins":sum(bool(r["won"]) for r in rs),
+                  "games_with_progress":sum((r.get("levels") or 0)>0 for r in rs),
+                  "mean_score":statistics.mean(vals(rs,"score")) if vals(rs,"score") else None,
+                  "mean_actions":statistics.mean(vals(rs,"actions")) if vals(rs,"actions") else None,
+                  "mean_tokens":statistics.mean(vals(rs,"reported_tokens")) if vals(rs,"reported_tokens") else None,
+                  "causal_episodes":sum(r["events"].get("CAUSAL_EPISODE",0) for r in rs),
+                  "local_causal_laws":sum(r["events"].get("LOCAL_CAUSAL_LAW",0) for r in rs),
+                  "atlas_stages":sum(r["events"].get("ATLAS_STAGE",0) for r in rs),
+                  "atlas_capabilities":sum(r["events"].get("ATLAS_CAPABILITY",0) for r in rs),
+                  "atlas_revokes":sum(r["events"].get("ATLAS_REVOKE",0) for r in rs),
+                  "representation_residuals":sum(r["events"].get("REPRESENTATION_RESIDUAL",0) for r in rs),
+                  "nebula_escalations":sum(r["events"].get("NEBULA_ESCALATE",0) for r in rs),
+                  "model_queries":sum(r["events"].get("MODEL_QUERY",0) for r in rs),
+              }
+          summary["claim_boundary"]="V0: causal-role memory on two known fixtures plus five official public games; not leaderboard evidence"
+          Path("consequence-nucleus-arc-v0-summary.json").write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          print("CONSEQUENCE_NUCLEUS_ARC_V0=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequence-nucleus-arc-v0-summary
+          path: |
+            consequence-nucleus-arc-v0-summary.json
+            evidence
+          if-no-files-found: error
