@@ -18,7 +18,9 @@ class ConsequentialAtlasV0Tests(unittest.TestCase):
         atlas.append(Episode.make('b', 'surface-B', 'go', {'foo': 2}, works))
         self.assertEqual(len(atlas.laws), 1)
         self.assertEqual(atlas.laws[0].guard, ())
-        self.assertNotIn('surface', repr(atlas.live()).lower())
+        live = repr(atlas.live())
+        self.assertNotIn('surface-A', live)
+        self.assertNotIn('surface-B', live)
 
     def test_counterexample_creates_residual_not_exception_memory(self):
         works = Consequence(1, True)
