@@ -1,0 +1,73 @@
+name: JOIN semantic search separator
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-join-separator-v0]
+    paths:
+      - 'kaggle/test_join_semantic_search.py'
+      - '.github/workflows/join-semantic-search-separator.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      JOIN_MODEL: Qwen/Qwen3.6-27B
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Require model key
+        run: |
+          test -n "${OPENROUTER_API_KEY:-}" || {
+            echo "JOIN_SEPARATOR_BLOCKED=no_model_key"
+            exit 2
+          }
+
+      - name: Run prospective JOIN separator
+        run: |
+          python kaggle/test_join_semantic_search.py | tee join.log
+          grep -q '^JOIN_ADDS_UNIQUE_VALUE=' join.log
+
+      - name: Seal admission result
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          result = json.loads(Path("join-semantic-search-result.json").read_text())
+          source = Path("kaggle/test_join_semantic_search.py").read_bytes()
+          seal = {
+              "source_sha256": hashlib.sha256(source).hexdigest(),
+              "decision": result["decision"],
+              "join_adds_unique_value": result["join_adds_unique_value"],
+              "passing_join_trials": result["passing_join_trials"],
+              "modal_passing_feature": result["modal_passing_feature"],
+              "evidence_label": result["evidence_label"],
+              "claim_boundary": (
+                  "synthetic held-out representation-shift separator derived from "
+                  "public ARC target geometry; not an ARC leaderboard result"
+              ),
+          }
+          Path("join-semantic-search-seal.json").write_text(json.dumps(seal, indent=2))
+          print(json.dumps(seal, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: join-semantic-search-separator
+          path: |
+            join-semantic-search-result.json
+            join-semantic-search-seal.json
+            join.log
+          if-no-files-found: error
