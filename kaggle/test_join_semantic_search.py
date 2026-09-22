@@ -11,6 +11,7 @@ from typing import Any
 
 
 MODEL = os.environ.get("JOIN_MODEL", "Qwen/Qwen3.6-27B")
+FALLBACK_MODEL = os.environ.get("JOIN_FALLBACK_MODEL", "openrouter/free")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
@@ -111,32 +112,44 @@ The law is only a candidate. External held-out evidence decides whether it is re
           "and rejects the failed choice across the evidence. Prefer a causal/structural "
           "invariant over an incidental coordinate when both fit."
     )
-    body = json.dumps(
-        {
-            "model": MODEL,
-            "temperature": 0,
-            "top_p": 1,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        }
-    ).encode()
-    req = urllib.request.Request(
-        OPENROUTER_URL,
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        payload = json.loads(resp.read().decode())
-    text = payload["choices"][0]["message"]["content"]
-    out = parse_json_object(text)
-    out["_usage"] = payload.get("usage") or {}
-    return out
+
+    errors: list[str] = []
+    for model in (MODEL, FALLBACK_MODEL):
+        body = json.dumps(
+            {
+                "model": model,
+                "temperature": 0,
+                "top_p": 1,
+                "max_tokens": 900,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            }
+        ).encode()
+        req = urllib.request.Request(
+            OPENROUTER_URL,
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                payload = json.loads(resp.read().decode())
+            text = payload["choices"][0]["message"]["content"]
+            out = parse_json_object(text)
+            out["_usage"] = payload.get("usage") or {}
+            out["_model_requested"] = model
+            out["_model_returned"] = payload.get("model")
+            return out
+        except Exception as exc:
+            errors.append(f"{model}: {type(exc).__name__}: {exc}")
+            continue
+
+    raise RuntimeError("all JOIN model routes failed: " + " | ".join(errors))
 
 
 def value(choice: Choice, feature: str) -> Any:
@@ -210,7 +223,8 @@ def main() -> None:
     features = [row["verdict"]["feature"] for row in passing]
     result = {
         "protocol": "JOIN semantic search admission separator v0",
-        "model": MODEL,
+        "primary_model": MODEL,
+        "fallback_model": FALLBACK_MODEL,
         "evidence_label": "PROSPECTIVE_FROZEN",
         "train": evidence,
         "held_out_names": [ep.name for ep in HELD_OUT],
