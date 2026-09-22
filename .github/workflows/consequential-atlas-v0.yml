@@ -1,0 +1,56 @@
+name: Consequential Atlas V0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-consequential-atlas-v0]
+    paths:
+      - 'experiments/consequential_atlas_v0.py'
+      - 'tests/test_consequential_atlas_v0.py'
+      - '.github/workflows/consequential-atlas-v0.yml'
+      - 'consequence_compiler.py'
+      - 'consequential_core.py'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Consequential atlas invariants
+        run: python -m unittest tests.test_consequential_atlas_v0 -v
+
+      - name: Representation-transcending demo
+        run: python experiments/consequential_atlas_v0.py
+
+      - name: Existing cross-lens convergence
+        run: python -m unittest tests.test_cross_lens_hidden_cyclic_world -v
+
+      - name: Seal
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from experiments.consequential_atlas_v0 import demo
+          result = demo()
+          source = Path('experiments/consequential_atlas_v0.py').read_bytes()
+          seal = {
+              'status': 'PASS',
+              'source_sha256': hashlib.sha256(source).hexdigest(),
+              'claim': 'lineage retains what happened; live memory retains only warranted causal laws; representation changes are residual-forced',
+              'result': result,
+          }
+          Path('consequential-atlas-v0-seal.json').write_text(json.dumps(seal, indent=2, sort_keys=True, default=str) + '\n')
+          print('CONSEQUENTIAL_ATLAS_V0_SEAL=' + json.dumps(seal, sort_keys=True, default=str))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequential-atlas-v0-seal
+          path: consequential-atlas-v0-seal.json
