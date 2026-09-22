@@ -309,9 +309,9 @@ class ConsequenceNucleusAgent(FlashToolAgent):
             self._dt_append("LOCAL_CAUSAL_LAW", {
                 "role": role,
                 "evidence": [effect1, effect2],
-                "law": "repeat role while same protected consequence continues",
+                "law": "bounded recurrence probe only; board change is evidence, not protected progress",
             })
-            self._run_stable_role(state_path, frame2, valid_actions, role, step_env, max_steps=30)
+            self._run_stable_role(state_path, frame2, valid_actions, role, step_env, max_steps=6)
             return AnalyzerTurnResult(step_executed=True, reasoning="Stable causal law was executed until its consequence changed.")
 
         self._dt_append("REPRESENTATION_RESIDUAL", {
