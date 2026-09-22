@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "preexisting_branch_count": 210,
+  "family_counts": {
+    "arc3": 110,
+    "experiment": 35,
+    "msi": 10,
+    "qck": 7,
+    "rgrs": 4,
+    "nucleus": 2,
+    "recursive": 4,
+    "other": 38
+  },
+  "consolidation_branch": "consolidated/current-v1",
+  "policy": {
+    "foundation": "General MSI/CLC semantics, not an ARC-3 application controller.",
+    "application_lines": "Indexed as application evidence; never promoted into foundational authority merely because newer.",
+    "negative_results": "Preserved exactly; scientific negatives and infrastructure failures are distinguished.",
+    "consolidation_changes": "Evidence and documentation only."
+  },
+  "foundational_spine": {
+    "qualified_semantics": {
+      "branch": "clc-nonlinear-lineage-v0",
+      "commit": "900a73c1d386ee0eee1205a1cf31d270f3311ef7",
+      "run_id": 35555539801,
+      "status": "QUALIFIED",
+      "audit": "No sorryAx; declared theorems depend only on standard Lean quotient/classical foundations as recorded by the run."
+    },
+    "conceptual_integration": {
+      "branch": "proof-carrying-developmental-computer-v0",
+      "commit": "4425591155b3f6523c7b8aacbb48958f197b2bbb",
+      "parent": "900a73c1d386ee0eee1205a1cf31d270f3311ef7",
+      "change_kind": "documentation_only",
+      "status": "INTEGRATION_SPEC_CHILD_OF_QUALIFIED_CLC"
+    }
+  },
+  "independent_formal_evidence": {
+    "qck_finite_linear": {
+      "branch": "qck-v1-frozen",
+      "commit": "fc112771bd0a24e40e31e4eaef61ca0442103dd4",
+      "run_id": 35306672847,
+      "status": "QUALIFIED_FORMAL_EVIDENCE"
+    },
+    "nucleus_free_warranted_completion": {
+      "branch": "nucleus-free-warranted-completion-v0",
+      "commit": "486fecd8d33d38a4765284c2a7a0a64184742d43",
+      "run_id": 35585569597,
+      "status": "QUALIFIED_FORMAL_EVIDENCE",
+      "audit": {
+        "free_universal": "no axioms",
+        "quotient_presented_results": "propext + Quot.sound as reported by Lean audit"
+      }
+    },
+    "failed_predecessor": {
+      "branch": "nucleus-universal-property-v0",
+      "commit": "c9b3c82b367d9612f94bea3ce5446ffc0728c35d",
+      "run_id": 35594301350,
+      "workflow_conclusion": "failure",
+      "treatment": "Preserved; superseded as a promotion target by the repaired free-warranted-completion line."
+    }
+  },
+  "arc3_application_lane": {
+    "official16": {
+      "branch": "arc3-official16-v1",
+      "commit": "5445bc4523efb4b68bd2c8bf48717ef0c8a14f86",
+      "run_id": 35699383353,
+      "artifact_id": 10682563661,
+      "artifact_digest": "sha256:6099f5fac41a85c0a0917846d9e3dad82f506183d52165757f605bb77883236c",
+      "scientific_result": {
+        "games": 16,
+        "wins": 0,
+        "mean_score": 0,
+        "mean_level_fraction": 0,
+        "technical_errors": 0
+      },
+      "treatment": "Scientific negative public readiness evidence; not a Kaggle leaderboard submission."
+    },
+    "consequential_atlas": {
+      "branch": "arc3-consequential-atlas-v0",
+      "commit": "2aa2f14280e64b1fbe8524164b922f8cff2a23f2",
+      "qualification_run": 35764975602,
+      "status": "PASS",
+      "claim": "Lineage retains what happened; live memory retains warranted causal laws; representation changes are residual-forced.",
+      "controls": {
+        "heldout_transport": true,
+        "surface_identity_not_guard": true,
+        "residual_forced_lens": "gate_relation"
+      }
+    },
+    "consequence_nucleus": {
+      "branch": "arc3-consequential-atlas-v0",
+      "run_id": 35765712138,
+      "known_fixtures": {
+        "wins": 2,
+        "mean_score": 100,
+        "mean_actions": 72,
+        "mean_tokens": 0
+      },
+      "official_public": {
+        "wins": 0,
+        "mean_score": 0,
+        "mean_actions": 42.4,
+        "mean_tokens": 10654.6
+      },
+      "claim_boundary": "Causal-role memory V0; not leaderboard evidence."
+    },
+    "consequence_first_v1": {
+      "branch": "arc3-consequence-first-leaderboard-v1",
+      "commit": "69543c761e784c895f5f4e90acdb80c4eb351da2",
+      "run_id": 35773201975,
+      "artifact_id": 10716892007,
+      "artifact_digest": "sha256:e2935c39cbe3d4570a83cb70d0cf5f1fb63f6fe9b59b5528de9e47cee5446ce6",
+      "result_boundary": "Competition-safe public screen; OpenRouter free-model routing remains a model-quality confound.",
+      "treatment": "Promising application experiment; not foundational authority."
+    },
+    "consequence_first_stable_v2": {
+      "branch": "arc3-consequence-first-stable-v2",
+      "commit": "0698da19eb7659baf09b3101c32fc3fd423a8e4b",
+      "run_id": 35789399853,
+      "artifact_id": 10721895561,
+      "artifact_digest": "sha256:081074a263cbd97e95749dbd1e65f22851306de996e8a54ee0816f244953431a",
+      "workflow_conclusion": "failure",
+      "scientific_verdict": "NONE",
+      "reason": "Game jobs exited before scores were produced; scores/levels null with zero analyzer-request and zero rate-limit errors in the result summaries.",
+      "treatment": "Infrastructure/harness failure; do not interpret as scientific negative."
+    },
+    "architecture_tournament": {
+      "branch": "arc3-architecture-tournament-v1",
+      "commit": "6f1e1c283b7f93dca358c4e50f0fdfc9ba9d29d9",
+      "run_id": 35703196040,
+      "status": "APPLICATION_EXPERIMENT",
+      "ancestry": "Diverges from consequential-atlas line after official16; preserve independently."
+    }
+  },
+  "other_research_lanes": {
+    "verified_development_theorem": "msi/verified-development-theorem-v1",
+    "minimum_calculus": [
+      "minimum-calculus-self-audit",
+      "minimum-calculus-tournament"
+    ],
+    "recursive_development": "recursive-development-frontier-v1",
+    "recursive_attachment_caution": {
+      "branch": "recursive-discovery-compiler-v2-live-attachment",
+      "note": "Attachment Fresh Holdout workflow failed while other same-head workflows passed; not promoted wholesale."
+    },
+    "rgrs": "Residual/operational quotient research retained by branch inventory."
+  }
+}
