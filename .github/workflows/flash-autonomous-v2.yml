@@ -1,0 +1,213 @@
+name: Flash Autonomous V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-flash-autonomous-v2]
+    paths:
+      - 'kaggle/flash_autonomous_patch.py'
+      - '.github/workflows/flash-autonomous-v2.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  experiment:
+    name: ${{ matrix.game }} t${{ matrix.trial }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {game: bt11, trial: 1}
+          - {game: bt11, trial: 2}
+          - {game: bt33, trial: 1}
+          - {game: bt33, trial: 2}
+
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      DUCKTAPE_PROMOTION_POLICY: constitutional
+      DUCKTAPE_GAME_ID: ${{ matrix.game }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply Metatron + Flash + autonomous residual engine
+        run: |
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_autonomous_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo "FLASH_AUTONOMOUS_STACK=PASS"
+
+      - name: Admit test games and repair bt33 fixture metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text = p.read_text()
+          marker = "DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          for row in reversed([
+              '    "bt11-fd9df0622a1a",\n',
+              '    "bt33-a7c3f9d18b4e",\n',
+          ]):
+              if row not in text:
+                  text = text.replace(marker, marker + row, 1)
+          p.write_text(text)
+
+          m = Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data = json.loads(m.read_text())
+          data["baseline_actions"] = [4, 8, 16, 20, 24]
+          m.write_text(json.dumps(data, indent=2) + "\n")
+          print("FLASH_FIXTURES=PASS")
+          PY
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.agent.flash_autonomous import AutonomousFlashToolAgent
+          print("FLASH_AUTONOMOUS_IMPORT=PASS")
+          PY
+
+      - name: Run autonomous Flash
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVIRONMENTS_DIR: ${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files" \
+          GAME=${{ matrix.game }} \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=180 \
+          MAX_RUNTIME_MINUTES=12 \
+          RUN_NAME="flash-auto-${{ matrix.game }}-t${{ matrix.trial }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          game="${{ matrix.game }}"; trial=int("${{ matrix.trial }}")
+          result={"game":game,"trial":trial,"score":None,"levels":None,"total_levels":None,
+                  "state":None,"actions":None,"reported_tokens":None,"events":{}}
+          p=Path("out/evaluation.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              if d.get("games"):
+                  g=d["games"][0]
+                  result["score"]=float(d["score"]); result["levels"]=float(g["levels_completed_mean"])
+                  result["total_levels"]=int(g["total_levels"])
+          p=Path("out/benchmark.json")
+          if p.exists():
+              d=json.loads(p.read_text()); runs=d.get("game_runs") or []
+              if runs:
+                  r=runs[0]; result["state"]=r.get("state"); result["actions"]=len(r.get("history") or [])
+                  m=re.search(r"tokens=(\d+)",str(r.get("solver_note") or ""))
+                  result["reported_tokens"]=int(m.group(1)) if m else None
+          counts={}
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if line.strip():
+                      k=str(json.loads(line).get("kind")); counts[k]=counts.get(k,0)+1
+          result["events"]=counts
+          result["won"]=result["total_levels"] is not None and result["levels"]==result["total_levels"]
+          Path(f"result-{game}-t{trial}.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          print("FLASH_AUTONOMOUS_ARM=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-auto-${{ matrix.game }}-t${{ matrix.trial }}
+          path: |
+            result-${{ matrix.game }}-t${{ matrix.trial }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize autonomous Flash
+    needs: experiment
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: flash-auto-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json, statistics
+          from pathlib import Path
+          rows=[json.loads(p.read_text()) for p in sorted(Path("evidence").rglob("result-*.json"))]
+          out={"games":{},"trials":rows}
+          for game in sorted({r["game"] for r in rows}):
+              g=[r for r in rows if r["game"]==game]
+              vals=lambda k:[r[k] for r in g if r.get(k) is not None]
+              out["games"][game]={
+                  "n":len(g),"wins":sum(bool(r.get("won")) for r in g),
+                  "mean_score":statistics.mean(vals("score")) if vals("score") else None,
+                  "mean_levels":statistics.mean(vals("levels")) if vals("levels") else None,
+                  "mean_actions":statistics.mean(vals("actions")) if vals("actions") else None,
+                  "mean_tokens":statistics.mean(vals("reported_tokens")) if vals("reported_tokens") else None,
+                  "model_queries":sum(r["events"].get("MODEL_QUERY",0) for r in g),
+                  "probe_compiles":sum(r["events"].get("PROBE_COMPILE",0) for r in g),
+                  "qualified_capabilities":sum(r["events"].get("CAPABILITY",0) for r in g),
+                  "flash_executes":sum(r["events"].get("FLASH_EXECUTE",0) for r in g),
+                  "flash_reclosures":sum(r["events"].get("FLASH_RECLOSE",0) for r in g),
+                  "probe_rejects":sum(r["events"].get("PROBE_REJECT",0) for r in g),
+              }
+          Path("flash-autonomous-v2-summary.json").write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          print("FLASH_AUTONOMOUS_V2=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flash-autonomous-v2-summary
+          path: |
+            flash-autonomous-v2-summary.json
+            evidence
+          if-no-files-found: error
