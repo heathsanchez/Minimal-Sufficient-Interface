@@ -12,7 +12,7 @@ from inference.agent.flash_autonomous import AutonomousFlashToolAgent, _componen
 
 ADMITTED_JOIN_LAWS = (
     {
-        "guard": {"valid_actions": ("MOUSE",), "bbox": (2, 2), "area": 3},
+        "guard": {"valid_actions": ("MOUSE",), "normalized_shape": (2, 2)},
         "feature": "mask",
         "value": "11/10",
         "evidence": {
@@ -26,12 +26,39 @@ ADMITTED_JOIN_LAWS = (
 )
 
 
-def _mask(grid: tuple[tuple[int, ...], ...], x0: int, y0: int, x1: int, y1: int, color: int) -> str:
+def _normalized_mask(
+    grid: tuple[tuple[int, ...], ...],
+    x0: int,
+    y0: int,
+    x1: int,
+    y1: int,
+    color: int,
+) -> str | None:
+    """Compress a uniformly scaled component to its 2x2 occupancy mask.
+
+    ARC rendering may scale a 2x2 logical sprite to a larger screen-space
+    component. JOIN's admitted law is about logical shape, not pixel scale.
+    """
+    width = x1 - x0 + 1
+    height = y1 - y0 + 1
+    if width < 2 or height < 2:
+        return None
+
     rows = []
-    for y in range(y0, y1 + 1):
-        rows.append(
-            "".join("1" if grid[y][x] == color else "0" for x in range(x0, x1 + 1))
-        )
+    for qr in range(2):
+        row = []
+        ya = y0 + (qr * height) // 2
+        yb = y0 + ((qr + 1) * height) // 2
+        for qc in range(2):
+            xa = x0 + (qc * width) // 2
+            xb = x0 + ((qc + 1) * width) // 2
+            cells = [
+                grid[y][x] == color
+                for y in range(ya, max(ya + 1, yb))
+                for x in range(xa, max(xa + 1, xb))
+            ]
+            row.append("1" if cells and sum(cells) * 2 >= len(cells) else "0")
+        rows.append("".join(row))
     return "/".join(rows)
 
 
@@ -59,18 +86,20 @@ class JoinCompiledFlashToolAgent(AutonomousFlashToolAgent):
                     continue
 
                 for x0, y0, x1, y1, color, area in _components(frame.grid):
-                    width = x1 - x0 + 1
-                    height = y1 - y0 + 1
-                    if (width, height) != tuple(guard["bbox"]):
-                        continue
-                    if int(area) != int(guard["area"]):
-                        continue
-
-                    observed = _mask(frame.grid, x0, y0, x1, y1, color)
+                    observed = _normalized_mask(frame.grid, x0, y0, x1, y1, color)
                     if observed != law["value"]:
                         continue
 
-                    key = ("MOUSE", (y0 + y1) // 2, (x0 + x1) // 2)
+                    width = x1 - x0 + 1
+                    height = y1 - y0 + 1
+                    # Click well inside the occupied top-left logical cell,
+                    # rather than the bounding-box center (which can land in
+                    # the absent bottom-right quadrant after scaling).
+                    key = (
+                        "MOUSE",
+                        y0 + max(0, height // 4),
+                        x0 + max(0, width // 4),
+                    )
                     if key in rejected:
                         continue
 
