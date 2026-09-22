@@ -1,0 +1,295 @@
+name: Flash Architecture Tournament V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-architecture-tournament-v1]
+    paths:
+      - '.github/workflows/flash-architecture-tournament-v1.yml'
+      - 'kaggle/flash_architecture_tournament_patch.py'
+      - 'kaggle/ducktape_metatron_patch.py'
+      - 'kaggle/flash_ducktape_patch.py'
+      - 'kaggle/flash_autonomous_patch.py'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  screen:
+    name: \${{ matrix.mode }} / \${{ matrix.game }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        mode:
+          - baseline
+          - system_id
+          - representation_lattice
+          - version_space
+          - model_early
+          - info_gain
+          - world_model
+          - hierarchical
+          - residual_router
+          - join_triggered
+          - dual_speed
+        game:
+          - tn36-ef4dde99
+          - tu93-0768757b
+          - m0r0-492f87ba
+          - lf52-271a04aa
+          - sc25-635fd71a
+
+    env:
+      OPENROUTER_API_KEY: \${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      DUCKTAPE_PROMOTION_POLICY: constitutional
+      DUCKTAPE_GAME_ID: \${{ matrix.game }}
+      FLASH_ARCH_MODE: \${{ matrix.mode }}
+      LOCAL_ANALYZER_PROVIDER: openrouter
+      LOCAL_ANALYZER_MODEL_ID: openrouter/free
+      LOCAL_ANALYZER_MAX_OUTPUT: "1800"
+      LOCAL_ANALYZER_CONTEXT_WINDOW: "32768"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_STEPS: "4"
+      LOCAL_ANALYZER_TOOL_TIMEOUT: "25"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "768"
+      LOCAL_ANALYZER_TIMEOUT: "120"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - name: Apply frozen back-end and architecture arm
+        run: |
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_autonomous_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_architecture_tournament_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo "FLASH_ARCH_TOURNAMENT_STACK=PASS"
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: \${{ github.workspace }}/public-env
+          GAME_ID: \${{ matrix.game }}
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+
+          env_dir = Path(os.environ["ENV_DIR"])
+          env_dir.mkdir(parents=True, exist_ok=True)
+          arcade = Arcade(
+              operation_mode=OperationMode.NORMAL,
+              environments_dir=str(env_dir),
+          )
+          game_id = os.environ["GAME_ID"]
+          env = arcade.make(game_id)
+          if env is None:
+              raise SystemExit(f"could not download/make {game_id}")
+          print("ARCH_GAME_DOWNLOAD=PASS", env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+
+      - name: Run architecture arm
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVIRONMENTS_DIR: \${{ github.workspace }}/public-env
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/public-env" \
+          GAME=\${{ matrix.game }} \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=120 \
+          MAX_RUNTIME_MINUTES=6 \
+          MODEL=openrouter/free \
+          LOCAL_ANALYZER_MODEL_ID=openrouter/free \
+          ANALYZER_TIMEOUT=120 \
+          RUN_NAME="arch-\${{ matrix.mode }}-\${{ matrix.game }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run \
+            | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal arm
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          mode = "\${{ matrix.mode }}"
+          game = "\${{ matrix.game }}"
+          result = {
+              "mode": mode,
+              "game": game,
+              "score": None,
+              "levels": None,
+              "total_levels": None,
+              "state": None,
+              "actions": None,
+              "reported_tokens": None,
+              "won": False,
+              "events": {},
+              "technical_error": None,
+          }
+
+          evaluation = Path("out/evaluation.json")
+          if evaluation.exists():
+              d = json.loads(evaluation.read_text())
+              if d.get("games"):
+                  g = d["games"][0]
+                  result["score"] = float(d["score"])
+                  result["levels"] = float(g["levels_completed_mean"])
+                  result["total_levels"] = int(g["total_levels"])
+
+          benchmark = Path("out/benchmark.json")
+          if benchmark.exists():
+              d = json.loads(benchmark.read_text())
+              runs = d.get("game_runs") or []
+              if runs:
+                  r = runs[0]
+                  result["state"] = r.get("state")
+                  result["actions"] = len(r.get("history") or [])
+                  note = str(r.get("solver_note") or "")
+                  m = re.search(r"tokens=(\d+)", note)
+                  result["reported_tokens"] = int(m.group(1)) if m else None
+                  if note.startswith("error:"):
+                      result["technical_error"] = note
+
+          counts = {}
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if line.strip():
+                      kind = str(json.loads(line).get("kind"))
+                      counts[kind] = counts.get(kind, 0) + 1
+          result["events"] = counts
+          result["won"] = bool(
+              result["total_levels"] is not None
+              and result["levels"] == result["total_levels"]
+          )
+          Path(f"result-{mode}-{game}.json").write_text(json.dumps(result, indent=2))
+          print(json.dumps(result, indent=2))
+          print("FLASH_ARCH_TOURNAMENT_ARM=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arch-\${{ matrix.mode }}-\${{ matrix.game }}
+          path: |
+            result-\${{ matrix.mode }}-\${{ matrix.game }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize architecture tournament
+    needs: screen
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: arch-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json, statistics
+          from pathlib import Path
+
+          rows = [json.loads(p.read_text()) for p in sorted(Path("evidence").rglob("result-*.json"))]
+          if not rows:
+              raise SystemExit("no architecture results")
+
+          modes = sorted({r["mode"] for r in rows})
+          out = {
+              "screen_games": [
+                  "tn36-ef4dde99",
+                  "tu93-0768757b",
+                  "m0r0-492f87ba",
+                  "lf52-271a04aa",
+                  "sc25-635fd71a",
+              ],
+              "arms": {},
+              "per_game": rows,
+              "claim_boundary": (
+                  "five-game architecture screen with identical frozen Metatron/Flash back-end; "
+                  "one pass per arm/game on OpenRouter free routing; finalists require repeated/full-16 confirmation"
+              ),
+          }
+
+          for mode in modes:
+              rs = [r for r in rows if r["mode"] == mode]
+              scores = [r["score"] for r in rs if r["score"] is not None]
+              fracs = [
+                  r["levels"] / r["total_levels"]
+                  for r in rs if r["levels"] is not None and r["total_levels"]
+              ]
+              acts = [r["actions"] for r in rs if r["actions"] is not None]
+              toks = [r["reported_tokens"] for r in rs if r["reported_tokens"] is not None]
+              out["arms"][mode] = {
+                  "n": len(rs),
+                  "wins": sum(bool(r.get("won")) for r in rs),
+                  "games_with_progress": sum((r.get("levels") or 0) > 0 for r in rs),
+                  "mean_score": statistics.mean(scores) if scores else None,
+                  "mean_level_fraction": statistics.mean(fracs) if fracs else None,
+                  "mean_actions": statistics.mean(acts) if acts else None,
+                  "mean_tokens": statistics.mean(toks) if toks else None,
+                  "technical_errors": sum(bool(r.get("technical_error")) for r in rs),
+                  "arch_semantic": sum(r["events"].get("ARCH_SEMANTIC", 0) for r in rs),
+                  "arch_probes": sum(r["events"].get("ARCH_PROBE", 0) for r in rs),
+                  "model_queries": sum(r["events"].get("MODEL_QUERY", 0) for r in rs),
+                  "probe_compiles": sum(r["events"].get("PROBE_COMPILE", 0) for r in rs),
+                  "qualified_capabilities": sum(r["events"].get("CAPABILITY", 0) for r in rs),
+                  "flash_executes": sum(r["events"].get("FLASH_EXECUTE", 0) for r in rs),
+                  "flash_reclosures": sum(r["events"].get("FLASH_RECLOSE", 0) for r in rs),
+                  "revocations": sum(r["events"].get("REVOKE", 0) for r in rs),
+              }
+
+          Path("flash-architecture-tournament-v1-summary.json").write_text(
+              json.dumps(out, indent=2)
+          )
+          print(json.dumps(out, indent=2))
+          print("FLASH_ARCHITECTURE_TOURNAMENT_V1=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flash-architecture-tournament-v1-summary
+          path: |
+            flash-architecture-tournament-v1-summary.json
+            evidence
+          if-no-files-found: error
