@@ -102,6 +102,20 @@ jobs:
           print("FLASH_PUBLIC_SELECTOR=PASS")
           PY
 
+      - name: Repair upstream bt33 test-fixture baseline metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data = json.loads(p.read_text())
+          # The game source has five levels with required successful depths
+          # 4,8,16,20,24; the checked-in metadata incorrectly contains only 3.
+          data["baseline_actions"] = [4, 8, 16, 20, 24]
+          p.write_text(json.dumps(data, indent=2) + "\n")
+          print("BT33_BASELINE_FIX=PASS")
+          PY
+
       - name: Install public Duck from lockfile
         working-directory: vendor/duck-harness/ARC3-Inference
         run: |
