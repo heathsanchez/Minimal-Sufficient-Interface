@@ -4,6 +4,7 @@ import json
 import os
 import re
 import statistics
+import time
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -114,40 +115,47 @@ The law is only a candidate. External held-out evidence decides whether it is re
     )
 
     errors: list[str] = []
-    for model in (MODEL, FALLBACK_MODEL):
-        body = json.dumps(
-            {
-                "model": model,
-                "temperature": 0,
-                "top_p": 1,
-                "max_tokens": 900,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-            }
-        ).encode()
-        req = urllib.request.Request(
-            OPENROUTER_URL,
-            data=body,
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-            },
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                payload = json.loads(resp.read().decode())
-            text = payload["choices"][0]["message"]["content"]
-            out = parse_json_object(text)
-            out["_usage"] = payload.get("usage") or {}
-            out["_model_requested"] = model
-            out["_model_returned"] = payload.get("model")
-            return out
-        except Exception as exc:
-            errors.append(f"{model}: {type(exc).__name__}: {exc}")
-            continue
+    routes = (MODEL, FALLBACK_MODEL)
+    for attempt in range(4):
+        for model in routes:
+            body = json.dumps(
+                {
+                    "model": model,
+                    "temperature": 0,
+                    "top_p": 1,
+                    "max_tokens": 1800,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                }
+            ).encode()
+            req = urllib.request.Request(
+                OPENROUTER_URL,
+                data=body,
+                method="POST",
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                },
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    payload = json.loads(resp.read().decode())
+                message = payload["choices"][0]["message"]
+                text = message.get("content") or message.get("reasoning") or ""
+                out = parse_json_object(str(text))
+                out["_usage"] = payload.get("usage") or {}
+                out["_model_requested"] = model
+                out["_model_returned"] = payload.get("model")
+                out["_attempt"] = attempt + 1
+                return out
+            except Exception as exc:
+                errors.append(
+                    f"attempt={attempt+1} model={model}: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+        time.sleep(2 * (attempt + 1))
 
     raise RuntimeError("all JOIN model routes failed: " + " | ".join(errors))
 
