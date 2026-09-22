@@ -23,16 +23,14 @@ def _components(grid: tuple[tuple[int, ...], ...]) -> list[tuple[int,int,int,int
     if not grid:
         return []
     rows, cols = len(grid), len(grid[0])
-    counts = Counter(cell for row in grid for cell in row)
-    # Treat the two most common colors as background/letterbox by default.
-    excluded = {value for value, _ in counts.most_common(2)}
+    total = rows * cols
     seen = set()
     out = []
     for r in range(rows):
         for c in range(cols):
-            color = grid[r][c]
-            if color in excluded or (r,c) in seen:
+            if (r,c) in seen:
                 continue
+            color = grid[r][c]
             q = deque([(r,c)])
             seen.add((r,c))
             cells = []
@@ -43,6 +41,11 @@ def _components(grid: tuple[tuple[int, ...], ...]) -> list[tuple[int,int,int,int
                     nr,nc = rr+dr,cc+dc
                     if 0 <= nr < rows and 0 <= nc < cols and (nr,nc) not in seen and grid[nr][nc] == color:
                         seen.add((nr,nc)); q.append((nr,nc))
+            # Background and letterbox are large connected regions.  Do not
+            # exclude colors by frequency: on sparse boards a real target can
+            # be the second-most-common color and would be silently erased.
+            if len(cells) > max(16, total // 4):
+                continue
             rs=[x[0] for x in cells]; cs=[x[1] for x in cells]
             out.append((min(cs), min(rs), max(cs), max(rs), color, len(cells)))
     return sorted(out, key=lambda x:(x[0],x[1],x[4],x[5]))
