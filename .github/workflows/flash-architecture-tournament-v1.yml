@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   screen:
-    name: \${{ matrix.mode }} / \${{ matrix.game }}
+    name: ${{ matrix.mode }} / ${{ matrix.game }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     strategy:
@@ -44,12 +44,12 @@ jobs:
           - sc25-635fd71a
 
     env:
-      OPENROUTER_API_KEY: \${{ secrets.OPENROUTER_API_KEY }}
-      OPENAI_API_KEY: \${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       PYTHONUNBUFFERED: "1"
       DUCKTAPE_PROMOTION_POLICY: constitutional
-      DUCKTAPE_GAME_ID: \${{ matrix.game }}
-      FLASH_ARCH_MODE: \${{ matrix.mode }}
+      DUCKTAPE_GAME_ID: ${{ matrix.game }}
+      FLASH_ARCH_MODE: ${{ matrix.mode }}
       LOCAL_ANALYZER_PROVIDER: openrouter
       LOCAL_ANALYZER_MODEL_ID: openrouter/free
       LOCAL_ANALYZER_MAX_OUTPUT: "1800"
@@ -92,8 +92,8 @@ jobs:
       - name: Download exact public game
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
-          ENV_DIR: \${{ github.workspace }}/public-env
-          GAME_ID: \${{ matrix.game }}
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: ${{ matrix.game }}
         run: |
           uv run python - <<'PY'
           import os
@@ -117,13 +117,13 @@ jobs:
       - name: Run architecture arm
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
-          ENVIRONMENTS_DIR: \${{ github.workspace }}/public-env
+          ENVIRONMENTS_DIR: ${{ github.workspace }}/public-env
         run: |
           rm -rf "$GITHUB_WORKSPACE/out"
           CONFIG_PATH=configs/inference.openrouter.json \
           EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
           ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/public-env" \
-          GAME=\${{ matrix.game }} \
+          GAME=${{ matrix.game }} \
           N_PASSES=1 \
           CONCURRENT_JOBS=1 \
           MAX_ACTIONS=120 \
@@ -131,7 +131,7 @@ jobs:
           MODEL=openrouter/free \
           LOCAL_ANALYZER_MODEL_ID=openrouter/free \
           ANALYZER_TIMEOUT=120 \
-          RUN_NAME="arch-\${{ matrix.mode }}-\${{ matrix.game }}" \
+          RUN_NAME="arch-${{ matrix.mode }}-${{ matrix.game }}" \
           make interactive | tee "$GITHUB_WORKSPACE/run.log"
 
           SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run \
@@ -144,8 +144,8 @@ jobs:
           import json, re
           from pathlib import Path
 
-          mode = "\${{ matrix.mode }}"
-          game = "\${{ matrix.game }}"
+          mode = "${{ matrix.mode }}"
+          game = "${{ matrix.game }}"
           result = {
               "mode": mode,
               "game": game,
@@ -202,9 +202,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arch-\${{ matrix.mode }}-\${{ matrix.game }}
+          name: arch-${{ matrix.mode }}-${{ matrix.game }}
           path: |
-            result-\${{ matrix.mode }}-\${{ matrix.game }}.json
+            result-${{ matrix.mode }}-${{ matrix.game }}.json
             run.log
             score.log
             out/evaluation.json
