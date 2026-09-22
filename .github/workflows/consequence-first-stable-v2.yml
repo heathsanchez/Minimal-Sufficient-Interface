@@ -1,0 +1,284 @@
+name: Consequence First Stable V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-consequence-first-stable-v2]
+    paths:
+      - 'kaggle/openai_stable_model_patch.py'
+      - 'kaggle/consequence_first_leaderboard_patch.py'
+      - '.github/workflows/consequence-first-stable-v2.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  screen:
+    name: ${{ matrix.game }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 26
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - {game: bt11, kind: fixture, max_actions: 90}
+          - {game: tn36-ef4dde99, kind: official, max_actions: 32}
+          - {game: tu93-0768757b, kind: official, max_actions: 32}
+          - {game: m0r0-492f87ba, kind: official, max_actions: 32}
+          - {game: lf52-271a04aa, kind: official, max_actions: 32}
+          - {game: sc25-635fd71a, kind: official, max_actions: 32}
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+
+      DUCKTAPE_PROMOTION_POLICY: withheld
+      DUCKTAPE_GAME_ID: ${{ matrix.game }}
+
+      OPENAI_PROVIDER: openai
+      OPENAI_BASE_URL: https://api.openai.com/v1
+      LOCAL_ANALYZER_PROVIDER: openai
+      LOCAL_ANALYZER_BASE_URL: https://api.openai.com/v1
+      LOCAL_ANALYZER_MODEL_ID: gpt-5.6-luna
+      LOCAL_ANALYZER_MAX_OUTPUT: "4096"
+      LOCAL_ANALYZER_CONTEXT_WINDOW: "32768"
+      LOCAL_ANALYZER_ENABLE_THINKING: "true"
+      LOCAL_ANALYZER_TOOL_STEPS: "12"
+      LOCAL_ANALYZER_TOOL_TIMEOUT: "30"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+      LOCAL_ANALYZER_TIMEOUT: "120"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Require stable model credential
+        run: |
+          test -n "$OPENAI_API_KEY" || { echo "OPENAI_API_KEY_MISSING"; exit 2; }
+          echo "OPENAI_API_KEY_PRESENT=PASS"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        if: matrix.kind == 'fixture'
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply stable consequence-first stack
+        run: |
+          python kaggle/openai_stable_model_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_nucleus_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_first_leaderboard_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo "CONSEQUENCE_FIRST_STABLE_STACK=PASS"
+
+      - name: Prepare fixture
+        if: matrix.kind == 'fixture'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text=p.read_text()
+          marker="DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          row='    "bt11-fd9df0622a1a",\n'
+          if row not in text:
+              text=text.replace(marker,marker+row,1)
+          p.write_text(text)
+          print("FIXTURE=PASS")
+          PY
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.agent.consequence_first_leaderboard import ConsequenceFirstLeaderboardAgent
+          from inference.utils.openai_compat import normalize_provider
+          assert normalize_provider("openai") == "openai"
+          print("STABLE_MODEL_IMPORT=PASS")
+          PY
+
+      - name: Download exact public game
+        if: matrix.kind == 'official'
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: ${{ matrix.game }}
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root=Path(os.environ["ENV_DIR"])
+          root.mkdir(parents=True,exist_ok=True)
+          arcade=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(root))
+          env=arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS",env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+
+      - name: Run stable high-cognition low-action controller
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          if [ "${{ matrix.kind }}" = "fixture" ]; then
+            ENVROOT="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files"
+          else
+            ENVROOT="$GITHUB_WORKSPACE/public-env"
+          fi
+
+          rm -rf "$GITHUB_WORKSPACE/out"
+
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$ENVROOT" \
+          GAME="${{ matrix.game }}" \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS="${{ matrix.max_actions }}" \
+          MAX_RUNTIME_MINUTES=14 \
+          MODEL=gpt-5.6-luna \
+          LOCAL_ANALYZER_MODEL_ID=gpt-5.6-luna \
+          ANALYZER_TIMEOUT=120 \
+          RUN_NAME="consequence-first-stable-v2-${{ matrix.game }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal game
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          game="${{ matrix.game }}"; kind="${{ matrix.kind }}"
+          result={
+              "game":game,"kind":kind,"model":"gpt-5.6-luna",
+              "score":None,"levels":None,"total_levels":None,"state":None,
+              "actions":None,"reported_tokens":None,"events":{},"won":False,
+              "request_errors":0,"rate_limit_errors":0,
+          }
+
+          p=Path("out/evaluation.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              if d.get("games"):
+                  g=d["games"][0]
+                  result["score"]=float(d["score"])
+                  result["levels"]=float(g["levels_completed_mean"])
+                  result["total_levels"]=int(g["total_levels"])
+
+          p=Path("out/benchmark.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              runs=d.get("game_runs") or []
+              if runs:
+                  r=runs[0]
+                  result["state"]=r.get("state")
+                  result["actions"]=len(r.get("history") or [])
+                  m=re.search(r"tokens=(\d+)",str(r.get("solver_note") or ""))
+                  result["reported_tokens"]=int(m.group(1)) if m else None
+
+          log=Path("run.log").read_text(errors="replace") if Path("run.log").exists() else ""
+          result["request_errors"]=log.count("analyzer request failed")
+          result["rate_limit_errors"]=log.count("429 Client Error")
+
+          counts={}
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if line.strip():
+                      k=str(json.loads(line).get("kind"))
+                      counts[k]=counts.get(k,0)+1
+          result["events"]=counts
+          result["won"]=result["total_levels"] is not None and result["levels"]==result["total_levels"]
+
+          Path(f"result-{game}.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          print("CONSEQUENCE_FIRST_STABLE_V2_GAME=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequence-first-stable-v2-${{ matrix.game }}
+          path: |
+            result-${{ matrix.game }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize Consequence First Stable V2
+    needs: screen
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: consequence-first-stable-v2-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json,statistics
+          from pathlib import Path
+
+          rows=[json.loads(p.read_text()) for p in sorted(Path("evidence").rglob("result-*.json"))]
+          out={"model":"gpt-5.6-luna","rows":rows,"groups":{}}
+          for kind in sorted({r["kind"] for r in rows}):
+              rs=[r for r in rows if r["kind"]==kind]
+              vals=lambda k:[r[k] for r in rs if r.get(k) is not None]
+              out["groups"][kind]={
+                  "n":len(rs),
+                  "wins":sum(bool(r.get("won")) for r in rs),
+                  "games_with_progress":sum((r.get("levels") or 0)>0 for r in rs),
+                  "mean_score":statistics.mean(vals("score")) if vals("score") else None,
+                  "mean_actions":statistics.mean(vals("actions")) if vals("actions") else None,
+                  "mean_tokens":statistics.mean(vals("reported_tokens")) if vals("reported_tokens") else None,
+                  "request_errors":sum(r.get("request_errors",0) for r in rs),
+                  "rate_limit_errors":sum(r.get("rate_limit_errors",0) for r in rs),
+                  "semantic_turns":sum(r["events"].get("NEBULA_REASON",0) for r in rs),
+                  "consequential_tests":sum(r["events"].get("CONSEQUENTIAL_TEST",0) for r in rs),
+                  "atlas_stages":sum(r["events"].get("ATLAS_STAGE",0) for r in rs),
+                  "atlas_capabilities":sum(r["events"].get("ATLAS_CAPABILITY",0) for r in rs),
+                  "transfer_executes":sum(r["events"].get("TRANSFER_EXECUTE",0) for r in rs),
+                  "representation_residuals":sum(r["events"].get("REPRESENTATION_RESIDUAL",0) for r in rs),
+              }
+          out["claim_boundary"]=(
+              "stable paid-model architecture screen using OpenAI GPT-5.6 Luna; "
+              "final Kaggle deployment still requires evaluation with the local Qwen3.6-27B-FP8 competition model"
+          )
+          Path("consequence-first-stable-v2-summary.json").write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          print("CONSEQUENCE_FIRST_STABLE_V2=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequence-first-stable-v2-summary
+          path: |
+            consequence-first-stable-v2-summary.json
+            evidence
+          if-no-files-found: error
