@@ -1,0 +1,297 @@
+name: DuckTape causal ablation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-ducktape-duck-v1]
+    paths:
+      - 'kaggle/ducktape_modes_patch.py'
+      - '.github/workflows/ducktape-causal-ablation.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  experiment:
+    name: ${{ matrix.arm }} t${{ matrix.trial }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {arm: sham, trial: 1}
+          - {arm: consequences, trial: 1}
+          - {arm: full, trial: 1}
+          - {arm: sham, trial: 2}
+          - {arm: consequences, trial: 2}
+          - {arm: full, trial: 2}
+          - {arm: sham, trial: 3}
+          - {arm: consequences, trial: 3}
+          - {arm: full, trial: 3}
+
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+      DUCKTAPE_MODE: ${{ matrix.arm }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require configured model key
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "DUCKTAPE_ABLATION_BLOCKED=no_model_key"
+            exit 2
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply matched DuckTape ablation patch
+        run: |
+          python kaggle/ducktape_modes_patch.py \
+            --root vendor/duck-harness/ARC3-Inference
+          grep -q 'DuckTapeToolAgent' \
+            vendor/duck-harness/ARC3-Inference/inference/framework/solver.py
+          echo "DUCKTAPE_MODE_PATCH=PASS"
+
+      - name: Admit pinned bt11 to Duck selector
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text = p.read_text()
+          marker = "DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          row = '    "bt11-fd9df0622a1a",\n'
+          assert marker in text
+          if row not in text:
+              p.write_text(text.replace(marker, marker + row, 1))
+          PY
+
+      - name: Install public Duck from lockfile
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.agent.ducktape import DuckTapeToolAgent
+          print("DUCKTAPE_MODE_IMPORT=PASS")
+          PY
+
+      - name: Run matched arm
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files" \
+          GAME=bt11 \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=180 \
+          MAX_RUNTIME_MINUTES=12 \
+          RUN_NAME="ducktape-${DUCKTAPE_MODE}-t${{ matrix.trial }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run \
+            | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal arm result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          arm = "${{ matrix.arm }}"
+          trial = int("${{ matrix.trial }}")
+          root = Path("out")
+          result = {
+              "arm": arm,
+              "trial": trial,
+              "tufa_head": "7652836056c59e044f093e3c13ed7438c814169e",
+              "game": "bt11-fd9df0622a1a",
+              "model": "Qwen/Qwen3.6-27B",
+              "temperature": 0,
+              "max_actions": 180,
+              "max_runtime_minutes": 12,
+              "score": None,
+              "levels": None,
+              "total_levels": 5,
+              "state": None,
+              "actions": None,
+              "solver_note": None,
+              "consequences": 0,
+              "capabilities": 0,
+              "blocked_repayments": 0,
+          }
+
+          evaluation = root / "evaluation.json"
+          if evaluation.exists():
+              data = json.loads(evaluation.read_text())
+              if data.get("games"):
+                  game = data["games"][0]
+                  result["score"] = float(data["score"])
+                  result["levels"] = float(game["levels_completed_mean"])
+                  result["total_levels"] = int(game["total_levels"])
+
+          benchmark = root / "benchmark.json"
+          if benchmark.exists():
+              data = json.loads(benchmark.read_text())
+              runs = data.get("game_runs") or []
+              if runs:
+                  run = runs[0]
+                  result["state"] = run.get("state")
+                  result["actions"] = len(run.get("history") or [])
+                  result["solver_note"] = run.get("solver_note")
+
+          for p in root.rglob("ducktape.jsonl"):
+              for line in p.read_text().splitlines():
+                  if not line.strip():
+                      continue
+                  kind = json.loads(line).get("kind")
+                  if kind == "CONSEQUENCE":
+                      result["consequences"] += 1
+                  elif kind == "CAPABILITY":
+                      result["capabilities"] += 1
+                  elif kind == "BLOCKED":
+                      result["blocked_repayments"] += 1
+
+          note = str(result.get("solver_note") or "")
+          m = re.search(r"tokens=(\d+)", note)
+          result["reported_tokens"] = int(m.group(1)) if m else None
+          result["won"] = bool(
+              result.get("levels") == result.get("total_levels")
+              or result.get("state") == "won"
+          )
+
+          path = Path(f"result-{arm}-t{trial}.json")
+          path.write_text(json.dumps(result, indent=2))
+          print(json.dumps(result, indent=2))
+          print("DUCKTAPE_ABLATION_ARM_COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dt-${{ matrix.arm }}-t${{ matrix.trial }}
+          path: |
+            result-${{ matrix.arm }}-t${{ matrix.trial }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize causal ablation
+    needs: experiment
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dt-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate three-arm experiment
+        run: |
+          python - <<'PY'
+          import json, math, statistics
+          from pathlib import Path
+
+          rows = []
+          for p in sorted(Path("evidence").rglob("result-*.json")):
+              rows.append(json.loads(p.read_text()))
+
+          if not rows:
+              raise SystemExit("No ablation results were produced")
+
+          arms = {}
+          for arm in ("sham", "consequences", "full"):
+              group = [r for r in rows if r["arm"] == arm]
+              scores = [r["score"] for r in group if r["score"] is not None]
+              levels = [r["levels"] for r in group if r["levels"] is not None]
+              actions = [r["actions"] for r in group if r["actions"] is not None]
+              tokens = [r["reported_tokens"] for r in group if r["reported_tokens"] is not None]
+              arms[arm] = {
+                  "n": len(group),
+                  "wins": sum(bool(r.get("won")) for r in group),
+                  "mean_score": statistics.mean(scores) if scores else None,
+                  "median_score": statistics.median(scores) if scores else None,
+                  "mean_levels": statistics.mean(levels) if levels else None,
+                  "mean_actions": statistics.mean(actions) if actions else None,
+                  "mean_reported_tokens": statistics.mean(tokens) if tokens else None,
+                  "total_consequences": sum(int(r.get("consequences") or 0) for r in group),
+                  "total_capabilities": sum(int(r.get("capabilities") or 0) for r in group),
+                  "total_blocked_repayments": sum(int(r.get("blocked_repayments") or 0) for r in group),
+                  "trials": group,
+              }
+
+          def delta(a, b, key):
+              x, y = arms[a].get(key), arms[b].get(key)
+              return None if x is None or y is None else x - y
+
+          summary = {
+              "design": {
+                  "game": "bt11-fd9df0622a1a",
+                  "public_duck_head": "7652836056c59e044f093e3c13ed7438c814169e",
+                  "model": "Qwen/Qwen3.6-27B",
+                  "temperature": 0,
+                  "trials_per_arm": 3,
+                  "max_actions": 180,
+                  "max_runtime_minutes": 12,
+                  "arms": {
+                      "sham": "identical DuckTape prompt shell, no earned state persists",
+                      "consequences": "exact consequences persist, capabilities disabled",
+                      "full": "exact consequences plus compiled progress capabilities",
+                  },
+              },
+              "arms": arms,
+              "contrasts": {
+                  "full_minus_sham_mean_score": delta("full", "sham", "mean_score"),
+                  "full_minus_consequences_mean_score": delta("full", "consequences", "mean_score"),
+                  "consequences_minus_sham_mean_score": delta("consequences", "sham", "mean_score"),
+                  "full_minus_sham_mean_levels": delta("full", "sham", "mean_levels"),
+                  "full_minus_consequences_mean_levels": delta("full", "consequences", "mean_levels"),
+                  "consequences_minus_sham_mean_levels": delta("consequences", "sham", "mean_levels"),
+              },
+          }
+
+          Path("ducktape-causal-ablation-summary.json").write_text(
+              json.dumps(summary, indent=2)
+          )
+          print(json.dumps(summary, indent=2))
+          print("DUCKTAPE_CAUSAL_ABLATION=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ducktape-causal-ablation-summary
+          path: |
+            ducktape-causal-ablation-summary.json
+            evidence
+          if-no-files-found: error
