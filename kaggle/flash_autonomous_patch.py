@@ -12,6 +12,7 @@ from typing import Any
 
 from inference.agent.runtime_state import Frame, load_runtime_state
 from inference.agent.tool_agent import AnalyzerTurnResult
+from inference.agent.action_names import to_engine_action, to_model_action
 from inference.agent.flash_agent import FlashToolAgent, _action_dict
 
 
@@ -62,7 +63,15 @@ class AutonomousFlashToolAgent(FlashToolAgent):
     """
 
     def _probe_key(self, frame: Frame, valid_actions: list[str] | None):
-        valid = {str(x).strip().upper() for x in (valid_actions or [])}
+        # HarnessSolver supplies engine labels (ACTION3/ACTION6), while the
+        # probe language is model-facing (LEFT/MOUSE). Normalize at the adapter
+        # boundary so mouse games do not silently fall through to malformed
+        # generic actions.
+        valid = {
+            to_model_action(to_engine_action(str(x)) or str(x))
+            for x in (valid_actions or [])
+            if str(x).strip()
+        }
         rejected = {
             tuple(dict(e["payload"]).get("action", ()))
             for e in self._dt_events("PROBE_REJECT")
