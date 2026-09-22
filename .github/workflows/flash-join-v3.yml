@@ -5,6 +5,7 @@ on:
   push:
     branches: [arc3-flash-join-v3]
     paths:
+      - 'kaggle/flash_autonomous_patch.py'
       - 'kaggle/flash_join_compiled_patch.py'
       - '.github/workflows/flash-join-v3.yml'
 
