@@ -1,0 +1,283 @@
+name: Flash ARC progressive compilation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-flash-v1]
+    paths:
+      - 'kaggle/flash_ducktape_patch.py'
+      - '.github/workflows/flash-arc-progressive-compilation.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  experiment:
+    name: ${{ matrix.game }} ${{ matrix.mode }} t${{ matrix.trial }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {game: bt11, mode: constitutional, trial: 1}
+          - {game: bt11, mode: flash, trial: 1}
+          - {game: bt11, mode: constitutional, trial: 2}
+          - {game: bt11, mode: flash, trial: 2}
+          - {game: bt33, mode: constitutional, trial: 1}
+          - {game: bt33, mode: flash, trial: 1}
+          - {game: bt33, mode: constitutional, trial: 2}
+          - {game: bt33, mode: flash, trial: 2}
+
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+      DUCKTAPE_PROMOTION_POLICY: constitutional
+      DUCKTAPE_GAME_ID: ${{ matrix.game }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require configured model key
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "FLASH_ARC_BLOCKED=no_model_key"
+            exit 2
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply Metatron promotion law
+        run: |
+          python kaggle/ducktape_metatron_patch.py \
+            --root vendor/duck-harness/ARC3-Inference
+          echo "METATRON_PROMOTION_PATCH=PASS"
+
+      - name: Apply Flash direct executor
+        if: matrix.mode == 'flash'
+        run: |
+          python kaggle/flash_ducktape_patch.py \
+            --root vendor/duck-harness/ARC3-Inference
+          echo "FLASH_DIRECT_EXECUTOR=PASS"
+
+      - name: Admit pinned public games to Duck selector
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text = p.read_text()
+          marker = "DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          rows = [
+              '    "bt11-fd9df0622a1a",\n',
+              '    "bt33-a7c3f9d18b4e",\n',
+          ]
+          assert marker in text
+          for row in reversed(rows):
+              if row not in text:
+                  text = text.replace(marker, marker + row, 1)
+          p.write_text(text)
+          print("FLASH_PUBLIC_SELECTOR=PASS")
+          PY
+
+      - name: Install public Duck from lockfile
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.framework.solver import HarnessSolver
+          print("FLASH_PUBLIC_DUCK_IMPORT=PASS")
+          PY
+
+      - name: Run game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVIRONMENTS_DIR: ${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files" \
+          GAME=${{ matrix.game }} \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=180 \
+          MAX_RUNTIME_MINUTES=12 \
+          RUN_NAME="flash-${{ matrix.game }}-${{ matrix.mode }}-t${{ matrix.trial }}" \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run \
+            | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          game = "${{ matrix.game }}"
+          mode = "${{ matrix.mode }}"
+          trial = int("${{ matrix.trial }}")
+          result = {
+              "game": game,
+              "mode": mode,
+              "trial": trial,
+              "score": None,
+              "levels": None,
+              "total_levels": None,
+              "state": None,
+              "actions": None,
+              "reported_tokens": None,
+              "events": {},
+              "qualified_capabilities": 0,
+              "flash_executes": 0,
+              "flash_reclosures": 0,
+              "model_queries": 0,
+              "revocations": 0,
+          }
+
+          p = Path("out/evaluation.json")
+          if p.exists():
+              data = json.loads(p.read_text())
+              if data.get("games"):
+                  g = data["games"][0]
+                  result["score"] = float(data["score"])
+                  result["levels"] = float(g["levels_completed_mean"])
+                  result["total_levels"] = int(g["total_levels"])
+
+          p = Path("out/benchmark.json")
+          if p.exists():
+              data = json.loads(p.read_text())
+              runs = data.get("game_runs") or []
+              if runs:
+                  r = runs[0]
+                  result["state"] = r.get("state")
+                  result["actions"] = len(r.get("history") or [])
+                  note = str(r.get("solver_note") or "")
+                  m = re.search(r"tokens=(\d+)", note)
+                  result["reported_tokens"] = int(m.group(1)) if m else None
+
+          counts = {}
+          for logname in ("ducktape-metatron.jsonl",):
+              for lp in Path("out").rglob(logname):
+                  for line in lp.read_text().splitlines():
+                      if not line.strip():
+                          continue
+                      event = json.loads(line)
+                      kind = str(event.get("kind"))
+                      counts[kind] = counts.get(kind, 0) + 1
+
+          result["events"] = counts
+          result["qualified_capabilities"] = counts.get("CAPABILITY", 0)
+          result["flash_executes"] = counts.get("FLASH_EXECUTE", 0)
+          result["flash_reclosures"] = counts.get("FLASH_RECLOSE", 0)
+          result["model_queries"] = counts.get("MODEL_QUERY", 0)
+          result["revocations"] = counts.get("REVOKE", 0)
+          result["won"] = bool(
+              result["total_levels"] is not None
+              and result["levels"] == result["total_levels"]
+          )
+
+          out = Path(f"result-{game}-{mode}-t{trial}.json")
+          out.write_text(json.dumps(result, indent=2))
+          print(json.dumps(result, indent=2))
+          print("FLASH_ARC_ARM=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-${{ matrix.game }}-${{ matrix.mode }}-t${{ matrix.trial }}
+          path: |
+            result-${{ matrix.game }}-${{ matrix.mode }}-t${{ matrix.trial }}.json
+            run.log
+            score.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
+
+  summarize:
+    name: summarize Flash
+    needs: experiment
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: flash-*
+          path: evidence
+          merge-multiple: false
+
+      - name: Aggregate progressive-compilation results
+        run: |
+          python - <<'PY'
+          import json, statistics
+          from pathlib import Path
+
+          rows = [
+              json.loads(p.read_text())
+              for p in sorted(Path("evidence").rglob("result-*.json"))
+          ]
+          if not rows:
+              raise SystemExit("no Flash results")
+
+          summary = {"games": {}, "all_trials": rows}
+          for game in sorted({r["game"] for r in rows}):
+              summary["games"][game] = {}
+              for mode in ("constitutional", "flash"):
+                  group = [r for r in rows if r["game"] == game and r["mode"] == mode]
+                  scores = [r["score"] for r in group if r["score"] is not None]
+                  levels = [r["levels"] for r in group if r["levels"] is not None]
+                  actions = [r["actions"] for r in group if r["actions"] is not None]
+                  tokens = [r["reported_tokens"] for r in group if r["reported_tokens"] is not None]
+                  summary["games"][game][mode] = {
+                      "n": len(group),
+                      "wins": sum(bool(r.get("won")) for r in group),
+                      "mean_score": statistics.mean(scores) if scores else None,
+                      "mean_levels": statistics.mean(levels) if levels else None,
+                      "mean_actions": statistics.mean(actions) if actions else None,
+                      "mean_reported_tokens": statistics.mean(tokens) if tokens else None,
+                      "total_qualified_capabilities": sum(r["qualified_capabilities"] for r in group),
+                      "total_flash_executes": sum(r["flash_executes"] for r in group),
+                      "total_flash_reclosures": sum(r["flash_reclosures"] for r in group),
+                      "total_model_queries": sum(r["model_queries"] for r in group),
+                      "total_revocations": sum(r["revocations"] for r in group),
+                  }
+
+          Path("flash-arc-progressive-compilation-summary.json").write_text(
+              json.dumps(summary, indent=2)
+          )
+          print(json.dumps(summary, indent=2))
+          print("FLASH_ARC_PROGRESSIVE_COMPILATION=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flash-arc-progressive-compilation-summary
+          path: |
+            flash-arc-progressive-compilation-summary.json
+            evidence
+          if-no-files-found: error
