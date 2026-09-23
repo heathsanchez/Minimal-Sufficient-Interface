@@ -137,7 +137,7 @@ jobs:
                   "scope":"frozen five-state bt33 level-start corpus",
                   "theorems":[
                       "selected_basis_sufficient",
-                      "quotient_reuse_across_distinct_raw_states"
+                      "capability_quotient_reuse_across_distinct_raw_states"
                   ],
                   "mathgraph_source":"e80fed62b6e58d2f4b62e2ceb012646c60dd1e28",
               },
