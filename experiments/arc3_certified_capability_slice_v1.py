@@ -28,31 +28,23 @@ PREFIX = [
 
 
 def grid_of(frame: Any) -> list[list[int]]:
-    raw = frame.frame.data if hasattr(frame.frame, "data") else frame.frame
+    """Return the final visible ARC frame as the canonical 2D 0..15 grid.
+
+    arcengine.FrameDataRaw.frame is a list of animation frames; the final
+    visible board is frame[-1]. taaf.GameState.frame instead returns a Frame
+    wrapper with .data. Keep both paths explicit so representation adapters
+    cannot silently reinterpret animation axes as board axes.
+    """
+    raw = frame.frame
+    if hasattr(raw, "data"):
+        raw = raw.data
+    elif isinstance(raw, (list, tuple)):
+        if not raw:
+            return []
+        raw = raw[-1]
     if hasattr(raw, "tolist"):
         raw = raw.tolist()
-
-    def code(pixel: Any) -> int:
-        if isinstance(pixel, (int, float, bool)):
-            return int(pixel)
-        if hasattr(pixel, "tolist"):
-            pixel = pixel.tolist()
-        if isinstance(pixel, (list, tuple)):
-            vals = []
-            stack = list(pixel)
-            while stack:
-                v = stack.pop(0)
-                if isinstance(v, (list, tuple)):
-                    stack = list(v) + stack
-                else:
-                    vals.append(int(v))
-            out = 0
-            for v in vals:
-                out = out * 257 + v
-            return out
-        return int(pixel)
-
-    return [[code(x) for x in row] for row in raw]
+    return [[int(x) for x in row] for row in raw]
 
 
 def small_components(grid: list[list[int]]) -> list[dict[str, int]]:
