@@ -88,3 +88,5 @@ jobs:
             evidence/arc3-public-generational-frontier-g2/result.json
             arc3-public-g2-search.log
           if-no-files-found: error
+
+# rerun after ARC current-level reset fix
