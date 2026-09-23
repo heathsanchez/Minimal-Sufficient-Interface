@@ -31,14 +31,20 @@ def click(e,rc):
 
 def run_once():
     e=env();trace=[]
+    # Enter the exact G2 residual boundary first.
+    for j,rc in enumerate(G1):
+        z=click(e,rc)
+        if z is None: return {"progressed":False,"error":"G1-None","trace":trace}
+    if int(e.observation_space.levels_completed)!=1:
+        return {"progressed":False,"error":"G1-drift","level":int(e.observation_space.levels_completed),"trace":trace}
     for i,rc in enumerate(PROGRAM):
         z=click(e,rc)
         if z is None: return {"progressed":False,"error":"None","trace":trace}
         trace.append({"i":i,"rc":list(rc),"level":int(z.levels_completed),"state":str(z.state)})
-        if int(z.levels_completed)>0 or z.state in (GameState.WIN,GameState.GAME_OVER):
+        if int(z.levels_completed)>1 or z.state in (GameState.WIN,GameState.GAME_OVER):
             break
     return {
-        "progressed":int(e.observation_space.levels_completed)>0 or e.observation_space.state==GameState.WIN,
+        "progressed":int(e.observation_space.levels_completed)>1 or e.observation_space.state==GameState.WIN,
         "level":int(e.observation_space.levels_completed),
         "state":str(e.observation_space.state),
         "actions":len(trace),
