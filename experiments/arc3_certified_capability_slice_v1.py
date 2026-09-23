@@ -28,7 +28,7 @@ PREFIX = [
 
 
 def grid_of(frame: Any) -> list[list[int]]:
-    raw = frame.frame
+    raw = frame.frame.data if hasattr(frame.frame, "data") else frame.frame
     if hasattr(raw, "tolist"):
         raw = raw.tolist()
     return [[int(x) for x in row] for row in raw]
