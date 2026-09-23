@@ -69,7 +69,7 @@ def residual(src,tgt):
         d={str(k):int(src[name].get(k,0)-tgt[name].get(k,0)) for k in keys if src[name].get(k,0)!=tgt[name].get(k,0)}
         if d:out[name]=d
     for name in ("rt","ct"):
-        v=src[name]-tgt[name]
+        v=src.get(name,0)-tgt.get(name,0)
         if v:out[name]=v
     return out
 
