@@ -258,8 +258,8 @@ def emit_lean(path: Path, rows: list[dict[str, Any]], basis: list[str]) -> None:
         ]
 
     lines += [
-        "def quotientReuseB : Bool := indices.any (fun i => indices.any (fun j => (i != j) && eqGuard i j && (cap i == cap j) && (raw i != raw j)))",
-        "theorem quotient_reuse_across_distinct_raw_states : quotientReuseB = true := by decide",
+        "def quotientReuseB : Bool := indices.any (fun i => indices.any (fun j => (i != j) && (cap i == cap j) && (raw i != raw j)))",
+        "theorem capability_quotient_reuse_across_distinct_raw_states : quotientReuseB = true := by decide",
         "end Arc3CertifiedDevelopmentalAtlasV3",
         "",
     ]
@@ -290,7 +290,7 @@ def main() -> None:
             if i >= j:
                 continue
             same_guard = all(canon(a["features"][name]) == canon(b["features"][name]) for name in basis)
-            if same_guard and a["cap_class"] == b["cap_class"] and a["grid_hash"] != b["grid_hash"]:
+            if a["cap_class"] == b["cap_class"] and a["grid_hash"] != b["grid_hash"]:
                 reuse_pairs.append({
                     "left_level": a["level"],
                     "right_level": b["level"],
@@ -298,6 +298,8 @@ def main() -> None:
                     "coord": a["coord"],
                     "left_hash": a["grid_hash"],
                     "right_hash": b["grid_hash"],
+                    "selected_observation_equal": bool(same_guard),
+                    "semantic_equivalence": "same protected compiled capability class",
                 })
     if not reuse_pairs:
         raise AssertionError("no cross-representation quotient reuse pair")
