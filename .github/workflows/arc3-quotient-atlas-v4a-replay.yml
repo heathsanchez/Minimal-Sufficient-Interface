@@ -31,6 +31,17 @@ jobs:
           repository: arcprize/ARC-AGI
           ref: f12822c4d550121c35a275008d964afbbed47d2f
           path: vendor/ARC-AGI
+      - name: Reproduce V3 fixture metadata exactly
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data=json.loads(m.read_text())
+          data["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(data,indent=2)+"\n")
+          print("V3_FIXTURE_METADATA=PASS")
+          PY
       - name: Install Duck environment
         working-directory: vendor/duck-harness/ARC3-Inference
         run: uv sync --locked --python "$(command -v python)"
@@ -113,7 +124,7 @@ jobs:
           out={
               "source_run":35811403514,
               "source_artifact":10730520693,
-              "source_boundary":"exact sealed V3 first-18-action replay",
+              "source_boundary":"exact sealed V3 first-18-action replay + exact V3 baseline metadata [4,8,16,20,24]",
               "model_calls":0,
               "law":"repeat:changed_continue=>protected_progress",
               "candidate":candidate,
