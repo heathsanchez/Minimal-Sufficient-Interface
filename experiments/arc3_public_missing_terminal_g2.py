@@ -23,9 +23,10 @@ def click(e,rc):
     return e.step(GameAction.ACTION6,data={"x":c,"y":r})
 
 def enter_prefix(e):
-    for rc in G1:
-        f=click(e,rc)
-        if f is None:raise RuntimeError("g1")
+    if int(e.observation_space.levels_completed)==0:
+        for rc in G1:
+            f=click(e,rc)
+            if f is None:raise RuntimeError("g1")
     if int(e.observation_space.levels_completed)!=1:raise RuntimeError("g1 drift")
     for rc in PREFIX:
         f=click(e,rc)
@@ -34,14 +35,28 @@ def enter_prefix(e):
         if f.state==GameState.GAME_OVER:raise RuntimeError("prefix game over")
     return e.observation_space
 
+def reset_prefix(e):
+    f=e.reset()
+    if f is None:raise RuntimeError("reset")
+    if int(f.levels_completed)==0:
+        return enter_prefix(e)
+    if int(f.levels_completed)!=1:
+        raise RuntimeError(f"reset drift {f.levels_completed}")
+    return enter_prefix(e)
+
 def fresh_prefix():
     e=env(); enter_prefix(e); return e
 
 def main():
     successes=[]; terminal_counts={"continue":0,"game_over":0,"progress":0}
+    e=fresh_prefix()
+    first=True
     for r in range(64):
         for c in range(64):
-            e=fresh_prefix()
+            if first:
+                first=False
+            else:
+                reset_prefix(e)
             f=click(e,(r,c))
             if f is None:continue
             progressed=int(f.levels_completed)>1 or f.state==GameState.WIN
