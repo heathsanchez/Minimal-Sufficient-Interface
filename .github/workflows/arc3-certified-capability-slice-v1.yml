@@ -96,6 +96,7 @@ jobs:
         env:
           LEAN_PATH: lean
         run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
           lean lean/Completeness.lean
           lean lean/BehaviouralCongruence.lean
           echo MSI_GENERIC_QUOTIENT_LAWS=PASS
