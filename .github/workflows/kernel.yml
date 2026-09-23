@@ -65,6 +65,10 @@ jobs:
         env:
           LEAN_PATH: lean
         run: lean lean/FailureGeneratedConsequenceGenesis.lean
+      - name: Check quotient sufficiency falsifier
+        env:
+          LEAN_PATH: lean
+        run: lean lean/QuotientSufficiency.lean
       - name: Check Lean falsifiers
         env:
           LEAN_PATH: lean
