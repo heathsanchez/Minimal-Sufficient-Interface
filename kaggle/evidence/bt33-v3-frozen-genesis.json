@@ -1,0 +1,32 @@
+{
+  "schema": "arc3-frozen-genesis-v1",
+  "game": "bt33",
+  "source_run": 35811403514,
+  "source_head": "32e173c1e53d59595eccaeb232466e2e2bf34ac5",
+  "source_artifact_id": 10730520693,
+  "source_artifact_digest": "sha256:06818d392456c7979f252a2d6bf9ab66059a6d0e1102145ef62e2704a21002b9",
+  "claim_boundary": "Only the successful level-1 and level-2 prefixes from the sealed V3 artifact are admitted as historical bootstrap evidence. Level 3+ is the fresh transfer boundary. No source-derived game rule is admitted.",
+  "bootstrap": {
+    "level_1": {
+      "actions": [["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3]],
+      "expected": "LEVEL"
+    },
+    "level_2": {
+      "actions": [["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3], ["MOUSE", 3, 3]],
+      "expected": "LEVEL"
+    }
+  },
+  "candidate_law": {
+    "identity": "repeat:changed_continue=>protected_progress",
+    "source_levels": [1, 2],
+    "historical_role_witnesses": ["mouse:uncompiled-coordinate", "mouse:leftmost"],
+    "fresh_target_level": 3,
+    "transfer_witness_policy": "resolve mouse:leftmost on the fresh level and repeat while protected state changes, stopping on level progress, game over, no-change, or 32 actions"
+  },
+  "promotion_status": "CANDIDATE",
+  "prohibited_credit": [
+    "bootstrap replay does not count as transfer",
+    "source code or hidden game rules do not count as evidence",
+    "a model-assisted level-3 success does not count as compiled transfer"
+  ]
+}
