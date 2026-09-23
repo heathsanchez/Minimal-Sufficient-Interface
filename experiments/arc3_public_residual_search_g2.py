@@ -79,17 +79,10 @@ def do_action(env: Any, action: dict[str, Any]):
     return env.step(GameAction[action["action"]])
 
 
-def full_reset(env: Any):
-    f = env.reset()
-    if f is None:
-        raise RuntimeError("reset returned None")
-    if int(f.levels_completed) != 0:
-        raise RuntimeError(f"reset did not return to level 0: {f.levels_completed}")
-    return f
-
-
-def replay(env: Any, path: list[dict[str, Any]]) -> Any:
-    full_reset(env)
+def replay(path: list[dict[str, Any]]) -> Any:
+    # Hard restart means a fresh environment instance, not env.reset():
+    # ARC reset is level-local after protected progress.
+    _, env, _ = make_env()
     for action in G1:
         f = do_action(env, action)
         if f is None:
@@ -174,8 +167,22 @@ def candidate_actions(frame: Any, *, exhaustive: bool = False) -> list[dict[str,
     return [{"action":"MOUSE","row":r,"col":c} for r,c in coords]
 
 
-def transition(env: Any, path: list[dict[str, Any]], action: dict[str, Any]) -> dict[str, Any]:
-    before = replay(env, path)
+def transition(path: list[dict[str, Any]], action: dict[str, Any]) -> dict[str, Any]:
+    _, env, _ = make_env()
+    # Reuse this fresh instance for prefix/path and the candidate action.
+    for a in G1:
+        f = do_action(env, a)
+        if f is None:
+            raise RuntimeError("G1 replay returned None")
+    if int(env.observation_space.levels_completed) != 1:
+        raise RuntimeError("G1 no longer earns protected level-1 progress")
+    for a in path:
+        f = do_action(env, a)
+        if f is None:
+            raise RuntimeError("G2 path replay returned None")
+        if int(f.levels_completed) > 1 or f.state in (GameState.WIN, GameState.GAME_OVER):
+            break
+    before = env.observation_space
     start_hash = board_hash(before)
     start_hist = histogram(before)
     f = do_action(env, action)
@@ -199,8 +206,7 @@ def transition(env: Any, path: list[dict[str, Any]], action: dict[str, Any]) -> 
 def verify_path(path: list[dict[str, Any]], trials: int = 2) -> list[dict[str, Any]]:
     verified=[]
     for _ in range(trials):
-        _, env, _ = make_env()
-        f = replay(env, path)
+        f = replay(path)
         verified.append({
             "levels_completed": int(f.levels_completed),
             "state": str(f.state),
@@ -211,8 +217,7 @@ def verify_path(path: list[dict[str, Any]], trials: int = 2) -> list[dict[str, A
 
 
 def main() -> None:
-    _, env, _ = make_env()
-    root = replay(env, [])
+    root = replay([])
     root_hash = board_hash(root)
     root_hist = histogram(root)
 
@@ -222,7 +227,7 @@ def main() -> None:
     transitions = 0
     found_path: list[dict[str, Any]] | None = None
     for action in root_candidates:
-        tr = transition(env, [], action)
+        tr = transition([], action)
         transitions += 1
         if not tr["valid"] or tr["game_over"]:
             continue
@@ -258,7 +263,7 @@ def main() -> None:
         if depth >= MAX_DEPTH:
             continue
 
-        frame=replay(env,path)
+        frame=replay(path)
         if int(frame.levels_completed)>1 or frame.state==GameState.WIN:
             found_path=path
             break
@@ -269,7 +274,7 @@ def main() -> None:
         for action in actions:
             if transitions >= MAX_TRANSITIONS or len(seen)>=MAX_STATES:
                 break
-            tr=transition(env,path,action)
+            tr=transition(path,action)
             transitions += 1
             if not tr["valid"] or tr["game_over"]:
                 continue
