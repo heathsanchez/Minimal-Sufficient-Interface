@@ -1,0 +1,73 @@
+{
+  "schema": "arc3-public-compiled-capability-v1",
+  "game": "tn36-ef4dde99",
+  "source_run": 35811403514,
+  "source_artifact": 10730272259,
+  "source_head": "32e173c1e53d59595eccaeb232466e2e2bf34ac5",
+  "source_result": {
+    "levels_completed": 1,
+    "total_levels": 7,
+    "actions_per_level": [
+      9,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "guard": {
+    "game_id": "tn36-ef4dde99",
+    "level": 1
+  },
+  "protected_consequence": "levels_completed increases",
+  "program": [
+    {
+      "action": "MOUSE",
+      "row": 55,
+      "col": 36
+    },
+    {
+      "action": "MOUSE",
+      "row": 14,
+      "col": 31
+    },
+    {
+      "action": "MOUSE",
+      "row": 42,
+      "col": 26
+    },
+    {
+      "action": "MOUSE",
+      "row": 42,
+      "col": 36
+    },
+    {
+      "action": "MOUSE",
+      "row": 42,
+      "col": 41
+    },
+    {
+      "action": "MOUSE",
+      "row": 45,
+      "col": 26
+    },
+    {
+      "action": "MOUSE",
+      "row": 45,
+      "col": 36
+    },
+    {
+      "action": "MOUSE",
+      "row": 45,
+      "col": 41
+    },
+    {
+      "action": "MOUSE",
+      "row": 55,
+      "col": 36
+    }
+  ],
+  "claim_boundary": "exact public-game hard-restart capability; not cross-game transfer"
+}
