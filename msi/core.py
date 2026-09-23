@@ -7,6 +7,43 @@ from typing import Callable, Hashable, Iterable, Sequence, TypeVar
 X = TypeVar("X", bound=Hashable)
 C = TypeVar("C", bound=Hashable)
 O = TypeVar("O", bound=Hashable)
+Q = TypeVar("Q", bound=Hashable)
+Y = TypeVar("Y", bound=Hashable)
+
+
+def finite_quotient_counterexample(
+    situations: Iterable[X],
+    quotient: Callable[[X], Q],
+    target: Callable[[X], Y],
+) -> tuple[X, X] | None:
+    """Return a finite witness that target cannot factor through quotient.
+
+    A returned pair (x, y) satisfies quotient(x) == quotient(y) while
+    target(x) != target(y). Absence of a witness certifies factorization
+    only on the supplied finite situation set; it is not a universal theorem
+    about situations that were not enumerated.
+    """
+    seen: dict[Q, tuple[X, Y]] = {}
+    for x in situations:
+        qx = quotient(x)
+        tx = target(x)
+        previous = seen.get(qx)
+        if previous is not None:
+            y, ty = previous
+            if ty != tx:
+                return y, x
+        else:
+            seen[qx] = (x, tx)
+    return None
+
+
+def finite_factors_through(
+    situations: Iterable[X],
+    quotient: Callable[[X], Q],
+    target: Callable[[X], Y],
+) -> bool:
+    """Decide target-factorization through a quotient on a finite enumeration."""
+    return finite_quotient_counterexample(situations, quotient, target) is None
 
 
 @dataclass(frozen=True)
