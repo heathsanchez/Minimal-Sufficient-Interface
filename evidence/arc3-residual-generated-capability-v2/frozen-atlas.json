@@ -1,0 +1,59 @@
+{
+  "source_run": 35852752529,
+  "source_artifact": 10746017357,
+  "source_head": "fd3cba42b768ca6e8e91b2a5b28c4669217a15c6",
+  "observer_adapter": "final-visible-frame-v1",
+  "guard_observable": "color_histogram",
+  "model_calls": 0,
+  "source_code_inspection": false,
+  "capabilities": [
+    {
+      "guard": "[[5,3712],[8,192],[14,192]]",
+      "coord": [
+        3,
+        3
+      ],
+      "max_steps": 4,
+      "source": "bootstrap",
+      "level_discovered": 0
+    },
+    {
+      "guard": "[[5,4000],[8,48],[14,48]]",
+      "coord": [
+        3,
+        3
+      ],
+      "max_steps": 16,
+      "source": "bootstrap/reuse",
+      "level_discovered": 2
+    },
+    {
+      "guard": "[[3,2496],[5,1546],[8,27],[14,27]]",
+      "coord": [
+        14,
+        14
+      ],
+      "max_steps": 20,
+      "source": "residual-generated",
+      "level_discovered": 3
+    },
+    {
+      "guard": "[[3,1792],[5,2208],[8,48],[14,48]]",
+      "coord": [
+        11,
+        11
+      ],
+      "max_steps": 24,
+      "source": "residual-generated",
+      "level_discovered": 4
+    }
+  ],
+  "expected_cold_actions": [
+    4,
+    8,
+    16,
+    20,
+    24
+  ],
+  "expected_levels": 5
+}
