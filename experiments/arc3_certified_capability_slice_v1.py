@@ -278,26 +278,26 @@ def emit_lean(path: Path, samples: list[dict[str,Any]], basis: list[str]) -> Non
     for idx,name in enumerate(basis):
         lines.append(f"def feat{idx} : List Nat := {list_nat(encoded[name])}")
     lines += [
-        f"abbrev Ix := Fin {n}",
-        "def label (i : Ix) : Bool := labels.getD i.val false",
+        f"def indices : List Nat := List.range {n}",
+        "def label (i : Nat) : Bool := labels.getD i false",
     ]
     if basis:
-        terms=[f"(feat{k}.getD i.val 0 == feat{k}.getD j.val 0)" for k in range(len(basis))]
+        terms=[f"(feat{k}.getD i 0 == feat{k}.getD j 0)" for k in range(len(basis))]
         expr=" && ".join(terms)
     else:
         expr="true"
     lines += [
-        f"def eqSelected (i j : Ix) : Bool := {expr}",
-        "def Sufficient : Prop := ∀ i j : Ix, eqSelected i j = true → label i = label j",
-        "theorem selected_basis_sufficient : Sufficient := by decide",
+        f"def eqSelected (i j : Nat) : Bool := {expr}",
+        "def sufficientB : Bool := indices.all (fun i => indices.all (fun j => (! eqSelected i j) || (label i == label j)))",
+        "theorem selected_basis_sufficient : sufficientB = true := by decide",
     ]
     for drop in range(len(basis)):
-        terms=[f"(feat{k}.getD i.val 0 == feat{k}.getD j.val 0)" for k in range(len(basis)) if k != drop]
+        terms=[f"(feat{k}.getD i 0 == feat{k}.getD j 0)" for k in range(len(basis)) if k != drop]
         expr=" && ".join(terms) if terms else "true"
         lines += [
-            f"def eqWithout{drop} (i j : Ix) : Bool := {expr}",
-            f"def ResidualWithout{drop} : Prop := ∃ i j : Ix, eqWithout{drop} i j = true ∧ label i ≠ label j",
-            f"theorem basis_member_{drop}_necessary : ResidualWithout{drop} := by decide",
+            f"def eqWithout{drop} (i j : Nat) : Bool := {expr}",
+            f"def residualWithout{drop}B : Bool := indices.any (fun i => indices.any (fun j => eqWithout{drop} i j && (label i != label j)))",
+            f"theorem basis_member_{drop}_necessary : residualWithout{drop}B = true := by decide",
         ]
     lines += ["end Arc3CertifiedCapabilitySliceV1",""]
     path.write_text("\n".join(lines))
