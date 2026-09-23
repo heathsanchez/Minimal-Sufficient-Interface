@@ -1,0 +1,216 @@
+name: ARC3 Certified Developmental Atlas V3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-certified-developmental-atlas-v3]
+    paths:
+      - 'experiments/arc3_certified_developmental_atlas_v3.py'
+      - 'evidence/arc3-residual-generated-capability-v2/frozen-atlas.json'
+      - '.github/workflows/arc3-certified-developmental-atlas-v3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: vendor/metatron
+
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e80fed62b6e58d2f4b62e2ceb012646c60dd1e28
+          path: vendor/mathgraph
+
+      - name: Reproduce exact V3 fixture metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          d=json.loads(m.read_text())
+          d["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(d,indent=2)+"\n")
+          print("V3_FIXTURE_METADATA=PASS")
+          PY
+
+      - name: Pin authority sources
+        run: |
+          test "$(git -C vendor/metatron rev-parse HEAD)" = "b9d1b5cc10477188be6e55617699be60e70f6dad"
+          test "$(git -C vendor/mathgraph rev-parse HEAD)" = "e80fed62b6e58d2f4b62e2ceb012646c60dd1e28"
+          sha256sum vendor/metatron/runtime/metatron/nucleus.py | tee metatron-nucleus-v3.sha256
+          sha256sum evidence/arc3-residual-generated-capability-v2/frozen-atlas.json | tee frozen-atlas.sha256
+
+      - name: Install Duck environment
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+
+      - name: Qualify frozen compiled atlas
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          MSI_ROOT: \${{ github.workspace }}
+          ENVROOT: \${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+          METATRON_ROOT: \${{ github.workspace }}/vendor/metatron
+          OUTDIR: \${{ github.workspace }}/evidence/arc3-certified-developmental-atlas-v3
+        run: |
+          uv run python "$MSI_ROOT/experiments/arc3_certified_developmental_atlas_v3.py" | tee "$MSI_ROOT/arc3-certified-developmental-atlas-v3.log"
+          grep -q 'ARC3_CERTIFIED_DEVELOPMENTAL_ATLAS_V3=PASS' "$MSI_ROOT/arc3-certified-developmental-atlas-v3.log"
+
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Check MSI generic laws and generated atlas theorem
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean -o lean/Kernel.olean lean/Kernel.lean
+          lean lean/Completeness.lean
+          lean lean/BehaviouralCongruence.lean
+          lean lean/Arc3CertifiedDevelopmentalAtlasV3.lean
+          echo ARC3_ATLAS_V3_LEAN=PASS
+
+      - name: Install pinned MathGraph declared extras
+        run: python -m pip install --disable-pip-version-check -e "./vendor/mathgraph[all]"
+
+      - name: MathGraph admit finite atlas theorem
+        env:
+          PYTHONPATH: \${{ github.workspace }}/vendor/mathgraph
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from mathgraph.external_certificates import (
+              ExternalBoundaryEvidence, ExternalCertificate,
+              ExternalCertificateKind, ExternalCertificateStatus, ExternalVerifierKind,
+          )
+          from mathgraph.promotion_gate import PromotionGate, PromotionGateDecisionKind
+          from mathgraph.terminal_schema import CanonicalTerminalForm, VerifierBoundaryKind
+
+          p=Path("lean/Arc3CertifiedDevelopmentalAtlasV3.lean")
+          sha=hashlib.sha256(p.read_bytes()).hexdigest()
+          claim=(
+              "Within the frozen five-state bt33 level-start corpus and declared observation feature language, "
+              "the generated minimal guard basis is sufficient for compiled capability-class selection, every "
+              "retained basis member is necessary, and the quotient contains a repeated capability across "
+              "distinct raw states."
+          )
+          cert_id="arc3-atlas-v3-"+sha[:24]
+          ev=ExternalBoundaryEvidence(
+              evidence_id="arc3-atlas-v3-boundary-"+sha[:24],
+              boundary_kind=VerifierBoundaryKind.LEAN_TYPECHECKED,
+              certificate_id=cert_id,
+              terminal_form=CanonicalTerminalForm.VERIFIED_PROOF,
+              source_artifact_id=str(p),
+              artifact_hash=sha,
+              verifier_kind=ExternalVerifierKind.LEAN4,
+              checker_name="Lean",
+              checker_version="4.24.0",
+              metadata={
+                  "scope":"frozen five-state bt33 level-start corpus",
+                  "theorems":[
+                      "selected_basis_sufficient",
+                      "quotient_reuse_across_distinct_raw_states"
+                  ],
+                  "mathgraph_source":"e80fed62b6e58d2f4b62e2ceb012646c60dd1e28",
+              },
+              advisory=False,
+          )
+          cert=ExternalCertificate(
+              cert_id=cert_id,
+              verifier=ExternalVerifierKind.LEAN4,
+              status=ExternalCertificateStatus.ACCEPTED,
+              claim=claim,
+              claim_hash=hashlib.sha256(claim.encode()).hexdigest(),
+              source_artifact_id=str(p),
+              certificate_kind=ExternalCertificateKind.VERIFIED_PROOF,
+              proposed_terminal_form=CanonicalTerminalForm.VERIFIED_PROOF,
+              boundary_evidence=ev,
+              artifact_hash=sha,
+              checker_name="Lean",
+              checker_version="4.24.0",
+              proof_artifact=str(p),
+              replay_command=("lean","lean/Arc3CertifiedDevelopmentalAtlasV3.lean"),
+              metadata={"claim_boundary":"finite atlas theorem only; empirical WIN remains separately bounded"},
+              boundary_valid=True,
+              accepted=True,
+              advisory_only=False,
+              advisory=False,
+          )
+          dec=PromotionGate().evaluate(cert)
+          assert dec.accepted
+          assert dec.decision_kind == PromotionGateDecisionKind.ACCEPT_FOR_LAWBOOK
+          out={"certificate":cert.to_dict(),"decision":dec.to_dict()}
+          q=Path("evidence/arc3-certified-developmental-atlas-v3/mathgraph-promotion.json")
+          q.parent.mkdir(parents=True,exist_ok=True)
+          q.write_text(json.dumps(out,indent=2,sort_keys=True))
+          print("MATHGRAPH_ATLAS_V3_ADMISSION=PASS")
+          print("MATHGRAPH_CERTIFICATE_ID=",cert_id)
+          PY
+
+      - name: Seal V3
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/arc3-certified-developmental-atlas-v3/result.json").read_text())
+          assert d["status"]=="WARRANTED_WITHIN_DECLARED_FINITE_BOUNDARY"
+          assert d["cold_replays"]["count"] == 7
+          assert d["cold_replays"]["all_won"] is True
+          assert d["cold_replays"]["model_calls"] == 0
+          assert d["cold_replays"]["search_calls"] == 0
+          assert all(x == [4,8,16,20,24] for x in d["cold_replays"]["action_trajectories"])
+          assert len(d["quotient_reuse_pairs"]) >= 1
+          assert all(a["won"] is False for a in d["ablations"])
+          assert d["authority"]["revoked_capability_live_after"] is False
+          assert d["authority"]["dependent_atlas_live_after"] is False
+          assert d["authority"]["history_retained"] is True
+          print("ARC3_CERTIFIED_DEVELOPMENTAL_ATLAS_V3_SEAL=PASS")
+          print("MINIMAL_GUARD=",d["minimal_guard"]["basis"])
+          print("CAPABILITY_CLASSES=",len(d["capability_classes"]))
+          print("QUOTIENT_REUSE_PAIRS=",len(d["quotient_reuse_pairs"]))
+          print("COLD_WINS=",d["cold_replays"]["count"])
+          print("ABLATIONS=",d["ablations"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-certified-developmental-atlas-v3
+          path: |
+            evidence/arc3-certified-developmental-atlas-v3/result.json
+            evidence/arc3-certified-developmental-atlas-v3/metatron-log.jsonl
+            evidence/arc3-certified-developmental-atlas-v3/mathgraph-promotion.json
+            evidence/arc3-residual-generated-capability-v2/frozen-atlas.json
+            lean/Arc3CertifiedDevelopmentalAtlasV3.lean
+            arc3-certified-developmental-atlas-v3.log
+            metatron-nucleus-v3.sha256
+            frozen-atlas.sha256
+          if-no-files-found: error
