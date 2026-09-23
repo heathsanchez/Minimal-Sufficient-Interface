@@ -41,10 +41,13 @@ def relation(f,rc):
  return {"rc":list(rc),"clicked_size":cs[i]["size"],"clicked_color":cs[i]["color"],"neighbors":neigh}
 def main():
  e=env()
- for x in G1:click(e,x)
+ source=[]
+ for j,rc in enumerate(G1):
+  before=relation(e.observation_space,rc);f=click(e,rc);after=relation(f,rc)
+  source.append({"j":j,"before":before,"after":after})
  rows=[]
  for j,rc in enumerate(P):
   before=relation(e.observation_space,rc);f=click(e,rc);after=relation(f,rc)
   rows.append({"j":j,"before":before,"after":after})
- out={"rows":rows};(OUT/"result.json").write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2));print("ARC3_PUBLIC_CLICK_RELATION_G2=PASS")
+ out={"source_rows":source,"target_rows":rows};(OUT/"result.json").write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2));print("ARC3_PUBLIC_CLICK_RELATION_G2=PASS")
 if __name__=="__main__":main()
