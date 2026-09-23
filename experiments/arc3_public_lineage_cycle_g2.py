@@ -6,6 +6,7 @@ from arcengine import GameAction, GameState
 
 GAME="tn36-ef4dde99"
 ENVROOT=Path(os.environ["ENVROOT"]).resolve()
+G1=[(55,36),(14,31),(42,26),(42,36),(42,41),(45,26),(45,36),(45,41),(55,36)]
 OUT=Path(os.environ.get("OUTDIR","evidence/arc3-public-lineage-cycle-g2")).resolve()
 OUT.mkdir(parents=True,exist_ok=True)
 
