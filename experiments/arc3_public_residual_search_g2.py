@@ -28,10 +28,21 @@ G1 = [
     {"action":"MOUSE","row":55,"col":36},
 ]
 
-MAX_DEPTH = 14
-MAX_STATES = 350
-MAX_TRANSITIONS = 24000
-PER_STATE_CANDIDATES = 128
+# Already-paid level-2 partial lineage from source run 35811403514.
+# These five actions produced no protected level progress, so they are NOT
+# capabilities; they are a reproducible path into the residual state space.
+G2_SEED = [
+    {"action":"MOUSE","row":58,"col":46},
+    {"action":"MOUSE","row":58,"col":11},
+    {"action":"MOUSE","row":58,"col":20},
+    {"action":"MOUSE","row":58,"col":22},
+    {"action":"MOUSE","row":55,"col":20},
+]
+
+MAX_DEPTH = 24
+MAX_STATES = 900
+MAX_TRANSITIONS = 22000
+PER_STATE_CANDIDATES = 192
 
 
 def visible_grid(frame: Any) -> list[list[int]]:
@@ -217,26 +228,30 @@ def verify_path(path: list[dict[str, Any]], trials: int = 2) -> list[dict[str, A
 
 
 def main() -> None:
-    root = replay([])
+    root = replay(G2_SEED)
+    if int(root.levels_completed) > 1 or root.state in (GameState.WIN, GameState.GAME_OVER):
+        raise AssertionError("historical G2 seed no longer denotes the intended unresolved level-2 residual")
     root_hash = board_hash(root)
     root_hist = histogram(root)
 
-    # First generation at this residual: exhaustive one-step quotient.
-    root_candidates = candidate_actions(root, exhaustive=True)
+    # Continue from already-paid partial lineage. Structured candidates first;
+    # the earlier exhaustive root experiment already established that raw
+    # coordinates collapse heavily and did not resolve the original root.
+    root_candidates = candidate_actions(root, exhaustive=False)[:768]
     one_step: dict[str, dict[str, Any]] = {}
     transitions = 0
     found_path: list[dict[str, Any]] | None = None
     for action in root_candidates:
-        tr = transition([], action)
+        tr = transition(G2_SEED, action)
         transitions += 1
         if not tr["valid"] or tr["game_over"]:
             continue
         if tr["progressed"]:
-            found_path=[action]
+            found_path=G2_SEED+[action]
             break
         if not tr["changed"]:
             continue
-        one_step.setdefault(tr["board_hash"], {"path":[action],"transition":tr})
+        one_step.setdefault(tr["board_hash"], {"path":G2_SEED+[action],"transition":tr})
 
     quotient_stats = {
         "raw_root_actions": len(root_candidates),
@@ -258,7 +273,7 @@ def main() -> None:
     while found_path is None and q and len(seen) < MAX_STATES and transitions < MAX_TRANSITIONS:
         path=q.popleft()
         explored_nodes += 1
-        depth=len(path)
+        depth=max(0,len(path)-len(G2_SEED))
         depth_frontier[depth]+=1
         if depth >= MAX_DEPTH:
             continue
@@ -301,7 +316,11 @@ def main() -> None:
             "branch":"arc3-public-generational-frontier-v1",
             "head":"15eeb1e66ce6bec83160c39df1a216ad970ebae8",
             "run":35854403385,
+            "source_discovery_run":35811403514,
+            "source_discovery_artifact":10730272259,
             "g1_program":G1,
+            "g2_seed_partial_lineage":G2_SEED,
+            "g2_seed_status":"negative/partial lineage; not a certified capability",
         },
         "observer":"final visible 64x64 frame only",
         "source_inspection":False,
