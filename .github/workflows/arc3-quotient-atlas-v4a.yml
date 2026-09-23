@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 24
     env:
-      OPENROUTER_API_KEY: \${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       PYTHONUNBUFFERED: "1"
       DUCKTAPE_PROMOTION_POLICY: withheld
       DUCKTAPE_GAME_ID: bt33
