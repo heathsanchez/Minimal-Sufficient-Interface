@@ -28,10 +28,10 @@ G1 = [
     {"action":"MOUSE","row":55,"col":36},
 ]
 
-MAX_DEPTH = 14
-MAX_STATES = 350
-MAX_TRANSITIONS = 24000
-PER_STATE_CANDIDATES = 128
+MAX_DEPTH = 20
+MAX_STATES = 700
+MAX_TRANSITIONS = 18000
+PER_STATE_CANDIDATES = 192
 
 
 def visible_grid(frame: Any) -> list[list[int]]:
@@ -222,7 +222,7 @@ def main() -> None:
     root_hist = histogram(root)
 
     # First generation at this residual: exhaustive one-step quotient.
-    root_candidates = candidate_actions(root, exhaustive=True)
+    root_candidates = candidate_actions(root, exhaustive=False)[:512]
     one_step: dict[str, dict[str, Any]] = {}
     transitions = 0
     found_path: list[dict[str, Any]] | None = None
