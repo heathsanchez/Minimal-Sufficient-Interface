@@ -1,9 +1,9 @@
-name: ARC3 Public Generational Frontier G2 Search
+name: ARC3 Public Generational Frontier G2 Fast Search
 
 on:
   workflow_dispatch:
   push:
-    branches: [arc3-public-generational-frontier-g2]
+    branches: [arc3-public-generational-frontier-g2-fast]
     paths:
       - 'experiments/arc3_public_residual_search_g2.py'
       - '.github/workflows/arc3-public-generational-frontier-g2-search.yml'
