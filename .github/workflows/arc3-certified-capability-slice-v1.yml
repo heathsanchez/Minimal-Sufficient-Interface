@@ -1,0 +1,144 @@
+name: ARC3 Certified Capability Slice V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-certified-capability-slice-v1]
+    paths:
+      - 'experiments/arc3_certified_capability_slice_v1.py'
+      - '.github/workflows/arc3-certified-capability-slice-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: vendor/metatron
+
+      - name: Reproduce exact V3 fixture metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data=json.loads(m.read_text())
+          data["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(data,indent=2)+"\n")
+          print("V3_FIXTURE_METADATA=PASS")
+          PY
+
+      - name: Pin and inspect trusted Nucleus
+        run: |
+          test "$(git -C vendor/metatron rev-parse HEAD)" = "b9d1b5cc10477188be6e55617699be60e70f6dad"
+          sha256sum vendor/metatron/runtime/metatron/nucleus.py | tee metatron-nucleus.sha256
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,"vendor/metatron")
+          from runtime.metatron.nucleus import Node, append, live_ids
+          a=Node("evidence",{"x":1})
+          log=append((),a)
+          assert a.id in live_ids(log)
+          r=Node("revoke",{"target":a.id})
+          log=append(log,r)
+          assert a.id not in live_ids(log)
+          print("METATRON_NUCLEUS_SMOKE=PASS")
+          PY
+
+      - name: Install Duck environment
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+
+      - name: Run certified capability vertical slice
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          MSI_ROOT: ${{ github.workspace }}
+          ENVROOT: ${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+          METATRON_ROOT: ${{ github.workspace }}/vendor/metatron
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-certified-capability-slice-v1
+        run: |
+          uv run python "$MSI_ROOT/experiments/arc3_certified_capability_slice_v1.py" | tee "$MSI_ROOT/arc3-certified-capability-slice-v1.log"
+          grep -q 'ARC3_CERTIFIED_CAPABILITY_SLICE_V1=PASS' "$MSI_ROOT/arc3-certified-capability-slice-v1.log"
+
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Check MSI generic quotient laws
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean lean/Completeness.lean
+          lean lean/BehaviouralCongruence.lean
+          echo MSI_GENERIC_QUOTIENT_LAWS=PASS
+
+      - name: Check generated finite guard theorem
+        env:
+          LEAN_PATH: lean
+        run: |
+          lean lean/Arc3CertifiedCapabilitySliceV1.lean
+          echo ARC3_GUARD_LEAN=PASS
+
+      - name: Seal qualification
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/arc3-certified-capability-slice-v1/result.json")
+          d=json.loads(p.read_text())
+          assert d["status"]=="WARRANTED_WITHIN_DECLARED_FINITE_BOUNDARY"
+          assert d["transport"]["representations_differ"] is True
+          assert d["transport"]["sham_progressed"] is False
+          assert d["zero_model_target_execute"]["progressed"] is True
+          assert d["zero_model_target_execute"]["model_calls"] == 0
+          assert d["authority"]["capability_live_before_revoke"] is True
+          assert d["authority"]["capability_live_after_revoke"] is False
+          assert d["authority"]["history_retained_after_revoke"] is True
+          assert d["authority"]["incremental_equals_batch_reclosure"] is True
+          print("ARC3_CERTIFIED_CAPABILITY_SLICE_V1_SEAL=PASS")
+          print("MINIMAL_GUARD=",d["minimal_guard"]["basis"])
+          print("ROLLOUT_WIN=",d["developmental_rollout"]["won"])
+          print("ROLLOUT_LEVELS=",d["developmental_rollout"]["levels_completed"])
+          print("ROLLOUT_ACTIONS=",d["developmental_rollout"]["actions"])
+          print("EXTENSIONS_PROMOTED=",d["developmental_rollout"]["extensions_promoted"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-certified-capability-slice-v1
+          path: |
+            evidence/arc3-certified-capability-slice-v1/result.json
+            evidence/arc3-certified-capability-slice-v1/metatron-log.jsonl
+            lean/Arc3CertifiedCapabilitySliceV1.lean
+            arc3-certified-capability-slice-v1.log
+            metatron-nucleus.sha256
+          if-no-files-found: error
