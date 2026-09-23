@@ -1,0 +1,136 @@
+name: ARC3 Quotient Atlas V4A Replay
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-quotient-atlas-v4]
+    paths:
+      - '.github/workflows/arc3-quotient-atlas-v4a-replay.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+      - name: Install Duck environment
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Replay sealed V3 prefix and test consequence transport
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv run python - <<'PY'
+          import json, logging, os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          from arcengine import GameAction, GameState
+
+          envroot = Path(os.environ["GITHUB_WORKSPACE"]) / "vendor/ARC-AGI/test_environment_files"
+          log = logging.getLogger("v4a-replay")
+          log.setLevel(logging.WARNING)
+
+          # Exact first 18 environment actions from V3 run 35811403514,
+          # artifact 10730520693. No game-source rule is used.
+          prefix = [
+              ("ACTION6",3,3), ("ACTION6",55,3), ("ACTION6",3,3), ("ACTION6",55,3),
+              ("RESET",None,None), ("ACTION6",32,4),
+              ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3),
+              ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3),
+              ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3), ("ACTION6",3,3),
+          ]
+
+          def make_env(label):
+              arcade = Arcade(operation_mode=OperationMode.OFFLINE,
+                              environments_dir=str(envroot), logger=log)
+              card = arcade.create_scorecard()
+              env = arcade.make(game_id="bt33-a7c3f9d18b4e", scorecard_id=card)
+              if env is None:
+                  raise RuntimeError("bt33 fixture unavailable")
+              return arcade, env
+
+          def replay_to_level3(label):
+              arcade, env = make_env(label)
+              trace=[]
+              for i,(kind,x,y) in enumerate(prefix,1):
+                  if kind == "RESET":
+                      f = env.step(GameAction.RESET)
+                  else:
+                      f = env.step(GameAction.ACTION6, data={"x":x,"y":y})
+                  if f is None:
+                      raise RuntimeError(f"prefix step {i} returned None")
+                  trace.append({"i":i,"state":str(f.state),"levels_completed":int(f.levels_completed)})
+              return arcade, env, trace
+
+          def trial(label, x, y):
+              arcade, env, trace = replay_to_level3(label)
+              start = int(env.observation_space.levels_completed)
+              used=0
+              progressed=False
+              events=[]
+              for j in range(1,17):
+                  f=env.step(GameAction.ACTION6,data={"x":x,"y":y})
+                  used += 1
+                  if f is None:
+                      break
+                  now=int(f.levels_completed)
+                  events.append({"j":j,"state":str(f.state),"levels_completed":now})
+                  if now > start:
+                      progressed=True
+                      break
+                  if f.state == GameState.GAME_OVER:
+                      break
+              return {
+                  "label":label,
+                  "prefix_levels":start,
+                  "prefix_trace":trace,
+                  "witness":{"x":x,"y":y},
+                  "transfer_actions":used,
+                  "progressed":progressed,
+                  "end_levels":int(env.observation_space.levels_completed),
+                  "events":events,
+              }
+
+          candidate = trial("compiled_level2_witness",3,3)
+          sham = trial("unresolved_rightmost_control",59,3)
+          out={
+              "source_run":35811403514,
+              "source_artifact":10730520693,
+              "source_boundary":"exact sealed V3 first-18-action replay",
+              "model_calls":0,
+              "law":"repeat:changed_continue=>protected_progress",
+              "candidate":candidate,
+              "sham":sham,
+          }
+          out["verdict"] = (
+              "BOUNDED_POSITIVE"
+              if candidate["prefix_levels"] == 2 and candidate["progressed"] and not sham["progressed"]
+              else "NONDISCRIMINATING"
+              if candidate["prefix_levels"] == 2 and candidate["progressed"] and sham["progressed"]
+              else "REJECTED_TRANSFER"
+              if candidate["prefix_levels"] == 2 and not candidate["progressed"]
+              else "PREFIX_MISMATCH"
+          )
+          Path("quotient-atlas-v4a-replay.json").write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          print("QUOTIENT_ATLAS_V4A_REPLAY="+out["verdict"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-quotient-atlas-v4a-replay
+          path: vendor/duck-harness/ARC3-Inference/quotient-atlas-v4a-replay.json
+          if-no-files-found: error
