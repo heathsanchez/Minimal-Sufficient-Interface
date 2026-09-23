@@ -31,7 +31,28 @@ def grid_of(frame: Any) -> list[list[int]]:
     raw = frame.frame.data if hasattr(frame.frame, "data") else frame.frame
     if hasattr(raw, "tolist"):
         raw = raw.tolist()
-    return [[int(x) for x in row] for row in raw]
+
+    def code(pixel: Any) -> int:
+        if isinstance(pixel, (int, float, bool)):
+            return int(pixel)
+        if hasattr(pixel, "tolist"):
+            pixel = pixel.tolist()
+        if isinstance(pixel, (list, tuple)):
+            vals = []
+            stack = list(pixel)
+            while stack:
+                v = stack.pop(0)
+                if isinstance(v, (list, tuple)):
+                    stack = list(v) + stack
+                else:
+                    vals.append(int(v))
+            out = 0
+            for v in vals:
+                out = out * 257 + v
+            return out
+        return int(pixel)
+
+    return [[code(x) for x in row] for row in raw]
 
 
 def small_components(grid: list[list[int]]) -> list[dict[str, int]]:
