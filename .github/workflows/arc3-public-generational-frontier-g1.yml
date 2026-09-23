@@ -1,0 +1,193 @@
+name: ARC3 Public Generational Frontier G1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-public-generational-frontier-v1]
+    paths:
+      - 'kaggle/public_generational_frontier_patch.py'
+      - 'evidence/arc3-public-generational-frontier-v1/source-capability.json'
+      - '.github/workflows/arc3-public-generational-frontier-g1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        variant: [baseline, frontier]
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+      DUCKTAPE_PROMOTION_POLICY: withheld
+      DUCKTAPE_GAME_ID: tn36-ef4dde99
+      LOCAL_ANALYZER_PROVIDER: openrouter
+      LOCAL_ANALYZER_MODEL_ID: Qwen/Qwen3.6-27B
+      LOCAL_ANALYZER_MAX_OUTPUT: "4096"
+      LOCAL_ANALYZER_CONTEXT_WINDOW: "32768"
+      LOCAL_ANALYZER_ENABLE_THINKING: "true"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_STEPS: "12"
+      LOCAL_ANALYZER_TOOL_TIMEOUT: "30"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+      LOCAL_ANALYZER_TIMEOUT: "120"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Require funded OpenRouter credential
+        run: test -n "$OPENROUTER_API_KEY"
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - name: Apply V3 stack
+        run: |
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_nucleus_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_first_leaderboard_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo V3_STACK=PASS
+
+      - name: Apply G1 hard-restart capability
+        if: matrix.variant == 'frontier'
+        run: |
+          python kaggle/public_generational_frontier_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo PUBLIC_G1_STACK=PASS
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          if [ "${{ matrix.variant }}" = "frontier" ]; then
+            uv run python - <<'PY'
+          from inference.agent.public_generational_frontier import PublicGenerationalFrontierAgent
+          print("PUBLIC_G1_IMPORT=PASS")
+          PY
+          else
+            uv run python - <<'PY'
+          from inference.agent.consequence_first_leaderboard import ConsequenceFirstLeaderboardAgent
+          print("BASELINE_IMPORT=PASS")
+          PY
+          fi
+
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root=Path(os.environ["ENV_DIR"]); root.mkdir(parents=True,exist_ok=True)
+          arcade=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(root))
+          env=arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS",env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+
+      - name: Run public screen
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/public-env" \
+          GAME=tn36-ef4dde99 \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=32 \
+          MAX_RUNTIME_MINUTES=12 \
+          MODEL=Qwen/Qwen3.6-27B \
+          LOCAL_ANALYZER_MODEL_ID=Qwen/Qwen3.6-27B \
+          ANALYZER_TIMEOUT=120 \
+          RUN_NAME="public-g1-${{ matrix.variant }}-tn36" \
+          make interactive | tee "$GITHUB_WORKSPACE/run-${{ matrix.variant }}.log"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run | tee "$GITHUB_WORKSPACE/score-${{ matrix.variant }}.log"
+
+      - name: Seal result and future capabilities
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          variant="${{ matrix.variant }}"
+          result={
+              "variant":variant,"game":"tn36-ef4dde99","score":None,"levels":None,
+              "total_levels":None,"state":None,"actions":None,"actions_per_level":None,
+              "generated_tokens":None,"wallclock_seconds":None,"events":{},"earned_programs":[]
+          }
+          p=Path("out/evaluation.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              if d.get("games"):
+                  g=d["games"][0]
+                  result["score"]=float(d["score"])
+                  result["levels"]=float(g["levels_completed_mean"])
+                  result["total_levels"]=int(g["total_levels"])
+          p=Path("out/benchmark.json")
+          if p.exists():
+              d=json.loads(p.read_text()); runs=d.get("game_runs") or []
+              if runs:
+                  r=runs[0]; hist=r.get("history") or []
+                  result["state"]=r.get("state")
+                  result["actions"]=len(hist)
+                  result["actions_per_level"]=list(r.get("actions_per_level") or [])
+                  result["generated_tokens"]=sum(int(x.get("generated_tokens") or 0) for x in hist)
+                  result["wallclock_seconds"]=float(r.get("final_wallclock_seconds") or 0)
+                  completed=int(r.get("levels_completed") or 0)
+                  offset=0
+                  for level,count in enumerate(result["actions_per_level"][:completed],start=1):
+                      n=int(count or 0)
+                      segment=hist[offset:offset+n]
+                      offset+=n
+                      program=[]
+                      for row in segment:
+                          a=row.get("action") or {}
+                          name=str(a.get("id") or "")
+                          data=a.get("data") or {}
+                          item={"action":"MOUSE","row":int(data.get("y",0)),"col":int(data.get("x",0))} if name=="ACTION6" else {"action":name}
+                          program.append(item)
+                      result["earned_programs"].append({"level":level,"actions":n,"program":program})
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if line.strip():
+                      k=str(json.loads(line).get("kind")); result["events"][k]=result["events"].get(k,0)+1
+
+          Path(f"public-g1-{variant}.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          print("PUBLIC_G1_RESULT=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-public-g1-${{ matrix.variant }}
+          path: |
+            public-g1-${{ matrix.variant }}.json
+            run-${{ matrix.variant }}.log
+            score-${{ matrix.variant }}.log
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
