@@ -30,6 +30,7 @@ from runtime.metatron.nucleus import Node, append, dumps, live_ids  # noqa: E402
 MAX_REPEAT = 32
 GRID_W = 64
 GRID_H = 64
+OBSERVER_ADAPTER = "final-visible-frame-v1"
 
 
 def hist_key(frame: Any) -> str:
