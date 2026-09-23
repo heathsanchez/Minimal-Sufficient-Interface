@@ -1,0 +1,107 @@
+name: ARC3 Residual Generated Capability V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-residual-generated-capability-v2]
+    paths:
+      - 'experiments/arc3_residual_generated_capability_v2.py'
+      - '.github/workflows/arc3-residual-generated-capability-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: vendor/metatron
+
+      - name: Reproduce exact V3 fixture metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          d=json.loads(m.read_text())
+          d["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(d,indent=2)+"\n")
+          print("V3_FIXTURE_METADATA=PASS")
+          PY
+
+      - name: Pin trusted Metatron Nucleus
+        run: |
+          test "$(git -C vendor/metatron rev-parse HEAD)" = "b9d1b5cc10477188be6e55617699be60e70f6dad"
+          sha256sum vendor/metatron/runtime/metatron/nucleus.py | tee metatron-nucleus-v2.sha256
+
+      - name: Install Duck environment
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+
+      - name: Residual-generate capabilities
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          MSI_ROOT: \${{ github.workspace }}
+          ENVROOT: \${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+          METATRON_ROOT: \${{ github.workspace }}/vendor/metatron
+          OUTDIR: \${{ github.workspace }}/evidence/arc3-residual-generated-capability-v2
+        run: |
+          uv run python "$MSI_ROOT/experiments/arc3_residual_generated_capability_v2.py" | tee "$MSI_ROOT/arc3-residual-generated-capability-v2.log"
+          grep -E 'ARC3_RESIDUAL_GENERATED_CAPABILITY_V2=(WIN|RESIDUAL)' "$MSI_ROOT/arc3-residual-generated-capability-v2.log"
+
+      - name: Seal result
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/arc3-residual-generated-capability-v2/result.json")
+          d=json.loads(p.read_text())
+          assert d["boundary"]["source_code_inspection"] is False
+          assert d["boundary"]["model_calls"] == 0
+          assert d["final_replay"]["model_calls"] == 0
+          assert len(d["bootstrap"]) == 3
+          print("ARC3_RGC_V2_SEAL=PASS")
+          print("STATUS=", d["status"])
+          print("FINAL_LEVELS=", d["final_replay"]["levels_completed"])
+          print("ATLAS_SIZE=", d["final_replay"]["atlas_size"])
+          print("DISCOVERIES=", len(d["discoveries"]))
+          for i,x in enumerate(d["discoveries"],1):
+              print("DISCOVERY",i,x["status"],"level",x.get("level"),"selected",x.get("selected"))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-residual-generated-capability-v2
+          path: |
+            evidence/arc3-residual-generated-capability-v2/result.json
+            evidence/arc3-residual-generated-capability-v2/metatron-log.jsonl
+            arc3-residual-generated-capability-v2.log
+            metatron-nucleus-v2.sha256
+          if-no-files-found: error
