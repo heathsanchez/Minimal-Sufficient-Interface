@@ -78,3 +78,5 @@ jobs:
             evidence/arc3-public-primitive-terminal-g2/result.json
             arc3-public-primitive-terminal-g2.log
           if-no-files-found: error
+
+# retrigger at current G2 evidence head
