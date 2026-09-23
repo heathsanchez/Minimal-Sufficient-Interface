@@ -1,0 +1,235 @@
+name: Frozen Genesis V4b bt33
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-quotient-atlas-v4b-frozen-genesis]
+    paths:
+      - 'kaggle/evidence/bt33-v3-frozen-genesis.json'
+      - 'kaggle/frozen_genesis_v4b_patch.py'
+      - '.github/workflows/frozen-genesis-v4b-bt33.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  bt33:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: "1"
+      DUCKTAPE_PROMOTION_POLICY: withheld
+      DUCKTAPE_GAME_ID: bt33
+      LOCAL_ANALYZER_PROVIDER: openrouter
+      LOCAL_ANALYZER_MODEL_ID: Qwen/Qwen3.6-27B
+      LOCAL_ANALYZER_MAX_OUTPUT: "4096"
+      LOCAL_ANALYZER_CONTEXT_WINDOW: "32768"
+      LOCAL_ANALYZER_ENABLE_THINKING: "true"
+      LOCAL_ANALYZER_TEMPERATURE: "0"
+      LOCAL_ANALYZER_TOP_P: "1"
+      LOCAL_ANALYZER_TOOL_STEPS: "12"
+      LOCAL_ANALYZER_TOOL_TIMEOUT: "30"
+      LOCAL_ANALYZER_TOOL_OUTPUT_TOKENS: "1024"
+      LOCAL_ANALYZER_TIMEOUT: "120"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+
+      - name: Verify frozen genesis authority
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+          m=json.loads(Path("kaggle/evidence/bt33-v3-frozen-genesis.json").read_text())
+          url=f"https://api.github.com/repos/heathsanchez/Minimal-Sufficient-Interface/actions/artifacts/{m['source_artifact_id']}"
+          req=urllib.request.Request(url,headers={
+              "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+          })
+          with urllib.request.urlopen(req,timeout=30) as r:
+              a=json.load(r)
+          assert a["workflow_run"]["id"]==m["source_run"], (a,m)
+          assert a["workflow_run"]["head_sha"]==m["source_head"], (a,m)
+          assert a["digest"]==m["source_artifact_digest"], (a,m)
+          assert not a["expired"], a
+          print("FROZEN_GENESIS_AUTHORITY=PASS")
+          print("SOURCE_RUN",m["source_run"])
+          print("SOURCE_ARTIFACT",m["source_artifact_id"])
+          print("SOURCE_DIGEST",m["source_artifact_digest"])
+          PY
+
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: vendor/ARC-AGI
+
+      - name: Apply frozen-genesis stack
+        run: |
+          python kaggle/ducktape_metatron_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/flash_ducktape_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_nucleus_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/consequence_first_leaderboard_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/quotient_atlas_v4_patch.py --root vendor/duck-harness/ARC3-Inference
+          python kaggle/frozen_genesis_v4b_patch.py --root vendor/duck-harness/ARC3-Inference
+          echo "FROZEN_GENESIS_STACK=PASS"
+
+      - name: Prepare exact bt33 fixture
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("vendor/duck-harness/ARC3-Inference/inference/framework/kaggle.py")
+          text=p.read_text()
+          marker="DUCK_HARNESS_PUBLIC_GAME_IDS: tuple[str, ...] = (\n"
+          row='    "bt33-a7c3f9d18b4e",\n'
+          if row not in text:
+              text=text.replace(marker,marker+row,1)
+          p.write_text(text)
+          m=Path("vendor/ARC-AGI/test_environment_files/game2/subdir/metadata.json")
+          data=json.loads(m.read_text())
+          data["baseline_actions"]=[4,8,16,20,24]
+          m.write_text(json.dumps(data,indent=2)+"\n")
+          print("BT33_FIXTURE=PASS")
+          PY
+
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          uv sync --locked --python "$(command -v python)"
+          uv run python - <<'PY'
+          from inference.agent.frozen_genesis_v4b import FrozenGenesisV4bAgent
+          print("FROZEN_GENESIS_IMPORT=PASS")
+          PY
+
+      - name: Run frozen-genesis transfer
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/out"
+          START=$(date +%s)
+          CONFIG_PATH=configs/inference.openrouter.json \
+          EXPERIMENT_DIR="$GITHUB_WORKSPACE/out" \
+          ENVIRONMENTS_DIR="$GITHUB_WORKSPACE/vendor/ARC-AGI/test_environment_files" \
+          GAME=bt33 \
+          N_PASSES=1 \
+          CONCURRENT_JOBS=1 \
+          MAX_ACTIONS=90 \
+          MAX_RUNTIME_MINUTES=6 \
+          MODEL=Qwen/Qwen3.6-27B \
+          LOCAL_ANALYZER_MODEL_ID=Qwen/Qwen3.6-27B \
+          ANALYZER_TIMEOUT=120 \
+          RUN_NAME=frozen-genesis-v4b-bt33 \
+          make interactive | tee "$GITHUB_WORKSPACE/run.log"
+          END=$(date +%s)
+          echo $((END-START)) > "$GITHUB_WORKSPACE/wallclock_seconds.txt"
+          SCORE_RUN_DIR="$GITHUB_WORKSPACE/out" make score_run | tee "$GITHUB_WORKSPACE/score.log"
+
+      - name: Seal scientific result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          result={
+              "game":"bt33","source_run":35811403514,
+              "source_artifact_id":10730520693,
+              "source_artifact_digest":"sha256:06818d392456c7979f252a2d6bf9ab66059a6d0e1102145ef62e2704a21002b9",
+              "score":None,"levels":None,"total_levels":None,"state":None,
+              "actions":None,"reported_tokens":None,"wallclock_seconds":None,
+              "events":{},"key_records":[],
+              "request_errors":0,"payment_errors":0,"rate_limit_errors":0,
+          }
+          p=Path("out/evaluation.json")
+          if p.exists():
+              d=json.loads(p.read_text())
+              if d.get("games"):
+                  g=d["games"][0]
+                  result["score"]=float(d["score"])
+                  result["levels"]=float(g["levels_completed_mean"])
+                  result["total_levels"]=int(g["total_levels"])
+          p=Path("out/benchmark.json")
+          if p.exists():
+              d=json.loads(p.read_text()); runs=d.get("game_runs") or []
+              if runs:
+                  r=runs[0]
+                  result["state"]=r.get("state")
+                  result["actions"]=len(r.get("history") or [])
+                  m=re.search(r"tokens=(\d+)",str(r.get("solver_note") or ""))
+                  result["reported_tokens"]=int(m.group(1)) if m else None
+          w=Path("wallclock_seconds.txt")
+          if w.exists(): result["wallclock_seconds"]=int(w.read_text().strip())
+          log=Path("run.log").read_text(errors="replace") if Path("run.log").exists() else ""
+          result["request_errors"]=log.count("analyzer request failed")
+          result["payment_errors"]=log.count("402 Client Error")
+          result["rate_limit_errors"]=log.count("429 Client Error")
+          counts={}; records=[]
+          keep={"FROZEN_REPLAY_PASS","FROZEN_REPLAY_MISMATCH","ATLAS_CAPABILITY",
+                "FRESH_TRANSFER_BOUNDARY","TRANSFER_EXECUTE","ATLAS_REQUALIFY",
+                "MODEL_QUERY","QUOTIENT_RESIDUAL","FROZEN_GENESIS_FALLBACK"}
+          for lp in Path("out").rglob("ducktape-metatron.jsonl"):
+              for line in lp.read_text().splitlines():
+                  if not line.strip(): continue
+                  obj=json.loads(line); k=str(obj.get("kind"))
+                  counts[k]=counts.get(k,0)+1
+                  if k in keep:
+                      payload=obj.get("payload")
+                      if isinstance(payload,list):
+                          try: obj["payload_dict"]=dict(payload)
+                          except Exception: pass
+                      records.append(obj)
+          result["events"]=counts
+          result["key_records"]=records
+          transfers=[x.get("payload_dict",{}) for x in records if x.get("kind")=="TRANSFER_EXECUTE"]
+          result["gate"]={
+              "bootstrap_exact": counts.get("FROZEN_REPLAY_PASS",0)==2 and counts.get("FROZEN_REPLAY_MISMATCH",0)==0,
+              "fresh_boundary_reached": counts.get("FRESH_TRANSFER_BOUNDARY",0)==1,
+              "zero_model_queries": counts.get("MODEL_QUERY",0)==0,
+              "fresh_level3_transfer": any(x.get("level")==3 and x.get("progressed") is True and x.get("model_call") is False for x in transfers),
+              "fresh_transfer_levels": sorted({x.get("level") for x in transfers if x.get("progressed") is True and x.get("fresh_transfer") is True}),
+              "no_fallback": counts.get("FROZEN_GENESIS_FALLBACK",0)==0,
+              "won": result["levels"] is not None and result["levels"]==result["total_levels"],
+          }
+          result["scientific_verdict"] = (
+              "BOUNDED_POSITIVE"
+              if result["gate"]["bootstrap_exact"]
+              and result["gate"]["fresh_level3_transfer"]
+              and result["gate"]["zero_model_queries"]
+              and result["gate"]["no_fallback"]
+              else "NOT_PROMOTED"
+          )
+          Path("frozen-genesis-v4b-bt33-result.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          print("FROZEN_GENESIS_V4B_BT33=COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-genesis-v4b-bt33
+          path: |
+            frozen-genesis-v4b-bt33-result.json
+            kaggle/evidence/bt33-v3-frozen-genesis.json
+            run.log
+            score.log
+            wallclock_seconds.txt
+            out/evaluation.json
+            out/benchmark.json
+            out/**/ducktape-metatron.jsonl
+          if-no-files-found: warn
