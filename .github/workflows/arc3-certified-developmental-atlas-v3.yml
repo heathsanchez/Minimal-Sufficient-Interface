@@ -74,10 +74,10 @@ jobs:
       - name: Qualify frozen compiled atlas
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
-          MSI_ROOT: \${{ github.workspace }}
-          ENVROOT: \${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
-          METATRON_ROOT: \${{ github.workspace }}/vendor/metatron
-          OUTDIR: \${{ github.workspace }}/evidence/arc3-certified-developmental-atlas-v3
+          MSI_ROOT: ${{ github.workspace }}
+          ENVROOT: ${{ github.workspace }}/vendor/ARC-AGI/test_environment_files
+          METATRON_ROOT: ${{ github.workspace }}/vendor/metatron
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-certified-developmental-atlas-v3
         run: |
           uv run python "$MSI_ROOT/experiments/arc3_certified_developmental_atlas_v3.py" | tee "$MSI_ROOT/arc3-certified-developmental-atlas-v3.log"
           grep -q 'ARC3_CERTIFIED_DEVELOPMENTAL_ATLAS_V3=PASS' "$MSI_ROOT/arc3-certified-developmental-atlas-v3.log"
@@ -102,7 +102,7 @@ jobs:
 
       - name: MathGraph admit finite atlas theorem
         env:
-          PYTHONPATH: \${{ github.workspace }}/vendor/mathgraph
+          PYTHONPATH: ${{ github.workspace }}/vendor/mathgraph
         run: |
           python - <<'PY'
           import hashlib, json
