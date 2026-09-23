@@ -1,0 +1,87 @@
+name: ARC3 Public Purple Row Projection G3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arc3-public-purple-row-projection-g3
+    paths:
+      - experiments/arc3_public_purple_row_projection_g3.py
+      - .github/workflows/arc3-public-purple-row-projection-g3.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade,OperationMode
+          root=Path(os.environ["ENV_DIR"]);root.mkdir(parents=True,exist_ok=True)
+          a=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(root))
+          e=a.make(os.environ["GAME_ID"])
+          if e is None: raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS",e.environment_info.game_id)
+          a.close_scorecard()
+          PY
+      - name: Test target purple-row projection
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVROOT: ${{ github.workspace }}/public-env
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-purple-row-projection-g3
+        run: |
+          uv run python "$GITHUB_WORKSPACE/experiments/arc3_public_purple_row_projection_g3.py" \
+            | tee "$GITHUB_WORKSPACE/purple-row-projection.log"
+          grep -E 'ARC3_PUBLIC_PURPLE_ROW_PROJECTION_G3=(PROMOTED|RESIDUAL)' "$GITHUB_WORKSPACE/purple-row-projection.log"
+      - name: Seal
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/arc3-public-purple-row-projection-g3/result.json").read_text())
+          assert d["model_calls"]==0 and d["source_inspection"] is False
+          assert d["g2_control"]["progressed"] is True
+          assert d["g2_control"]["anchors"]==[0,5]
+          assert d["status"] in {"PROMOTED","RESIDUAL"}
+          if d["status"]=="PROMOTED":
+              assert d["selected"] is not None
+              assert d["selected"]["anchors"]==[1,4]
+              assert all(x["progressed"] for x in d["verification"])
+          print("ARC3_PUBLIC_PURPLE_ROW_PROJECTION_G3_SEAL=PASS")
+          print("STATUS=",d["status"])
+          print("G2_CONTROL=",d["g2_control"])
+          print("VARIANTS=",[(v["variant"],len(v["prefix"]),v.get("anchors"),len(v.get("writes",[])),v.get("progressed"),v.get("level"),v.get("state")) for v in d["variants"]])
+          print("SELECTED=",d["selected"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-public-purple-row-projection-g3
+          path: |
+            evidence/arc3-public-purple-row-projection-g3/result.json
+            purple-row-projection.log
+          if-no-files-found: error
