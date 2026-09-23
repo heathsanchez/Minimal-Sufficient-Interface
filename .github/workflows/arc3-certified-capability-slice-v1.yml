@@ -114,6 +114,9 @@ jobs:
           lean lean/Arc3CertifiedCapabilitySliceV1.lean
           echo ARC3_GUARD_LEAN=PASS
 
+      - name: Install pinned MathGraph declared extras
+        run: python -m pip install --disable-pip-version-check -e "./vendor/mathgraph[all]"
+
       - name: MathGraph terminal admission for finite guard theorem
         env:
           PYTHONPATH: ${{ github.workspace }}/vendor/mathgraph
