@@ -43,6 +43,12 @@ jobs:
           ref: b9d1b5cc10477188be6e55617699be60e70f6dad
           path: vendor/metatron
 
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e80fed62b6e58d2f4b62e2ceb012646c60dd1e28
+          path: vendor/mathgraph
+
       - name: Reproduce exact V3 fixture metadata
         run: |
           python - <<'PY'
@@ -108,6 +114,85 @@ jobs:
           lean lean/Arc3CertifiedCapabilitySliceV1.lean
           echo ARC3_GUARD_LEAN=PASS
 
+      - name: MathGraph terminal admission for finite guard theorem
+        env:
+          PYTHONPATH: ${{ github.workspace }}/vendor/mathgraph
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          from mathgraph.external_certificates import (
+              ExternalBoundaryEvidence,
+              ExternalCertificate,
+              ExternalCertificateKind,
+              ExternalCertificateStatus,
+              ExternalVerifierKind,
+          )
+          from mathgraph.promotion_gate import PromotionGate, PromotionGateDecisionKind
+          from mathgraph.terminal_schema import CanonicalTerminalForm, VerifierBoundaryKind
+
+          proof_path=Path("lean/Arc3CertifiedCapabilitySliceV1.lean")
+          proof_bytes=proof_path.read_bytes()
+          proof_sha=hashlib.sha256(proof_bytes).hexdigest()
+          claim=(
+              "Within the sealed 19-state bt33 replay bank and declared generated feature language, "
+              "the selected color_histogram guard is sufficient for witness-applicability labels and "
+              "its sole retained member is necessary."
+          )
+          claim_sha=hashlib.sha256(claim.encode()).hexdigest()
+          cert_id="arc3-guard-"+proof_sha[:24]
+          ev=ExternalBoundaryEvidence(
+              evidence_id="arc3-guard-boundary-"+proof_sha[:24],
+              boundary_kind=VerifierBoundaryKind.LEAN_TYPECHECKED,
+              certificate_id=cert_id,
+              terminal_form=CanonicalTerminalForm.VERIFIED_PROOF,
+              source_artifact_id=str(proof_path),
+              artifact_hash=proof_sha,
+              verifier_kind=ExternalVerifierKind.LEAN4,
+              checker_name="Lean",
+              checker_version="4.24.0",
+              metadata={
+                  "scope":"finite sealed bt33 replay bank",
+                  "theorems":["selected_basis_sufficient","basis_member_0_necessary"],
+                  "mathgraph_source":"e80fed62b6e58d2f4b62e2ceb012646c60dd1e28",
+              },
+              advisory=False,
+          )
+          cert=ExternalCertificate(
+              cert_id=cert_id,
+              verifier=ExternalVerifierKind.LEAN4,
+              status=ExternalCertificateStatus.ACCEPTED,
+              claim=claim,
+              claim_hash=claim_sha,
+              source_artifact_id=str(proof_path),
+              certificate_kind=ExternalCertificateKind.VERIFIED_PROOF,
+              proposed_terminal_form=CanonicalTerminalForm.VERIFIED_PROOF,
+              boundary_evidence=ev,
+              artifact_hash=proof_sha,
+              checker_name="Lean",
+              checker_version="4.24.0",
+              proof_artifact=str(proof_path),
+              replay_command=("lean","lean/Arc3CertifiedCapabilitySliceV1.lean"),
+              metadata={"claim_boundary":"finite guard theorem only; excludes empirical ARC transfer"},
+              boundary_valid=True,
+              accepted=True,
+              advisory_only=False,
+              advisory=False,
+          )
+          decision=PromotionGate().evaluate(cert)
+          assert decision.accepted is True
+          assert decision.decision_kind == PromotionGateDecisionKind.ACCEPT_FOR_LAWBOOK
+          assert decision.terminal_form == "VERIFIED_PROOF"
+          out={"certificate":cert.to_dict(),"decision":decision.to_dict()}
+          p=Path("evidence/arc3-certified-capability-slice-v1/mathgraph-promotion.json")
+          p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps(out,indent=2,sort_keys=True))
+          print("MATHGRAPH_FINITE_GUARD_ADMISSION=PASS")
+          print("MATHGRAPH_TERMINAL_FORM=",decision.terminal_form)
+          print("MATHGRAPH_CERTIFICATE_ID=",cert_id)
+          PY
+
       - name: Seal qualification
         run: |
           python - <<'PY'
@@ -142,4 +227,5 @@ jobs:
             lean/Arc3CertifiedCapabilitySliceV1.lean
             arc3-certified-capability-slice-v1.log
             metatron-nucleus.sha256
+            evidence/arc3-certified-capability-slice-v1/mathgraph-promotion.json
           if-no-files-found: error
