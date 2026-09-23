@@ -12,7 +12,7 @@ OUT.mkdir(parents=True,exist_ok=True)
 
 G1=[(55,36),(14,31),(42,26),(42,36),(42,41),(45,26),(45,36),(45,41),(55,36)]
 SETUP=[(58,46),(58,11)]
-MAX_BUNDLES=6
+MAX_BUNDLES=55
 
 def env():
     l=logging.getLogger("bundle-recurrence");l.setLevel(logging.WARNING)
@@ -157,7 +157,7 @@ def main():
         out={"status":"PROMOTED","program":program,"verification":ver,"trace":trace,
              "remaining_color1_size3":count_size3(f,1),"terminal_candidates":len(terms),
              "terminal_attempts":attempts,"tested":tested,"model_calls":0,"source_inspection":False,
-             "claim_boundary":"exact public tn36 G2 maximal bundle recurrence + transported terminal guard"}
+             "claim_boundary":"exact public tn36 G2 maximal residual-reducing bundle recurrence to closure + transported terminal guard"}
         (OUT/"result.json").write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2));print("ARC3_PUBLIC_BUNDLE_RECURRENCE_G2=PROMOTED");return
 
     out={"status":"RESIDUAL","program":[list(x) for x in SETUP+path],"verification":[],"trace":trace,
