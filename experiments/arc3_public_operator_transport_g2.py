@@ -111,8 +111,13 @@ def enter_l2(env):
 
 def reset_l2(env):
     f=env.reset()
-    if int(f.levels_completed)!=1: raise RuntimeError("level reset drift")
-    return f
+    if f is None: raise RuntimeError("reset returned None")
+    level=int(f.levels_completed)
+    if level==1:
+        return f
+    if level==0:
+        return enter_l2(env)
+    raise RuntimeError(f"level reset drift: {level}")
 
 def source_ops():
     _,env=make_env()
@@ -153,7 +158,7 @@ def run_greedy(source, classes, probes):
         candidates=[]
         # enumerate effect classes from current state exactly; one representative per class.
         seen={}
-        preferred=list(probes)+[tuple(a[0]) for a in classes.values() if a["actions"]]
+        preferred=list(probes)+[tuple(rec["actions"][0]) for rec in classes.values() if rec["actions"]]
         # add all class representatives from root, then full coords only if unseen consequence needed
         coords=[]
         for rc in preferred:
