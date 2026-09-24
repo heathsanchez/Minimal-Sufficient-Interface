@@ -1,0 +1,95 @@
+name: ARC3 Public Path Program G3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-public-path-program-terminal-repair-g3]
+    paths:
+      - 'experiments/arc3_public_path_program_g3.py'
+      - 'tests/test_arc3_public_path_program_g3.py'
+      - '.github/workflows/arc3-public-path-program-g3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Unit-test path semantics and terminal discovery
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: >-
+          uv run --with pytest pytest -q
+          "$GITHUB_WORKSPACE/tests/test_arc3_public_path_program_g3.py"
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root = Path(os.environ["ENV_DIR"])
+          root.mkdir(parents=True, exist_ok=True)
+          arcade = Arcade(operation_mode=OperationMode.NORMAL, environments_dir=str(root))
+          env = arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS", env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+      - name: Derive and replay G3 path program
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVROOT: ${{ github.workspace }}/public-env
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-path-program-g3
+          PYTHONPATH: ${{ github.workspace }}/experiments
+        run: |
+          uv run python "$GITHUB_WORKSPACE/experiments/arc3_public_path_program_g3.py" \
+            | tee "$GITHUB_WORKSPACE/arc3-public-path-program-g3.log"
+          grep 'ARC3_PUBLIC_PATH_PROGRAM_G3=PROMOTED' \
+            "$GITHUB_WORKSPACE/arc3-public-path-program-g3.log"
+      - name: Seal exact claim boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("evidence/arc3-public-path-program-g3/result.json").read_text())
+          assert result["status"] == "PROMOTED"
+          assert result["model_calls"] == 0
+          assert result["source_inspection"] is False
+          assert result["selected"]["path"] == "URRRUR"
+          assert result["selected"]["submit"] == [58, 57]
+          assert result["terminal_correction"]["old_non_submit"] == [58, 46]
+          assert len(result["verification"]) == 2
+          assert all(replay["progressed"] for replay in result["verification"])
+          assert result["max_g3_actions"] <= 40
+          print("ARC3_PUBLIC_PATH_PROGRAM_G3_SEAL=PASS")
+          print("PATH=", result["selected"]["path"])
+          print("SUBMIT=", result["selected"]["submit"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-public-path-program-g3
+          path: |
+            evidence/arc3-public-path-program-g3/result.json
+            arc3-public-path-program-g3.log
+          if-no-files-found: error
