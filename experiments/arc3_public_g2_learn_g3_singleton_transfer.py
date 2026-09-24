@@ -35,8 +35,26 @@ def singleton_family(f):
     return sorted(out)
 
 def source_sig(f):
-    rows,src,targets=sem.semantic_surface(f)
-    return list(src),targets
+    from collections import defaultdict
+    L=defaultdict(list)
+    for comp in ab.comps(f):
+        if int(comp["size"])!=3 or int(comp["color"]) not in (1,5):
+            continue
+        cells=sorted(tuple(x) for x in comp["cells"])
+        rc=cells[len(cells)//2]
+        if rc[1] < 31:
+            L[rc[0]].append({"rc":rc,"color":int(comp["color"])})
+    rows=sorted(L)
+    if len(rows)!=6:
+        raise AssertionError(f"expected six source rows, got {rows}")
+    src=[]
+    for r in rows:
+        xs=sorted(L[r],key=lambda x:x["rc"][1])
+        colors={x["color"] for x in xs}
+        if len(colors)!=1:
+            raise AssertionError((r,colors))
+        src.append(1 if xs[0]["color"]==5 else 0)
+    return src,None
 
 def enter_g2_generated():
     e=ab.env()
