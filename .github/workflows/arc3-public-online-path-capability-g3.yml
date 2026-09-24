@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: arc3-public-online-path-capability-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   qualify:
     runs-on: ubuntu-24.04
