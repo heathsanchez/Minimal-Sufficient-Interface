@@ -4,6 +4,7 @@ from typing import Any
 
 from .memory_graph import ActionKey, ArcMemoryGraph, ContextKey, ProgramKey
 from .runtime import ActionToken, Observation, OnlineController, normalize_frame
+from .semantic_path import SemanticPathSession
 
 
 class MemoryGraphController(OnlineController):
@@ -79,6 +80,9 @@ class MemoryGraphController(OnlineController):
         self._episode_program = []
         self._clear_exact()
         self._clear_transfer()
+        self._semantic_path: SemanticPathSession | None = None
+        self._semantic_attempted_levels: set[int] = set()
+        self._semantic_residual: str | None = None
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         previous_level = self._previous.levels_completed if self._previous is not None else None
@@ -100,6 +104,32 @@ class MemoryGraphController(OnlineController):
             self._episode_program = []
             self._clear_exact()
             self._clear_transfer()
+            self._semantic_path = None
+
+    def _next_semantic(self, frame: Any, obs: Observation) -> ActionToken | None:
+        if 6 not in self._legal_ids(obs):
+            return None
+        if self._semantic_path is None:
+            if obs.levels_completed in self._semantic_attempted_levels:
+                return None
+            self._semantic_attempted_levels.add(obs.levels_completed)
+            raw_grid = frame.get("frame", []) if isinstance(frame, dict) else getattr(frame, "frame", [])
+            try:
+                self._semantic_path = SemanticPathSession.start(raw_grid)
+                self._semantic_residual = None
+            except ValueError as error:
+                self._semantic_residual = str(error)
+                return None
+        if self._semantic_path.phase == "done":
+            return None
+        raw_grid = frame.get("frame", []) if isinstance(frame, dict) else getattr(frame, "frame", [])
+        try:
+            x, y = self._semantic_path.next_action(raw_grid)
+        except (ValueError, StopIteration) as error:
+            self._semantic_residual = str(error)
+            self._semantic_path = None
+            return None
+        return ActionToken(6, x, y, "semantic_path")
 
     def record_terminal_failure(self, consequence: str = "GAME_OVER") -> None:
         if self._episode_context is None or not self._episode_program:

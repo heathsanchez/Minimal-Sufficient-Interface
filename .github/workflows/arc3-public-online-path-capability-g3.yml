@@ -1,0 +1,99 @@
+name: ARC3 Public Online Path Capability G3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-public-online-path-capability-v1]
+    paths:
+      - 'kaggle/src/metalogic_arc3/semantic_path.py'
+      - 'kaggle/src/metalogic_arc3/runtime.py'
+      - 'kaggle/src/metalogic_arc3/memory_controller.py'
+      - 'kaggle/scripts/build_agent.py'
+      - 'kaggle/tests/test_semantic_path.py'
+      - 'experiments/arc3_public_online_path_capability_g3.py'
+      - '.github/workflows/arc3-public-online-path-capability-g3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Test fail-closed semantic capability and generated agent
+        run: >-
+          PYTHONPATH=kaggle/src python -m unittest
+          kaggle.tests.test_semantic_path kaggle.tests.test_build_agent -v
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root = Path(os.environ["ENV_DIR"])
+          root.mkdir(parents=True, exist_ok=True)
+          arcade = Arcade(operation_mode=OperationMode.NORMAL, environments_dir=str(root))
+          env = arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS", env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+      - name: Replay online semantic capability twice
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVROOT: ${{ github.workspace }}/public-env
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-online-path-capability-g3
+          PYTHONPATH: ${{ github.workspace }}/kaggle/src:${{ github.workspace }}/experiments
+        run: |
+          uv run python "$GITHUB_WORKSPACE/experiments/arc3_public_online_path_capability_g3.py" \
+            | tee "$GITHUB_WORKSPACE/arc3-public-online-path-capability-g3.log"
+          grep 'ARC3_PUBLIC_ONLINE_PATH_CAPABILITY_G3=PROMOTED' \
+            "$GITHUB_WORKSPACE/arc3-public-online-path-capability-g3.log"
+      - name: Seal exact claim boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path(
+              "evidence/arc3-public-online-path-capability-g3/result.json"
+          ).read_text())
+          assert result["status"] == "PROMOTED"
+          assert result["model_calls"] == 0
+          assert result["source_inspection"] is False
+          assert len(result["replays"]) == 2
+          for replay in result["replays"]:
+              assert replay["progressed"]
+              assert replay["path"] == "URRRUR"
+              assert replay["probe_directions"] == ["D", "U", "L", "R"]
+              assert replay["submit"] == [57, 58]
+              assert replay["action_count"] <= result["action_budget"]
+          print("ARC3_PUBLIC_ONLINE_PATH_CAPABILITY_G3_SEAL=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-public-online-path-capability-g3
+          path: |
+            evidence/arc3-public-online-path-capability-g3/result.json
+            arc3-public-online-path-capability-g3.log
+          if-no-files-found: error

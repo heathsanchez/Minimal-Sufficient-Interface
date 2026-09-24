@@ -26,6 +26,7 @@ class BuildAgentContracts(unittest.TestCase):
             self.assertIn("class OnlineController", text)
             self.assertIn("class ArcMemoryGraph", text)
             self.assertIn("class MemoryGraphController", text)
+            self.assertIn("class SemanticPathSession", text)
             self.assertIn("BUILD_PROVENANCE", text)
             self.assertNotIn("from .runtime", text)
             self.assertNotIn("from .memory_graph", text)

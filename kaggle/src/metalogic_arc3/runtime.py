@@ -394,6 +394,10 @@ class OnlineController:
         self._continuation_index += 1
         return ActionToken(token.action_id, token.x, token.y, "stage4_probe")
 
+    def _next_semantic(self, frame: Any, obs: Observation) -> ActionToken | None:
+        """Optional fail-closed semantic capability hook for specialized controllers."""
+        return None
+
     def observe_and_choose(self, frame: Any) -> ActionToken | None:
         obs = normalize_frame(frame)
         self._process_previous_outcome(obs)
@@ -404,28 +408,32 @@ class OnlineController:
             self._last_action = None
             return None
 
-        archived = self._next_archive(obs)
-        if archived is not None:
-            token = archived
+        semantic = self._next_semantic(frame, obs)
+        if semantic is not None:
+            token = semantic
         else:
-            continuation = self._next_continuation(obs)
-            if continuation is not None:
-                token = continuation
+            archived = self._next_archive(obs)
+            if archived is not None:
+                token = archived
             else:
-                retained = self._next_retained(obs)
-                if retained is not None:
-                    token = retained
+                continuation = self._next_continuation(obs)
+                if continuation is not None:
+                    token = continuation
                 else:
-                    guard = self._exploration_guard(obs)
-                    catalog = self._action_catalog(obs)
-                    token = min(
-                        catalog,
-                        key=lambda candidate: self._visits.get(
-                            (guard, self._candidate_key(candidate)), 0
-                        ),
-                    )
-                    key = (guard, self._candidate_key(token))
-                    self._visits[key] = self._visits.get(key, 0) + 1
+                    retained = self._next_retained(obs)
+                    if retained is not None:
+                        token = retained
+                    else:
+                        guard = self._exploration_guard(obs)
+                        catalog = self._action_catalog(obs)
+                        token = min(
+                            catalog,
+                            key=lambda candidate: self._visits.get(
+                                (guard, self._candidate_key(candidate)), 0
+                            ),
+                        )
+                        key = (guard, self._candidate_key(token))
+                        self._visits[key] = self._visits.get(key, 0) + 1
 
         self._previous = obs
         self._last_action = token
