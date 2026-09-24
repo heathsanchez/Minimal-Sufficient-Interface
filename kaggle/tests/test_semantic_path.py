@@ -76,6 +76,16 @@ def set_source_bits(grid, bits):
 
 
 class SemanticPathContracts(unittest.TestCase):
+    def test_recognizer_accepts_frame_with_array_like_visible_layer(self):
+        class Layer:
+            def tolist(self):
+                return g3_fixture()
+
+        class Frame:
+            frame = [Layer()]
+
+        self.assertEqual(infer_path_program(Frame()).path, "URRRUR")
+
     def test_recognizer_derives_observed_g3_path_and_controls(self):
         plan = infer_path_program(g3_fixture())
         self.assertEqual(plan.path, "URRRUR")

@@ -24,6 +24,8 @@ def _matrix(value) -> list[list[int]]:
         value = value.frame
     if hasattr(value, "tolist"):
         value = value.tolist()
+    if isinstance(value, (list, tuple)):
+        value = [item.tolist() if hasattr(item, "tolist") else item for item in value]
     while (
         isinstance(value, (list, tuple))
         and value
