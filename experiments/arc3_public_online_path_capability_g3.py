@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from metalogic_arc3.semantic_path import SemanticPathSession
+from metalogic_arc3.semantic_path import SemanticPathSession, close_path_capabilities
 
 
 OUT = Path(os.environ.get(
@@ -46,6 +46,7 @@ def replay_once():
     if session.phase != "done":
         raise AssertionError("online semantic session exceeded action budget")
     progressed = int(frame.levels_completed) > start_level or frame.state == GameState.WIN
+    successor = close_path_capabilities(frame) if progressed else None
     return {
         "progressed": progressed,
         "start_level": start_level,
@@ -58,12 +59,32 @@ def replay_once():
         "submit": list(session.plan.submit),
         "action_count": len(actions),
         "actions": actions,
+        "successor_closure": None if successor is None else {
+            "closed_interfaces": list(successor.closed_interfaces),
+            "plan": None if successor.plan is None else successor.plan.path,
+            "residual": None if successor.residual is None else {
+                "missing_interface": successor.residual.missing_interface,
+                "reason": successor.residual.reason,
+            },
+        },
     }
 
 
 def main():
     replays = [replay_once(), replay_once()]
     promoted = all(replay["progressed"] for replay in replays)
+    successor_residuals = [
+        replay["successor_closure"]["residual"]
+        for replay in replays
+        if replay["successor_closure"] is not None
+    ]
+    stable_successor_residual = (
+        len(successor_residuals) == 2
+        and all(item == {
+            "missing_interface": "shape.subcell-docking-pose@1",
+            "reason": "subcell_docking_geometry",
+        } for item in successor_residuals)
+    )
     result = {
         "status": "PROMOTED" if promoted else "RESIDUAL",
         "hypothesis": (
@@ -74,13 +95,21 @@ def main():
         "classification": "WARRANTED POSITIVE" if promoted else "RESIDUAL",
         "replays": replays,
         "independent_replay_count": 2,
+        "successor_interface_status": (
+            "EXACT_RESIDUAL" if stable_successor_residual else "UNKNOWN"
+        ),
+        "successor_missing_interface": (
+            "shape.subcell-docking-pose@1" if stable_successor_residual else None
+        ),
         "action_budget": 40,
         "model_calls": 0,
         "source_inspection": False,
         "claim_boundary": (
             "exact public tn36 G3 after qualified G1+G2 entry; only public pixels, "
             "legal clicks, and terminal progress; online codebook induction uses one "
-            "live episode per replay; non-complementary docking remains UNKNOWN"
+            "live episode per replay; the immediate G4 observation is closed only "
+            "through current-frame and tiled-grid interfaces, then preserves typed "
+            "UNKNOWN at shape.subcell-docking-pose@1"
         ),
         "residual": None if promoted else "online_path_capability_did_not_advance_g3",
     }
