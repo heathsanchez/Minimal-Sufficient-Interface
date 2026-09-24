@@ -18,6 +18,19 @@ class SemanticPathPlan:
     submit: Point
 
 
+@dataclass(frozen=True)
+class SemanticResidual:
+    missing_interface: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class SemanticCapabilityClosure:
+    plan: SemanticPathPlan | None
+    closed_interfaces: tuple[str, ...]
+    residual: SemanticResidual | None
+
+
 def _matrix(value) -> list[list[int]]:
     """Return the visible 2-D integer layer without depending on arcengine."""
     if hasattr(value, "frame"):
@@ -33,7 +46,7 @@ def _matrix(value) -> list[list[int]]:
         and value[0]
         and isinstance(value[0][0], (list, tuple))
     ):
-        value = value[0]
+        value = value[-1]
     if not isinstance(value, (list, tuple)) or not value:
         raise ValueError("missing_visible_grid")
     rows = [list(map(int, row)) for row in value]
@@ -196,9 +209,11 @@ def _bar_rows(grid: Sequence[Sequence[int]], side: str) -> tuple[tuple[Point, ..
     bars: list[Point] = []
     for component in _components(grid, (1, 5)):
         top, left, bottom, right = _bbox(component)
-        if len(component) != 3 or top != bottom or right - left != 2:
+        horizontal = top == bottom and right - left == 2
+        vertical = left == right and bottom - top == 2
+        if len(component) != 3 or not (horizontal or vertical):
             continue
-        center = (left + 1, top)
+        center = ((left + right) // 2, (top + bottom) // 2)
         if (side == "left" and center[0] < width // 2) or (side == "right" and center[0] >= width // 2):
             bars.append(center)
     grouped: dict[int, list[Point]] = {}
@@ -229,10 +244,36 @@ def _submit(grid: Sequence[Sequence[int]]) -> Point:
     return ((left + right) // 2, (top + bottom) // 2)
 
 
-def infer_path_program(grid) -> SemanticPathPlan:
-    visible = _matrix(grid)
-    board_top, board_left = _find_board(visible)
-    mover, _, delta_row, delta_col = _complement_translation(visible, board_top, board_left)
+def close_path_capabilities(grid) -> SemanticCapabilityClosure:
+    closed: list[str] = []
+
+    def missing(interface: str, reason: str) -> SemanticCapabilityClosure:
+        return SemanticCapabilityClosure(
+            plan=None,
+            closed_interfaces=tuple(closed),
+            residual=SemanticResidual(interface, reason),
+        )
+
+    try:
+        visible = _matrix(grid)
+    except ValueError as error:
+        return missing("observation.current-frame@1", str(error))
+    closed.append("observation.current-frame@1")
+
+    try:
+        board_top, board_left = _find_board(visible)
+    except ValueError as error:
+        return missing("board.tiled-grid@1", str(error))
+    closed.append("board.tiled-grid@1")
+
+    try:
+        mover, _, delta_row, delta_col = _complement_translation(
+            visible, board_top, board_left
+        )
+    except ValueError as error:
+        return missing("shape.subcell-docking-pose@1", str(error))
+    closed.append("shape.docking-translation@1")
+
     mover_top, mover_left, _, _ = _bbox(mover)
     start = ((mover_top - board_top) // 4, (mover_left - board_left) // 4)
     goal = (start[0] + delta_row // 4, start[1] + delta_col // 4)
@@ -248,14 +289,53 @@ def infer_path_program(grid) -> SemanticPathPlan:
                 blocked.add((row, col))
     blocked.discard(start)
     blocked.discard(goal)
-    controls = _selector_controls(visible)
-    return SemanticPathPlan(
-        path=_shortest_path(start, goal, blocked),
+    closed.append("board.route-problem@1")
+
+    try:
+        controls = _selector_controls(visible)
+    except ValueError as error:
+        return missing("control.direction-role@1", str(error))
+    closed.append("control.direction-role@1")
+
+    try:
+        targets = _bar_rows(visible, "right")
+    except ValueError as error:
+        return missing("panel.target-grid@1", str(error))
+    closed.append("panel.target-grid@1")
+
+    try:
+        submit = _submit(visible)
+    except ValueError as error:
+        return missing("control.submit@1", str(error))
+    closed.append("control.submit@1")
+
+    try:
+        path = _shortest_path(start, goal, blocked)
+    except ValueError as error:
+        return missing("board.valid-route@1", str(error))
+    if not targets or len(path) != len(targets[0]):
+        return missing("program.temporal-columns@1", "path_target_arity")
+
+    plan = SemanticPathPlan(
+        path=path,
         probes=tuple(point for point, _ in controls),
         probe_directions=tuple(direction for _, direction in controls),
-        targets=_bar_rows(visible, "right"),
-        submit=_submit(visible),
+        targets=targets,
+        submit=submit,
     )
+    closed.append("program.temporal-columns@1")
+    return SemanticCapabilityClosure(
+        plan=plan,
+        closed_interfaces=tuple(closed),
+        residual=None,
+    )
+
+
+def infer_path_program(grid) -> SemanticPathPlan:
+    closure = close_path_capabilities(grid)
+    if closure.plan is None:
+        raise ValueError(closure.residual.reason)
+    return closure.plan
 
 
 @dataclass
