@@ -111,7 +111,7 @@ def cols_to_matrix(cols,reverse=False):
         cc=list(reversed(cc))
     if len(cc)!=6 or any(len(x)!=6 for x in cc):
         raise AssertionError((len(cc),cc))
-    return [[cc[j][i] for j in range(6)] for i in range(6)
+    return [[cc[j][i] for j in range(6)] for i in range(6)]
 
 def write_matrix(e,M,complement=False):
     rows,src,targets=sem.semantic_surface(e.observation_space)
