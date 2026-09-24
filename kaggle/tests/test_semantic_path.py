@@ -5,6 +5,7 @@ import unittest
 from metalogic_arc3.memory_controller import MemoryGraphController
 from metalogic_arc3.semantic_path import (
     SemanticPathSession,
+    close_path_capabilities,
     infer_path_program,
 )
 
@@ -14,7 +15,7 @@ def paint(grid, cells, color):
         grid[row][col] = color
 
 
-def g3_fixture():
+def g3_fixture(alternating_bars=False):
     grid = [[0 for _ in range(64)] for _ in range(64)]
 
     # Observed 7x7 checkerboard and the one-cell wall gap.
@@ -60,9 +61,19 @@ def g3_fixture():
     for row_index, row in enumerate((33, 36, 39, 42, 45, 48)):
         source_color = 5 if row_index in (0, 1) else 1
         for col in (10, 15, 20, 25):
-            paint(grid, ((row, col - 1), (row, col), (row, col + 1)), source_color)
+            cells = (
+                ((row - 1, col), (row, col), (row + 1, col))
+                if alternating_bars and row_index % 2
+                else ((row, col - 1), (row, col), (row, col + 1))
+            )
+            paint(grid, cells, source_color)
         for col in (34, 39, 44, 49, 54, 59):
-            paint(grid, ((row, col - 1), (row, col), (row, col + 1)), 1)
+            cells = (
+                ((row - 1, col), (row, col), (row + 1, col))
+                if alternating_bars and row_index % 2
+                else ((row, col - 1), (row, col), (row, col + 1))
+            )
+            paint(grid, cells, 1)
 
     paint(grid, ((row, col) for row in range(54, 63) for col in range(53, 62)), 9)
     return grid
@@ -76,6 +87,56 @@ def set_source_bits(grid, bits):
 
 
 class SemanticPathContracts(unittest.TestCase):
+    def test_capability_closure_records_complete_g3_interface_chain(self):
+        closure = close_path_capabilities(g3_fixture(alternating_bars=True))
+
+        self.assertIsNone(closure.residual)
+        self.assertEqual(closure.plan.path, "URRRUR")
+        self.assertEqual(closure.closed_interfaces, (
+            "observation.current-frame@1",
+            "board.tiled-grid@1",
+            "shape.docking-translation@1",
+            "board.route-problem@1",
+            "control.direction-role@1",
+            "panel.target-grid@1",
+            "control.submit@1",
+            "program.temporal-columns@1",
+        ))
+
+    def test_capability_closure_preserves_g4_docking_residual(self):
+        grid = g3_fixture(alternating_bars=True)
+        for row in range(8, 16):
+            for col in range(45, 53):
+                grid[row][col] = 11
+        for row in (14, 15):
+            for col in range(47, 51):
+                grid[row][col] = 4
+
+        closure = close_path_capabilities(grid)
+
+        self.assertIsNone(closure.plan)
+        self.assertEqual(closure.closed_interfaces, (
+            "observation.current-frame@1",
+            "board.tiled-grid@1",
+        ))
+        self.assertEqual(
+            closure.residual.missing_interface,
+            "shape.subcell-docking-pose@1",
+        )
+        self.assertEqual(closure.residual.reason, "subcell_docking_geometry")
+
+    def test_recognizer_uses_bar_centres_across_orientation(self):
+        plan = infer_path_program(g3_fixture(alternating_bars=True))
+        self.assertEqual(plan.path, "URRRUR")
+        self.assertEqual(len(plan.targets), 6)
+        self.assertTrue(all(len(row) == 6 for row in plan.targets))
+
+    def test_recognizer_uses_latest_frame_from_visible_history(self):
+        class Frame:
+            frame = [[[0 for _ in range(64)] for _ in range(64)], g3_fixture()]
+
+        self.assertEqual(infer_path_program(Frame()).path, "URRRUR")
+
     def test_recognizer_accepts_frame_with_array_like_visible_layer(self):
         class Layer:
             def tolist(self):
