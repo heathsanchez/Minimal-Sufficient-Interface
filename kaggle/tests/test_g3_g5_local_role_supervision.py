@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 from arc3_public_g3_g5_local_role_supervision import (
     _enter_visible_frame,
     _source_port_mode,
+    _select_feature_quotient,
     build_result,
     canonical_local_relation,
     compile_supervised_candidate,
@@ -54,6 +55,27 @@ def training_slots(*, conflict: bool = False):
 
 
 class LocalRoleSupervisionTests(unittest.TestCase):
+    def test_feature_quotient_prefers_smallest_functional_covered_partition(self):
+        slots = []
+        for level in (3, 4, 5):
+            for slot in range(6):
+                role = slot % 2
+                slots.append({
+                    "level": level,
+                    "slot_index": slot,
+                    "terminal_consequence": "PROGRESS",
+                    "features": {"role": role, "incidental": (level, slot)},
+                    "output": [role] * 6,
+                })
+        events = [
+            {"features": {"role": index % 2, "incidental": (6, index)}}
+            for index in range(6)
+        ]
+        selected = _select_feature_quotient(slots, events, feature_names=("role", "incidental"))
+        self.assertEqual(selected[0], "feature_quotient:role")
+        self.assertEqual(len(selected[1]), 2)
+        self.assertEqual(len(selected[2]), 6)
+
     def test_source_port_mode_is_palette_invariant_and_separates_selection(self):
         broadcast = [
             [0, 0, 0, 1, 1, 1],
@@ -250,7 +272,7 @@ class LocalRoleSupervisionTests(unittest.TestCase):
 
     def test_validate_result_rejects_stale_head_and_action_budget_drift(self):
         residual = {
-            "schema": "arc3.g3-g6-source-port-mode@1",
+            "schema": "arc3.g3-g6-minimal-feature-quotient@1",
             "head": "abc",
             "status": "RESIDUAL",
             "classification": "EXACT_RESIDUAL",
@@ -293,10 +315,10 @@ class LocalRoleSupervisionTests(unittest.TestCase):
     def test_hosted_workflow_seals_exact_public_gate(self):
         workflow = ROOT / ".github" / "workflows" / "arc3-public-g3-g5-local-role-supervision.yml"
         text = workflow.read_text()
-        self.assertIn("branches: [arc3-public-g3-g6-source-port-mode-v1]", text)
+        self.assertIn("branches: [arc3-public-g3-g6-minimal-feature-quotient-v1]", text)
         self.assertIn("GAME_ID: tn36-ef4dde99", text)
         self.assertIn("python -m unittest discover -s kaggle/tests -v", text)
-        self.assertIn("ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE_SEAL=PASS", text)
+        self.assertIn("ARC3_PUBLIC_G3_G6_MINIMAL_FEATURE_QUOTIENT_SEAL=PASS", text)
         self.assertIn("assert result[\"classification\"] != \"NON_EVIDENCE\"", text)
 
 

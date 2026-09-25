@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from itertools import combinations
 from math import gcd
 import json
 import os
@@ -17,8 +18,8 @@ from arc3_public_g6_glyph_role_decoder import _endpoint_family
 from metalogic_arc3.protected_future import UnknownResidual, canonical_digest
 
 
-INTERFACE_ID = "event.source-port-mode-relation@1"
-SCHEMA = "arc3.g3-g6-source-port-mode@1"
+INTERFACE_ID = "event.minimal-feature-quotient@1"
+SCHEMA = "arc3.g3-g6-minimal-feature-quotient@1"
 RELATION_LADDER = (
     "glyph",
     "glyph_motion",
@@ -26,6 +27,13 @@ RELATION_LADDER = (
     "glyph_motion_components_source_port_mode",
 )
 ACTION_BUDGET = 180
+FEATURE_NAMES = (
+    "source_glyph",
+    "destination_glyph",
+    "primitive_motion",
+    "endpoint_components",
+    "source_port_mode",
+)
 
 
 def _bits(value) -> tuple[int, ...]:
@@ -146,6 +154,24 @@ def local_relation_ladder(
             tuple(tuple(row) for row in source_port_mode),
         )
     return {name: canonical_digest(meanings[name]) for name in RELATION_LADDER}
+
+
+def local_relation_features(
+    trace_patches,
+    *,
+    trace_cells,
+    component_relations,
+    source_port_mode,
+):
+    patches = tuple(trace_patches)
+    source_glyph, destination_glyph = _endpoint_family(patches[0], patches[-1])
+    return {
+        "source_glyph": source_glyph,
+        "destination_glyph": destination_glyph,
+        "primitive_motion": _primitive_motion(trace_cells),
+        "endpoint_components": _endpoint_components(component_relations),
+        "source_port_mode": tuple(tuple(row) for row in source_port_mode),
+    }
 
 
 def _residual(reason: str, evidence=()) -> UnknownResidual:
@@ -269,6 +295,7 @@ def _collect_training_slots(training, observations):
                     "slot_index": index,
                     "terminal_consequence": consequence,
                     "relations": dict(event.get("relations", {})),
+                    "features": dict(event.get("features", {})),
                     "output": list(example.get("output", ())),
                 }
             )
@@ -293,11 +320,55 @@ def _select_transport_lens(training_slots, g6_events):
             attempts.append((lens, "uncovered_g6_relation", missing))
             continue
         return lens, fitted, tuple(str(item) for item in relations), attempts
+    quotient = _select_feature_quotient(training_slots, g6_events)
+    if not isinstance(quotient, UnknownResidual):
+        lens, fitted, relations = quotient
+        return lens, fitted, relations, attempts
+    attempts.append(("feature_quotient", quotient.reason, tuple(quotient.evidence)))
     evidence = tuple(
         f"{lens}:{reason}:{'|'.join(items)}"
         for lens, reason, items in attempts
     )
     return _residual("no_functional_transport_lens", evidence)
+
+
+def _select_feature_quotient(training_slots, g6_events, *, feature_names=FEATURE_NAMES):
+    feature_names = tuple(feature_names)
+    attempts = []
+    viable = []
+    for size in range(1, len(feature_names) + 1):
+        for subset in combinations(feature_names, size):
+            def relation(row):
+                features = row.get("features", {})
+                if any(name not in features for name in subset):
+                    return None
+                return canonical_digest((
+                    "event-feature-quotient@1",
+                    subset,
+                    tuple((name, features[name]) for name in subset),
+                ))
+
+            fitted = fit_relation_codebook(
+                {**slot, "relation_id": relation(slot)}
+                for slot in training_slots
+            )
+            label = "+".join(subset)
+            if isinstance(fitted, UnknownResidual):
+                attempts.append(f"{label}:{fitted.reason}")
+                continue
+            relations = tuple(relation(event) for event in g6_events)
+            missing = tuple(sorted({item for item in relations if item not in fitted}))
+            if missing:
+                attempts.append(f"{label}:uncovered_g6_relation:{len(missing)}")
+                continue
+            viable.append((size, len(fitted), subset, fitted, relations))
+    if not viable:
+        return _residual("no_functional_covered_feature_quotient", attempts)
+    _, _, subset, fitted, relations = min(
+        viable,
+        key=lambda row: (row[0], row[1], row[2]),
+    )
+    return "feature_quotient:" + "+".join(subset), fitted, relations
 
 
 def compile_observed_candidate(*, training, observations, g6_observation, executor):
@@ -434,6 +505,12 @@ def _observe_level(level, enter_level):
                     component_relations=components,
                     source_port_mode=source_port_mode,
                 ),
+                "features": local_relation_features(
+                    patches,
+                    trace_cells=(current, destination),
+                    component_relations=components,
+                    source_port_mode=source_port_mode,
+                ),
                 "source_port_mode": [list(row) for row in source_port_mode],
             }
         )
@@ -473,6 +550,12 @@ def _read_g6_observation():
                 "route_step": event["route_step"],
                 "marker_rank": event["marker_rank"],
                 "relations": local_relation_ladder(
+                    event["trace_patches"],
+                    trace_cells=event["cells"],
+                    component_relations=components,
+                    source_port_mode=source_port_mode,
+                ),
+                "features": local_relation_features(
                     event["trace_patches"],
                     trace_cells=event["cells"],
                     component_relations=components,
@@ -713,12 +796,12 @@ def main():
     out = Path(
         os.environ.get(
             "OUTDIR",
-            "evidence/arc3-public-g3-g6-source-port-mode",
+            "evidence/arc3-public-g3-g6-minimal-feature-quotient",
         )
     ).resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(f"ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE={result['status']}")
+    print(f"ARC3_PUBLIC_G3_G6_MINIMAL_FEATURE_QUOTIENT={result['status']}")
     print(json.dumps(result, sort_keys=True))
 
 

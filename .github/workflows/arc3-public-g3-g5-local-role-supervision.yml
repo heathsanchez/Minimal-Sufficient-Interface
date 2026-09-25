@@ -1,9 +1,9 @@
-name: ARC3 Public G3-G6 Source Port Mode
+name: ARC3 Public G3-G6 Minimal Feature Quotient
 
 on:
   workflow_dispatch:
   push:
-    branches: [arc3-public-g3-g6-source-port-mode-v1]
+    branches: [arc3-public-g3-g6-minimal-feature-quotient-v1]
     paths:
       - 'experiments/arc3_public_g3_g5_local_role_supervision.py'
       - 'kaggle/tests/test_g3_g5_local_role_supervision.py'
@@ -56,17 +56,17 @@ jobs:
           print("PUBLIC_GAME_DOWNLOAD=PASS", env.environment_info.game_id)
           arcade.close_scorecard()
           PY
-      - name: Run source-port-mode gate
+      - name: Run minimal feature quotient gate
         working-directory: vendor/duck-harness/ARC3-Inference
         env:
           ENVROOT: ${{ github.workspace }}/public-env
           PYTHONPATH: ${{ github.workspace }}/kaggle/src:${{ github.workspace }}/experiments
-          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-g3-g6-source-port-mode
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-g3-g6-minimal-feature-quotient
         run: |
           uv run python "$GITHUB_WORKSPACE/experiments/arc3_public_g3_g5_local_role_supervision.py" \
-            | tee "$GITHUB_WORKSPACE/arc3-public-g3-g6-source-port-mode.log"
-          grep 'ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE=' \
-            "$GITHUB_WORKSPACE/arc3-public-g3-g6-source-port-mode.log"
+            | tee "$GITHUB_WORKSPACE/arc3-public-g3-g6-minimal-feature-quotient.log"
+          grep 'ARC3_PUBLIC_G3_G6_MINIMAL_FEATURE_QUOTIENT=' \
+            "$GITHUB_WORKSPACE/arc3-public-g3-g6-minimal-feature-quotient.log"
       - name: Seal exact-head evidence
         env:
           PYTHONPATH: ${{ github.workspace }}/kaggle/src:${{ github.workspace }}/experiments
@@ -78,7 +78,7 @@ jobs:
           from arc3_public_g3_g5_local_role_supervision import validate_result
 
           result = json.loads(Path(
-              "evidence/arc3-public-g3-g6-source-port-mode/result.json"
+              "evidence/arc3-public-g3-g6-minimal-feature-quotient/result.json"
           ).read_text())
           validate_result(result, executing_head=os.environ["GITHUB_SHA"])
           assert result["status"] in {"PROMOTED", "REJECTED", "RESIDUAL"}
@@ -92,13 +92,13 @@ jobs:
           else:
               assert result["classification"] == "EXACT_RESIDUAL"
               assert result["target_writes"] == 0
-          print("ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE_SEAL=PASS")
+          print("ARC3_PUBLIC_G3_G6_MINIMAL_FEATURE_QUOTIENT_SEAL=PASS")
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-public-g3-g6-source-port-mode
+          name: arc3-public-g3-g6-minimal-feature-quotient
           path: |
-            evidence/arc3-public-g3-g6-source-port-mode/result.json
-            arc3-public-g3-g6-source-port-mode.log
+            evidence/arc3-public-g3-g6-minimal-feature-quotient/result.json
+            arc3-public-g3-g6-minimal-feature-quotient.log
           if-no-files-found: error
