@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "experiments"))
 sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 
 from arc3_public_g3_g5_local_role_supervision import (
+    _enter_visible_frame,
     build_result,
     canonical_local_relation,
     compile_supervised_candidate,
@@ -52,6 +53,18 @@ def training_slots(*, conflict: bool = False):
 
 
 class LocalRoleSupervisionTests(unittest.TestCase):
+    def test_entry_uses_public_observation_not_helper_trace_payload(self):
+        visible = [[1, 2], [3, 4]]
+
+        class Environment:
+            observation_space = visible
+
+        env, frame = _enter_visible_frame(
+            lambda: (Environment(), [{"phase": "qualified-prefix"}])
+        )
+        self.assertIs(frame, visible)
+        self.assertIs(frame, env.observation_space)
+
     def test_canonical_local_relation_is_palette_and_translation_invariant(self):
         first = canonical_local_relation(
             (EMPTY, MARK),

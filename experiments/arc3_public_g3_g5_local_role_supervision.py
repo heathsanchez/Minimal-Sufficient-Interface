@@ -309,6 +309,11 @@ def _advance_cell(cell, control):
     return cell[0] + delta[0], cell[1] + delta[1]
 
 
+def _enter_visible_frame(enter_level):
+    env, _entry_payload = enter_level()
+    return env, env.observation_space
+
+
 def _observe_level(level, enter_level):
     import arc3_public_all_blue_to_gray_g2 as ab
     from metalogic_arc3.semantic_path import (
@@ -321,7 +326,7 @@ def _observe_level(level, enter_level):
         _scale_normalized_translation,
     )
 
-    env, frame = enter_level()
+    env, frame = _enter_visible_frame(enter_level)
     initial = _matrix(frame)
     plan = SemanticPathSession.start(frame).plan
     board_top, board_left = _find_board(initial)
