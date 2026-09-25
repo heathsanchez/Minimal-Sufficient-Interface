@@ -25,6 +25,12 @@ LINE = [
     [5, 5, 5, 5],
     [5, 5, 5, 5],
 ]
+INVERTED_LINE = [
+    [11, 11, 11, 11],
+    [5, 11, 11, 11],
+    [5, 11, 11, 11],
+    [11, 11, 11, 11],
+]
 CHECKER = [
     [11, 5, 11, 5],
     [5, 11, 5, 11],
@@ -159,6 +165,15 @@ class GlyphCanonicalization(unittest.TestCase):
 
 
 class GlyphRoleProjection(unittest.TestCase):
+    def test_endpoint_role_is_local_complement_invariant(self):
+        events = chronological_events()
+        events[0] = event(5, "RR", INVERTED_LINE, EMPTY)
+
+        records = event_role_records(events)
+
+        self.assertEqual(records[0]["role"], "endpoint.depart")
+        self.assertEqual(records[0]["families"], [["line", "vertical"], ["empty"]])
+
     def test_visible_event_roles_form_the_nested_six_role_census(self):
         records = event_role_records(chronological_events())
 
