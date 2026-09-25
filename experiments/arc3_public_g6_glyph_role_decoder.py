@@ -65,11 +65,12 @@ def _endpoint_family(source, destination):
     destination = _grid(destination)
     if (len(source), len(source[0])) != (len(destination), len(destination[0])):
         raise ValueError("event_patch_shape")
-    values = [value for patch in (source, destination) for row in patch for value in row]
-    counts = Counter(values)
-    background = min(counts, key=lambda value: (-counts[value], repr(value)))
-
     def foreground(patch):
+        counts = Counter(value for row in patch for value in row)
+        background = min(
+            counts,
+            key=lambda value: (-counts[value], repr(value)),
+        )
         return {
             (row, column)
             for row, line in enumerate(patch)
