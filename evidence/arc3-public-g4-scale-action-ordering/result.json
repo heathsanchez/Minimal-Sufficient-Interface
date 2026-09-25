@@ -1,0 +1,55 @@
+{
+  "claim_boundary": "exact public tn36 G4; completes the eight collision-free permutations of one shrink, four down, and one left action without testing arbitrary matrices",
+  "classification": "WARRANTED NEGATIVE",
+  "hypothesis": "the scale-normalized mover may translate at most one cell above the wall before shrinking; test the five collision-free orderings not covered by the scale-first gate",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "paths": [
+    "LSDDDD",
+    "DSLDDD",
+    "DSDLDD",
+    "LDSDDD",
+    "DLSDDD"
+  ],
+  "selected": null,
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "variants": [
+    {
+      "action_count": 15,
+      "level": 3,
+      "path": "LSDDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "level": 3,
+      "path": "DSLDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "level": 3,
+      "path": "DSDLDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "level": 3,
+      "path": "LDSDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "level": 3,
+      "path": "DLSDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    }
+  ],
+  "verification": []
+}

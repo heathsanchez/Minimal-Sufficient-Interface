@@ -1,0 +1,18 @@
+{
+  "claim_boundary": "exact public tn36 G4; one role-preserving reversed pose trajectory",
+  "classification": "WARRANTED NEGATIVE",
+  "first": {
+    "action_count": 15,
+    "level": 3,
+    "path": "DDDDLS",
+    "progressed": false,
+    "state": "GameState.NOT_FINISHED"
+  },
+  "hypothesis": "preserve the lower-object mover role across levels and read selector outputs as pose states: four translated-small states, small at the scale anchor, then large at that anchor",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "verification": [],
+  "word": "DDDDLS"
+}

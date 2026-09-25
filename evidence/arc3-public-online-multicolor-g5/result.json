@@ -1,0 +1,166 @@
+{
+  "action_budget_per_level": 40,
+  "claim_boundary": "hard restart through qualified G1-G4 and integrated semantic G5; visible pixels, legal clicks, terminal progress, and typed successor residual only",
+  "classification": "WARRANTED POSITIVE",
+  "hypothesis": "the reusable controller compiles G5 as rotate, descend three, recolor through the active middle source port, then grow",
+  "independent_replay_count": 2,
+  "model_calls": 0,
+  "replays": [
+    {
+      "action_counts": [
+        13,
+        17,
+        21
+      ],
+      "g5_codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "T": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "X": [
+          1,
+          0,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "g5_probe_ports": [
+        null,
+        null,
+        null,
+        null,
+        1
+      ],
+      "level": 5,
+      "paths": [
+        "URRRUR",
+        "ILDDDD",
+        "XDDDTS"
+      ],
+      "progressed": true,
+      "state": "GameState.NOT_FINISHED",
+      "successor_closure": {
+        "closed_interfaces": [
+          "observation.current-frame@1",
+          "board.tiled-grid@1",
+          "shape.docking-translation@1",
+          "board.route-problem@1"
+        ],
+        "plan": null,
+        "residual": {
+          "missing_interface": "control.direction-role@1",
+          "reason": "selector_direction_geometry"
+        }
+      }
+    },
+    {
+      "action_counts": [
+        13,
+        17,
+        21
+      ],
+      "g5_codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "T": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "X": [
+          1,
+          0,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "g5_probe_ports": [
+        null,
+        null,
+        null,
+        null,
+        1
+      ],
+      "level": 5,
+      "paths": [
+        "URRRUR",
+        "ILDDDD",
+        "XDDDTS"
+      ],
+      "progressed": true,
+      "state": "GameState.NOT_FINISHED",
+      "successor_closure": {
+        "closed_interfaces": [
+          "observation.current-frame@1",
+          "board.tiled-grid@1",
+          "shape.docking-translation@1",
+          "board.route-problem@1"
+        ],
+        "plan": null,
+        "residual": {
+          "missing_interface": "control.direction-role@1",
+          "reason": "selector_direction_geometry"
+        }
+      }
+    }
+  ],
+  "source_inspection": false,
+  "status": "PROMOTED"
+}

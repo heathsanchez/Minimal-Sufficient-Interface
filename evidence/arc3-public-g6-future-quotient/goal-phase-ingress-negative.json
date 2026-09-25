@@ -1,0 +1,25 @@
+{
+  "status": "RESIDUAL",
+  "classification": "WARRANTED_NEGATIVE",
+  "head": "441ab37ba1521c76f7d5dcd143603aa81643c6dc",
+  "hypothesis": "retain route transitions entering the goal tile-support phase and label each column by its ingress control response",
+  "interface": "board.goal-phase-ingress@1",
+  "program": ["R", "R", "U", "L", "U", "L"],
+  "columns": [
+    [0, 1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0]
+  ],
+  "target_writes": 8,
+  "action_count": 13,
+  "start_level": 5,
+  "end_level": 5,
+  "end_state": "GameState.NOT_FINISHED",
+  "terminal_visible_change_count": 0,
+  "model_calls": 0,
+  "source_inspection": false,
+  "claim_boundary": "exact public tn36 G6; one board-derived goal-phase projection; terminal response independently repeated to qualify absence of visible error feedback"
+}

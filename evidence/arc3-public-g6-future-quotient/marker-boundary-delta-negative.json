@@ -1,0 +1,23 @@
+{
+  "status": "RESIDUAL",
+  "classification": "WARRANTED_NEGATIVE",
+  "head": "918220513b2fc53e6c90ab312477475b35e10dc6",
+  "hypothesis": "target columns are coordinate-change masks between consecutive coarse source observations at spatially aligned marker boundaries",
+  "interface": "program.marker-aligned-boundary-delta@1",
+  "columns_spatial": [
+    [0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 1],
+    [1, 1, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0]
+  ],
+  "target_writes": 7,
+  "action_count": 20,
+  "start_level": 5,
+  "end_level": 5,
+  "end_state": "GameState.NOT_FINISHED",
+  "model_calls": 0,
+  "source_inspection": false,
+  "claim_boundary": "exact public tn36 G6; six marker boundaries; equality-invariant coordinate change; marker-spatial alignment; terminal oracle"
+}

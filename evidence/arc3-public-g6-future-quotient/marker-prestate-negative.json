@@ -1,0 +1,24 @@
+{
+  "status": "RESIDUAL",
+  "classification": "WARRANTED_NEGATIVE",
+  "head": "441ab37ba1521c76f7d5dcd143603aa81643c6dc",
+  "hypothesis": "each sparse stage-marker transition labels the pre-action source observation, aligned to target columns by marker position",
+  "interface": "program.marker-aligned-prestate-trace@1",
+  "marker_positions_chronological": [[1, 61], [1, 60], [1, 59], [1, 58], [1, 57], [1, 56]],
+  "columns_spatial": [
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0]
+  ],
+  "target_writes": 9,
+  "action_count": 22,
+  "start_level": 5,
+  "end_level": 5,
+  "end_state": "GameState.NOT_FINISHED",
+  "model_calls": 0,
+  "source_inspection": false,
+  "claim_boundary": "exact public tn36 G6; six observed sparse marker transitions; pre-action source state; marker-spatial alignment; terminal oracle"
+}

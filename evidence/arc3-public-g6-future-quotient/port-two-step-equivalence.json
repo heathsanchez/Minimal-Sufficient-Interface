@@ -1,0 +1,18 @@
+{
+  "status": "DIAGNOSTIC",
+  "classification": "WARRANTED_NEGATIVE",
+  "hypothesis": "the two visible ports of a G6 control have different two-step protected futures",
+  "tested_words_per_control": ["00", "01", "10", "11"],
+  "controls": {
+    "D": {"distinct_full_frame_successors": 1, "digest_prefix": "629761facb6b71b4"},
+    "U": {"distinct_full_frame_successors": 1, "digest_prefix": "f20ea8ca61e1cf94"},
+    "R": {"distinct_full_frame_successors": 1, "digest_prefix": "655a00ae252e5e88"},
+    "L": {"distinct_full_frame_successors": 1, "digest_prefix": "c305cb2d62cebfc5"}
+  },
+  "words_checked": 16,
+  "result": "both ports remain equivalent under every same-control word of length two from the exact G6 boundary",
+  "model_calls": 0,
+  "source_inspection": false,
+  "target_writes": 0,
+  "claim_boundary": "exact public tn36 G6 initial state; four controls; both port choices at both positions of a length-two same-control word; exact full visible frame digest"
+}

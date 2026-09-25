@@ -1,0 +1,191 @@
+{
+  "claim_boundary": "exact public tn36 G4 after qualified G1-G3 entry; one directly observed six-column height profile; terminal progress is the independent oracle",
+  "classification": "WARRANTED NEGATIVE",
+  "first": {
+    "action_count": 14,
+    "actions": [
+      {
+        "height": 5,
+        "kind": "probe",
+        "xy": [
+          15,
+          58
+        ]
+      },
+      {
+        "height": 2,
+        "kind": "probe",
+        "xy": [
+          25,
+          58
+        ]
+      },
+      {
+        "height": 1,
+        "kind": "probe",
+        "xy": [
+          35,
+          58
+        ]
+      },
+      {
+        "column": 1,
+        "kind": "write",
+        "row": 0,
+        "value": 1,
+        "xy": [
+          39,
+          33
+        ]
+      },
+      {
+        "column": 2,
+        "kind": "write",
+        "row": 0,
+        "value": 1,
+        "xy": [
+          44,
+          33
+        ]
+      },
+      {
+        "column": 3,
+        "kind": "write",
+        "row": 0,
+        "value": 1,
+        "xy": [
+          49,
+          33
+        ]
+      },
+      {
+        "column": 4,
+        "kind": "write",
+        "row": 0,
+        "value": 1,
+        "xy": [
+          54,
+          33
+        ]
+      },
+      {
+        "column": 2,
+        "kind": "write",
+        "row": 1,
+        "value": 1,
+        "xy": [
+          44,
+          36
+        ]
+      },
+      {
+        "column": 3,
+        "kind": "write",
+        "row": 1,
+        "value": 1,
+        "xy": [
+          49,
+          36
+        ]
+      },
+      {
+        "column": 0,
+        "kind": "write",
+        "row": 3,
+        "value": 1,
+        "xy": [
+          34,
+          42
+        ]
+      },
+      {
+        "column": 1,
+        "kind": "write",
+        "row": 3,
+        "value": 1,
+        "xy": [
+          39,
+          42
+        ]
+      },
+      {
+        "column": 4,
+        "kind": "write",
+        "row": 3,
+        "value": 1,
+        "xy": [
+          54,
+          42
+        ]
+      },
+      {
+        "column": 5,
+        "kind": "write",
+        "row": 3,
+        "value": 1,
+        "xy": [
+          59,
+          42
+        ]
+      },
+      {
+        "kind": "submit",
+        "xy": [
+          57,
+          58
+        ]
+      }
+    ],
+    "codes": {
+      "1": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "2": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "5": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    "level": 3,
+    "profile": [
+      5,
+      1,
+      2,
+      2,
+      1,
+      5
+    ],
+    "progressed": false,
+    "state": "GameState.NOT_FINISHED"
+  },
+  "hypothesis": "after scale-normalized complement identification, each of the six target columns is labeled by the visible vertical purple extent of the corresponding column of the six-wide small docking glyph; the selector glyphs encode heights 5, 2, 1",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "profile": [
+    5,
+    1,
+    2,
+    2,
+    1,
+    5
+  ],
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "verification": []
+}

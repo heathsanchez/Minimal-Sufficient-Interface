@@ -1,0 +1,99 @@
+name: ARC3 Public G6 Future Quotient
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arc3-public-protected-future-compiler-v1]
+    paths:
+      - 'kaggle/src/metalogic_arc3/protected_future.py'
+      - 'kaggle/src/metalogic_arc3/future_arc.py'
+      - 'kaggle/tests/test_g6_evidence_schema.py'
+      - 'experiments/arc3_public_g6_future_quotient.py'
+      - '.github/workflows/arc3-public-g6-future-quotient.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.12'
+      - name: Install uv
+        run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - name: Install Duck
+        working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Test protected-future compiler
+        run: PYTHONPATH=kaggle/src python -m unittest discover -s kaggle/tests -v
+      - name: Download exact public game
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade, OperationMode
+          root = Path(os.environ["ENV_DIR"])
+          root.mkdir(parents=True, exist_ok=True)
+          arcade = Arcade(operation_mode=OperationMode.NORMAL, environments_dir=str(root))
+          env = arcade.make(os.environ["GAME_ID"])
+          if env is None:
+              raise SystemExit("public game unavailable")
+          print("PUBLIC_GAME_DOWNLOAD=PASS", env.environment_info.game_id)
+          arcade.close_scorecard()
+          PY
+      - name: Diagnose exact public G6 quotient
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVROOT: ${{ github.workspace }}/public-env
+          PYTHONPATH: ${{ github.workspace }}/kaggle/src:${{ github.workspace }}/experiments
+          OUTDIR: ${{ github.workspace }}/evidence/arc3-public-g6-future-quotient
+        run: |
+          uv run python "$GITHUB_WORKSPACE/experiments/arc3_public_g6_future_quotient.py" \
+            | tee "$GITHUB_WORKSPACE/arc3-public-g6-future-quotient.log"
+          grep 'ARC3_PUBLIC_G6_FUTURE_QUOTIENT=' \
+            "$GITHUB_WORKSPACE/arc3-public-g6-future-quotient.log"
+      - name: Seal qualification boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("evidence/arc3-public-g6-future-quotient/result.json").read_text())
+          assert result["status"] in {"PROMOTED", "RESIDUAL"}
+          assert result["model_calls"] == 0
+          assert result["source_inspection"] is False
+          assert result["congruence"] is True
+          assert result["result_summary"]["navigation_state_count"] == 33
+          assert result["result_summary"]["navigation_class_count"] == 33
+          assert result["result_summary"]["route_step_count"] == 12
+          assert result["result_summary"]["route_transition_class_count"] == 12
+          assert result["status"] == "RESIDUAL"
+          assert result["classification"] == "RESIDUAL"
+          assert result["target_writes"] == 0
+          assert result["residual"]["missing_interface"] == "target.projection@1"
+          compiled = result["compiled_navigation_capability"]
+          assert compiled["interface"] == "program.protected-future-quotient@1"
+          assert compiled["program"] == compiled["control_program"]
+          assert len(compiled["program"]) == 12
+          print("ARC3_PUBLIC_G6_FUTURE_QUOTIENT_SEAL=PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-public-g6-future-quotient
+          path: |
+            evidence/arc3-public-g6-future-quotient/*.json
+            arc3-public-g6-future-quotient.log
+          if-no-files-found: error

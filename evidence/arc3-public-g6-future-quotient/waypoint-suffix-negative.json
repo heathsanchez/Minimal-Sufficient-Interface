@@ -1,0 +1,26 @@
+{
+  "status": "RESIDUAL",
+  "classification": "WARRANTED_NEGATIVE",
+  "head": "918220513b2fc53e6c90ab312477475b35e10dc6",
+  "hypothesis": "the unique checker-pattern waypoint on the legal route selects the six-step suffix whose control responses are the target columns",
+  "interface": "program.checkpoint-selected-route-suffix@1",
+  "waypoints": [[0, 5], [4, 4], [6, 5]],
+  "on_route_waypoint": [4, 4],
+  "program": ["L", "L", "U", "U", "U", "L"],
+  "columns": [
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 1]
+  ],
+  "target_writes": 9,
+  "action_count": 14,
+  "start_level": 5,
+  "end_level": 5,
+  "end_state": "GameState.NOT_FINISHED",
+  "model_calls": 0,
+  "source_inspection": false,
+  "claim_boundary": "exact public tn36 G6; relational checker-waypoint detection; unique interior route waypoint; six-step suffix; coarse source-response projection; terminal oracle"
+}

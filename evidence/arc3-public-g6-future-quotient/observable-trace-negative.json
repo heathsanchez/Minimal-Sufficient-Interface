@@ -1,0 +1,23 @@
+{
+  "status": "RESIDUAL",
+  "classification": "WARRANTED_NEGATIVE",
+  "head": "441ab37ba1521c76f7d5dcd143603aa81643c6dc",
+  "hypothesis": "the six target columns are the initial source observation followed by the stutter-quotiented source-response trace of the route controls",
+  "interface": "program.stutter-invariant-observation-trace@1",
+  "columns": [
+    [1, 1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0]
+  ],
+  "target_writes": 9,
+  "action_count": 14,
+  "start_level": 5,
+  "end_level": 5,
+  "end_state": "GameState.NOT_FINISHED",
+  "model_calls": 0,
+  "source_inspection": false,
+  "claim_boundary": "exact public tn36 G6; source-response equality only; initial observation retained; consecutive duplicate observations quotiented; terminal oracle"
+}

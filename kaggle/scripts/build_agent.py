@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
+PROTECTED_FUTURE = ROOT / "kaggle" / "src" / "metalogic_arc3" / "protected_future.py"
 SEMANTIC_PATH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "semantic_path.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
@@ -46,7 +47,11 @@ def render() -> str:
         f"BUILD_PROVENANCE = {provenance!r}\n\n"
     )
     memory_graph = clean_module(MEMORY_GRAPH.read_text())
-    semantic_path = clean_module(SEMANTIC_PATH.read_text())
+    protected_future = clean_module(PROTECTED_FUTURE.read_text())
+    semantic_path = clean_module(
+        SEMANTIC_PATH.read_text(),
+        remove=("from .protected_future import CompiledCapability, UnknownResidual\n",),
+    )
     runtime = clean_module(RUNTIME.read_text())
     memory_controller = clean_module(
         MEMORY_CONTROLLER.read_text(),
@@ -60,7 +65,7 @@ def render() -> str:
         ADAPTER.read_text(),
         remove=("from .memory_controller import MemoryGraphController\n",),
     )
-    return (header + memory_graph + "\n" + semantic_path + "\n" + runtime
+    return (header + memory_graph + "\n" + protected_future + "\n" + semantic_path + "\n" + runtime
             + "\n" + memory_controller + "\n" + adapter)
 
 

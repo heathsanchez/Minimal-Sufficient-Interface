@@ -1,0 +1,513 @@
+{
+  "action_budget_per_replay": 30,
+  "claim_boundary": "exact public tn36 G6; one earned route partition, union/intersection/symmetric-difference, and equality-preserving turn cancellation only",
+  "classification": "WARRANTED NEGATIVE",
+  "hypothesis": "the 12-step visible maze route factors into six consecutive pairs, and each target column is a set-theoretic rowwise composition of the two direction-incidence codes",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "primary": {
+    "action_count": 14,
+    "codes": {
+      "D": [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "L": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "R": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "U": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "columns": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "level": 5,
+    "operator": "rowwise_or",
+    "pairs": [
+      "RR",
+      "RR",
+      "UU",
+      "LL",
+      "UU",
+      "UL"
+    ],
+    "progressed": false,
+    "route": "RRRRUULLUUUL",
+    "state": "GameState.NOT_FINISHED"
+  },
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "variants": [
+    {
+      "action_count": 14,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "R": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "U": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "columns": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "level": 5,
+      "operator": "rowwise_or",
+      "pairs": [
+        "RR",
+        "RR",
+        "UU",
+        "LL",
+        "UU",
+        "UL"
+      ],
+      "progressed": false,
+      "route": "RRRRUULLUUUL",
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 13,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "R": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "U": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "columns": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "level": 5,
+      "operator": "rowwise_and",
+      "pairs": [
+        "RR",
+        "RR",
+        "UU",
+        "LL",
+        "UU",
+        "UL"
+      ],
+      "progressed": false,
+      "route": "RRRRUULLUUUL",
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 6,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "R": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "U": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "columns": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "level": 5,
+      "operator": "rowwise_xor",
+      "pairs": [
+        "RR",
+        "RR",
+        "UU",
+        "LL",
+        "UU",
+        "UL"
+      ],
+      "progressed": false,
+      "route": "RRRRUULLUUUL",
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 13,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "R": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "U": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "columns": [
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "level": 5,
+      "operator": "rowwise_idempotent_xor",
+      "pairs": [
+        "RR",
+        "RR",
+        "UU",
+        "LL",
+        "UU",
+        "UL"
+      ],
+      "progressed": false,
+      "route": "RRRRUULLUUUL",
+      "state": "GameState.NOT_FINISHED"
+    }
+  ],
+  "verification": []
+}

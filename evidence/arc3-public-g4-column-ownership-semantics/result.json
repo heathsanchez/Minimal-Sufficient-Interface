@@ -1,0 +1,26 @@
+{
+  "claim_boundary": "exact public tn36 G4; one visible column-ownership factorization",
+  "classification": "WARRANTED NEGATIVE",
+  "first": {
+    "action_count": 14,
+    "level": 3,
+    "path": "LSDDSL",
+    "progressed": false,
+    "state": "GameState.NOT_FINISHED"
+  },
+  "hypothesis": "scale-normalized docking produces three column-ownership relations in order dock-only, mover-dominant, interlocked, interlocked, mover-dominant, dock-only; map these to the visible small-origin, large, and translated selector poses",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "normalized_mover_counts": [
+    0,
+    4,
+    3,
+    3,
+    4,
+    0
+  ],
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "verification": [],
+  "word": "LSDDSL"
+}

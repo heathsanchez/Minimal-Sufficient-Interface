@@ -22,12 +22,14 @@ class MemoryGraphController(OnlineController):
         *args: Any,
         max_transfer_depth: int = 32,
         preserve_memory: bool = True,
+        semantic_discovery=None,
         **kwargs: Any,
     ) -> None:
         if max_transfer_depth < 1:
             raise ValueError("max_transfer_depth must be positive")
         self.max_transfer_depth = int(max_transfer_depth)
         self.preserve_memory = bool(preserve_memory)
+        self.semantic_discovery = semantic_discovery
         self.memory = ArcMemoryGraph()
         self._episode_context: ContextKey | None = None
         self._episode_program: list[ActionKey] = []
@@ -115,7 +117,10 @@ class MemoryGraphController(OnlineController):
             self._semantic_attempted_levels.add(obs.levels_completed)
             raw_grid = frame.get("frame", []) if isinstance(frame, dict) else getattr(frame, "frame", [])
             try:
-                self._semantic_path = SemanticPathSession.start(raw_grid)
+                self._semantic_path = SemanticPathSession.start(
+                    raw_grid,
+                    discovery=self.semantic_discovery,
+                )
                 self._semantic_residual = None
             except ValueError as error:
                 self._semantic_residual = str(error)

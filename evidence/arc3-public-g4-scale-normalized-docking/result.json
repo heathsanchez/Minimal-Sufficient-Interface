@@ -1,0 +1,546 @@
+{
+  "claim_boundary": "exact public tn36 G4 after qualified G1-G3 entry; three earned path orderings only, derived from visible scale-normalized complement geometry and wall collision; terminal progress is the independent oracle",
+  "classification": "WARRANTED NEGATIVE",
+  "hypothesis": "scale-normalize the 56-pixel glyph to the transported 14-pixel mover, recover its exact 14+16 complement relation, then compile the only collision-free six-step programs consisting of one scale, four down, and one left action",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "paths": [
+    "SDDLDD",
+    "SLDDDD",
+    "SDLDDD"
+  ],
+  "selected": null,
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "variants": [
+    {
+      "action_count": 15,
+      "actions": [
+        {
+          "kind": "probe",
+          "label": "S",
+          "xy": [
+            15,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "D",
+          "xy": [
+            25,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "L",
+          "xy": [
+            35,
+            58
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            39,
+            33
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            44,
+            33
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            49,
+            33
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            54,
+            33
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            59,
+            33
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            39,
+            36
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            44,
+            36
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            54,
+            36
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            59,
+            36
+          ]
+        },
+        {
+          "column": 0,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            34,
+            42
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            49,
+            42
+          ]
+        },
+        {
+          "kind": "submit",
+          "xy": [
+            57,
+            58
+          ]
+        }
+      ],
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SDDLDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "actions": [
+        {
+          "kind": "probe",
+          "label": "S",
+          "xy": [
+            15,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "D",
+          "xy": [
+            25,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "L",
+          "xy": [
+            35,
+            58
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            39,
+            33
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            44,
+            33
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            49,
+            33
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            54,
+            33
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            59,
+            33
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            44,
+            36
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            49,
+            36
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            54,
+            36
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            59,
+            36
+          ]
+        },
+        {
+          "column": 0,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            34,
+            42
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            39,
+            42
+          ]
+        },
+        {
+          "kind": "submit",
+          "xy": [
+            57,
+            58
+          ]
+        }
+      ],
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SLDDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "actions": [
+        {
+          "kind": "probe",
+          "label": "S",
+          "xy": [
+            15,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "D",
+          "xy": [
+            25,
+            58
+          ]
+        },
+        {
+          "kind": "probe",
+          "label": "L",
+          "xy": [
+            35,
+            58
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            39,
+            33
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            44,
+            33
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            49,
+            33
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            54,
+            33
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 0,
+          "value": 1,
+          "xy": [
+            59,
+            33
+          ]
+        },
+        {
+          "column": 1,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            39,
+            36
+          ]
+        },
+        {
+          "column": 3,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            49,
+            36
+          ]
+        },
+        {
+          "column": 4,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            54,
+            36
+          ]
+        },
+        {
+          "column": 5,
+          "kind": "write",
+          "row": 1,
+          "value": 1,
+          "xy": [
+            59,
+            36
+          ]
+        },
+        {
+          "column": 0,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            34,
+            42
+          ]
+        },
+        {
+          "column": 2,
+          "kind": "write",
+          "row": 3,
+          "value": 1,
+          "xy": [
+            44,
+            42
+          ]
+        },
+        {
+          "kind": "submit",
+          "xy": [
+            57,
+            58
+          ]
+        }
+      ],
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "L": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SDLDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    }
+  ],
+  "verification": []
+}

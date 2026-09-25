@@ -1,0 +1,351 @@
+{
+  "claim_boundary": "exact public tn36 G4 after qualified G1-G3 entry; all and only eight collision-free orderings of the earned action multiset, with four visible controls",
+  "classification": "WARRANTED NEGATIVE",
+  "hypothesis": "scale-normalize the large transported mover, then route it through the wall with one scale action, four down actions, and the initially selected vertical left control; the singleton is an identity/anchor control, not left",
+  "independent_replay_count": 0,
+  "model_calls": 0,
+  "paths": [
+    "SLDDDD",
+    "SDLDDD",
+    "SDDLDD",
+    "LSDDDD",
+    "DSLDDD",
+    "DSDLDD",
+    "LDSDDD",
+    "DLSDDD"
+  ],
+  "selected": null,
+  "source_inspection": false,
+  "status": "RESIDUAL",
+  "variants": [
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SLDDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SDLDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "SDDLDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "LSDDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "DSLDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "DSDLDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "LDSDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    },
+    {
+      "action_count": 15,
+      "codes": {
+        "D": [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "I": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "L": [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "S": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "level": 3,
+      "path": "DLSDDD",
+      "progressed": false,
+      "state": "GameState.NOT_FINISHED"
+    }
+  ],
+  "verification": []
+}
