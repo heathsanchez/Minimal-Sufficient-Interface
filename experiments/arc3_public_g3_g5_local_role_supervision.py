@@ -17,9 +17,14 @@ from arc3_public_g6_glyph_role_decoder import _endpoint_family
 from metalogic_arc3.protected_future import UnknownResidual, canonical_digest
 
 
-INTERFACE_ID = "event.history-conditioned-local-relation@1"
-SCHEMA = "arc3.g3-g5-local-role-supervision@1"
-RELATION_LADDER = ("glyph", "glyph_motion", "glyph_motion_components")
+INTERFACE_ID = "event.source-port-mode-relation@1"
+SCHEMA = "arc3.g3-g6-source-port-mode@1"
+RELATION_LADDER = (
+    "glyph",
+    "glyph_motion",
+    "glyph_motion_components",
+    "glyph_motion_components_source_port_mode",
+)
 ACTION_BUDGET = 180
 
 
@@ -42,6 +47,29 @@ def _normalized_trace_cells(cells: Iterable[Sequence[int]]) -> tuple[tuple[int, 
         (row - origin_row, column - origin_column)
         for row, column in cells
     )
+
+
+def _equality_pattern(values) -> tuple[int, ...]:
+    roles = {}
+    return tuple(roles.setdefault(value, len(roles)) for value in values)
+
+
+def _source_port_mode(grid, *, rows=None) -> tuple[tuple[int, ...], ...]:
+    """Palette-invariant source-row port equality modes, with row multiplicity erased."""
+    if rows is None:
+        from metalogic_arc3.semantic_path import _bar_rows, _matrix
+
+        grid = _matrix(grid)
+        rows = _bar_rows(grid, "left")
+    else:
+        grid = tuple(tuple(line) for line in grid)
+    patterns = {
+        _equality_pattern(grid[y][x] for x, y in row)
+        for row in rows
+    }
+    if not patterns:
+        raise ValueError("source_port_mode")
+    return tuple(sorted(patterns))
 
 
 def canonical_local_relation(
@@ -86,7 +114,13 @@ def _endpoint_components(component_relations):
     return tuple(sorted(result, key=canonical_digest))
 
 
-def local_relation_ladder(trace_patches, *, trace_cells, component_relations):
+def local_relation_ladder(
+    trace_patches,
+    *,
+    trace_cells,
+    component_relations,
+    source_port_mode=None,
+):
     patches = tuple(trace_patches)
     if len(patches) < 2:
         raise ValueError("trace_patch_census")
@@ -103,6 +137,14 @@ def local_relation_ladder(trace_patches, *, trace_cells, component_relations):
             components,
         ),
     }
+    if source_port_mode is not None:
+        meanings["glyph_motion_components_source_port_mode"] = (
+            "local-route-glyph-motion-components-source-port-mode@1",
+            families,
+            motion,
+            components,
+            tuple(tuple(row) for row in source_port_mode),
+        )
     return {name: canonical_digest(meanings[name]) for name in RELATION_LADDER}
 
 
@@ -354,6 +396,7 @@ def _observe_level(level, enter_level):
         x, y = controls[control]
         frame = ab.click(env, (y, x))
         after = _matrix(frame)
+        source_port_mode = _source_port_mode(after)
         patches = (
             extract_cell_patch(
                 before,
@@ -389,7 +432,9 @@ def _observe_level(level, enter_level):
                     patches,
                     trace_cells=(current, destination),
                     component_relations=components,
+                    source_port_mode=source_port_mode,
                 ),
+                "source_port_mode": [list(row) for row in source_port_mode],
             }
         )
         current = destination
@@ -419,8 +464,9 @@ def _read_g6_observation():
     from arc3_public_g6_event_cell_relation import run_replay
 
     replay = run_replay()
+    source_modes = _read_g6_source_modes()
     events = []
-    for event in replay["events"]:
+    for event, source_port_mode in zip(replay["events"], source_modes):
         components = event["signature_inputs"]["component_relations"]
         events.append(
             {
@@ -430,11 +476,36 @@ def _read_g6_observation():
                     event["trace_patches"],
                     trace_cells=event["cells"],
                     component_relations=components,
+                    source_port_mode=source_port_mode,
                 ),
+                "source_port_mode": [list(row) for row in source_port_mode],
             }
         )
     events.sort(key=lambda row: row["marker_rank"])
-    return {"events": events, "action_count": int(replay["action_count"])}
+    return {"events": events, "action_count": int(replay["action_count"]) + 12}
+
+
+def _read_g6_source_modes():
+    import arc3_public_all_blue_to_gray_g2 as ab
+    from arc3_public_g6_event_cell_relation import EVENT_STEPS, ROUTE
+    from arc3_public_g6_paired_route import enter_g6
+    from metalogic_arc3.semantic_path import _matrix, _selector_controls
+
+    env, frame = enter_g6()
+    controls = {
+        label: (y, x)
+        for (x, y), label in _selector_controls(_matrix(frame))
+    }
+    if set(controls) != {"U", "D", "L", "R"}:
+        raise ValueError("missing_control")
+    modes = []
+    for step, control in enumerate(ROUTE, start=1):
+        frame = ab.click(env, controls[control])
+        if step in EVENT_STEPS:
+            modes.append(_source_port_mode(_matrix(frame)))
+    if len(modes) != 6:
+        raise ValueError("g6_source_mode_census")
+    return tuple(modes)
 
 
 def _execute_projection(columns):
@@ -507,7 +578,7 @@ def build_result(*, head=None, runner=None):
         "action_budget_per_candidate": ACTION_BUDGET,
         "claim_boundary": (
             "exact public tn36; 18 terminal-warranted G3-G5 slots; sequential visible "
-            "local route relations; ordered structural refinement ladder; one G6 submit "
+            "local route relations plus palette-invariant source-port mode; one G6 submit "
             "only after a total functional join; two exact replays only on progress"
         ),
     }
@@ -642,12 +713,12 @@ def main():
     out = Path(
         os.environ.get(
             "OUTDIR",
-            "evidence/arc3-public-g3-g5-local-role-supervision",
+            "evidence/arc3-public-g3-g6-source-port-mode",
         )
     ).resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
-    print(f"ARC3_PUBLIC_G3_G5_LOCAL_ROLE_SUPERVISION={result['status']}")
+    print(f"ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE={result['status']}")
     print(json.dumps(result, sort_keys=True))
 
 

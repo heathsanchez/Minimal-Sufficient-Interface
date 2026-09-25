@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "kaggle" / "src"))
 
 from arc3_public_g3_g5_local_role_supervision import (
     _enter_visible_frame,
+    _source_port_mode,
     build_result,
     canonical_local_relation,
     compile_supervised_candidate,
@@ -53,6 +54,27 @@ def training_slots(*, conflict: bool = False):
 
 
 class LocalRoleSupervisionTests(unittest.TestCase):
+    def test_source_port_mode_is_palette_invariant_and_separates_selection(self):
+        broadcast = [
+            [0, 0, 0, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1],
+        ]
+        selected = [
+            [0, 0, 0, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1],
+        ]
+        rows = (((0, 0), (1, 0), (2, 0)), ((0, 1), (1, 1), (2, 1)))
+        selected[0][1] = 9
+        selected[1][1] = 9
+        palette = {0: 7, 1: 4, 9: 3}
+        complement = [[palette[value] for value in row] for row in selected]
+        self.assertEqual(_source_port_mode(broadcast, rows=rows), ((0, 0, 0),))
+        self.assertEqual(_source_port_mode(selected, rows=rows), ((0, 1, 0),))
+        self.assertEqual(
+            _source_port_mode(selected, rows=rows),
+            _source_port_mode(complement, rows=rows),
+        )
+
     def test_entry_uses_public_observation_not_helper_trace_payload(self):
         visible = [[1, 2], [3, 4]]
 
@@ -228,7 +250,7 @@ class LocalRoleSupervisionTests(unittest.TestCase):
 
     def test_validate_result_rejects_stale_head_and_action_budget_drift(self):
         residual = {
-            "schema": "arc3.g3-g5-local-role-supervision@1",
+            "schema": "arc3.g3-g6-source-port-mode@1",
             "head": "abc",
             "status": "RESIDUAL",
             "classification": "EXACT_RESIDUAL",
@@ -242,13 +264,13 @@ class LocalRoleSupervisionTests(unittest.TestCase):
             "target_writes": 0,
             "model_calls": 0,
             "source_inspection": False,
-            "action_budget_per_candidate": 110,
+            "action_budget_per_candidate": 180,
             "residual": {"reason": "collision"},
         }
         with self.assertRaisesRegex(ValueError, "stale_evidence_head"):
             validate_result(residual, executing_head="different")
         residual["head"] = "different"
-        residual["action_budget_per_candidate"] = 111
+        residual["action_budget_per_candidate"] = 181
         with self.assertRaisesRegex(ValueError, "scientific_boundary"):
             validate_result(residual, executing_head="different")
 
@@ -271,10 +293,10 @@ class LocalRoleSupervisionTests(unittest.TestCase):
     def test_hosted_workflow_seals_exact_public_gate(self):
         workflow = ROOT / ".github" / "workflows" / "arc3-public-g3-g5-local-role-supervision.yml"
         text = workflow.read_text()
-        self.assertIn("branches: [arc3-public-g3-g5-local-role-supervision-v1]", text)
+        self.assertIn("branches: [arc3-public-g3-g6-source-port-mode-v1]", text)
         self.assertIn("GAME_ID: tn36-ef4dde99", text)
         self.assertIn("python -m unittest discover -s kaggle/tests -v", text)
-        self.assertIn("ARC3_PUBLIC_G3_G5_LOCAL_ROLE_SUPERVISION_SEAL=PASS", text)
+        self.assertIn("ARC3_PUBLIC_G3_G6_SOURCE_PORT_MODE_SEAL=PASS", text)
         self.assertIn("assert result[\"classification\"] != \"NON_EVIDENCE\"", text)
 
 
