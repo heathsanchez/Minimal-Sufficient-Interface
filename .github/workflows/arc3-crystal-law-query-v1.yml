@@ -416,3 +416,21 @@ jobs:
           name: arc3-crystal-stateful-growth-v1
           path: evidence/arc3-crystal-stateful-growth-v1/result.json
           if-no-files-found: error
+
+
+  crystal_lawful_future_compile:
+    needs: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "datasets>=3,<5"
+      - name: Compile lawful future
+        run: PYTHONPATH=experiments python experiments/arc3_crystal_lawful_future_v1.py --limit 1600000 --out evidence/lawful-future/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-crystal-lawful-future-v1
+          path: evidence/lawful-future/result.json
