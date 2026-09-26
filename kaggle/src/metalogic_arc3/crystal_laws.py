@@ -45,6 +45,17 @@ class VerifiedLaw:
         object.__setattr__(self, "evidence_refs", tuple(sorted(set(self.evidence_refs))))
 
 
+FINITE_SEPARATOR_SELECTION = VerifiedLaw(
+    law_id="law:finite-separator-selection@1",
+    kind="finite-separator-selection",
+    statement=(
+        "Given a complete finite hypothesis/action prediction table, choose an action "
+        "minimizing the maximum number of hypotheses compatible with any one outcome."
+    ),
+    evidence_refs=("builtin:finite-partition-minimax@1",),
+)
+
+
 FINITE_CYCLE_NORMALIZATION = VerifiedLaw(
     law_id="law:finite-cycle-normalization@1",
     kind="finite-cycle-normalization",
@@ -65,7 +76,7 @@ class VerifiedLawStore:
 
     @classmethod
     def default(cls) -> "VerifiedLawStore":
-        return cls((FINITE_CYCLE_NORMALIZATION,))
+        return cls((FINITE_CYCLE_NORMALIZATION, FINITE_SEPARATOR_SELECTION))
 
     def get(self, law_id: str) -> VerifiedLaw | None:
         return self._laws.get(law_id)
@@ -124,6 +135,37 @@ class ArcLawBinding:
 
 
 @dataclass(frozen=True)
+class Prediction:
+    hypothesis: str
+    action: ActionKey
+    outcome: str
+
+    def __post_init__(self) -> None:
+        if not self.hypothesis or not self.outcome:
+            raise ValueError("prediction hypothesis and outcome are required")
+        raw = tuple(self.action)
+        if len(raw) != 3:
+            raise ValueError("prediction action must have three fields")
+        object.__setattr__(
+            self, "action",
+            (int(raw[0]), None if raw[1] is None else int(raw[1]),
+             None if raw[2] is None else int(raw[2])),
+        )
+
+
+@dataclass(frozen=True)
+class SeparatorAnswer:
+    status: LawStatus
+    law_id: str
+    chosen_action: ActionKey | None
+    worst_case_survivors: int | None
+    reason: str
+    provenance: tuple[str, ...] = ()
+    partitions: tuple[tuple[ActionKey, tuple[tuple[str, tuple[str, ...]], ...]], ...] = ()
+    residual: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
 class LawAnswer:
     status: LawStatus
     law_id: str
@@ -139,6 +181,7 @@ class ArcCrystalLawBridge:
     """Query verified generic laws under separately earned ARC applicability bindings."""
 
     CYCLE_LAW_ID = FINITE_CYCLE_NORMALIZATION.law_id
+    SEPARATOR_LAW_ID = FINITE_SEPARATOR_SELECTION.law_id
 
     def __init__(self, laws: VerifiedLawStore) -> None:
         self.laws = laws
@@ -161,6 +204,108 @@ class ArcCrystalLawBridge:
 
     def admit_binding(self, binding: ArcLawBinding) -> None:
         self._bindings[self._key(binding.context, binding.action)] = binding
+
+    def choose_separator(
+        self,
+        *,
+        hypotheses: Iterable[str],
+        actions: Iterable[ActionKey],
+        predictions: Iterable[Prediction],
+        support_refs: Iterable[str],
+        live_supports: Iterable[str] = (),
+    ) -> SeparatorAnswer:
+        law = self.laws.get(self.SEPARATOR_LAW_ID)
+        if law is None:
+            return SeparatorAnswer(
+                LawStatus.UNKNOWN, self.SEPARATOR_LAW_ID, None, None,
+                "missing_verified_law",
+                residual={"needed": "verified-law", "law_id": self.SEPARATOR_LAW_ID},
+            )
+
+        hs = tuple(dict.fromkeys(str(h) for h in hypotheses))
+        acts = tuple(dict.fromkeys(self._key(("separator",), a)[1] for a in actions))
+        if len(hs) < 2 or not acts:
+            return SeparatorAnswer(
+                LawStatus.UNKNOWN, law.law_id, None, None,
+                "insufficient_query",
+                provenance=law.evidence_refs,
+                residual={"needed": "at-least-two-hypotheses-and-one-action"},
+            )
+
+        supports = tuple(sorted(set(str(x) for x in support_refs)))
+        live = set(str(x) for x in live_supports)
+        missing_support = tuple(sorted(set(supports) - live))
+        provenance = tuple(sorted(set(law.evidence_refs + supports)))
+        if missing_support:
+            return SeparatorAnswer(
+                LawStatus.UNKNOWN, law.law_id, None, None,
+                "missing_live_support",
+                provenance=provenance,
+                residual={"needed": "live-prediction-support", "missing_supports": list(missing_support)},
+            )
+
+        table: dict[tuple[str, ActionKey], str] = {}
+        conflicts: list[tuple[str, ActionKey]] = []
+        for row in predictions:
+            key = (row.hypothesis, row.action)
+            if key in table and table[key] != row.outcome:
+                conflicts.append(key)
+            table[key] = row.outcome
+        if conflicts:
+            return SeparatorAnswer(
+                LawStatus.UNKNOWN, law.law_id, None, None,
+                "conflicting_prediction_table",
+                provenance=provenance,
+                residual={"needed": "consistent-prediction", "conflicts": [repr(x) for x in conflicts]},
+            )
+
+        missing = [
+            (h, a) for h in hs for a in acts
+            if (h, a) not in table
+        ]
+        if missing:
+            h, a = missing[0]
+            return SeparatorAnswer(
+                LawStatus.UNKNOWN, law.law_id, None, None,
+                "incomplete_prediction_table",
+                provenance=provenance,
+                residual={
+                    "needed": "prediction",
+                    "hypothesis": h,
+                    "action": list(a),
+                    "missing_count": len(missing),
+                },
+            )
+
+        scored = []
+        partition_rows = []
+        for action in acts:
+            groups: dict[str, list[str]] = {}
+            for h in hs:
+                groups.setdefault(table[(h, action)], []).append(h)
+            canonical = tuple(
+                (outcome, tuple(sorted(group)))
+                for outcome, group in sorted(groups.items())
+            )
+            worst = max(len(group) for _outcome, group in canonical)
+            scored.append((worst, repr(action), action))
+            partition_rows.append((action, canonical))
+
+        best_worst, _repr, best = min(scored)
+        partitions = tuple(sorted(partition_rows, key=lambda row: repr(row[0])))
+        if best_worst >= len(hs):
+            return SeparatorAnswer(
+                LawStatus.EXCLUDED, law.law_id, None, best_worst,
+                "no_separator_in_supplied_action_set",
+                provenance=provenance,
+                partitions=partitions,
+            )
+        return SeparatorAnswer(
+            LawStatus.WARRANTED, law.law_id, best, best_worst,
+            "minimax_separator",
+            provenance=provenance,
+            partitions=partitions,
+        )
 
     def normalize_repetition(
         self,
