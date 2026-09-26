@@ -66,7 +66,7 @@ def synthetic(module):
                         available_actions=[1,2,3,4,5])
         row = dict(seed=seed, path_length=length, arms={})
         for name, cls in [('baseline', module.MemoryGraphController),
-                          ('candidate', module.DevelopmentalController)]:
+                          ('candidate', module.ResidualController)]:
             ctl = cls((1,2,3,4,5), archived_capabilities=(), trace_capabilities=())
             lives = []
             for life in range(3):
@@ -96,20 +96,20 @@ def synthetic(module):
                         totals['candidate']<totals['baseline'] and usages>0))
 
 
-def real_public(module, environments: Path, output: Path):
+def real_public(module, environments: Path, output: Path, games=None, lives_count=3):
     from arc_agi import Arcade, OperationMode
     from arcengine import GameAction
     rows = []
     # The same immutable priors and budget are provided to both arms.
-    games = [('bt33-a7c3f9d18b4e',3), ('bt11-fd9df0622a1a',1)]
+    games = games if games is not None else [('bt33-a7c3f9d18b4e',3), ('bt11-fd9df0622a1a',1)]
     for game_id, goal in games:
         row = dict(game_id=game_id, target_levels=goal, arms={})
         for name, cls in [('baseline', module.MemoryGraphController),
-                          ('candidate', module.DevelopmentalController)]:
+                          ('candidate', module.ResidualController)]:
             ids = tuple(int(a.value) for a in GameAction if a is not GameAction.RESET)
             ctl = cls(ids)
             lives = []
-            for life in range(3):
+            for life in range(lives_count):
                 ctl.reset_episode()
                 arc = Arcade(operation_mode=OperationMode.OFFLINE,
                              environments_dir=str(environments.resolve()))
@@ -165,6 +165,7 @@ def real_public(module, environments: Path, output: Path):
                 (output.parent/(game_id+'.future.bin')).write_bytes(envelope.to_bytes())
                 row['memory_sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
         rows.append(row)
+        output.with_suffix('.partial.json').write_text(json.dumps(rows,indent=2)+'\n')
     improvement = any(
         c['levels'] > b['levels'] or (c['levels'] == b['levels'] and
         c['levels'] >= row['target_levels'] and c['charged'] < b['charged'])
@@ -172,8 +173,9 @@ def real_public(module, environments: Path, output: Path):
     regression = any(c['levels'] < b['levels'] for row in rows
                      for b,c in zip(row['arms']['baseline'],row['arms']['candidate']))
     use = sum(row['candidate_stats']['decisions'] for row in rows)
-    return dict(scope='two pinned public development/regression games; no Kaggle score',
-                results=rows,candidate_uses=use,observed_improvement=improvement,
+    probe_use = sum(row['candidate_stats'].get('residual_decisions',0) for row in rows)
+    return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
+                results=rows,candidate_uses=use,probe_uses=probe_use,observed_improvement=improvement,
                 observed_regression=regression,
                 release_qualified=bool(improvement and not regression and use))
 
@@ -182,12 +184,40 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--environments',type=Path)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--public-catalog',action='store_true')
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True,exist_ok=True)
     module, digest = load_bundle(bool(args.environments))
     global normalize
     normalize = module.normalize_frame
-    result = real_public(module,args.environments,args.output) if args.environments else synthetic(module)
+    games = None
+    if args.public_catalog:
+        if args.environments is None:
+            raise ValueError('--public-catalog requires --environments')
+        from arc_agi import Arcade, OperationMode
+        from importlib.metadata import version
+        args.environments.mkdir(parents=True,exist_ok=True)
+        download = Arcade(operation_mode=OperationMode.NORMAL,
+                          environments_dir=str(args.environments.resolve()))
+        catalog = sorted(download.get_environments(),key=lambda item:item.game_id)
+        manifest = dict(schema='arc.public-catalog-before-play@1',
+                        arc_agi=version('arc-agi'),arcengine=version('arcengine'),
+                        games=[item.game_id for item in catalog],
+                        protocol='one independent 400-call episode per arm/game; all reported')
+        args.output.with_suffix('.manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+        for item in catalog:
+            env = download.make(item.game_id)
+            if env is None:
+                raise RuntimeError(f'Public environment download failed: {item.game_id}')
+            print('PUBLIC_GAME_READY',item.game_id,flush=True)
+        download.close_scorecard()
+        games = [(item.game_id,1000000) for item in catalog]
+    result = real_public(module,args.environments,args.output,games,
+                         1 if args.public_catalog else 3) if args.environments else synthetic(module)
+    if args.public_catalog:
+        result['scope']='all accessible public catalogue games frozen before play; first-episode 400-call A/B; public development only'
+        result['catalogue'] = manifest
+
     result.update(schema='arc3.live-continuation-qualification@1',agent_sha256=digest)
     args.output.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k not in ('cases','results')},sort_keys=True))

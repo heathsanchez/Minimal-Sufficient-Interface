@@ -5,8 +5,8 @@ from typing import Any
 from arcengine import FrameData, GameAction, GameState
 from agents.agent import Agent
 
-from .developmental_controller import DevelopmentalController
-# DevelopmentalController preserves the existing MemoryGraphController fallback.
+from .residual_exploration import ResidualController
+# ResidualController / DevelopmentalController preserve the existing MemoryGraphController fallback.
 
 
 class MyAgent(Agent):
@@ -21,7 +21,7 @@ class MyAgent(Agent):
             for action in GameAction
             if action is not GameAction.RESET
         )
-        self.controller = DevelopmentalController(action_ids)
+        self.controller = ResidualController(action_ids)
 
     @property
     def name(self) -> str:

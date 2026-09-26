@@ -8,7 +8,7 @@ permissions:
 jobs:
   qualification:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,8 +36,7 @@ jobs:
       - name: Run all ARC integration contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
       - name: Reproduce pinned global semantic waist
-        run: |
-          python kaggle/scripts/vendor_continuation_core.py --source global-source --check
+        run: python kaggle/scripts/vendor_continuation_core.py --source global-source --check
       - name: Build actual offline agent and notebook
         run: |
           python kaggle/scripts/build_agent.py
@@ -58,13 +57,16 @@ jobs:
           repository: arcprize/ARC-AGI
           ref: f12822c4d550121c35a275008d964afbbed47d2f
           path: upstream-arc-agi
-      - name: Matched real-environment acquisition and replay; every call charged
+      - name: Matched official test-environment acquisition and replay
         run: |
           python kaggle/scripts/qualify_developmental_controller.py --environments upstream-arc-agi/test_environment_files --output out/public-environments.json
       - name: Actual framework adapter regression
         run: |
           python kaggle/scripts/play_local.py --offline-environments-dir upstream-arc-agi/test_environment_files --game bt33-a7c3f9d18b4e --max-steps 32 | tee out/framework-bt33.log
           grep -q 'MAX_LEVELS_REACHED=3' out/framework-bt33.log
+      - name: Freeze accessible public catalogue then compare whole agents on every game
+        run: |
+          python kaggle/scripts/qualify_developmental_controller.py --public-catalog --environments public-environments --output out/public-catalog.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

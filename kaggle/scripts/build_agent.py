@@ -13,6 +13,7 @@ RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
 CONTINUATION_CORE = ROOT / "kaggle/src/metalogic_arc3/continuation_core.py"
 DEVELOPMENTAL_CONTROLLER = ROOT / "kaggle/src/metalogic_arc3/developmental_controller.py"
+RESIDUAL_EXPLORATION = ROOT / "kaggle/src/metalogic_arc3/residual_exploration.py"
 ADAPTER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "agent_template.py"
 PROVENANCE = ROOT / "kaggle" / "provenance" / "sources.json"
 DEFAULT_OUTPUT = ROOT / "kaggle" / "agent" / "my_agent.py"
@@ -72,14 +73,19 @@ def render() -> str:
             "from .runtime import ActionToken",
         ),
     )
+    residual_exploration = clean_module(
+        RESIDUAL_EXPLORATION.read_text(),
+        remove=("from .developmental_controller import ProgressMemory",
+                "from .runtime import ActionToken"),
+    )
     adapter = clean_module(
         ADAPTER.read_text(),
-        remove=("from .developmental_controller import DevelopmentalController\n",),
+        remove=("from .residual_exploration import ResidualController\n",),
     )
     return (
         header + memory_graph + "\n" + crystal_laws + "\n" + trace_capabilities + "\n" + runtime
         + "\n" + memory_controller + "\n" + continuation_core
-        + "\n" + developmental_controller + "\n" + adapter
+        + "\n" + developmental_controller + "\n" + residual_exploration + "\n" + adapter
     )
 
 
