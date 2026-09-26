@@ -218,6 +218,7 @@ class DevelopmentalContracts(unittest.TestCase):
         # Seed a competing relative candidate. The qualified archive must retain
         # authority while its own guards continue to match.
         self.feed(ctl.crystal, [frame(7), frame(8), frame(9,1)], [1,1])
+        ctl.reset_episode()
         first = ctl.observe_and_choose(a)
         self.assertEqual(first.source, 'archive')
         self.assertEqual(first.action_id, 2)
