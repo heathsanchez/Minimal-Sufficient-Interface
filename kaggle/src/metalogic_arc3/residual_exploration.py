@@ -116,7 +116,14 @@ class ResidualController(DevelopmentalController):
     """Progress reuse plus first-goal experiments; old controllers are ablations."""
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
+        # CLOSE before INTERACT: after a candidate continuation is revoked,
+        # reclose over every still-live inherited/retained capability before
+        # purchasing another experiment. This preserves the baseline's
+        # qualified continuation routes instead of probing through them.
+        reused = super()._next_retained(obs)
+        if reused is not None:
+            return reused
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             return decision.action
-        return super()._next_retained(obs)
+        return None
