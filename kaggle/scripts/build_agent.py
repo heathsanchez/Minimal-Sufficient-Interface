@@ -11,6 +11,8 @@ CRYSTAL_LAWS = ROOT / "kaggle" / "src" / "metalogic_arc3" / "crystal_laws.py"
 TRACE_CAPABILITIES = ROOT / "kaggle" / "src" / "metalogic_arc3" / "trace_capabilities.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
+CONTINUATION_CORE = ROOT / "kaggle/src/metalogic_arc3/continuation_core.py"
+DEVELOPMENTAL_CONTROLLER = ROOT / "kaggle/src/metalogic_arc3/developmental_controller.py"
 ADAPTER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "agent_template.py"
 PROVENANCE = ROOT / "kaggle" / "provenance" / "sources.json"
 DEFAULT_OUTPUT = ROOT / "kaggle" / "agent" / "my_agent.py"
@@ -61,13 +63,23 @@ def render() -> str:
             "from .runtime import ActionToken, Observation, OnlineController, normalize_frame\n",
         ),
     )
+    continuation_core = clean_module(CONTINUATION_CORE.read_text())
+    developmental_controller = clean_module(
+        DEVELOPMENTAL_CONTROLLER.read_text(),
+        remove=(
+            "from .continuation_core import ProtectedContinuationMachine",
+            "from .memory_controller import MemoryGraphController",
+            "from .runtime import ActionToken",
+        ),
+    )
     adapter = clean_module(
         ADAPTER.read_text(),
-        remove=("from .memory_controller import MemoryGraphController\n",),
+        remove=("from .developmental_controller import DevelopmentalController\n",),
     )
     return (
         header + memory_graph + "\n" + crystal_laws + "\n" + trace_capabilities + "\n" + runtime
-        + "\n" + memory_controller + "\n" + adapter
+        + "\n" + memory_controller + "\n" + continuation_core
+        + "\n" + developmental_controller + "\n" + adapter
     )
 
 

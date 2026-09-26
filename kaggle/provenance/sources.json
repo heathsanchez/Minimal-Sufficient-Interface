@@ -6,6 +6,9 @@
   "agents_framework": "4743e7d0aaae0ded0d98a89a7e282e63564cd58b",
   "public_trace_source": "Tufalabs/duck-harness@7652836056c59e044f093e3c13ed7438c814169e",
   "arc_agi_python": "0.9.9",
-  "runtime": "metalogic-online-v2",
-  "hot_path": "exact-observation-capability-then-online-controller"
+  "runtime": "metalogic-live-continuation-v1",
+  "hot_path": "candidate-goal-regression-with-live-observation-checks-then-inherited-discovery",
+  "live_integration_base": "abb56b8532b1338d4ef76f4d60664045df75da8e",
+  "protected_core": "metalogiclabs/mathgraph@2efa47b2efc27434ed24dbf6ad6e1f50e463f947",
+  "verification_boundary": "historical-observations-warranted; unobserved-dynamics-and-compositions-candidate"
 }
