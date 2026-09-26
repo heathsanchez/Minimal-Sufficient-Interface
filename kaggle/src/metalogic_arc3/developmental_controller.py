@@ -435,9 +435,10 @@ class DevelopmentalController(MemoryGraphController):
         return None
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
-        # New online memory never falls back to the old start-only replay.
-        # Existing cross-level constructor proposals retain their candidate role.
-        return self._next_transfer(obs)
+        # Raw cross-level repetition is superseded for the developmental arm:
+        # it transports syntax rather than a qualified consequential role.
+        # Exact retained replay is allowed; speculative transfer is not.
+        return super(MemoryGraphController, self)._next_retained(obs)
 
     def observe_terminal(self, frame: Any) -> None:
         obs = normalize_frame(frame)
