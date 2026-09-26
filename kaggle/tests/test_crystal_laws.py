@@ -12,6 +12,7 @@ from metalogic_arc3.crystal_laws import (
     ArcLawBinding,
     LawStatus,
     VerifiedLawStore,
+    Prediction,
 )
 
 
@@ -136,6 +137,116 @@ class ArcCrystalLawContracts(unittest.TestCase):
             )
             self.assertEqual(answer.status, LawStatus.UNKNOWN)
             self.assertEqual(answer.reduced_count, 8)
+
+    def test_separator_law_reuses_across_distinct_hypothesis_spaces(self):
+        bridge = ArcCrystalLawBridge(VerifiedLawStore.default())
+        a = (1, None, None)
+        b = (2, None, None)
+
+        first = bridge.choose_separator(
+            hypotheses=("h1", "h2", "h3"),
+            actions=(a, b),
+            predictions=(
+                Prediction("h1", a, "red"), Prediction("h2", a, "green"), Prediction("h3", a, "blue"),
+                Prediction("h1", b, "same"), Prediction("h2", b, "same"), Prediction("h3", b, "same"),
+            ),
+            support_refs=("model:first",),
+            live_supports=("model:first",),
+        )
+        second = bridge.choose_separator(
+            hypotheses=("k1", "k2", "k3", "k4"),
+            actions=(a, b),
+            predictions=(
+                Prediction("k1", a, "same"), Prediction("k2", a, "same"),
+                Prediction("k3", a, "same"), Prediction("k4", a, "same"),
+                Prediction("k1", b, "left"), Prediction("k2", b, "left"),
+                Prediction("k3", b, "right"), Prediction("k4", b, "right"),
+            ),
+            support_refs=("model:second",),
+            live_supports=("model:second",),
+        )
+        self.assertEqual(first.status, LawStatus.WARRANTED)
+        self.assertEqual(first.chosen_action, a)
+        self.assertEqual(first.worst_case_survivors, 1)
+        self.assertEqual(second.status, LawStatus.WARRANTED)
+        self.assertEqual(second.chosen_action, b)
+        self.assertEqual(second.worst_case_survivors, 2)
+        self.assertEqual(first.law_id, second.law_id)
+
+    def test_separator_missing_prediction_or_support_fails_closed(self):
+        bridge = ArcCrystalLawBridge(VerifiedLawStore.default())
+        a = (1, None, None)
+        incomplete = bridge.choose_separator(
+            hypotheses=("h1", "h2"),
+            actions=(a,),
+            predictions=(Prediction("h1", a, "x"),),
+            support_refs=("model:x",),
+            live_supports=("model:x",),
+        )
+        self.assertEqual(incomplete.status, LawStatus.UNKNOWN)
+        self.assertEqual(incomplete.reason, "incomplete_prediction_table")
+        self.assertEqual(incomplete.residual["needed"], "prediction")
+
+        revoked = bridge.choose_separator(
+            hypotheses=("h1", "h2"),
+            actions=(a,),
+            predictions=(Prediction("h1", a, "x"), Prediction("h2", a, "y")),
+            support_refs=("model:x",),
+            live_supports=(),
+        )
+        self.assertEqual(revoked.status, LawStatus.UNKNOWN)
+        self.assertEqual(revoked.reason, "missing_live_support")
+
+    def test_separator_law_reduces_probe_count_under_frozen_predictions(self):
+        bridge = ArcCrystalLawBridge(VerifiedLawStore.default())
+        a = (1, None, None)
+        b = (2, None, None)
+        hypotheses = ("h1", "h2", "h3")
+        table = {
+            (h, a): "same" for h in hypotheses
+        }
+        table.update({("h1", b): "x", ("h2", b): "y", ("h3", b): "z"})
+        predictions = tuple(
+            Prediction(h, action, table[(h, action)])
+            for h in hypotheses for action in (a, b)
+        )
+        answer = bridge.choose_separator(
+            hypotheses=hypotheses,
+            actions=(a, b),
+            predictions=predictions,
+            support_refs=("model:frozen",),
+            live_supports=("model:frozen",),
+        )
+        self.assertEqual(answer.chosen_action, b)
+
+        # True world h2: alphabetical baseline spends a useless probe on a,
+        # then b identifies h2. Crystal chooses b first.
+        true_h = "h2"
+        baseline = [a, b]
+        survivors = set(hypotheses)
+        baseline_probes = 0
+        for action in baseline:
+            baseline_probes += 1
+            observed = table[(true_h, action)]
+            survivors = {h for h in survivors if table[(h, action)] == observed}
+            if len(survivors) == 1:
+                break
+        observed = table[(true_h, answer.chosen_action)]
+        crystal_survivors = {
+            h for h in hypotheses if table[(h, answer.chosen_action)] == observed
+        }
+        self.assertEqual(baseline_probes, 2)
+        self.assertEqual(crystal_survivors, {"h2"})
+
+        empty = ArcCrystalLawBridge(VerifiedLawStore(()))
+        ablated = empty.choose_separator(
+            hypotheses=hypotheses,
+            actions=(a, b),
+            predictions=predictions,
+            support_refs=("model:frozen",),
+            live_supports=("model:frozen",),
+        )
+        self.assertEqual(ablated.status, LawStatus.UNKNOWN)
 
 
 if __name__ == "__main__":
