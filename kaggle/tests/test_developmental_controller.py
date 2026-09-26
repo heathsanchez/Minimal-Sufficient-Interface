@@ -204,5 +204,24 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertEqual(m.last_residual['reason'], 'no_supported_progress_continuation')
 
 
+
+    def test_reclosure_precedes_new_probe_after_failed_transport(self):
+        api = self.api()
+        from metalogic_arc3.residual_exploration import ResidualController
+        # A qualified retained constructor is the only remaining live route.
+        ctl = ResidualController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        a, b, goal = frame(1), frame(2), frame(3, 1)
+        self.feed(ctl.crystal, [a,b,goal], [2,3])
+        # Force the relative candidate to be known-inapplicable in this epoch.
+        p = ctl.crystal.relative_programs[0]
+        ctl.crystal._relative_blocked.add((ctl.crystal._program_id(p),0))
+        ctl.crystal.begin(normalize_frame(frame(7)))
+        # Existing transfer/reuse hooks are consulted before frontier purchase.
+        ctl._retained[ctl._retention_guard(normalize_frame(frame(7)))] = [(ActionToken(3),)]
+        token = ctl._next_retained(normalize_frame(frame(7)))
+        self.assertNotEqual(token.source, 'crystal_probe')
+        self.assertNotEqual(token.source, 'crystal_probe_route')
+
+
 if __name__ == '__main__':
     unittest.main()
