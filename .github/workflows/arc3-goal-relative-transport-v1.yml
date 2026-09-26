@@ -39,6 +39,8 @@ jobs:
         run: python kaggle/scripts/vendor_continuation_core.py --source global-source --check
       - name: Independent exhaustive-policy rank and action audit
         run: python kaggle/scripts/audit_continuation_ranks.py --output out/independent-policy-audit.json
+      - name: Independent prospective goal-relative transport audit
+        run: python kaggle/scripts/audit_goal_relative_transport.py --output out/independent-goal-relative-transport-audit.json
       - name: Build actual offline agent and notebook
         run: |
           python kaggle/scripts/build_agent.py
