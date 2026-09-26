@@ -1,0 +1,18 @@
+name: ARC3 Crystal law query V1
+on:
+  push:
+    branches: [arc3-crystal-law-query-v1]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Recheck inherited ARC memory contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Run reusable-law transfer gate
+        run: python -m unittest kaggle.tests.test_crystal_laws -v
