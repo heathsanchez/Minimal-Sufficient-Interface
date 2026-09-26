@@ -60,6 +60,7 @@ class ProgressMemory:
         # transported to a new observation and are checked by actual progress.
         self.relative_programs: list[dict[str, Any]] = []
         self._relative_active: dict[str, Any] | None = None
+        self._relative_blocked: set[tuple[str, int]] = set()
 
     @staticmethod
     def _obs_data(obs: Observation) -> dict[str, Any]:
@@ -80,6 +81,10 @@ class ProgressMemory:
 
     def _binding(self, obs: Observation) -> tuple:
         return (obs.width, obs.height, tuple(obs.available_actions))
+
+    @staticmethod
+    def _program_id(program: dict[str, Any]) -> str:
+        return content_id((program['binding'], program['actions'], program['support']), prefix='arc-relative-program')
 
     def _learn_relative_program(self, before: Observation, after: Observation) -> None:
         level = before.levels_completed
@@ -105,10 +110,17 @@ class ProgressMemory:
     def _relative_plan(self, obs: Observation, remaining_actions: int | None = None) -> ProgressDecision | None:
         if self._relative_active is not None:
             active = self._relative_active
-            if tuple(active['binding']) != self._binding(obs):
+            if active['index'] >= len(active['actions']):
+                key = (active['program_id'], active['start_level'])
+                self._relative_blocked.add(key)
+                self.stats['relative_counterexamples'] = self.stats.get('relative_counterexamples', 0) + 1
+                self._residual('relative_applicability_counterexample', program=active['program_id'], level_epoch=active['start_level'])
+                self._relative_active = None
+                active = None
+            if active is not None and tuple(active['binding']) != self._binding(obs):
                 self._residual('relative_binding_changed')
                 self._relative_active = None
-            elif active['index'] < len(active['actions']):
+            elif active is not None and active['index'] < len(active['actions']):
                 action = tuple(active['actions'][active['index']])
                 if action[0] in obs.available_actions and (remaining_actions is None or
                         len(active['actions'])-active['index'] <= remaining_actions):
@@ -121,6 +133,7 @@ class ProgressMemory:
         binding = self._binding(obs)
         candidates = [p for p in self.relative_programs
                       if tuple(p['binding']) == binding and
+                      (self._program_id(p), obs.levels_completed) not in self._relative_blocked and
                       not any(ref in self.revoked for ref in p['support'])]
         if not candidates:
             return None
@@ -131,7 +144,7 @@ class ProgressMemory:
         if action[0] not in obs.available_actions:
             return None
         self._relative_active = dict(program, index=1, start_level=obs.levels_completed,
-                                     start_state=obs.state)
+                                     start_state=obs.state, program_id=self._program_id(program))
         self.stats['relative_starts'] = self.stats.get('relative_starts', 0) + 1
         self.stats['relative_uses'] = self.stats.get('relative_uses', 0) + 1
         return ProgressDecision(ActionToken(*action, source='crystal_relative'),
@@ -196,6 +209,7 @@ class ProgressMemory:
             self._learn_relative_program(before, after)
             if self._relative_active is not None:
                 self.stats['relative_successes'] = self.stats.get('relative_successes', 0) + 1
+                self._relative_blocked.discard((self._relative_active['program_id'], self._relative_active['start_level']))
                 self._relative_active = None
         elif self._relative_active is not None and after.state == 'GAME_OVER':
             self.stats['relative_failures'] = self.stats.get('relative_failures', 0) + 1
