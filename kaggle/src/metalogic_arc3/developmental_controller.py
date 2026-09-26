@@ -441,8 +441,6 @@ class DevelopmentalController(MemoryGraphController):
         return None
 
     def _next_requalified(self, obs: Observation) -> ActionToken | None:
-        if obs.levels_completed in self._requal_blocked_levels or obs.levels_completed in self._requal_attempted_levels:
-            return None
         if self._requal_active and self._requal_index < len(self._requal_active):
             action = self._requal_active[self._requal_index]
             if action[0] not in self._legal_ids(obs):
@@ -451,6 +449,8 @@ class DevelopmentalController(MemoryGraphController):
                 return None
             self._requal_index += 1
             return ActionToken(*action, source='crystal_requalified')
+        if obs.levels_completed in self._requal_blocked_levels or obs.levels_completed in self._requal_attempted_levels:
+            return None
         programs = self.memory.capability_programs(for_level=obs.levels_completed)
         if not programs:
             return None
