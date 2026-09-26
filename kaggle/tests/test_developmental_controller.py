@@ -227,5 +227,17 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertEqual(second.action_id, 3)
 
 
+
+    def test_developmental_arm_does_not_emit_raw_cross_level_transfer(self):
+        api = self.api()
+        ctl = api.DevelopmentalController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        # Seed the old MemoryGraph constructor directly; developmental control
+        # must not replay its syntax merely because it previously made progress.
+        ctx = (0,'NOT_FINISHED',(1,2,3),2,2,'old')
+        ctl.memory.add_capability(ctx, ((2,None,None),(3,None,None)), source_level=0, target_level=1)
+        token = ctl._next_retained(normalize_frame(frame(7, level=1)))
+        self.assertTrue(token is None or token.source != 'transfer')
+
+
 if __name__ == '__main__':
     unittest.main()
