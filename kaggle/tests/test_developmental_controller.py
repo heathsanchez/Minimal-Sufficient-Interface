@@ -205,22 +205,25 @@ class DevelopmentalContracts(unittest.TestCase):
 
 
 
-    def test_reclosure_precedes_new_probe_after_failed_transport(self):
+    def test_live_qualified_archive_precedes_candidate_transport(self):
         api = self.api()
-        from metalogic_arc3.residual_exploration import ResidualController
-        # A qualified retained constructor is the only remaining live route.
-        ctl = ResidualController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        from metalogic_arc3.runtime import ArchivedCapability
         a, b, goal = frame(1), frame(2), frame(3, 1)
-        self.feed(ctl.crystal, [a,b,goal], [2,3])
-        # Force the relative candidate to be known-inapplicable in this epoch.
-        p = ctl.crystal.relative_programs[0]
-        ctl.crystal._relative_blocked.add((ctl.crystal._program_id(p),0))
-        ctl.crystal.begin(normalize_frame(frame(7)))
-        # Existing transfer/reuse hooks are consulted before frontier purchase.
-        ctl._retained[ctl._retention_guard(normalize_frame(frame(7)))] = [(ActionToken(3),)]
-        token = ctl._next_retained(normalize_frame(frame(7)))
-        self.assertNotEqual(token.source, 'crystal_probe')
-        self.assertNotEqual(token.source, 'crystal_probe_route')
+        oa, ob, og = map(normalize_frame, (a,b,goal))
+        cap = ArchivedCapability(
+            observation_sha256=(oa.evidence_sha256, ob.evidence_sha256, og.evidence_sha256),
+            program=(ActionToken(2), ActionToken(3)),
+            provenance='test-qualified-route')
+        ctl = api.DevelopmentalController((1,2,3), archived_capabilities=(cap,), trace_capabilities=())
+        # Seed a competing relative candidate. The qualified archive must retain
+        # authority while its own guards continue to match.
+        self.feed(ctl.crystal, [frame(7), frame(8), frame(9,1)], [1,1])
+        first = ctl.observe_and_choose(a)
+        self.assertEqual(first.source, 'archive')
+        self.assertEqual(first.action_id, 2)
+        second = ctl.observe_and_choose(b)
+        self.assertEqual(second.source, 'archive')
+        self.assertEqual(second.action_id, 3)
 
 
 if __name__ == '__main__':
