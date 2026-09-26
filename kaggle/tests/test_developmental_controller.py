@@ -155,5 +155,35 @@ class DevelopmentalContracts(unittest.TestCase):
                             empty.observe_and_choose(a).action_id)
 
 
+    def test_goal_relative_program_transports_before_novel_context_has_goal(self):
+        m = self.memory()
+        a, b, goal = frame(1), frame(2), frame(3, 1)
+        self.feed(m, [a, b, goal], [2, 3])
+        # Different pixels: exact absolute-state replay cannot match.
+        x, y, xgoal = frame(7), frame(8), frame(9, 1)
+        m.begin(normalize_frame(x))
+        first = m.plan(normalize_frame(x))
+        self.assertIsNotNone(first)
+        self.assertEqual(first.source if hasattr(first, 'source') else first.action.source, 'crystal_relative')
+        self.assertEqual(first.action.action_id, 2)
+        m.observe(normalize_frame(x), first.action, normalize_frame(y))
+        second = m.plan(normalize_frame(y))
+        self.assertIsNotNone(second)
+        self.assertEqual(second.action.action_id, 3)
+        m.observe(normalize_frame(y), second.action, normalize_frame(xgoal))
+        self.assertEqual(m.stats.get('relative_successes'), 1)
+
+    def test_goal_relative_empty_memory_ablation_removes_novel_action(self):
+        api = self.api()
+        trained = api.ProgressMemory()
+        self.feed(trained, [frame(1), frame(2), frame(3, 1)], [2, 3])
+        novel = normalize_frame(frame(7))
+        trained.begin(novel)
+        empty = api.ProgressMemory()
+        empty.begin(novel)
+        self.assertEqual(trained.plan(novel).action.source, 'crystal_relative')
+        self.assertIsNone(empty.plan(novel))
+
+
 if __name__ == '__main__':
     unittest.main()
