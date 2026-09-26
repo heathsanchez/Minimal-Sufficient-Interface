@@ -409,6 +409,7 @@ class DevelopmentalController(MemoryGraphController):
         self._requal_active = ()
         self._requal_index = 0
         self._requal_blocked_levels = set()
+        self._requal_attempted_levels = set()
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -440,7 +441,7 @@ class DevelopmentalController(MemoryGraphController):
         return None
 
     def _next_requalified(self, obs: Observation) -> ActionToken | None:
-        if obs.levels_completed in self._requal_blocked_levels:
+        if obs.levels_completed in self._requal_blocked_levels or obs.levels_completed in self._requal_attempted_levels:
             return None
         if self._requal_active and self._requal_index < len(self._requal_active):
             action = self._requal_active[self._requal_index]
@@ -458,6 +459,7 @@ class DevelopmentalController(MemoryGraphController):
             return None
         self._requal_active = tuple(base)
         self._requal_index = 1
+        self._requal_attempted_levels.add(obs.levels_completed)
         return ActionToken(*base[0], source='crystal_requalified')
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
