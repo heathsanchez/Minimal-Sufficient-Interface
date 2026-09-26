@@ -1,0 +1,112 @@
+{
+  "schema": "arc3.live-continuation-release-audit@1",
+  "status": "WARRANTED_BOUNDED_INTEGRATION_AND_NEGATIVE_TRANSFER_DIAGNOSTIC",
+  "candidate_status": "CANDIDATE",
+  "release_status": "BLOCKED",
+  "kaggle_submitted": false,
+  "authority": {
+    "repo": "heathsanchez/Minimal-Sufficient-Interface",
+    "branch": "arc3-live-continuation-integration-v1",
+    "tested_head": "22fbaeda01e6cdf00c136f853264d04e0ab99e6a",
+    "run_id": 36237868477,
+    "run_conclusion": "success",
+    "job_id": 108392849989,
+    "artifact_id": 10904806722,
+    "artifact_zip_sha256": "bfe212117e33b6fac25ee19d00c66795d6c4b38c37eac3370536836b50b02175",
+    "agent_sha256": "f719af21200d18941fdf1c76c6354e6db38672dbb0febc27375613b9e813218c",
+    "notebook_sha256": "8672bdd8ed5bd7c58e73b3e58aa07ee609a3c1dcc9c278b51b2070b9573bb36f"
+  },
+  "implementation": {
+    "base": "abb56b8532b1338d4ef76f4d60664045df75da8e",
+    "core": "metalogiclabs/mathgraph@2efa47b2efc27434ed24dbf6ad6e1f50e463f947",
+    "core_slice_sha256": "926feaeaa37125a4a714c3521d87c84bd3b08ab71fbbbe3ed11ec1e0b2d7d363",
+    "hot_path": "MyAgent -> ResidualController -> ProgressMemory / frontier_continuation",
+    "implemented": [
+      "Same action-independent state encoder at both endpoints; queried action belongs to the edge.",
+      "Finite goal regression with exists-action/all-observed-outcomes semantics and live per-step observation checks.",
+      "Unknown actions are explicit experiments; observed routes can lead to an unobserved action.",
+      "Conflicting observed continuations earn bounded action-history refinement; exhausted language remains UNKNOWN.",
+      "Historical evidence, revocations and residuals serialize and survive resets; revoked supports trigger reclosure.",
+      "Actual standalone agent and notebook bundle the pinned core and new controller; no LLM runtime."
+    ],
+    "baseline_modules_unchanged": ["runtime.py", "memory_controller.py", "memory_graph.py", "crystal_laws.py", "trace_capabilities.py"],
+    "authority_boundary": "Observed occurrences are warranted only in the historical sample. Future replay/composition is CANDIDATE, not certified unseen dynamics. Exact normalized observations plus earned bounded history are conservative state identities, not a learned minimal visual quotient."
+  },
+  "verification": {
+    "hosted_tests_passed": 70,
+    "global_core_exact_reproduction": true,
+    "independent_policy_oracle": {"worlds": 512, "deterministic_policies_per_world": 8, "rank_and_selected_action_comparisons": 3072, "mismatches": 0},
+    "actual_framework_fixture": "bt33: three levels reached by delivered MyAgent",
+    "finite_scope": "Finite observed models only, not unseen dynamics or ARC generalization."
+  },
+  "public_evaluation": {
+    "scope": "All 25 accessible public catalogue games frozen before play; one independent episode per arm/game. Public development only, not sealed holdout or Kaggle score.",
+    "step_reset_call_budget": 400,
+    "initial_reset_also_charged": true,
+    "same_inherited_priors_both_arms": true,
+    "between_game_fitted_memory": false,
+    "baseline": {"sum_max_levels": 16, "charged_interactions": 10025, "play_loop_seconds": 173.6099611609999},
+    "candidate": {"sum_max_levels": 17, "charged_interactions": 10025, "play_loop_seconds": 371.099413724, "final_wins": 0},
+    "per_game_level_regressions": 0,
+    "new_goal_planner_uses": 0,
+    "candidate_action_sources": {"crystal_probe": 9465, "crystal_probe_route": 5, "trace": 432},
+    "live_route_prediction_matches": 4,
+    "live_route_prediction_mismatches": 1,
+    "release_qualified": false,
+    "per_game_levels_baseline_candidate": {
+      "ar25-0c556536": [1, 2], "bp35-0a0ad940": [0, 0], "cd82-fb555c5d": [0, 0],
+      "cn04-2fe56bfb": [1, 1], "dc22-fdcac232": [1, 1], "ft09-0d8bbf25": [3, 3],
+      "g50t-5849a774": [0, 0], "ka59-38d34dbb": [0, 0], "lf52-271a04aa": [0, 0],
+      "lp85-305b61c3": [1, 1], "ls20-9607627b": [0, 0], "m0r0-492f87ba": [1, 1],
+      "r11l-495a7899": [0, 0], "re86-8af5384d": [2, 2], "s5i5-18d95033": [1, 1],
+      "sb26-7fbdac44": [0, 0], "sc25-635fd71a": [0, 0], "sk48-d8078629": [0, 0],
+      "sp80-589a99af": [1, 1], "su15-1944f8ab": [0, 0], "tn36-ef4dde99": [1, 1],
+      "tr87-cd924810": [0, 0], "tu93-0768757b": [0, 0], "vc33-5430563c": [3, 3], "wa30-ee6fef47": [0, 0]
+    },
+    "checkpoint_gains": {
+      "ar25": {"baseline_level1_charged": 16, "candidate_level1_charged": 16, "candidate_level2_charged": 48, "baseline_trace_actions": 15, "candidate_trace_actions": 46},
+      "ft09": {"baseline_level3_charged": 258, "candidate_level3_charged": 28, "baseline_trace_actions": 25, "candidate_trace_actions": 25}
+    },
+    "attribution_boundary": "Both arms inherit the same trace bank. The ar25 extra level and ft09 partial-progress efficiency gain do not establish newly learned semantic transfer. Both arms still consumed the full total evaluation budget. All games and failures are retained."
+  },
+  "finite_stream": {
+    "scope": "128 opaque relabelings times three lives; synthetic path worlds, not ARC score or cross-mechanic generalization.",
+    "baseline_completed": 384, "candidate_completed": 384,
+    "baseline_charged": 5649, "candidate_charged": 3217,
+    "new_goal_planner_uses": 1152
+  },
+  "api_test_fixtures": {
+    "scope": "Two official API test fixtures, three lives each; not competition games.",
+    "new_goal_planner_uses": 64, "matched_predictions": 64, "mismatched_predictions": 0,
+    "bt11_first_life_charged_baseline_candidate": [30, 5],
+    "fixture_gate_cannot_override_public_failure": true
+  },
+  "negative_result": {
+    "id": "ABSOLUTE_GOAL_EMPTY_FRONTIER",
+    "status": "WARRANTED_CODE_DIAGNOSTIC",
+    "location": "kaggle/src/metalogic_arc3/developmental_controller.py:ProgressMemory._policy(level)",
+    "statement": "When current level L equals the highest observed level and no WIN state has been observed, the goal seed (observed levels greater than L or WIN) is empty. Every live action group has at least one successor, so least predecessor closure remains empty. This learned goal planner cannot act on first arrival at that new maximum level.",
+    "boundary": "Finite observed graph and this exact goal definition. This is not a universal impossibility theorem or an exclusive explanation for every failure.",
+    "consequence": "Reset replay can reuse old absolute goals; it does not supply a goal-relative reusable procedure for a new context. Learned goal-planner use was zero in all 25 public first episodes.",
+    "other_residuals": ["Exact observation identity is not a minimal future quotient.", "Inherited action grounding remains bounded.", "Observed consistency does not certify unobserved transitions.", "Aggregate real play-loop wall time regressed."]
+  },
+  "next_gate": {
+    "status": "CANDIDATE_NOT_IMPLEMENTED",
+    "objective": "Goal-relative applicability transport, not more count-only banking.",
+    "experiment": "Acquire a procedure in an earlier context, compile a relative progress postcondition and explicit observation/action bindings, invoke it in a new context before that context has reached its goal, and verify actual progress with an empty-memory ablation. Reuse existing ROS adapter/capability machinery. No game-specific dispatch, hidden labels, or omitted failures.",
+    "promotion": "Nonzero learned capability use and improvement on prospective contexts, then frozen whole-agent sealed evaluation with all interaction and compute costs reported."
+  },
+  "lineage": [
+    {"head": "659e04406702b8ad30931d88526bb84a56509d51", "run": 36236356247, "result": "Expected RED: missing live consumer."},
+    {"head": "2be83dbb517dcae1a90011e901e8bce2f44030f4", "run": 36236950904, "result": "Integration/replay green; API fixtures no improvement; public catalogue not run."},
+    {"head": "23c1c7836f6c646aed9417f968be9af9d2d09d3f", "run": 36237391918, "result": "Probe parent workflow completed success; exact public metrics not independently inspected in this audit."},
+    {"head": "22fbaeda01e6cdf00c136f853264d04e0ab99e6a", "run": 36237868477, "result": "Current complete evidence; release BLOCKED."}
+  ],
+  "artifact_files_sha256": {
+    "out/public-catalog.json": "fedf52fc0e41fd7d1d9c7526f0c35cff95f3494cbf0e17378bd5da7cdc0f7ed4",
+    "out/public-catalog.manifest.json": "e03383c682fc88fbb51f734c74bae560bb6aec975ddbd801a5d63b76ebc052e6",
+    "out/public-environments.json": "987fd36ee04750d4d0f2e32c32013360fde8c73721fc95802b8f0d7c87fd0e45",
+    "out/finite-stream.json": "c3090826cc71b9b82d97f0fd49acba0f4c2315484ba398db3ba24a2d5941a8ec",
+    "out/independent-policy-audit.json": "99e1ad688b9291bfd9d9f44eaa8546589bae631a9e201c7fa5e57568d4813252"
+  }
+}
