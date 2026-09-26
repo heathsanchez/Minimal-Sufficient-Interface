@@ -16,6 +16,8 @@ jobs:
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
       - name: Run reusable-law transfer gate
         run: python -m unittest kaggle.tests.test_crystal_laws -v
+      - name: Run mechanics foundry corpus gate
+        run: python -m unittest kaggle.tests.test_mechanics_foundry -v
       - name: Build self-contained ARC agent with Crystal law brain
         run: |
           python kaggle/scripts/build_agent.py
