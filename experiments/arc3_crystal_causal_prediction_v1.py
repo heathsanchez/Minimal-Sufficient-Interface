@@ -24,6 +24,21 @@ def component_meta(frame,probe):
     except Exception:
         return ("NO_COMPONENT",)
 
+def canonical_patch(frame,probe,radius):
+    g=historical.grid(frame)
+    raw=historical.patch(g,probe[0],probe[1],radius=radius)
+    remap={}
+    nxt=0
+    out=[]
+    for row in raw:
+        rr=[]
+        for value in row:
+            if value not in remap:
+                remap[value]=nxt; nxt+=1
+            rr.append(remap[value])
+        out.append(tuple(rr))
+    return tuple(out)
+
 def role_key(cand,probe,frame,scheme):
     r,c=probe
     cols=tuple(cand["cols"])
@@ -32,6 +47,8 @@ def role_key(cand,probe,frame,scheme):
     meta=component_meta(frame,probe)
     coarse=(meta,row_role,col_role)
     if scheme=="coarse": return coarse
+    if scheme=="coarse_patch1": return coarse+(canonical_patch(frame,probe,1),)
+    if scheme=="coarse_patch2": return coarse+(canonical_patch(frame,probe,2),)
     rel=coarse+(clip(r-cand["hrow"]),clip(r-cand["vrow"]),tuple(clip(c-x) for x in cols))
     if scheme=="rel": return rel
     gaps=tuple(b-a for a,b in zip(cols,cols[1:]))
@@ -76,7 +93,7 @@ def main():
         cid=cand["candidate_id"]; frame=base_frames[cid]
         for probe in root_pool:
             row={"cid":cid,"action":action_key(probe),"outcome":truth[(cid,tuple(probe))]}
-            for scheme in ("coarse","rel","rel_global"):
+            for scheme in ("coarse","coarse_patch1","coarse_patch2","rel","rel_global"):
                 row[scheme]=role_key(cand,tuple(probe),frame,scheme)
             examples.append(row)
 
@@ -86,7 +103,7 @@ def main():
 
     validation={}
     predictors={}
-    for scheme in ("coarse","rel","rel_global"):
+    for scheme in ("coarse","coarse_patch1","coarse_patch2","rel","rel_global"):
         predictor,stats=evaluate_scheme(examples,scheme,train_ids,val_ids)
         predictors[scheme]=predictor; validation[scheme]=stats
 
@@ -158,7 +175,7 @@ def main():
         "full_truth_historical_probe":truth_best["probe"],
         "full_truth_worst_case":truth_worst,
       },
-      "boundary":"Feature schemes are causal/relational role descriptors chosen on train+validation only. Holdout candidate IDs are untouched for scheme selection. Black-box truth is used only to score holdout and as explicit UNKNOWN fallback; no wrong compiled prediction is permitted for qualification."
+      "boundary":"Feature schemes are chosen on train+validation only; holdout candidate IDs are untouched. coarse_patch schemes are not standalone visual predictors: the patch is used only as a refinement of an already causal coarse role, and colors are canonicalized by local first occurrence. Black-box truth is used only to score holdout and as explicit UNKNOWN fallback; no wrong compiled prediction is permitted for qualification."
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
