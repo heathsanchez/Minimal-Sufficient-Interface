@@ -185,5 +185,24 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertIsNone(empty.plan(novel))
 
 
+
+    def test_failed_relative_program_is_pruned_for_same_goal_epoch(self):
+        m = self.memory()
+        self.feed(m, [frame(1), frame(2), frame(3, 1)], [2, 3])
+        x, y, z = normalize_frame(frame(7)), normalize_frame(frame(8)), normalize_frame(frame(9))
+        m.begin(x)
+        a = m.plan(x)
+        self.assertEqual(a.action.source, 'crystal_relative')
+        m.observe(x, a.action, y)
+        b = m.plan(y)
+        self.assertEqual(b.action.source, 'crystal_relative')
+        m.observe(y, b.action, z)
+        # Program exhausted without progress: the counterexample blocks restart
+        # in this goal epoch and forces reclosure to other continuations.
+        self.assertIsNone(m.plan(z))
+        self.assertEqual(m.stats.get('relative_counterexamples'), 1)
+        self.assertEqual(m.last_residual['reason'], 'no_supported_progress_continuation')
+
+
 if __name__ == '__main__':
     unittest.main()
