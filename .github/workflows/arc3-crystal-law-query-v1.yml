@@ -212,3 +212,48 @@ jobs:
           name: arc3-crystal-role-prediction-v1
           path: evidence/arc3-crystal-role-prediction-v1/result.json
           if-no-files-found: error
+
+
+  online_boundary_real_game:
+    needs: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.12"
+      - run: python -m pip install --disable-pip-version-check uv
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+      - working-directory: vendor/duck-harness/ARC3-Inference
+        run: uv sync --locked --python "$(command -v python)"
+      - name: Download exact public tn36
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENV_DIR: ${{ github.workspace }}/public-env
+          GAME_ID: tn36-ef4dde99
+        run: |
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          from arc_agi import Arcade,OperationMode
+          root=Path(os.environ["ENV_DIR"]);root.mkdir(parents=True,exist_ok=True)
+          a=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(root))
+          assert a.make(os.environ["GAME_ID"]) is not None
+          a.close_scorecard()
+          PY
+      - name: Strict calibration-only decision then blind audit
+        working-directory: vendor/duck-harness/ARC3-Inference
+        env:
+          ENVROOT: ${{ github.workspace }}/public-env
+        run: |
+          PYTHONPATH="${{ github.workspace }}/kaggle/src:${{ github.workspace }}/experiments" uv run python "${{ github.workspace }}/experiments/arc3_crystal_online_boundary_v1.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-crystal-online-boundary-v1
+          path: evidence/arc3-crystal-online-boundary-v1/result.json
+          if-no-files-found: error
