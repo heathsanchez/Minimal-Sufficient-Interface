@@ -37,6 +37,8 @@ jobs:
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
       - name: Reproduce pinned global semantic waist
         run: python kaggle/scripts/vendor_continuation_core.py --source global-source --check
+      - name: Independent exhaustive-policy rank and action audit
+        run: python kaggle/scripts/audit_continuation_ranks.py --output out/independent-policy-audit.json
       - name: Build actual offline agent and notebook
         run: |
           python kaggle/scripts/build_agent.py
@@ -65,8 +67,9 @@ jobs:
           python kaggle/scripts/play_local.py --offline-environments-dir upstream-arc-agi/test_environment_files --game bt33-a7c3f9d18b4e --max-steps 32 | tee out/framework-bt33.log
           grep -q 'MAX_LEVELS_REACHED=3' out/framework-bt33.log
       - name: Freeze accessible public catalogue then compare whole agents on every game
+        timeout-minutes: 18
         run: |
-          python kaggle/scripts/qualify_developmental_controller.py --public-catalog --environments public-environments --output out/public-catalog.json
+          timeout 16m python kaggle/scripts/qualify_developmental_controller.py --public-catalog --environments public-environments --output out/public-catalog.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

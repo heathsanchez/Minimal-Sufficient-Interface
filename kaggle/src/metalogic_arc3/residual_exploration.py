@@ -10,6 +10,31 @@ from .developmental_controller import DevelopmentalController, ProgressDecision,
 from .runtime import ActionToken, Observation
 
 
+
+def _emit_frontier(memory, obs, current, value, key, edges, remaining_actions):
+    if remaining_actions is not None and value > remaining_actions:
+        memory._residual('insufficient_probe_budget',source=current,
+                         needed=value,remaining=remaining_actions)
+        return None
+    if key[0] not in obs.available_actions:
+        memory._residual('changed_probe_legal_interface',source=current)
+        return None
+    source = 'crystal_probe_route' if edges else 'crystal_probe'
+    decision = ProgressDecision(
+        ActionToken(*key,source=source),value,
+        tuple(sorted({s for e in edges for s in e.support_refs})),
+        tuple(sorted({e.target for e in edges})))
+    memory._residual('unobserved_action_consequence',source=current,
+                     action=list(key),remaining_probe_rank=value)
+    # Do not compare an unknown probe outcome with a nonexistent prediction.
+    memory._pending = decision if edges else None
+    memory.stats['residual_decisions'] = memory.stats.get('residual_decisions',0)+1
+    if not edges:
+        memory.stats['probe_actions'] = memory.stats.get('probe_actions',0)+1
+    return decision
+
+
+
 def frontier_continuation(
     memory: ProgressMemory,
     obs: Observation,
@@ -38,7 +63,14 @@ def frontier_continuation(
     attempted = {}
     for (source,label) in groups:
         attempted.setdefault(source,set()).add(actions[label])
-    for state in sorted(eligible):
+    # Every routed experiment costs at least two actions. A local unobserved
+    # probe costs one, so it is already minimal in this exact finite algebra.
+    # Avoid enumerating unrelated catalogs when that decisive bound applies.
+    for token in catalog(obs):
+        key = memory._action(token)
+        if key not in attempted.get(current,set()):
+            return _emit_frontier(memory,obs,current,1,key,(),remaining_actions)
+    for state in sorted(eligible - {current}):
         data = dict(states[state])
         data['available_actions'] = tuple(data['available_actions'])
         for token in catalog(Observation(**data)):
@@ -76,26 +108,8 @@ def frontier_continuation(
                          history_bound=memory.max_history)
         return None
     value,key,edges,frontier,probe = row
-    if remaining_actions is not None and value > remaining_actions:
-        memory._residual('insufficient_probe_budget',source=current,
-                         needed=value,remaining=remaining_actions)
-        return None
-    if key[0] not in obs.available_actions:
-        memory._residual('changed_probe_legal_interface',source=current)
-        return None
-    source = 'crystal_probe_route' if edges else 'crystal_probe'
-    decision = ProgressDecision(
-        ActionToken(*key,source=source),value,
-        tuple(sorted({s for e in edges for s in e.support_refs})),
-        tuple(sorted({e.target for e in edges})))
-    memory._residual('unobserved_action_consequence',source=current,
-                     action=list(key),remaining_probe_rank=value)
-    # Do not compare an unknown probe outcome with a nonexistent prediction.
-    memory._pending = decision if edges else None
-    memory.stats['residual_decisions'] = memory.stats.get('residual_decisions',0)+1
-    if not edges:
-        memory.stats['probe_actions'] = memory.stats.get('probe_actions',0)+1
-    return decision
+    return _emit_frontier(memory,obs,current,value,key,edges,remaining_actions)
+
 
 
 class ResidualController(DevelopmentalController):
