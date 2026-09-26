@@ -1,0 +1,82 @@
+name: ARC3 goal-relative transport V1
+on:
+  push:
+    branches: [arc3-goal-relative-transport-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 2efa47b2efc27434ed24dbf6ad6e1f50e463f947
+          path: global-source
+      - name: Preserve exact source snapshot for reproducibility
+        run: |
+          mkdir -p out
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          roots=['kaggle/src','kaggle/tests','kaggle/scripts','kaggle/provenance']
+          with ZipFile('out/source-snapshot.zip','w',ZIP_DEFLATED) as z:
+              for root in roots:
+                  for p in Path(root).rglob('*'):
+                      if p.is_file(): z.write(p,str(p))
+              for name in ['crystal.py','protected_future.py']:
+                  p=Path('global-source/mathgraph')/name
+                  z.write(p,str(p))
+          PY
+      - name: Run all ARC integration contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Reproduce pinned global semantic waist
+        run: python kaggle/scripts/vendor_continuation_core.py --source global-source --check
+      - name: Independent exhaustive-policy rank and action audit
+        run: python kaggle/scripts/audit_continuation_ranks.py --output out/independent-policy-audit.json
+      - name: Build actual offline agent and notebook
+        run: |
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+      - name: Run frozen learner on finite acquisition-reuse stream
+        run: python kaggle/scripts/qualify_developmental_controller.py --output out/finite-stream.json
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI
+          ref: f12822c4d550121c35a275008d964afbbed47d2f
+          path: upstream-arc-agi
+      - name: Matched official test-environment acquisition and replay
+        run: |
+          python kaggle/scripts/qualify_developmental_controller.py --environments upstream-arc-agi/test_environment_files --output out/public-environments.json
+      - name: Actual framework adapter regression
+        run: |
+          python kaggle/scripts/play_local.py --offline-environments-dir upstream-arc-agi/test_environment_files --game bt33-a7c3f9d18b4e --max-steps 32 | tee out/framework-bt33.log
+          grep -q 'MAX_LEVELS_REACHED=3' out/framework-bt33.log
+      - name: Freeze accessible public catalogue then compare whole agents on every game
+        timeout-minutes: 18
+        run: |
+          timeout 16m python kaggle/scripts/qualify_developmental_controller.py --public-catalog --environments public-environments --output out/public-catalog.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-goal-relative-transport-v1
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/provenance/sources.json
+          if-no-files-found: error
