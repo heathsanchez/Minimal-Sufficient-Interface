@@ -51,6 +51,11 @@ def check(count=512):
                     m.begin(observations[s])
                     m.observe(observations[s],ActionToken(a),observations[t])
         assert m.history_depth==0
+        # This oracle qualifies the exact-state finite regression planner only.
+        # Goal-relative transport has a separate oracle because it intentionally
+        # acts where the absolute planner has no matching state.
+        relative_programs = m.relative_programs
+        m.relative_programs = []
         for s in range(3):
             for mode in (False,True):
                 m.begin(observations[s])
@@ -63,6 +68,7 @@ def check(count=512):
                 if expected!=actual or (got is not None and selected!=actual):
                     mismatch.append(dict(case=case,start=s,frontier=mode,expected=expected,actual=actual,selected_action_rank=selected,
                         graph=[dict(source=k[0],action=k[1],targets=v) for k,v in graph.items()]))
+        m.relative_programs = relative_programs
         # Canonical full-state serialization must preserve all resulting plans.
         restored=ProgressMemory.from_json(m.to_json())
         assert restored.to_json()==m.to_json()
