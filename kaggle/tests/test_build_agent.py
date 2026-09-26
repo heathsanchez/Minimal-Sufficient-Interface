@@ -24,6 +24,7 @@ class BuildAgentContracts(unittest.TestCase):
             text = first.decode()
             self.assertIn("class MyAgent", text)
             self.assertIn("class OnlineController", text)
+            self.assertIn("class TraceCapability", text)
             self.assertIn("class ArcMemoryGraph", text)
             self.assertIn("class MemoryGraphController", text)
             self.assertIn("BUILD_PROVENANCE", text)

@@ -13,6 +13,7 @@ live public frame
   -> normalize observation
   -> record consequence of previous action
   -> update minimum warranted task state
+  -> replay a progress witness only while every visible boundary matches
   -> reuse a witnessed progress program only under a matching guard
   -> otherwise choose the least-tested legal public action
   -> return GameAction
@@ -100,6 +101,25 @@ notebooks/submission.ipynb
 
 Both are generated artifacts and are gitignored. The source-of-truth code remains modular and reviewable.
 
+## Compile witnessed public progress
+
+`scripts/compile_trace_capabilities.py` turns legal public event logs into a
+content-addressed capability library. It discards failed prefixes, retains the
+shortest level-progressing program for each exact visible start board, and
+records the expected board after every action. At runtime, replay stops on the
+first mismatching observation and hands control back to online exploration.
+
+```bash
+python scripts/compile_trace_capabilities.py \
+  --events-dir /path/to/public-run/artifacts \
+  --source-commit SOURCE_COMMIT \
+  --output src/metalogic_arc3/trace_capabilities.py
+```
+
+The generated module preserves the source commit, source filename, and SHA-256
+of every contributing event log. It contains no game source, hidden answer, or
+runtime game-name dispatch.
+
 ## Push to Kaggle
 
 ```bash
@@ -113,6 +133,13 @@ make status
 
 `provenance/sources.json` pins the MSI ARC3 integration base, frozen ARC3 controller, verified shared-transfer checkpoint, and ARC upstream used by the qualified research lineage.
 
-## V1 claim boundary
+## Claim boundary
 
-This bundle connects the existing consequence-driven ARC3 machinery to the official online Kaggle agent contract. It currently retains exact-guarded progress programs and uses deterministic bounded exploration. RealityGraph verified language growth is intentionally not in the first hot path; it should be added only after a live residual establishes that the present observation/action language is expressively inadequate rather than merely under-searched.
+This bundle connects the consequence-driven ARC3 machinery to the official
+online Kaggle agent contract. A compiled trace is a verified continuation under
+an exact observation guard, not a semantic rule for unseen states. Exact replay
+is therefore conservative: known progress is reused without search, while any
+new separator remains an explicit online-learning residual. RealityGraph
+language growth belongs in the hot path only when a live residual establishes
+that the present observation/action language is expressively inadequate rather
+than merely under-searched.

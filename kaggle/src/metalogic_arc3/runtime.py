@@ -5,6 +5,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from .trace_capabilities import TRACE_CAPABILITY_DATA
+
 
 @dataclass(frozen=True)
 class Observation:
@@ -12,6 +14,7 @@ class Observation:
     state: str
     available_actions: tuple[int, ...]
     frame_digest: str
+    board_digest: str
     evidence_sha256: str
     height: int
     width: int
@@ -39,6 +42,21 @@ class ArchivedCapability:
             raise ValueError("archive trace must contain one observation per boundary")
         if not self.program:
             raise ValueError("archive program must be nonempty")
+
+
+@dataclass(frozen=True)
+class TraceCapability:
+    """A legal public trace guarded at every visible board boundary."""
+
+    board_digests: tuple[str, ...]
+    program: tuple[ActionToken, ...]
+    provenance: str = ""
+
+    def __post_init__(self) -> None:
+        if len(self.board_digests) != len(self.program) + 1:
+            raise ValueError("trace must contain one board digest per boundary")
+        if not self.program:
+            raise ValueError("trace program must be nonempty")
 
 
 def _plain(value: Any) -> Any:
@@ -107,6 +125,10 @@ def normalize_frame(frame: Any) -> Observation:
         json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode(),
         digest_size=12,
     ).hexdigest()
+    board_digest = hashlib.blake2b(
+        json.dumps(first, sort_keys=True, separators=(",", ":"), default=str).encode(),
+        digest_size=12,
+    ).hexdigest()
     evidence_sha256 = _historical_evidence_sha256(
         raw_frame, levels_completed, state, actions
     )
@@ -115,6 +137,7 @@ def normalize_frame(frame: Any) -> Observation:
         state=state,
         available_actions=actions,
         frame_digest=digest,
+        board_digest=board_digest,
         evidence_sha256=evidence_sha256,
         height=height,
         width=width,
@@ -169,6 +192,14 @@ BT33_ARCHIVED_CAPABILITY = ArchivedCapability(
     provenance="MSI runs 34272649151 + 34277495372",
 )
 DEFAULT_ARCHIVED_CAPABILITIES = (BT33_ARCHIVED_CAPABILITY,)
+DEFAULT_TRACE_CAPABILITIES = tuple(
+    TraceCapability(
+        board_digests=tuple(board_digests),
+        program=tuple(ActionToken(action_id, x, y) for action_id, x, y in program),
+        provenance=provenance,
+    )
+    for board_digests, program, provenance in TRACE_CAPABILITY_DATA
+)
 
 
 class OnlineController:
@@ -188,6 +219,7 @@ class OnlineController:
         grounding_stride: int = 8,
         max_grounded_actions: int = 256,
         archived_capabilities: Iterable[ArchivedCapability] | None = None,
+        trace_capabilities: Iterable[TraceCapability] | None = None,
     ):
         ids = tuple(dict.fromkeys(int(a) for a in action_ids))
         if not ids:
@@ -205,6 +237,12 @@ class OnlineController:
             if archived_capabilities is None
             else archived_capabilities
         )
+        self.trace_capabilities = tuple(
+            DEFAULT_TRACE_CAPABILITIES
+            if trace_capabilities is None
+            else trace_capabilities
+        )
+        self._trace_rejected: set[TraceCapability] = set()
         self._retained: dict[tuple[Any, ...], list[tuple[ActionToken, ...]]] = {}
         # Developmental evidence belongs to the game/session, not one life.
         # Resets clear transient trajectory state but must not make the agent
@@ -234,6 +272,8 @@ class OnlineController:
         self._archive_completed = False
         self._continuation: tuple[ActionToken, ...] = ()
         self._continuation_index = 0
+        self._trace_active: TraceCapability | None = None
+        self._trace_index = 0
 
     @staticmethod
     def _retention_guard(obs: Observation) -> tuple[Any, ...]:
@@ -394,6 +434,41 @@ class OnlineController:
         self._continuation_index += 1
         return ActionToken(token.action_id, token.x, token.y, "stage4_probe")
 
+    def _start_trace_if_matching(self, obs: Observation) -> None:
+        if self._trace_active is not None:
+            return
+        for capability in self.trace_capabilities:
+            if capability in self._trace_rejected:
+                continue
+            if capability.board_digests[0] != obs.board_digest:
+                continue
+            if not all(token.action_id in self._legal_ids(obs) for token in capability.program):
+                continue
+            self._trace_active = capability
+            self._trace_index = 0
+            return
+
+    def _next_trace(self, obs: Observation) -> ActionToken | None:
+        self._start_trace_if_matching(obs)
+        capability = self._trace_active
+        if capability is None:
+            return None
+        if obs.board_digest != capability.board_digests[self._trace_index]:
+            self._trace_rejected.add(capability)
+            self._trace_active = None
+            self._trace_index = 0
+            return None
+        if self._trace_index == len(capability.program):
+            self._trace_active = None
+            self._trace_index = 0
+            self._start_trace_if_matching(obs)
+            capability = self._trace_active
+            if capability is None:
+                return None
+        token = capability.program[self._trace_index]
+        self._trace_index += 1
+        return ActionToken(token.action_id, token.x, token.y, "trace")
+
     def observe_and_choose(self, frame: Any) -> ActionToken | None:
         obs = normalize_frame(frame)
         self._process_previous_outcome(obs)
@@ -408,24 +483,28 @@ class OnlineController:
         if archived is not None:
             token = archived
         else:
-            continuation = self._next_continuation(obs)
-            if continuation is not None:
-                token = continuation
+            traced = self._next_trace(obs)
+            if traced is not None:
+                token = traced
             else:
-                retained = self._next_retained(obs)
-                if retained is not None:
-                    token = retained
+                continuation = self._next_continuation(obs)
+                if continuation is not None:
+                    token = continuation
                 else:
-                    guard = self._exploration_guard(obs)
-                    catalog = self._action_catalog(obs)
-                    token = min(
-                        catalog,
-                        key=lambda candidate: self._visits.get(
-                            (guard, self._candidate_key(candidate)), 0
-                        ),
-                    )
-                    key = (guard, self._candidate_key(token))
-                    self._visits[key] = self._visits.get(key, 0) + 1
+                    retained = self._next_retained(obs)
+                    if retained is not None:
+                        token = retained
+                    else:
+                        guard = self._exploration_guard(obs)
+                        catalog = self._action_catalog(obs)
+                        token = min(
+                            catalog,
+                            key=lambda candidate: self._visits.get(
+                                (guard, self._candidate_key(candidate)), 0
+                            ),
+                        )
+                        key = (guard, self._candidate_key(token))
+                        self._visits[key] = self._visits.get(key, 0) + 1
 
         self._previous = obs
         self._last_action = token

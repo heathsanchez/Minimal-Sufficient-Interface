@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -11,6 +13,7 @@ from metalogic_arc3.runtime import (
     ActionToken,
     ArchivedCapability,
     OnlineController,
+    TraceCapability,
     normalize_frame,
 )
 
@@ -27,7 +30,8 @@ def frame(value: int = 0, *, level: int = 0, state: str = "NOT_FINISHED", action
 
 class RuntimeContracts(unittest.TestCase):
     def test_normalize_frame_is_canonical_and_public_only(self):
-        obs = normalize_frame(frame(7, level=2, actions=(3, 1)))
+        raw = frame(7, level=2, actions=(3, 1))
+        obs = normalize_frame(raw)
         self.assertEqual(obs.levels_completed, 2)
         self.assertEqual(obs.state, "NOT_FINISHED")
         self.assertEqual(obs.available_actions, (1, 3))
@@ -35,6 +39,13 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(obs.width, 6)
         self.assertTrue(obs.frame_digest)
         self.assertTrue(obs.evidence_sha256)
+        expected_board_digest = hashlib.blake2b(
+            json.dumps(
+                raw["frame"][0], sort_keys=True, separators=(",", ":"), default=str
+            ).encode(),
+            digest_size=12,
+        ).hexdigest()
+        self.assertEqual(obs.board_digest, expected_board_digest)
 
     def test_exploration_is_deterministic_and_least_tested(self):
         c = OnlineController((1, 2, 3))
@@ -164,6 +175,32 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual((archived.x, archived.y, archived.source), (4, 4, "archive"))
         probe = c.observe_and_choose(final)
         self.assertEqual((probe.x, probe.y, probe.source), (16, 14, "stage4_probe"))
+
+    def test_trace_capability_replays_by_exact_public_board_and_aborts_on_separator(self):
+        start = frame(0, level=0, actions=(1, 2))
+        middle = frame(1, level=0, actions=(1, 2))
+        final = frame(2, level=1, actions=(1, 2))
+        trace = TraceCapability(
+            board_digests=(
+                normalize_frame(start).board_digest,
+                normalize_frame(middle).board_digest,
+                normalize_frame(final).board_digest,
+            ),
+            program=(ActionToken(1), ActionToken(2)),
+            provenance="synthetic-public-trace",
+        )
+        c = OnlineController(
+            (1, 2), archived_capabilities=(), trace_capabilities=(trace,)
+        )
+        first = c.observe_and_choose(start)
+        second = c.observe_and_choose(middle)
+        self.assertEqual((first.action_id, first.source), (1, "trace"))
+        self.assertEqual((second.action_id, second.source), (2, "trace"))
+
+        c.reset_episode()
+        self.assertEqual(c.observe_and_choose(start).source, "trace")
+        diverged = c.observe_and_choose(frame(9, level=0, actions=(1, 2)))
+        self.assertNotEqual(diverged.source, "trace")
 
     def test_unavailable_actions_are_not_selected(self):
         c = OnlineController((1, 2, 6))
