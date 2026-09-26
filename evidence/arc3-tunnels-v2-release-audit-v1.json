@@ -1,0 +1,80 @@
+{
+  "schema": "msi.arc3-tunnels-v2-release-audit-v1",
+  "status": "WARRANTED_DIAGNOSTIC",
+  "candidate_status": "CANDIDATE_DISCOVERY_ONLY",
+  "release_status": "BLOCKED",
+  "authority": {
+    "repo": "heathsanchez/Minimal-Sufficient-Interface",
+    "head": "8117c8efa00f16d87d3c8da432ee2431e77ba690",
+    "run_id": 36230152976,
+    "job_id": 108371760099,
+    "artifact_id": 10903645014,
+    "artifact_zip_sha256": "7cdfa58d3e36a597f0f71d50f5d0c46af4aa848a4739a75a092323ae8edd05c6",
+    "result_json_sha256": "2ffd38c2d55e8b94de9a132afc0246dda632ac72da6d559b0ad144302f0b39e8",
+    "compiler_path": "experiments/arc3_crystal_future_quotient_tunnels_v2.py",
+    "compiler_blob_sha": "4813e967d1d8752b61ef790ccc4b40940d9b642d",
+    "builder_path": "kaggle/scripts/build_agent.py",
+    "builder_blob_sha": "7a563c0c76b20973cee1b9c2825fc925c82c5f38",
+    "controller_path": "kaggle/src/metalogic_arc3/memory_controller.py",
+    "controller_blob_sha": "db3ba9cac13082ea90517406dcb56fef2e27c371"
+  },
+  "hosted_measurement": {
+    "rows": 1041388,
+    "internally_accepted_rows": 33808,
+    "final_representation_variants": 157158,
+    "separator_assignments": 303,
+    "multi_route_classes": 0,
+    "accepted_by_round": [1, 20947, 30913, 33433, 33808],
+    "new_separators_by_round": [176, 90, 30, 7, 0],
+    "final_wrong_holdout_field": 12025,
+    "wrong_field_scope": "Errors counted among internally rejected/unaccepted variants; not errors asserted for the selected rows. All rounds nevertheless reuse evaluation data for separator selection."
+  },
+  "independent_artifact_checks": {
+    "zip_digest_matches": true,
+    "exported_rows": 3000,
+    "exported_source_destination_intersection": 0,
+    "entry_fields": ["covered", "dst", "src", "support", "tested_games"],
+    "export_includes_state_encoder": false,
+    "export_includes_separator_assignments": false,
+    "export_includes_action_decoders": false,
+    "export_includes_decodable_outcomes": false,
+    "counterexample_two_actions_same_chamber": {
+      "correct_multi_route_classes": 1,
+      "action_in_source_multi_route_classes": 0
+    }
+  },
+  "source_audit": [
+    {
+      "id": "ACTION_IN_STATE",
+      "finding": "key=(base,action_id)+selected_observations identifies an action-conditioned query, not an action-independent state. With one admitted deterministic destination per key, the multi-route census is zero by construction apart from hash collisions."
+    },
+    {
+      "id": "ENDPOINT_TYPE_MISMATCH",
+      "finding": "Source hash encodes a feature/query tuple; destination hash encodes a string repr of (done/live,changed-cell count,bounding box). The destination is not the same q applied to next_state. These are response predictions, not composable state transitions."
+    },
+    {
+      "id": "ADAPTIVE_EVALUATION_REUSE",
+      "finding": "All games and their outcomes influence separator choice in each refinement round and final selection. Leave-one-game-out counts are internal selection statistics, not an untouched final evaluation of the entire fitted pipeline."
+    },
+    {
+      "id": "HASH_ONLY_TRUNCATED_EXPORT",
+      "finding": "Only top 3000 of 33808 accepted rows are saved; no feature bindings, actual actions, decodable target states, or complete support/split manifest are exported. This is a summary artifact, not a reconstructible runtime bank."
+    },
+    {
+      "id": "NO_AGENT_CONSUMER",
+      "finding": "Pinned build_agent.py bundles memory_graph, crystal_laws, trace_capabilities, runtime, memory_controller and agent_template. It neither reads this output nor bundles the newer arc_crystal.py. The V2 job does not implement a candidate-versus-baseline policy test."
+    }
+  ],
+  "single_next_gate": {
+    "unit": "q(observed_state) -- (legal_action, applicability, support) --> q(observed_next_state)",
+    "requirements": [
+      "Same frozen action-independent encoder at both state endpoints; action stored on the edge.",
+      "Preserve UNKNOWN, terminal/progress/resource predicates, and explicit replay/transport scope; observed consistency is not universal warrant.",
+      "Save complete executable bindings and lineage, not just hashes or counts.",
+      "Separate representation search, model selection and sealed evaluation by original game family/source; report all fixed-model errors without test-based filtering.",
+      "Consume bank through a no-LLM candidate controller; verify supported multi-step routes and revoke on mismatched live observations.",
+      "Run matched real-environment A/B with all step/reset/replay costs and require nonzero candidate usage and actual improvement before release."
+    ]
+  },
+  "scope": "Exact downloaded V2 artifact inspection, independent small representation counterexample, and pinned source audit. No new large-corpus replay or Kaggle score measured. Source/destination intersection is checked for exported entries only. This audit adds evidence only and changes no solver code."
+}
