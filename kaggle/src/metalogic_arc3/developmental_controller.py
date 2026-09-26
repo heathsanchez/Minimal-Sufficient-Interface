@@ -399,6 +399,7 @@ class DevelopmentalController(MemoryGraphController):
         self.crystal._current = None
         self.crystal._history = ()
         self.crystal._pending = None
+        self.crystal._relative_active = None
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         if self._previous is not None and self._last_action is not None:
