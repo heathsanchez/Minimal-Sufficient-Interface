@@ -13,7 +13,7 @@ def main():
  splits=("rollouts_novelty_gen","rollouts_positive","rollouts","hhazard");per=a.limit//4
  # Compile tunnels from consequence-refined chamber signatures. We use all separator coordinates
  # because the prior campaign established saturation of this supplied separator language.
- edges=defaultdict(lambda:defaultdict(lambda:defaultdict(Counter)))
+ edges=defaultdict(lambda:defaultdict(Counter))
  chamber_support=Counter(); rows=0
  for split in splits:
   for row in load_dataset("fredericowieser/arc-agi-3-wm-traces",split=split,streaming=True).take(per):
