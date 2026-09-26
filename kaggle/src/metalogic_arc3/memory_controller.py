@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .memory_graph import ActionKey, ArcMemoryGraph, ContextKey, ProgramKey
+from .crystal_laws import ArcCrystalLawBridge, ArcLawBinding, LawAnswer, VerifiedLawStore
 from .runtime import ActionToken, Observation, OnlineController, normalize_frame
 
 
@@ -21,15 +22,32 @@ class MemoryGraphController(OnlineController):
         self,
         *args: Any,
         max_transfer_depth: int = 32,
+        law_bridge: ArcCrystalLawBridge | None = None,
         **kwargs: Any,
     ) -> None:
         if max_transfer_depth < 1:
             raise ValueError("max_transfer_depth must be positive")
         self.max_transfer_depth = int(max_transfer_depth)
         self.memory = ArcMemoryGraph()
+        self.law_bridge = law_bridge or ArcCrystalLawBridge(VerifiedLawStore.default())
         self._episode_context: ContextKey | None = None
         self._episode_program: list[ActionKey] = []
         super().__init__(*args, **kwargs)
+
+    def admit_law_binding(self, binding: ArcLawBinding) -> None:
+        self.law_bridge.admit_binding(binding)
+
+    def query_repetition_law(
+        self,
+        context: ContextKey,
+        action: ActionKey,
+        count: int,
+        *,
+        live_supports: tuple[str, ...] = (),
+    ) -> LawAnswer:
+        return self.law_bridge.normalize_repetition(
+            context, action, count, live_supports=live_supports
+        )
 
     @staticmethod
     def _action_key(token: ActionToken) -> ActionKey:

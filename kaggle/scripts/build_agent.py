@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
+CRYSTAL_LAWS = ROOT / "kaggle" / "src" / "metalogic_arc3" / "crystal_laws.py"
 TRACE_CAPABILITIES = ROOT / "kaggle" / "src" / "metalogic_arc3" / "trace_capabilities.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
@@ -46,6 +47,7 @@ def render() -> str:
         f"BUILD_PROVENANCE = {provenance!r}\n\n"
     )
     memory_graph = clean_module(MEMORY_GRAPH.read_text())
+    crystal_laws = clean_module(CRYSTAL_LAWS.read_text())
     trace_capabilities = clean_module(TRACE_CAPABILITIES.read_text())
     runtime = clean_module(
         RUNTIME.read_text(),
@@ -55,6 +57,7 @@ def render() -> str:
         MEMORY_CONTROLLER.read_text(),
         remove=(
             "from .memory_graph import ActionKey, ArcMemoryGraph, ContextKey\n",
+            "from .crystal_laws import ArcCrystalLawBridge, ArcLawBinding, LawAnswer, VerifiedLawStore\n",
             "from .runtime import ActionToken, Observation, OnlineController, normalize_frame\n",
         ),
     )
@@ -63,7 +66,7 @@ def render() -> str:
         remove=("from .memory_controller import MemoryGraphController\n",),
     )
     return (
-        header + memory_graph + "\n" + trace_capabilities + "\n" + runtime
+        header + memory_graph + "\n" + crystal_laws + "\n" + trace_capabilities + "\n" + runtime
         + "\n" + memory_controller + "\n" + adapter
     )
 
