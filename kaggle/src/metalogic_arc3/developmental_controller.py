@@ -423,12 +423,16 @@ class DevelopmentalController(MemoryGraphController):
         super()._process_previous_outcome(obs)
 
     def _next_archive(self, obs: Observation) -> ActionToken | None:
-        # Reuse the existing priority hook; the token retains CANDIDATE status.
-        # The inherited baseline implementation itself remains byte-identical.
+        # CLOSE before candidate transport. A live already-qualified archive
+        # continuation keeps authority until its own observation guard rejects
+        # it. Goal-relative CANDIDATE transport is considered only afterward.
+        inherited = super()._next_archive(obs)
+        if inherited is not None:
+            return inherited
         decision = self.crystal.plan(obs)
         if decision is not None:
             return decision.action
-        return super()._next_archive(obs)
+        return None
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
         # New online memory never falls back to the old start-only replay.
