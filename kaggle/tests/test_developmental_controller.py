@@ -239,5 +239,19 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertTrue(token is None or token.source != 'transfer')
 
 
+
+    def test_requalified_role_is_bounded_not_repeated_transfer(self):
+        api = self.api()
+        ctl = api.DevelopmentalController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        ctx = (0,'NOT_FINISHED',(1,2,3),2,2,'old')
+        ctl.memory.add_capability(ctx, ((2,None,None),(3,None,None)), source_level=0, target_level=1)
+        obs = normalize_frame(frame(7, level=1))
+        first = ctl._next_retained(obs)
+        second = ctl._next_retained(obs)
+        self.assertEqual(first.source, 'crystal_requalified')
+        self.assertEqual(second.source, 'crystal_requalified')
+        self.assertIsNone(ctl._next_retained(obs))
+
+
 if __name__ == '__main__':
     unittest.main()
