@@ -397,3 +397,22 @@ jobs:
           name: arc3-crystal-game-exclusive-v1
           path: evidence/arc3-crystal-game-exclusive-v1/result.json
           if-no-files-found: error
+
+
+  crystal_stateful_growth:
+    needs: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: python -m pip install --disable-pip-version-check 'datasets>=3,<5'
+      - name: Stateful ARC Crystal growth over 1.2M transitions
+        run: |
+          PYTHONPATH=experiments python experiments/arc3_crystal_stateful_growth_v1.py --limit 1200000 --rounds 6 --out evidence/arc3-crystal-stateful-growth-v1/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-crystal-stateful-growth-v1
+          path: evidence/arc3-crystal-stateful-growth-v1/result.json
+          if-no-files-found: error
