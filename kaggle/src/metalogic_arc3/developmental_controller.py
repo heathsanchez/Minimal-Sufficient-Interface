@@ -406,6 +406,9 @@ class DevelopmentalController(MemoryGraphController):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.crystal = ProgressMemory(max_history=kwargs.get('max_history', 8))
+        self._requal_active = ()
+        self._requal_index = 0
+        self._requal_blocked_levels = set()
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -414,6 +417,8 @@ class DevelopmentalController(MemoryGraphController):
         self.crystal._history = ()
         self.crystal._pending = None
         self.crystal._relative_active = None
+        self._requal_active = ()
+        self._requal_index = 0
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         if self._previous is not None and self._last_action is not None:
@@ -434,11 +439,32 @@ class DevelopmentalController(MemoryGraphController):
             return decision.action
         return None
 
+    def _next_requalified(self, obs: Observation) -> ActionToken | None:
+        if obs.levels_completed in self._requal_blocked_levels:
+            return None
+        if self._requal_active and self._requal_index < len(self._requal_active):
+            action = self._requal_active[self._requal_index]
+            if action[0] not in self._legal_ids(obs):
+                self._requal_active = ()
+                self._requal_index = 0
+                return None
+            self._requal_index += 1
+            return ActionToken(*action, source='crystal_requalified')
+        programs = self.memory.capability_programs(for_level=obs.levels_completed)
+        if not programs:
+            return None
+        base = min(programs, key=lambda p: (len(p), p))
+        if not base:
+            return None
+        self._requal_active = tuple(base)
+        self._requal_index = 1
+        return ActionToken(*base[0], source='crystal_requalified')
+
     def _next_retained(self, obs: Observation) -> ActionToken | None:
-        # Raw cross-level repetition is superseded for the developmental arm:
-        # it transports syntax rather than a qualified consequential role.
-        # Exact retained replay is allowed; speculative transfer is not.
-        return super(MemoryGraphController, self)._next_retained(obs)
+        retained = super(MemoryGraphController, self)._next_retained(obs)
+        if retained is not None:
+            return retained
+        return self._next_requalified(obs)
 
     def observe_terminal(self, frame: Any) -> None:
         obs = normalize_frame(frame)
