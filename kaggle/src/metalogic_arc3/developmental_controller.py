@@ -55,6 +55,11 @@ class ProgressMemory:
         self._pending: ProgressDecision | None = None
         self._compiled = None
         self._policies: dict[int, Any] = {}
+        # Goal-relative procedures are successful action programs keyed only by
+        # an explicit exposed-interface binding. They are hypotheses when
+        # transported to a new observation and are checked by actual progress.
+        self.relative_programs: list[dict[str, Any]] = []
+        self._relative_active: dict[str, Any] | None = None
 
     @staticmethod
     def _obs_data(obs: Observation) -> dict[str, Any]:
@@ -71,6 +76,66 @@ class ProgressMemory:
         self._history = ()
         self._current = obs
         self._pending = None
+        self._relative_active = None
+
+    def _binding(self, obs: Observation) -> tuple:
+        return (obs.width, obs.height, tuple(obs.available_actions))
+
+    def _learn_relative_program(self, before: Observation, after: Observation) -> None:
+        level = before.levels_completed
+        rows = []
+        for row in reversed(self.records):
+            if row['before']['levels_completed'] != level:
+                break
+            rows.append(row)
+            if row['before']['state'] in ('WIN', 'GAME_OVER'):
+                break
+        rows.reverse()
+        if not rows:
+            return
+        binding = self._binding(before)
+        actions = tuple(tuple(r['action']) for r in rows)
+        support = tuple(r['evidence'] for r in rows)
+        program = dict(binding=binding, actions=actions, support=support,
+                       delta_levels=after.levels_completed-before.levels_completed,
+                       terminal=(after.state == 'WIN'))
+        if program not in self.relative_programs:
+            self.relative_programs.append(program)
+
+    def _relative_plan(self, obs: Observation, remaining_actions: int | None = None) -> ProgressDecision | None:
+        if self._relative_active is not None:
+            active = self._relative_active
+            if tuple(active['binding']) != self._binding(obs):
+                self._residual('relative_binding_changed')
+                self._relative_active = None
+            elif active['index'] < len(active['actions']):
+                action = tuple(active['actions'][active['index']])
+                if action[0] in obs.available_actions and (remaining_actions is None or
+                        len(active['actions'])-active['index'] <= remaining_actions):
+                    active['index'] += 1
+                    self.stats['relative_uses'] = self.stats.get('relative_uses', 0) + 1
+                    return ProgressDecision(ActionToken(*action, source='crystal_relative'),
+                        len(active['actions'])-active['index']+1,
+                        tuple(active['support']), (), status='CANDIDATE')
+                self._relative_active = None
+        binding = self._binding(obs)
+        candidates = [p for p in self.relative_programs
+                      if tuple(p['binding']) == binding and
+                      not any(ref in self.revoked for ref in p['support'])]
+        if not candidates:
+            return None
+        program = min(candidates, key=lambda p: (len(p['actions']), tuple(p['actions'])))
+        if remaining_actions is not None and len(program['actions']) > remaining_actions:
+            return None
+        action = tuple(program['actions'][0])
+        if action[0] not in obs.available_actions:
+            return None
+        self._relative_active = dict(program, index=1, start_level=obs.levels_completed,
+                                     start_state=obs.state)
+        self.stats['relative_starts'] = self.stats.get('relative_starts', 0) + 1
+        self.stats['relative_uses'] = self.stats.get('relative_uses', 0) + 1
+        return ProgressDecision(ActionToken(*action, source='crystal_relative'),
+            len(program['actions']), tuple(program['support']), (), status='CANDIDATE')
 
     def state_id(self, obs: Observation, history: tuple) -> str:
         return self._state_id(self._obs_data(obs), history, self.history_depth)
@@ -128,6 +193,13 @@ class ProgressMemory:
         if after.levels_completed > before.levels_completed or (
                 after.state == 'WIN' and before.state != 'WIN'):
             self.stats['observed_progress'] += 1
+            self._learn_relative_program(before, after)
+            if self._relative_active is not None:
+                self.stats['relative_successes'] = self.stats.get('relative_successes', 0) + 1
+                self._relative_active = None
+        elif self._relative_active is not None and after.state == 'GAME_OVER':
+            self.stats['relative_failures'] = self.stats.get('relative_failures', 0) + 1
+            self._relative_active = None
         self._history = next_history
         self._current = after
 
@@ -242,6 +314,9 @@ class ProgressMemory:
         source = self.state_id(obs, self._history)
         row = policy.get(source)
         if row is None:
+            relative = self._relative_plan(obs, remaining_actions)
+            if relative is not None:
+                return relative
             self._residual('no_supported_progress_continuation', source=source)
             return None
         rank, label, edges = row
@@ -270,6 +345,7 @@ class ProgressMemory:
             history=self._history,
             current=None if self._current is None else self._obs_data(self._current),
             pending=None if self._pending is None else asdict(self._pending),
+            relative_programs=self.relative_programs,
         )).decode()
 
     @classmethod
@@ -303,6 +379,7 @@ class ProgressMemory:
             current = data['current']
             current['available_actions'] = tuple(current['available_actions'])
             result._current = Observation(**current)
+        result.relative_programs = data.get('relative_programs', [])
         if data['pending'] is not None:
             p = data['pending']
             result._pending = ProgressDecision(ActionToken(**p['action']), p['rank'],
