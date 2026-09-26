@@ -1,7 +1,9 @@
 name: ARC3 Kaggle integration
 on:
   push:
-    branches: [arc3-kaggle-integration-v1]
+    branches:
+      - arc3-kaggle-integration-v1
+      - arc3-crystal-observation-kernel-spike-v1
     paths:
       - 'kaggle/**'
       - '.github/workflows/arc3-kaggle-integration.yml'
@@ -36,6 +38,7 @@ jobs:
           assert 'class MyAgent' in agent
           assert 'class OnlineController' in agent
           assert 'class ArchivedCapability' in agent
+          assert 'class TraceCapability' in agent
           assert 'BUILD_PROVENANCE' in agent
           lower = agent.lower()
           for forbidden in ('requests', 'openai', 'anthropic', 'subprocess', 'socket', 'urllib'):
@@ -75,6 +78,17 @@ jobs:
           echo 'ARC3_ARCHIVED_THREE_LEVELS=PASS'
           echo 'ARC3_LEVEL4_FRONTIER=PASS'
           echo 'ARC3_GENERATED_AGENT_PUBLIC_ENV=PASS'
+      - name: Replay compiled tn36 progress capability
+        run: |
+          python kaggle/scripts/play_local.py \
+            --offline-environments-dir upstream-arc-agi/test_environment_files \
+            --game tn36-ef4dde99 \
+            --max-steps 8 | tee arc3-tn36-trace.log
+          grep -q 'ARC3_PUBLIC_SMOKE=PASS' arc3-tn36-trace.log
+          levels="$(grep -o 'MAX_LEVELS_REACHED=[0-9]*' arc3-tn36-trace.log | tail -1 | cut -d= -f2)"
+          test -n "$levels"
+          test "$levels" -ge 1
+          echo 'ARC3_TN36_TRACE_REPLAY=PASS'
       - name: Measure untouched bt11 generalization baseline
         run: |
           python kaggle/scripts/play_local.py \
@@ -95,5 +109,6 @@ jobs:
             kaggle/notebooks/kernel-metadata.json
             kaggle/provenance/sources.json
             arc3-public-smoke.log
+            arc3-tn36-trace.log
             arc3-untouched-bt11.log
           if-no-files-found: error
