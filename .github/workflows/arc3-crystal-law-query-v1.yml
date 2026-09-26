@@ -434,3 +434,21 @@ jobs:
         with:
           name: arc3-crystal-lawful-future-v1
           path: evidence/lawful-future/result.json
+
+
+  crystal_future_quotient_tunnels_v2:
+    needs: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "datasets>=3,<5"
+      - name: Compile tunnels on minimum future quotient
+        run: PYTHONPATH=experiments python experiments/arc3_crystal_future_quotient_tunnels_v2.py --limit 1600000 --out evidence/future-tunnels-v2/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-crystal-future-tunnels-v2
+          path: evidence/future-tunnels-v2/result.json
