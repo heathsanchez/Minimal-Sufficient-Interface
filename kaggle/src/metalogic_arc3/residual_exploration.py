@@ -10,6 +10,7 @@ from itertools import product
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
 from .arc_crystal import ArcCrystal, CapabilityEvidence
+from .protected_future_kernel import ProtectedFutureKernel, context as future_context
 
 
 
@@ -131,6 +132,7 @@ class ResidualController(DevelopmentalController):
         self._role_splits = set()
         # EXPAND is authority-gated: finite probe exhaustion is UNKNOWN, not an obstruction.
         self._expressive_obstructions = {}
+        self._future_kernels = {}
 
     def reset_episode(self):
         super().reset_episode()
@@ -223,9 +225,32 @@ class ResidualController(DevelopmentalController):
                 consequence_grade=1 if obs.levels_completed>previous.levels_completed else 0))
             if self._residual_crystal.conflicted(role) and not before_conflict:
                 coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
+                # Collatz-style refinement: the conflict itself is the residual.
+                # Reuse the already-computed causal observable, admit only a
+                # coordinate that removes the protected-future conflict, and
+                # otherwise emit an exact obstruction to the current language.
+                kernel = self._future_kernels.setdefault(coarse, ProtectedFutureKernel())
+                # Backfill the just-observed pair from the conflict-preserving
+                # Crystal support so the kernel starts from actual evidence.
+                features = self._guard_features(self._last_causal_role)
+                ctx = future_context(**features)
+                for observed_outcome, supports in self._residual_crystal._outcomes.get(role,{}).items():
+                    for support in supports:
+                        kernel.observe(observed_outcome,support,ctx)
+                candidates = tuple(sorted(features))
+                sep = kernel.refine(candidates)
+                if sep is not None:
+                    self.crystal.stats['future_kernel_splits'] = self.crystal.stats.get('future_kernel_splits',0)+1
+                    self.crystal._residual('protected_future_separator_admitted',
+                        role=repr(coarse),separator=sep)
+                elif kernel.expressive_obstruction:
+                    support = 'protected-future-kernel:'+repr(coarse)
+                    self.certify_expressive_obstruction(obs.levels_completed,support)
+                    self.crystal._residual('protected_future_kernel_obstruction',
+                        role=repr(coarse),candidate_language=list(candidates))
+                # Keep the old hypothesis split only as an ablation lineage;
+                # it is no longer the authority for developmental refinement.
                 self._role_splits.add(coarse)
-                self.crystal.stats['role_splits'] = self.crystal.stats.get('role_splits',0)+1
-                self.crystal._residual('consequence_conflict_requires_split',role=repr(coarse))
             self._pending_acquisition_role = None
         if previous is not None and last is not None and last.source == 'crystal_genesis':
             if obs.levels_completed > previous.levels_completed:
