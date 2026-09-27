@@ -79,7 +79,7 @@ class ResidualExplorationContracts(unittest.TestCase):
 
     def test_earned_future_separator_changes_subsequent_role_identity(self):
         api=self.api(); ctl=api.ResidualController((1,2),archived_capabilities=(),trace_capabilities=())
-        coarse=('procedure-effect-v2',1,None,None,0)
+        coarse=('procedure-effect-v3','ACTION',0)
         k=api.ProtectedFutureKernel()
         k.observe('PROGRESS','p',api.future_context(action_id=1,kind='ACTION'))
         k.observe('STUCK','n',api.future_context(action_id=2,kind='ACTION'))
@@ -103,7 +103,7 @@ class ResidualExplorationContracts(unittest.TestCase):
 
     def test_separator_capability_survives_restart_and_ancestor_ablation_removes_reach(self):
         api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
-        coarse=('procedure-effect-v2',1,None,None,0)
+        coarse=('procedure-effect-v3','ACTION',0)
         cap={'id':'cap:mode','separator':'kind','role':coarse,'support':('s1','s2')}
         ctl._retained_separator_caps[(coarse,'kind')]=cap
         ctl.reset_episode()
@@ -113,7 +113,7 @@ class ResidualExplorationContracts(unittest.TestCase):
 
     def test_dependent_acquisition_records_retained_parent_lineage(self):
         api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
-        o=obs(1); coarse=('procedure-effect-v2',1,None,None,0)
+        o=obs(1); coarse=('procedure-effect-v3','ACTION',0)
         k=api.ProtectedFutureKernel(); k.separators=('kind',)
         ctl._future_kernels[coarse]=k
         ctl._retained_separator_caps[(coarse,'kind')]={'id':'cap:kind','separator':'kind','role':coarse,'support':('s',)}
@@ -124,7 +124,7 @@ class ResidualExplorationContracts(unittest.TestCase):
 
     def test_ancestor_ablation_removes_future_cap_from_child_role(self):
         api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
-        o=obs(1); coarse=('procedure-effect-v2',1,None,None,0)
+        o=obs(1); coarse=('procedure-effect-v3','ACTION',0)
         k=api.ProtectedFutureKernel(); k.separators=('kind',); ctl._future_kernels[coarse]=k
         ctl._retained_separator_caps[(coarse,'kind')]={'id':'cap:kind','separator':'kind','role':coarse,'support':('s',)}
         ctl._action_catalog=lambda _: (ActionToken(1),)
