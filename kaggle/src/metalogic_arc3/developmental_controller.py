@@ -498,7 +498,7 @@ class DevelopmentalController(MemoryGraphController):
         frontier = self._transport_frontier(obs,catalog)
         if not frontier:
             return tuple(catalog)
-        chosen = frontier[0][2]
+        chosen = frontier[0][3]
         self.crystal.stats['transport_frontier_hits'] = self.crystal.stats.get('transport_frontier_hits',0)+1
         return (chosen,) + tuple(a for a in catalog if a != chosen)
 
