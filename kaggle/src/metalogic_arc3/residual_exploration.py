@@ -218,25 +218,20 @@ class ResidualController(DevelopmentalController):
         if previous is not None and last is not None and last.source == 'crystal_acquire' and self._pending_acquisition_role is not None:
             outcome = repr((obs.state,obs.levels_completed-previous.levels_completed,obs.board_digest != previous.board_digest))
             role = self._pending_acquisition_role
+            coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
+            features = self._guard_features(self._last_causal_role)
+            ctx = future_context(**features)
+            support = f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}'
+            kernel = self._future_kernels.setdefault(coarse, ProtectedFutureKernel())
+            kernel.observe(outcome,support,ctx)
             before_conflict = self._residual_crystal.conflicted(role)
             self._residual_crystal.observe(CapabilityEvidence(
-                role,outcome,
-                source=f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}',
+                role,outcome,source=support,
                 consequence_grade=1 if obs.levels_completed>previous.levels_completed else 0))
             if self._residual_crystal.conflicted(role) and not before_conflict:
-                coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
                 # Collatz-style refinement: the conflict itself is the residual.
-                # Reuse the already-computed causal observable, admit only a
-                # coordinate that removes the protected-future conflict, and
-                # otherwise emit an exact obstruction to the current language.
-                kernel = self._future_kernels.setdefault(coarse, ProtectedFutureKernel())
-                # Backfill the just-observed pair from the conflict-preserving
-                # Crystal support so the kernel starts from actual evidence.
-                features = self._guard_features(self._last_causal_role)
-                ctx = future_context(**features)
-                for observed_outcome, supports in self._residual_crystal._outcomes.get(role,{}).items():
-                    for support in supports:
-                        kernel.observe(observed_outcome,support,ctx)
+                # Admit only a witnessed causal coordinate that removes the
+                # protected-future conflict; otherwise preserve the obstruction.
                 candidates = tuple(sorted(features))
                 sep = kernel.refine(candidates)
                 if sep is not None:
