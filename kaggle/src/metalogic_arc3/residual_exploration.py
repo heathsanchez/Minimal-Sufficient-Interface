@@ -136,7 +136,8 @@ class ResidualController(DevelopmentalController):
         self._future_kernel_contexts = {}
         self._pending_acquisition_context = None
         self._retained_separator_caps = {}
-        self._pending_parent_caps = ()\n        self._pending_acquisition_coarse = None
+        self._pending_parent_caps = ()
+        self._pending_acquisition_coarse = None
 
     def reset_episode(self):
         super().reset_episode()
