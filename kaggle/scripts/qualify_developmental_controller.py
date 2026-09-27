@@ -223,7 +223,8 @@ def main():
         download.close_scorecard()
         games = [(item.game_id,1000000) for item in catalog]
     result = real_public(module,args.environments,args.output,games,
-                         1 if args.public_catalog else 3) if args.environments else synthetic(module)
+                         1 if args.public_catalog else 3,
+                         causal_bank=causal_bank) if args.environments else synthetic(module)
     if args.public_catalog:
         result['scope']='all accessible public catalogue games frozen before play; first-episode 400-call A/B; public development only'
         result['catalogue'] = manifest

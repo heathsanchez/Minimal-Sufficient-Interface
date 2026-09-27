@@ -159,7 +159,8 @@ class ResidualController(DevelopmentalController):
         if wanted is None:
             return None
         # The role encodes the real action whose consequence must be purchased.
-        action = (wanted[2],wanted[3],wanted[4])
+        # v2 = (kind, action_id, x, y, level[, split]); split suffix is not an action.
+        action = (wanted[1],wanted[2],wanted[3])
         if action[0] not in obs.available_actions:
             return None
         self._pending_acquisition_role = wanted
