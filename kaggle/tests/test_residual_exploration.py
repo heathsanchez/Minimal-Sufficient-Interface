@@ -101,6 +101,27 @@ class ResidualExplorationContracts(unittest.TestCase):
             roles.append(base)
         self.assertTrue(any(any(part[0]=='future-sep' for part in r[5:]) for r in roles if len(r)>5))
 
+    def test_separator_capability_survives_restart_and_ancestor_ablation_removes_reach(self):
+        api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
+        coarse=('procedure-effect-v2',1,None,None,0)
+        cap={'id':'cap:mode','separator':'kind','role':coarse,'support':('s1','s2')}
+        ctl._retained_separator_caps[(coarse,'kind')]=cap
+        ctl.reset_episode()
+        self.assertIn((coarse,'kind'),ctl._retained_separator_caps)
+        ctl.ablate_separator_capability('cap:mode')
+        self.assertNotIn((coarse,'kind'),ctl._retained_separator_caps)
+
+    def test_dependent_acquisition_records_retained_parent_lineage(self):
+        api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
+        o=obs(1); coarse=('procedure-effect-v2',1,None,None,0)
+        k=api.ProtectedFutureKernel(); k.separators=('kind',)
+        ctl._future_kernels[coarse]=k
+        ctl._retained_separator_caps[(coarse,'kind')]={'id':'cap:kind','separator':'kind','role':coarse,'support':('s',)}
+        ctl._action_catalog=lambda _: (ActionToken(1),)
+        token=ctl._crystal_acquisition_next(o)
+        self.assertEqual(token.source,'crystal_acquire')
+        self.assertEqual(ctl._pending_parent_caps,('cap:kind',))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
