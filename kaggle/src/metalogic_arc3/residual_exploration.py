@@ -132,7 +132,9 @@ class ResidualController(DevelopmentalController):
         self._role_splits = set()
         # EXPAND is authority-gated: finite probe exhaustion is UNKNOWN, not an obstruction.
         self._expressive_obstructions = {}
-        self._future_kernels = {}\n        self._future_kernel_contexts = {}\n        self._pending_acquisition_context = None
+        self._future_kernels = {}
+        self._future_kernel_contexts = {}
+        self._pending_acquisition_context = None
 
     def reset_episode(self):
         super().reset_episode()
