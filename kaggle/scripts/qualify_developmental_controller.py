@@ -181,9 +181,16 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
         for row in rows for life in row['arms']['candidate'])
     probe_use = sum(life['sources'].get('crystal_probe',0) + life['sources'].get('crystal_probe_route',0)
                     for row in rows for life in row['arms']['candidate'])
+    retained_separator_capabilities = sum(
+        row['candidate_stats'].get('retained_separator_capabilities',0) for row in rows)
+    dependent_acquisitions = sum(
+        row['candidate_stats'].get('dependent_acquisitions',0) for row in rows)
     return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
                 results=rows,candidate_uses=planner_use,live_crystal_uses=live_crystal_use,
-                probe_uses=probe_use,observed_improvement=improvement,
+                probe_uses=probe_use,
+                retained_separator_capabilities=retained_separator_capabilities,
+                dependent_acquisitions=dependent_acquisitions,
+                observed_improvement=improvement,
                 observed_regression=regression,
                 release_qualified=bool(improvement and not regression and live_crystal_use))
 
