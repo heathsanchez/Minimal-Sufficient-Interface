@@ -1,40 +1,40 @@
 from __future__ import annotations
-import argparse,json
+import argparse,json,hashlib
 from collections import defaultdict
 from pathlib import Path
+
+def cid(x):
+    return hashlib.sha256(json.dumps(x,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--input',type=Path,required=True);ap.add_argument('--output',type=Path,required=True);a=ap.parse_args()
     data=json.loads(a.input.read_text())
-    supports=defaultdict(lambda:defaultdict(list)); observations=0
+    transports=[]; observations=0
     for row in data['results']:
-        game=row['game_id']
-        xs=row.get('candidate_causal_examples',[])
+        game=row['game_id']; xs=row.get('candidate_causal_examples',[])
         by_epoch=defaultdict(list)
-        for x in xs:
-            observations+=1; by_epoch[x.get('epoch',0)].append(x)
+        for x in xs: observations+=1; by_epoch[x.get('epoch',0)].append(x)
         for epoch,seq in by_epoch.items():
             seq.sort(key=lambda x:x.get('step',0))
-            for i,x in enumerate(seq):
-                depth=None
-                for j in range(i,len(seq)):
-                    y=seq[j]
-                    if y.get('after_level',0)>x.get('before_level',0):
-                        depth=j-i+1; break
-                    if y.get('after_state') in ('GAME_OVER','WIN'):
-                        break
-                supports[x['role']][game].append(depth)
-    laws={}
-    for role,games in supports.items():
-        rg={}
-        for game,depths in games.items():
-            positives=[d for d in depths if d is not None]
-            rg[game]={'min_observed_positive_depth':min(positives) if positives else None,
-                      'positive_occurrences':len(positives),'occurrences':len(depths)}
-        laws[role]=rg
-    out={'schema':'arc3.progress-future-quotient-bank@1','roles':laws,'observations':observations,
-         'boundary':'Observed finite lineage only. Depth is distance along the recorded episode to the next positive level-progress event before terminal/reset. It is evidence of reachable progress, not a proof of minimum environmental distance. Runtime excludes target-game support and uses depth only as a prospective-cost ordering; no legal action is eliminated.'}
+            start=0
+            for j,x in enumerate(seq):
+                if x.get('after_level',0)>x.get('before_level',0):
+                    segment=seq[start:j+1]
+                    if segment:
+                        program=[s['role'] for s in segment]
+                        source_tests=sorted(set(s['role'] for s in segment[:max(1,min(4,len(segment)))]))
+                        obj={'game':game,'epoch':epoch,'source_tests':source_tests,
+                             'program_roles':program,'progress_delta':x['after_level']-segment[0]['before_level'],
+                             'cost':len(segment)}
+                        obj['id']=cid(obj); transports.append(obj)
+                    start=j+1
+                elif x.get('after_state') in ('GAME_OVER','WIN'):
+                    start=j+1
+    out={'schema':'arc3.certified-continuation-transport-bank@1','transports':transports,
+         'observations':observations,
+         'boundary':'Finite public-development witnesses only. A transport records an observed causal segment ending in protected level progress, its initial role tests, program-role lineage, support game, and observed cost. Runtime excludes target-game support. Applicability is CANDIDATE until its source tests are witnessed live; no unmatched action is eliminated.'}
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-    pos=sum(1 for games in laws.values() for v in games.values() if v['min_observed_positive_depth'] is not None)
-    print(json.dumps({'roles':len(laws),'observations':observations,'positive_role_game_supports':pos},sort_keys=True))
+    print(json.dumps({'observations':observations,'transports':len(transports),
+                      'min_cost':min((t['cost'] for t in transports),default=None),
+                      'max_cost':max((t['cost'] for t in transports),default=None)},sort_keys=True))
 if __name__=='__main__':main()
