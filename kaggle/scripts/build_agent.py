@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MEMORY_GRAPH = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_graph.py"
 CRYSTAL_LAWS = ROOT / "kaggle" / "src" / "metalogic_arc3" / "crystal_laws.py"
+ARC_CRYSTAL = ROOT / "kaggle" / "src" / "metalogic_arc3" / "arc_crystal.py"
 TRACE_CAPABILITIES = ROOT / "kaggle" / "src" / "metalogic_arc3" / "trace_capabilities.py"
 RUNTIME = ROOT / "kaggle" / "src" / "metalogic_arc3" / "runtime.py"
 MEMORY_CONTROLLER = ROOT / "kaggle" / "src" / "metalogic_arc3" / "memory_controller.py"
@@ -51,6 +52,7 @@ def render() -> str:
     )
     memory_graph = clean_module(MEMORY_GRAPH.read_text())
     crystal_laws = clean_module(CRYSTAL_LAWS.read_text())
+    arc_crystal = clean_module(ARC_CRYSTAL.read_text())
     trace_capabilities = clean_module(TRACE_CAPABILITIES.read_text())
     runtime = clean_module(
         RUNTIME.read_text(),
@@ -76,14 +78,15 @@ def render() -> str:
     residual_exploration = clean_module(
         RESIDUAL_EXPLORATION.read_text(),
         remove=("from .developmental_controller import ProgressMemory",
-                "from .runtime import ActionToken"),
+                "from .runtime import ActionToken",
+                "from .arc_crystal import ArcCrystal"),
     )
     adapter = clean_module(
         ADAPTER.read_text(),
         remove=("from .residual_exploration import ResidualController\n",),
     )
     return (
-        header + memory_graph + "\n" + crystal_laws + "\n" + trace_capabilities + "\n" + runtime
+        header + memory_graph + "\n" + crystal_laws + "\n" + arc_crystal + "\n" + trace_capabilities + "\n" + runtime
         + "\n" + memory_controller + "\n" + continuation_core
         + "\n" + developmental_controller + "\n" + residual_exploration + "\n" + adapter
     )
