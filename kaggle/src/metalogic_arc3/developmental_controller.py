@@ -458,29 +458,37 @@ class DevelopmentalController(MemoryGraphController):
                 return ('CLICK', self._canonical_probe_patch(board, action.x, action.y))
         return ('ACTION', action.action_id)
 
-    def _progress_future_cost(self, role_text):
+    def _transport_frontier(self, obs: Observation, catalog):
         bank = self._causal_bank or {}
-        roles = bank.get('roles')
-        if roles is None:
-            return None
-        evidence = roles.get(role_text, {})
-        depths = [v.get('min_observed_positive_depth') for game,v in evidence.items()
-                  if game != self._causal_exclude and v.get('min_observed_positive_depth') is not None]
-        return min(depths) if depths else None
+        if bank.get('schema') != 'arc3.certified-continuation-transport-bank@1':
+            return ()
+        role_to_action = {}
+        for action in catalog:
+            role_to_action.setdefault(self._role_text(self._causal_role(obs,action)), action)
+        live = []
+        for t in bank.get('transports',()):
+            if t.get('game') == self._causal_exclude:
+                continue
+            tests = t.get('source_tests',())
+            matched = sum(1 for r in tests if r in role_to_action)
+            if matched == 0:
+                continue
+            # A transport becomes executable only when every declared source
+            # test is present in the live action/test interface. Partial match
+            # remains an applicability residual, not permission to replay.
+            if matched == len(tests) and t.get('program_roles'):
+                first = role_to_action.get(t['program_roles'][0])
+                if first is not None:
+                    live.append((t.get('cost',10**9), t['id'], first))
+        return tuple(sorted(live,key=lambda x:(x[0],x[1])))
 
     def _causal_reorder(self, obs: Observation, catalog):
-        bank = self._causal_bank
-        if not bank or bank.get('schema') != 'arc3.progress-future-quotient-bank@1':
+        frontier = self._transport_frontier(obs,catalog)
+        if not frontier:
             return tuple(catalog)
-        ranked = []
-        for idx, action in enumerate(catalog):
-            role = self._role_text(self._causal_role(obs, action))
-            cost = self._progress_future_cost(role)
-            # This is only prospective-cost ordering. Unknown futures remain
-            # lawful and are never removed from the catalog.
-            ranked.append(((0, cost, idx) if cost is not None else (1, 0, idx), action))
-        ranked.sort(key=lambda x:x[0])
-        return tuple(a for _score,a in ranked)
+        chosen = frontier[0][2]
+        self.crystal.stats['transport_frontier_hits'] = self.crystal.stats.get('transport_frontier_hits',0)+1
+        return (chosen,) + tuple(a for a in catalog if a != chosen)
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         previous = self._previous
