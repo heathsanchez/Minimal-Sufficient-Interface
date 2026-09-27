@@ -1,34 +1,40 @@
 from __future__ import annotations
 import argparse,json
-from collections import defaultdict,Counter
+from collections import defaultdict
 from pathlib import Path
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--input',type=Path,required=True);ap.add_argument('--output',type=Path,required=True);a=ap.parse_args()
     data=json.loads(a.input.read_text())
-    role_game=defaultdict(lambda:defaultdict(Counter)); observations=0
+    supports=defaultdict(lambda:defaultdict(list)); observations=0
     for row in data['results']:
         game=row['game_id']
-        for ex in row.get('candidate_causal_examples',[]):
-            observations+=1
-            role_game[ex['role']][game][json.dumps(ex['outcome'],separators=(',',':'))]+=1
-    laws={}; conflicts=0
-    for role,games in role_game.items():
-        # Each source game contributes at most one vote for an outcome and only
-        # if its own evidence is deterministic. Conflicting source-game roles
-        # remain UNKNOWN rather than majority-voting their internal traces.
-        outcomes=defaultdict(list)
-        for game,c in games.items():
-            if len(c)!=1:
-                conflicts+=1; continue
-            outcome=next(iter(c))
-            outcomes[outcome].append(game)
-        if outcomes:
-            laws[role]={out:sorted(gs) for out,gs in sorted(outcomes.items())}
-    out={'schema':'arc3.causal-law-product-bank@1','laws':laws,'observations':observations,
-         'conflicting_source_game_roles':conflicts,
-         'boundary':'Independent role→consequence fragments. Runtime removes target-game support from each consequence; a consequence remains admissible only with at least one other-game support. No historical game identity is a world and no conflicting within-game role is majority-voted.'}
+        xs=row.get('candidate_causal_examples',[])
+        by_epoch=defaultdict(list)
+        for x in xs:
+            observations+=1; by_epoch[x.get('epoch',0)].append(x)
+        for epoch,seq in by_epoch.items():
+            seq.sort(key=lambda x:x.get('step',0))
+            for i,x in enumerate(seq):
+                depth=None
+                for j in range(i,len(seq)):
+                    y=seq[j]
+                    if y.get('after_level',0)>x.get('before_level',0):
+                        depth=j-i+1; break
+                    if y.get('after_state') in ('GAME_OVER','WIN'):
+                        break
+                supports[x['role']][game].append(depth)
+    laws={}
+    for role,games in supports.items():
+        rg={}
+        for game,depths in games.items():
+            positives=[d for d in depths if d is not None]
+            rg[game]={'min_observed_positive_depth':min(positives) if positives else None,
+                      'positive_occurrences':len(positives),'occurrences':len(depths)}
+        laws[role]=rg
+    out={'schema':'arc3.progress-future-quotient-bank@1','roles':laws,'observations':observations,
+         'boundary':'Observed finite lineage only. Depth is distance along the recorded episode to the next positive level-progress event before terminal/reset. It is evidence of reachable progress, not a proof of minimum environmental distance. Runtime excludes target-game support and uses depth only as a prospective-cost ordering; no legal action is eliminated.'}
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-    print(json.dumps({'roles':len(laws),'outcome_fragments':sum(len(x) for x in laws.values()),
-                      'observations':observations,'conflicts':conflicts},sort_keys=True))
+    pos=sum(1 for games in laws.values() for v in games.values() if v['min_observed_positive_depth'] is not None)
+    print(json.dumps({'roles':len(laws),'observations':observations,'positive_role_game_supports':pos},sort_keys=True))
 if __name__=='__main__':main()
