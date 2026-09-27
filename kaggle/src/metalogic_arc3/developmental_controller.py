@@ -417,6 +417,7 @@ class DevelopmentalController(MemoryGraphController):
         self._causal_bank = kwargs.pop('causal_bank', None)
         self._causal_exclude = kwargs.pop('causal_exclude', None)
         self._causal_survivors = None
+        self._causal_role_possible = {}
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -430,6 +431,7 @@ class DevelopmentalController(MemoryGraphController):
         self._requal_last_digest = None
         self._last_causal_role = None
         self._causal_survivors = None
+        self._causal_role_possible = {}
 
     @staticmethod
     def _causal_outcome(before: Observation, after: Observation):
@@ -452,28 +454,33 @@ class DevelopmentalController(MemoryGraphController):
                 return ('CLICK', self._canonical_probe_patch(board, action.x, action.y))
         return ('ACTION', action.action_id)
 
+    def _role_outcomes(self, role_text):
+        bank = self._causal_bank or {}
+        laws = bank.get('laws')
+        if laws is None:
+            return None
+        variants = laws.get(role_text, {})
+        out = []
+        for outcome, supports in variants.items():
+            if any(g != self._causal_exclude for g in supports):
+                out.append(outcome)
+        return tuple(sorted(out))
+
     def _causal_reorder(self, obs: Observation, catalog):
         bank = self._causal_bank
-        if not bank or not bank.get('worlds'):
-            return tuple(catalog)
-        worlds = {k:v for k,v in bank['worlds'].items() if k != self._causal_exclude}
-        if self._causal_survivors is None:
-            self._causal_survivors = set(worlds)
-        survivors = [w for w in sorted(self._causal_survivors) if w in worlds]
-        roles = [(a, self._role_text(self._causal_role(obs,a))) for a in catalog]
-        applicable = [w for w in survivors if all(r in worlds[w] for _a,r in roles)]
-        if len(applicable) < 2:
+        if not bank or not bank.get('laws'):
             return tuple(catalog)
         scored = []
-        for idx,(action,role) in enumerate(roles):
-            parts = {}
-            for w in applicable:
-                out = worlds[w][role]
-                parts[out] = parts.get(out,0) + 1
-            scored.append((max(parts.values()), -len(parts), idx, action))
-        best = min(scored)
-        chosen = best[-1]
-        return (chosen,) + tuple(a for a in catalog if a != chosen)
+        for idx, action in enumerate(catalog):
+            role = self._role_text(self._causal_role(obs, action))
+            possible = self._causal_role_possible.get(role)
+            if possible is None:
+                possible = set(self._role_outcomes(role) or ())
+                self._causal_role_possible[role] = possible
+            score = (-len(possible), idx) if len(possible) >= 2 else (0, idx)
+            scored.append((score, action))
+        scored.sort(key=lambda x: x[0])
+        return tuple(a for _score, a in scored)
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         previous = self._previous
@@ -484,15 +491,12 @@ class DevelopmentalController(MemoryGraphController):
                 outcome = self._causal_outcome(previous, obs)
                 role_text = self._role_text(self._last_causal_role)
                 self.causal_examples.append({'role':role_text,'outcome':list(outcome)})
-                if self._causal_bank and self._causal_survivors is not None:
-                    worlds = self._causal_bank.get('worlds', {})
-                    keep = set()
+                if self._causal_bank and self._causal_bank.get('laws') is not None:
                     want = json.dumps(list(outcome), separators=(',', ':'))
-                    for w in self._causal_survivors:
-                        pred = worlds.get(w, {}).get(role_text)
-                        if pred is None or pred == want:
-                            keep.add(w)
-                    self._causal_survivors = keep
+                    possible = self._causal_role_possible.get(role_text)
+                    if possible is None:
+                        possible = set(self._role_outcomes(role_text) or ())
+                    self._causal_role_possible[role_text] = {want} if want in possible else set()
         elif self.crystal._current is None:
             self.crystal.begin(obs)
         super()._process_previous_outcome(obs)
