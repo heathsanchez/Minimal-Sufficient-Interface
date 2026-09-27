@@ -77,6 +77,30 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertTrue(ctl._future_kernels[role].expressive_obstruction)
         self.assertTrue(ctl._expansion_authorized(terminal))
 
+    def test_earned_future_separator_changes_subsequent_role_identity(self):
+        api=self.api(); ctl=api.ResidualController((1,2),archived_capabilities=(),trace_capabilities=())
+        coarse=('procedure-effect-v2',1,None,None,0)
+        k=api.ProtectedFutureKernel()
+        k.observe('PROGRESS','p',api.future_context(action_id=1,kind='ACTION'))
+        k.observe('STUCK','n',api.future_context(action_id=2,kind='ACTION'))
+        self.assertEqual(k.refine(('action_id','kind')),'action_id')
+        ctl._future_kernels[coarse]=k
+        o=obs(1)
+        atoms=tuple(ctl._action_catalog(o))[:8]
+        hypotheses=tuple(f'p{i}' for i in range(len(atoms)))
+        actions=tuple((a.action_id,a.x,a.y) for a in atoms)
+        # The learned separator must now distinguish action-role identity.
+        roles=[]
+        for a in actions:
+            base=('procedure-effect-v2',a[0],a[1],a[2],o.levels_completed)
+            kk=ctl._future_kernels.get(base)
+            if kk and kk.separators:
+                token=ActionToken(a[0],a[1],a[2])
+                ctx=dict(api.future_context(**ctl._guard_features(ctl._causal_role(o,token))))
+                base=base+tuple(('future-sep',name,ctx.get(name,'<UNKNOWN>')) for name in kk.separators)
+            roles.append(base)
+        self.assertTrue(any(any(part[0]=='future-sep' for part in r[5:]) for r in roles if len(r)>5))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
