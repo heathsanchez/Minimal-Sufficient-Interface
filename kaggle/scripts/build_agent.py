@@ -90,7 +90,7 @@ def render() -> str:
         remove=("from .residual_exploration import ResidualController\n",),
     )
     return (
-        header + memory_graph + "\n" + crystal_laws + "\n" + arc_crystal + "\n" + protected_future_kernel + "\n" + trace_capabilities + "\n" + runtime
+        header + memory_graph + "\n" + crystal_laws + "\n" + arc_crystal + "\n" + protected_future_kernel + "\nfuture_context = context\n" + trace_capabilities + "\n" + runtime
         + "\n" + memory_controller + "\n" + continuation_core
         + "\n" + developmental_controller + "\n" + residual_exploration + "\n" + adapter
     )
