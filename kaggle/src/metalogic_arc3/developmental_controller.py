@@ -449,6 +449,54 @@ class DevelopmentalController(MemoryGraphController):
                 self._requal_active = ()
                 self._requal_index = 0
 
+    @staticmethod
+    def _canonical_probe_patch(board, x, y, radius=1):
+        remap = {}
+        nxt = 0
+        out = []
+        h = len(board)
+        w = len(board[0]) if h else 0
+        for yy in range(y-radius, y+radius+1):
+            row = []
+            for xx in range(x-radius, x+radius+1):
+                if not (0 <= yy < h and 0 <= xx < w):
+                    key = ('BOUNDARY', yy < 0, yy >= h, xx < 0, xx >= w)
+                else:
+                    value = int(board[yy][xx])
+                    if value not in remap:
+                        remap[value] = nxt
+                        nxt += 1
+                    key = ('CELL', remap[value])
+                row.append(key)
+            out.append(tuple(row))
+        return tuple(out)
+
+    def _action_catalog(self, obs: Observation) -> tuple[ActionToken, ...]:
+        catalog = super()._action_catalog(obs)
+        board = getattr(self, '_live_probe_board', None)
+        if not board:
+            return catalog
+        plain = [a for a in catalog if a.action_id != 6 or a.x is None or a.y is None]
+        clicks = [a for a in catalog if a.action_id == 6 and a.x is not None and a.y is not None]
+        reps = []
+        duplicates = []
+        seen = set()
+        for action in clicks:
+            role = self._canonical_probe_patch(board, action.x, action.y)
+            if role in seen:
+                duplicates.append(action)
+            else:
+                seen.add(role)
+                reps.append(action)
+        return tuple(plain + reps + duplicates)
+
+    def observe_and_choose(self, frame: Any) -> ActionToken | None:
+        raw = frame.get('frame', []) if isinstance(frame, dict) else getattr(frame, 'frame', [])
+        if hasattr(raw, 'tolist'):
+            raw = raw.tolist()
+        self._live_probe_board = raw[0] if isinstance(raw, list) and raw else []
+        return super().observe_and_choose(frame)
+
     def _next_archive(self, obs: Observation) -> ActionToken | None:
         # CLOSE before candidate transport. A live already-qualified archive
         # continuation keeps authority until its own observation guard rejects
