@@ -89,17 +89,21 @@ class ResidualExplorationContracts(unittest.TestCase):
         atoms=tuple(ctl._action_catalog(o))[:8]
         hypotheses=tuple(f'p{i}' for i in range(len(atoms)))
         actions=tuple((a.action_id,a.x,a.y) for a in atoms)
-        # The learned separator must now distinguish action-role identity.
+        # The learned separator must now refine the deliberately coarse role.
         roles=[]
         for a in actions:
-            base=('procedure-effect-v2',a[0],a[1],a[2],o.levels_completed)
+            token=ActionToken(a[0],a[1],a[2])
+            base=ctl._acquisition_coarse_role(token,o)
             kk=ctl._future_kernels.get(base)
             if kk and kk.separators:
-                token=ActionToken(a[0],a[1],a[2])
                 ctx=dict(api.future_context(**ctl._guard_features(ctl._causal_role(o,token))))
-                base=base+tuple(('future-sep',name,ctx.get(name,'<UNKNOWN>')) for name in kk.separators)
+                base=base+tuple(
+                    ('future-cap','test:'+name,ctx.get(name,'<UNKNOWN>'))
+                    for name in kk.separators)
             roles.append(base)
-        self.assertTrue(any(any(part[0]=='future-sep' for part in r[5:]) for r in roles if len(r)>5))
+        self.assertTrue(any(
+            any(isinstance(part,tuple) and part[0]=='future-cap' for part in r[3:])
+            for r in roles if len(r)>3))
 
     def test_separator_capability_survives_restart_and_ancestor_ablation_removes_reach(self):
         api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
