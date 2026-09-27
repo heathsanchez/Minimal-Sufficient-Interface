@@ -134,7 +134,7 @@ class ResidualController(DevelopmentalController):
         self._expressive_obstructions = {}
         self._future_kernels = {}
         self._future_kernel_contexts = {}
-        self._pending_acquisition_context = None
+        self._pending_acquisition_context = None\n        self._retained_separator_caps = {}\n        self._pending_parent_caps = ()
 
     def reset_episode(self):
         super().reset_episode()
@@ -178,9 +178,13 @@ class ResidualController(DevelopmentalController):
                 if kernel is not None and kernel.separators:
                     token = ActionToken(a[0],a[1],a[2])
                     ctx = dict(future_context(**self._guard_features(self._causal_role(obs,token))))
-                    roles[(h,a)] = coarse + tuple(
-                        ('future-sep',name,ctx.get(name,'<UNKNOWN>'))
+                    parent_caps = tuple(
+                        self._retained_separator_caps.get((coarse,name))
                         for name in kernel.separators)
+                    parent_caps = tuple(x for x in parent_caps if x is not None)
+                    roles[(h,a)] = coarse + tuple(
+                        ('future-cap',cap['id'],ctx.get(cap['separator'],'<UNKNOWN>'))
+                        for cap in parent_caps)
                 else:
                     roles[(h,a)] = coarse
         wanted = ArcCrystal.next_acquisition(hypotheses,actions,roles,self._residual_crystal)
@@ -254,9 +258,14 @@ class ResidualController(DevelopmentalController):
                 candidates = tuple(sorted({k for row in kernel.rows for k,_ in row.features}))
                 sep = kernel.refine(candidates)
                 if sep is not None:
+                    cap_id = 'future-separator:'+repr(coarse)+':'+sep
+                    self._retained_separator_caps[(coarse,sep)] = {
+                        'id':cap_id,'separator':sep,'role':coarse,
+                        'support':tuple(sorted(x.source for x in kernel.rows))}
                     self.crystal.stats['future_kernel_splits'] = self.crystal.stats.get('future_kernel_splits',0)+1
+                    self.crystal.stats['retained_separator_capabilities'] = len(self._retained_separator_caps)
                     self.crystal._residual('protected_future_separator_admitted',
-                        role=repr(coarse),separator=sep)
+                        role=repr(coarse),separator=sep,capability=cap_id)
                 elif kernel.expressive_obstruction:
                     support = 'protected-future-kernel:'+repr(coarse)
                     self.certify_expressive_obstruction(obs.levels_completed,support)
