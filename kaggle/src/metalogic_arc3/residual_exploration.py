@@ -132,7 +132,7 @@ class ResidualController(DevelopmentalController):
         self._role_splits = set()
         # EXPAND is authority-gated: finite probe exhaustion is UNKNOWN, not an obstruction.
         self._expressive_obstructions = {}
-        self._future_kernels = {}
+        self._future_kernels = {}\n        self._future_kernel_contexts = {}
 
     def reset_episode(self):
         super().reset_episode()
@@ -223,6 +223,7 @@ class ResidualController(DevelopmentalController):
             ctx = future_context(**features)
             support = f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}'
             kernel = self._future_kernels.setdefault(coarse, ProtectedFutureKernel())
+            self._future_kernel_contexts[support] = ctx
             kernel.observe(outcome,support,ctx)
             before_conflict = self._residual_crystal.conflicted(role)
             self._residual_crystal.observe(CapabilityEvidence(
@@ -232,7 +233,11 @@ class ResidualController(DevelopmentalController):
                 # Collatz-style refinement: the conflict itself is the residual.
                 # Admit only a witnessed causal coordinate that removes the
                 # protected-future conflict; otherwise preserve the obstruction.
-                candidates = tuple(sorted(features))
+                # Candidate coordinates are the union of observables
+                # actually present on the conflicting support rows, not merely
+                # the latest observation. This is the ARC source-coherence
+                # analogue: compare the real histories that produced the clash.
+                candidates = tuple(sorted({k for row in kernel.rows for k,_ in row.features}))
                 sep = kernel.refine(candidates)
                 if sep is not None:
                     self.crystal.stats['future_kernel_splits'] = self.crystal.stats.get('future_kernel_splits',0)+1
