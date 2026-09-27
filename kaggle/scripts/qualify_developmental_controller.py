@@ -172,12 +172,19 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
         for row in rows for b,c in zip(row['arms']['baseline'],row['arms']['candidate']))
     regression = any(c['levels'] < b['levels'] for row in rows
                      for b,c in zip(row['arms']['baseline'],row['arms']['candidate']))
-    use = sum(row['candidate_stats']['decisions'] for row in rows)
-    probe_use = sum(row['candidate_stats'].get('residual_decisions',0) for row in rows)
+    planner_use = sum(row['candidate_stats']['decisions'] for row in rows)
+    live_crystal_use = sum(
+        life['sources'].get('crystal_candidate',0) +
+        life['sources'].get('crystal_relative',0) +
+        life['sources'].get('crystal_requalified',0)
+        for row in rows for life in row['arms']['candidate'])
+    probe_use = sum(life['sources'].get('crystal_probe',0) + life['sources'].get('crystal_probe_route',0)
+                    for row in rows for life in row['arms']['candidate'])
     return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
-                results=rows,candidate_uses=use,probe_uses=probe_use,observed_improvement=improvement,
+                results=rows,candidate_uses=planner_use,live_crystal_uses=live_crystal_use,
+                probe_uses=probe_use,observed_improvement=improvement,
                 observed_regression=regression,
-                release_qualified=bool(improvement and not regression and use))
+                release_qualified=bool(improvement and not regression and live_crystal_use))
 
 
 def main():
