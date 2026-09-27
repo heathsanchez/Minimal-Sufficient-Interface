@@ -96,7 +96,7 @@ def synthetic(module):
                         totals['candidate']<totals['baseline'] and usages>0))
 
 
-def real_public(module, environments: Path, output: Path, games=None, lives_count=3):
+def real_public(module, environments: Path, output: Path, games=None, lives_count=3, causal_bank=None):
     from arc_agi import Arcade, OperationMode
     from arcengine import GameAction
     rows = []
@@ -107,7 +107,7 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
         for name, cls in [('baseline', module.MemoryGraphController),
                           ('candidate', module.ResidualController)]:
             ids = tuple(int(a.value) for a in GameAction if a is not GameAction.RESET)
-            ctl = cls(ids)
+            ctl = cls(ids, causal_bank=causal_bank, causal_exclude=game_id) if name == 'candidate' else cls(ids)
             lives = []
             for life in range(lives_count):
                 ctl.reset_episode()
@@ -157,6 +157,7 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
             row['arms'][name] = lives
             if name == 'candidate':
                 row['candidate_stats'] = dict(ctl.crystal.stats)
+                row['candidate_causal_examples'] = list(getattr(ctl, 'causal_examples', ()))
                 row['history_depth'] = ctl.crystal.history_depth
                 row['unresolved_count'] = len(ctl.crystal.residuals)
                 path = output.parent / (game_id + '.continuations.json')
@@ -192,11 +193,13 @@ def main():
     parser.add_argument('--environments',type=Path)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--public-catalog',action='store_true')
+    parser.add_argument('--causal-bank',type=Path)
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True,exist_ok=True)
     module, digest = load_bundle(bool(args.environments))
     global normalize
     normalize = module.normalize_frame
+    causal_bank = json.loads(args.causal_bank.read_text()) if args.causal_bank else None
     games = None
     if args.public_catalog:
         if args.environments is None:
