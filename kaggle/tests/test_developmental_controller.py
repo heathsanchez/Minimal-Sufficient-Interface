@@ -283,5 +283,21 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertEqual(ctl.crystal.stats.get('requalification_counterexamples'), 1)
 
 
+
+    def test_probe_catalog_orders_role_representatives_before_duplicates(self):
+        api = self.api()
+        ctl = api.DevelopmentalController((6,), archived_capabilities=(), trace_capabilities=(),
+                                          grounding_stride=1, max_grounded_actions=64)
+        board = [[0,0,0,0],[0,1,1,0],[0,1,1,0],[0,0,0,0]]
+        frame0 = dict(frame=[board], levels_completed=0, state='NOT_FINISHED', available_actions=[6])
+        obs = normalize_frame(frame0)
+        ctl._live_probe_board = board
+        catalog = ctl._action_catalog(obs)
+        roles = [ctl._canonical_probe_patch(board,a.x,a.y) for a in catalog]
+        first_duplicate = next((i for i,r in enumerate(roles) if r in roles[:i]), len(roles))
+        self.assertEqual(len(set(roles[:first_duplicate])), first_duplicate)
+        self.assertEqual(set(roles[:first_duplicate]), set(roles))
+
+
 if __name__ == '__main__':
     unittest.main()
