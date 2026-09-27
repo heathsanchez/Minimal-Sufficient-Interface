@@ -9,7 +9,7 @@ from typing import Callable
 from itertools import product
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
-from .crystal_laws import ArcCrystalLawBridge, Prediction, LawStatus
+from .crystal_laws import ArcCrystalLawBridge, VerifiedLawStore, Prediction, LawStatus
 
 
 
@@ -127,7 +127,7 @@ class ResidualController(DevelopmentalController):
         self._probe_spend_by_level = {}
         self._genesis_threshold = 24
         self._procedure_predictions = {}
-        self._separator = ArcCrystalLawBridge()
+        self._separator = ArcCrystalLawBridge(VerifiedLawStore.default())
 
     def reset_episode(self):
         super().reset_episode()
