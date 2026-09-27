@@ -136,6 +136,14 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertEqual(ctl._pending_parent_caps,())
         self.assertFalse(any(isinstance(x,tuple) and x and x[0]=='future-cap' for x in ctl._pending_acquisition_role[5:]))
 
+    def test_preconflict_acquisition_quotient_pools_execution_coordinates(self):
+        api=self.api(); ctl=api.ResidualController((6,),archived_capabilities=(),trace_capabilities=())
+        o=obs(1)
+        a=ctl._acquisition_coarse_role(ActionToken(6,1,2),o)
+        b=ctl._acquisition_coarse_role(ActionToken(6,9,8),o)
+        self.assertEqual(a,b)
+        self.assertEqual(a,('procedure-effect-v3','CLICK',0))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
