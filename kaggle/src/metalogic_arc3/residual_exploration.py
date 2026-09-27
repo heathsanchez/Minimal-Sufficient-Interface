@@ -125,6 +125,7 @@ class ResidualController(DevelopmentalController):
         self._genesis_start_level = None
         self._probe_spend_by_level = {}
         self._genesis_threshold = 24
+        self._branch_seen = {}
 
     def reset_episode(self):
         super().reset_episode()
@@ -133,6 +134,24 @@ class ResidualController(DevelopmentalController):
         self._genesis_index = 0
         self._genesis_step = 0
         self._genesis_start_level = None
+
+    @staticmethod
+    def _separator_signature(obs: Observation):
+        return (obs.state, obs.levels_completed, obs.board_digest)
+
+    def _conditioned_genesis_next(self, obs: Observation) -> ActionToken | None:
+        atoms = tuple(self._action_catalog(obs))[:8]
+        if not atoms:
+            return None
+        sig = self._separator_signature(obs)
+        learned = self._branch_seen.get((obs.levels_completed, sig))
+        if learned is not None and learned.action_id in obs.available_actions:
+            self.crystal.stats['conditioned_reuse'] = self.crystal.stats.get('conditioned_reuse',0)+1
+            return ActionToken(learned.action_id,learned.x,learned.y,source='crystal_conditioned')
+        idx = self.crystal.stats.get('conditioned_prefixes',0) % len(atoms)
+        token = atoms[idx]
+        self.crystal.stats['conditioned_prefixes'] = self.crystal.stats.get('conditioned_prefixes',0)+1
+        return ActionToken(token.action_id,token.x,token.y,source='crystal_conditioned_prefix')
 
     def _genesis_next(self, obs: Observation) -> ActionToken | None:
         # EXPAND only over the inherited finite legal action substrate. Search
@@ -166,6 +185,11 @@ class ResidualController(DevelopmentalController):
         previous = self._previous
         last = self._last_action
         super()._process_previous_outcome(obs)
+        if previous is not None and last is not None and last.source in ('crystal_conditioned_prefix','crystal_conditioned'):
+            if obs.levels_completed > previous.levels_completed:
+                key = (previous.levels_completed, self._separator_signature(previous))
+                self._branch_seen[key] = last
+                self.crystal.stats['conditioned_progress'] = self.crystal.stats.get('conditioned_progress',0)+1
         if previous is not None and last is not None and last.source == 'crystal_genesis':
             if obs.levels_completed > previous.levels_completed:
                 self.crystal.stats['genesis_progress'] = self.crystal.stats.get('genesis_progress',0)+1
@@ -190,7 +214,8 @@ class ResidualController(DevelopmentalController):
         # flat probes forever.
         spent = self._probe_spend_by_level.get(obs.levels_completed, 0)
         if spent >= self._genesis_threshold:
-            token = self._genesis_next(obs)
+            genesis_spend = self.crystal.stats.get('genesis_actions',0)
+            token = self._conditioned_genesis_next(obs) if genesis_spend >= 96 else self._genesis_next(obs)
             if token is not None:
                 return token
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
