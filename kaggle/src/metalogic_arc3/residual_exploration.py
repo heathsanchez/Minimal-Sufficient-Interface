@@ -6,6 +6,7 @@ fixed inherited action-grounding language is retained as an explicit boundary.
 """
 from __future__ import annotations
 from typing import Callable
+from itertools import product
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
 
@@ -113,7 +114,51 @@ def frontier_continuation(
 
 
 class ResidualController(DevelopmentalController):
-    """Progress reuse plus first-goal experiments; old controllers are ablations."""
+    """Progress reuse plus residual-driven bounded procedure genesis."""
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self._genesis_level = None
+        self._genesis_programs = ()
+        self._genesis_index = 0
+        self._genesis_step = 0
+        self._genesis_start_level = None
+
+    def reset_episode(self):
+        super().reset_episode()
+        self._genesis_level = None
+        self._genesis_programs = ()
+        self._genesis_index = 0
+        self._genesis_step = 0
+        self._genesis_start_level = None
+
+    def _genesis_next(self, obs: Observation) -> ActionToken | None:
+        # EXPAND only over the inherited finite legal action substrate. Search
+        # programs by length, then inherited catalog order: explicit minimum
+        # construction cost, no game-specific reward shaping.
+        if self._genesis_level != obs.levels_completed:
+            atoms = tuple(self._action_catalog(obs))
+            # Keep the declared expansion finite and consequentially cheap.
+            atoms = atoms[:min(8,len(atoms))]
+            self._genesis_programs = tuple(
+                p for n in range(1,4) for p in product(atoms, repeat=n))
+            self._genesis_level = obs.levels_completed
+            self._genesis_index = 0
+            self._genesis_step = 0
+            self._genesis_start_level = obs.levels_completed
+        while self._genesis_index < len(self._genesis_programs):
+            p = self._genesis_programs[self._genesis_index]
+            if self._genesis_step >= len(p):
+                self._genesis_index += 1; self._genesis_step = 0; continue
+            token = p[self._genesis_step]
+            if token.action_id not in obs.available_actions:
+                self._genesis_index += 1; self._genesis_step = 0; continue
+            self._genesis_step += 1
+            self.crystal.stats['genesis_actions'] = self.crystal.stats.get('genesis_actions',0)+1
+            return ActionToken(token.action_id,token.x,token.y,source='crystal_genesis')
+        self.crystal._residual('bounded_procedure_genesis_exhausted',
+            level=obs.levels_completed,max_program_length=3,atom_bound=8)
+        return None
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
         # CLOSE before INTERACT: after a candidate continuation is revoked,
@@ -123,7 +168,11 @@ class ResidualController(DevelopmentalController):
         reused = super()._next_retained(obs)
         if reused is not None:
             return reused
+        # The existing one-step frontier remains the cheapest decisive
+        # experiment. Once its current finite interface is exhausted, EXPAND
+        # into bounded guarded procedure construction rather than repeating
+        # flat probes forever.
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             return decision.action
-        return None
+        return self._genesis_next(obs)
