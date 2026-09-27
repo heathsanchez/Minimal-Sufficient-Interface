@@ -170,9 +170,19 @@ class ResidualController(DevelopmentalController):
             hi = int(h[1:])
             for a in actions:
                 coarse = ('procedure-effect-v2',a[0],a[1],a[2],obs.levels_completed)
-                # Begin at the consequence quotient. Hypothesis identity enters
-                # only after the coarse role has witnessed conflicting futures.
-                roles[(h,a)] = coarse + (('split-h',hi),) if coarse in self._role_splits else coarse
+                # Self-use the protected-future quotient. Once a separator has
+                # been earned by an actual consequence conflict, future role
+                # identity carries exactly that admitted coordinate and no
+                # unrelated surface detail.
+                kernel = self._future_kernels.get(coarse)
+                if kernel is not None and kernel.separators:
+                    token = ActionToken(a[0],a[1],a[2])
+                    ctx = dict(future_context(**self._guard_features(self._causal_role(obs,token))))
+                    roles[(h,a)] = coarse + tuple(
+                        ('future-sep',name,ctx.get(name,'<UNKNOWN>'))
+                        for name in kernel.separators)
+                else:
+                    roles[(h,a)] = coarse
         wanted = ArcCrystal.next_acquisition(hypotheses,actions,roles,self._residual_crystal)
         if wanted is None:
             return None
