@@ -412,6 +412,11 @@ class DevelopmentalController(MemoryGraphController):
         self._requal_attempted_levels = set()
         self._requal_last_digest = None
         self._requal_renewals = {}
+        self.causal_examples = []
+        self._last_causal_role = None
+        self._causal_bank = kwargs.pop('causal_bank', None)
+        self._causal_exclude = kwargs.pop('causal_exclude', None)
+        self._causal_survivors = None
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -423,12 +428,71 @@ class DevelopmentalController(MemoryGraphController):
         self._requal_active = ()
         self._requal_index = 0
         self._requal_last_digest = None
+        self._last_causal_role = None
+        self._causal_survivors = None
+
+    @staticmethod
+    def _causal_outcome(before: Observation, after: Observation):
+        return (
+            max(-1, min(1, after.levels_completed - before.levels_completed)),
+            after.state,
+            after.board_digest != before.board_digest,
+        )
+
+    @staticmethod
+    def _role_text(role) -> str:
+        return json.dumps(role, separators=(',', ':'), sort_keys=False)
+
+    def _causal_role(self, obs: Observation, action: ActionToken):
+        if action.action_id == 6 and action.x is not None and action.y is not None:
+            board = getattr(self, '_live_probe_board', None)
+            if hasattr(board, 'tolist'):
+                board = board.tolist()
+            if board is not None and len(board):
+                return ('CLICK', self._canonical_probe_patch(board, action.x, action.y))
+        return ('ACTION', action.action_id)
+
+    def _causal_reorder(self, obs: Observation, catalog):
+        bank = self._causal_bank
+        if not bank or not bank.get('worlds'):
+            return tuple(catalog)
+        worlds = {k:v for k,v in bank['worlds'].items() if k != self._causal_exclude}
+        if self._causal_survivors is None:
+            self._causal_survivors = set(worlds)
+        survivors = [w for w in sorted(self._causal_survivors) if w in worlds]
+        roles = [(a, self._role_text(self._causal_role(obs,a))) for a in catalog]
+        applicable = [w for w in survivors if all(r in worlds[w] for _a,r in roles)]
+        if len(applicable) < 2:
+            return tuple(catalog)
+        scored = []
+        for idx,(action,role) in enumerate(roles):
+            parts = {}
+            for w in applicable:
+                out = worlds[w][role]
+                parts[out] = parts.get(out,0) + 1
+            scored.append((max(parts.values()), -len(parts), idx, action))
+        best = min(scored)
+        chosen = best[-1]
+        return (chosen,) + tuple(a for a in catalog if a != chosen)
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         previous = self._previous
         last = self._last_action
         if previous is not None and last is not None:
             self.crystal.observe(previous, last, obs)
+            if self._last_causal_role is not None:
+                outcome = self._causal_outcome(previous, obs)
+                role_text = self._role_text(self._last_causal_role)
+                self.causal_examples.append({'role':role_text,'outcome':list(outcome)})
+                if self._causal_bank and self._causal_survivors is not None:
+                    worlds = self._causal_bank.get('worlds', {})
+                    keep = set()
+                    want = json.dumps(list(outcome), separators=(',', ':'))
+                    for w in self._causal_survivors:
+                        pred = worlds.get(w, {}).get(role_text)
+                        if pred is None or pred == want:
+                            keep.add(w)
+                    self._causal_survivors = keep
         elif self.crystal._current is None:
             self.crystal.begin(obs)
         super()._process_previous_outcome(obs)
@@ -490,14 +554,16 @@ class DevelopmentalController(MemoryGraphController):
             else:
                 seen.add(role)
                 reps.append(action)
-        return tuple(plain + reps + duplicates)
+        return self._causal_reorder(obs, tuple(plain + reps + duplicates))
 
     def observe_and_choose(self, frame: Any) -> ActionToken | None:
         raw = frame.get('frame', []) if isinstance(frame, dict) else getattr(frame, 'frame', [])
         if hasattr(raw, 'tolist'):
             raw = raw.tolist()
         self._live_probe_board = raw[0] if isinstance(raw, list) and raw else []
-        return super().observe_and_choose(frame)
+        token = super().observe_and_choose(frame)
+        self._last_causal_role = None if token is None else self._causal_role(normalize_frame(frame), token)
+        return token
 
     def _next_archive(self, obs: Observation) -> ActionToken | None:
         # CLOSE before candidate transport. A live already-qualified archive
