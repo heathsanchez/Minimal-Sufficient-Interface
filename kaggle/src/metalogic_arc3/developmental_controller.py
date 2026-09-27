@@ -418,6 +418,8 @@ class DevelopmentalController(MemoryGraphController):
         self._causal_exclude = kwargs.pop('causal_exclude', None)
         self._causal_survivors = None
         self._causal_role_possible = {}
+        self._causal_epoch = 0
+        self._causal_step = 0
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -432,6 +434,8 @@ class DevelopmentalController(MemoryGraphController):
         self._last_causal_role = None
         self._causal_survivors = None
         self._causal_role_possible = {}
+        self._causal_epoch += 1
+        self._causal_step = 0
 
     @staticmethod
     def _causal_outcome(before: Observation, after: Observation):
@@ -490,7 +494,11 @@ class DevelopmentalController(MemoryGraphController):
             if self._last_causal_role is not None:
                 outcome = self._causal_outcome(previous, obs)
                 role_text = self._role_text(self._last_causal_role)
-                self.causal_examples.append({'role':role_text,'outcome':list(outcome)})
+                self.causal_examples.append({'role':role_text,'outcome':list(outcome),
+                    'epoch':self._causal_epoch,'step':self._causal_step,
+                    'before_level':previous.levels_completed,'after_level':obs.levels_completed,
+                    'after_state':obs.state})
+                self._causal_step += 1
                 if self._causal_bank and self._causal_bank.get('laws') is not None:
                     want = json.dumps(list(outcome), separators=(',', ':'))
                     possible = self._causal_role_possible.get(role_text)
