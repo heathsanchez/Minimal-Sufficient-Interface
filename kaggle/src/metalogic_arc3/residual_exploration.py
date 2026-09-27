@@ -198,6 +198,9 @@ class ResidualController(DevelopmentalController):
         if action[0] not in obs.available_actions:
             return None
         self._pending_acquisition_role = wanted
+        coarse = ('procedure-effect-v2',action[0],action[1],action[2],obs.levels_completed)
+        self._pending_parent_caps = tuple(sorted(
+            cap['id'] for (r,_),cap in self._retained_separator_caps.items() if r==coarse))
         self.crystal.stats['crystal_acquisitions'] = self.crystal.stats.get('crystal_acquisitions',0)+1
         return ActionToken(*action,source='crystal_acquire')
 
