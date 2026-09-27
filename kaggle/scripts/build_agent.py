@@ -76,7 +76,8 @@ def render() -> str:
     residual_exploration = clean_module(
         RESIDUAL_EXPLORATION.read_text(),
         remove=("from .developmental_controller import ProgressMemory",
-                "from .runtime import ActionToken"),
+                "from .runtime import ActionToken",
+                "from .crystal_laws import ArcCrystalLawBridge"),
     )
     adapter = clean_module(
         ADAPTER.read_text(),
