@@ -122,6 +122,20 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertEqual(token.source,'crystal_acquire')
         self.assertEqual(ctl._pending_parent_caps,('cap:kind',))
 
+    def test_ancestor_ablation_removes_future_cap_from_child_role(self):
+        api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
+        o=obs(1); coarse=('procedure-effect-v2',1,None,None,0)
+        k=api.ProtectedFutureKernel(); k.separators=('kind',); ctl._future_kernels[coarse]=k
+        ctl._retained_separator_caps[(coarse,'kind')]={'id':'cap:kind','separator':'kind','role':coarse,'support':('s',)}
+        ctl._action_catalog=lambda _: (ActionToken(1),)
+        ctl._crystal_acquisition_next(o)
+        self.assertEqual(ctl._pending_parent_caps,('cap:kind',))
+        ctl._pending_acquisition_role=None; ctl._pending_parent_caps=()
+        ctl.ablate_separator_capability('cap:kind')
+        ctl._crystal_acquisition_next(o)
+        self.assertEqual(ctl._pending_parent_caps,())
+        self.assertFalse(any(isinstance(x,tuple) and x and x[0]=='future-cap' for x in ctl._pending_acquisition_role[5:]))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
