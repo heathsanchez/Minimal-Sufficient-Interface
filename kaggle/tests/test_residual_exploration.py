@@ -61,6 +61,22 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertIsNone(m.plan(a))
         self.assertTrue(any(r['reason']=='observed_frontier_exhausted_not_impossible' for r in m.residuals))
 
+    def test_live_conflict_authorizes_expansion_only_after_kernel_obstruction(self):
+        api=self.api(); ctl=api.ResidualController((1,2),archived_capabilities=(),trace_capabilities=())
+        before=obs(1); after=obs(2)
+        role=("procedure-effect-v2",1,None,None,0)
+        ctl._previous=before; ctl._last_action=ActionToken(1,source="crystal_acquire")
+        ctl._pending_acquisition_role=role; ctl._last_causal_role=("ACTION",1)
+        ctl._process_previous_outcome(after)
+        ctl.crystal.begin(before)
+        ctl._previous=before; ctl._last_action=ActionToken(1,source="crystal_acquire")
+        ctl._pending_acquisition_role=role; ctl._last_causal_role=("ACTION",1)
+        terminal=normalize_frame(dict(frame=[[[3]]],levels_completed=1,
+                                     state="NOT_FINISHED",available_actions=[1,2]))
+        ctl._process_previous_outcome(terminal)
+        self.assertTrue(ctl._future_kernels[role].expressive_obstruction)
+        self.assertTrue(ctl._expansion_authorized(terminal))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
