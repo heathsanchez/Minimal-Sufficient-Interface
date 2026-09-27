@@ -9,6 +9,7 @@ from typing import Callable
 from itertools import product
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
+from .arc_crystal import ArcCrystal, CapabilityEvidence
 
 
 
@@ -125,6 +126,8 @@ class ResidualController(DevelopmentalController):
         self._genesis_start_level = None
         self._probe_spend_by_level = {}
         self._genesis_threshold = 24
+        self._residual_crystal = ArcCrystal()
+        self._pending_acquisition_role = None
 
     def reset_episode(self):
         super().reset_episode()
@@ -133,6 +136,31 @@ class ResidualController(DevelopmentalController):
         self._genesis_index = 0
         self._genesis_step = 0
         self._genesis_start_level = None
+
+    def _crystal_acquisition_next(self, obs: Observation) -> ActionToken | None:
+        atoms = tuple(self._action_catalog(obs))[:8]
+        if not atoms:
+            return None
+        hypotheses = tuple(f'p{i}' for i in range(len(atoms)))
+        actions = tuple((a.action_id,a.x,a.y) for a in atoms)
+        # Procedure hypotheses expose candidate role/action pairs. Start from
+        # the smallest current observable role; Crystal, not this controller,
+        # decides which UNKNOWN role is worth acquiring next.
+        roles = {}
+        for h in hypotheses:
+            hi = int(h[1:])
+            for a in actions:
+                roles[(h,a)] = ('procedure-effect-v1',hi,a[0],a[1],a[2],obs.levels_completed)
+        wanted = ArcCrystal.next_acquisition(hypotheses,actions,roles,self._residual_crystal)
+        if wanted is None:
+            return None
+        # The role encodes the real action whose consequence must be purchased.
+        action = (wanted[2],wanted[3],wanted[4])
+        if action[0] not in obs.available_actions:
+            return None
+        self._pending_acquisition_role = wanted
+        self.crystal.stats['crystal_acquisitions'] = self.crystal.stats.get('crystal_acquisitions',0)+1
+        return ActionToken(*action,source='crystal_acquire')
 
     def _genesis_next(self, obs: Observation) -> ActionToken | None:
         # EXPAND only over the inherited finite legal action substrate. Search
@@ -166,6 +194,13 @@ class ResidualController(DevelopmentalController):
         previous = self._previous
         last = self._last_action
         super()._process_previous_outcome(obs)
+        if previous is not None and last is not None and last.source == 'crystal_acquire' and self._pending_acquisition_role is not None:
+            outcome = repr((obs.state,obs.levels_completed-previous.levels_completed,obs.board_digest != previous.board_digest))
+            self._residual_crystal.observe(CapabilityEvidence(
+                self._pending_acquisition_role,outcome,
+                source=f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}',
+                consequence_grade=1 if obs.levels_completed>previous.levels_completed else 0))
+            self._pending_acquisition_role = None
         if previous is not None and last is not None and last.source == 'crystal_genesis':
             if obs.levels_completed > previous.levels_completed:
                 self.crystal.stats['genesis_progress'] = self.crystal.stats.get('genesis_progress',0)+1
@@ -190,7 +225,9 @@ class ResidualController(DevelopmentalController):
         # flat probes forever.
         spent = self._probe_spend_by_level.get(obs.levels_completed, 0)
         if spent >= self._genesis_threshold:
-            token = self._genesis_next(obs)
+            token = self._crystal_acquisition_next(obs)
+            if token is None:
+                token = self._genesis_next(obs)
             if token is not None:
                 return token
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
