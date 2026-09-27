@@ -458,33 +458,29 @@ class DevelopmentalController(MemoryGraphController):
                 return ('CLICK', self._canonical_probe_patch(board, action.x, action.y))
         return ('ACTION', action.action_id)
 
-    def _role_outcomes(self, role_text):
+    def _progress_future_cost(self, role_text):
         bank = self._causal_bank or {}
-        laws = bank.get('laws')
-        if laws is None:
+        roles = bank.get('roles')
+        if roles is None:
             return None
-        variants = laws.get(role_text, {})
-        out = []
-        for outcome, supports in variants.items():
-            if any(g != self._causal_exclude for g in supports):
-                out.append(outcome)
-        return tuple(sorted(out))
+        evidence = roles.get(role_text, {})
+        depths = [v.get('min_observed_positive_depth') for game,v in evidence.items()
+                  if game != self._causal_exclude and v.get('min_observed_positive_depth') is not None]
+        return min(depths) if depths else None
 
     def _causal_reorder(self, obs: Observation, catalog):
         bank = self._causal_bank
-        if not bank or not bank.get('laws'):
+        if not bank or bank.get('schema') != 'arc3.progress-future-quotient-bank@1':
             return tuple(catalog)
-        scored = []
+        ranked = []
         for idx, action in enumerate(catalog):
             role = self._role_text(self._causal_role(obs, action))
-            possible = self._causal_role_possible.get(role)
-            if possible is None:
-                possible = set(self._role_outcomes(role) or ())
-                self._causal_role_possible[role] = possible
-            score = (-len(possible), idx) if len(possible) >= 2 else (0, idx)
-            scored.append((score, action))
-        scored.sort(key=lambda x: x[0])
-        return tuple(a for _score, a in scored)
+            cost = self._progress_future_cost(role)
+            # This is only prospective-cost ordering. Unknown futures remain
+            # lawful and are never removed from the catalog.
+            ranked.append(((0, cost, idx) if cost is not None else (1, 0, idx), action))
+        ranked.sort(key=lambda x:x[0])
+        return tuple(a for _score,a in ranked)
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         previous = self._previous
@@ -499,12 +495,6 @@ class DevelopmentalController(MemoryGraphController):
                     'before_level':previous.levels_completed,'after_level':obs.levels_completed,
                     'after_state':obs.state})
                 self._causal_step += 1
-                if self._causal_bank and self._causal_bank.get('laws') is not None:
-                    want = json.dumps(list(outcome), separators=(',', ':'))
-                    possible = self._causal_role_possible.get(role_text)
-                    if possible is None:
-                        possible = set(self._role_outcomes(role_text) or ())
-                    self._causal_role_possible[role_text] = {want} if want in possible else set()
         elif self.crystal._current is None:
             self.crystal.begin(obs)
         super()._process_previous_outcome(obs)
