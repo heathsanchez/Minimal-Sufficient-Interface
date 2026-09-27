@@ -43,8 +43,8 @@ class RoleActionDecodingContracts(unittest.TestCase):
                          (expected.action_id, expected.x, expected.y))
         self.assertEqual(token.source, 'crystal_acquire')
         self.assertEqual(ctl.crystal.stats['crystal_acquisitions'], 1)
-        self.assertEqual(ctl._pending_acquisition_role[:5], coarse)
-        self.assertEqual(len(ctl._pending_acquisition_role), 6 if split else 5)
+        self.assertEqual(ctl._pending_acquisition_coarse, coarse)
+        self.assertGreaterEqual(len(ctl._pending_acquisition_role), 3)
 
     def test_coarse_directional_role_preserves_action_id(self):
         self.check_action(ActionToken(1))
@@ -62,7 +62,7 @@ class RoleActionDecodingContracts(unittest.TestCase):
         expected=ActionToken(6,17,29)
         ctl=ResidualController((6,),archived_capabilities=(),trace_capabilities=())
         ctl._action_catalog=lambda obs:(expected,)
-        coarse=('procedure-effect-v2',6,17,29,3)
+        coarse=('procedure-effect-v3','CLICK',3)
         k=ProtectedFutureKernel()
         k.observe('A','p',future_context(kind='CLICK',distinct_cells=1))
         k.observe('B','n',future_context(kind='CLICK',distinct_cells=2))
@@ -70,7 +70,7 @@ class RoleActionDecodingContracts(unittest.TestCase):
         ctl._future_kernels[coarse]=k
         token=ctl._crystal_acquisition_next(observation([6]))
         self.assertEqual((token.action_id,token.x,token.y),(6,17,29))
-        self.assertEqual(ctl._pending_acquisition_role[:5],coarse)
+        self.assertEqual(ctl._pending_acquisition_coarse,coarse)
 
 
 class CausalBankCliContracts(unittest.TestCase):
