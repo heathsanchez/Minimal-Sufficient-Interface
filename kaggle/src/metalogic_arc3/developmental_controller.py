@@ -410,6 +410,8 @@ class DevelopmentalController(MemoryGraphController):
         self._requal_index = 0
         self._requal_blocked_levels = set()
         self._requal_attempted_levels = set()
+        self._requal_last_digest = None
+        self._requal_renewals = {}
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
@@ -420,13 +422,32 @@ class DevelopmentalController(MemoryGraphController):
         self.crystal._relative_active = None
         self._requal_active = ()
         self._requal_index = 0
+        self._requal_last_digest = None
 
     def _process_previous_outcome(self, obs: Observation) -> None:
-        if self._previous is not None and self._last_action is not None:
-            self.crystal.observe(self._previous, self._last_action, obs)
+        previous = self._previous
+        last = self._last_action
+        if previous is not None and last is not None:
+            self.crystal.observe(previous, last, obs)
         elif self.crystal._current is None:
             self.crystal.begin(obs)
         super()._process_previous_outcome(obs)
+        if previous is not None and last is not None and last.source == 'crystal_requalified':
+            if obs.levels_completed > previous.levels_completed:
+                self._requal_attempted_levels.discard(previous.levels_completed)
+                self._requal_renewals.pop(previous.levels_completed, None)
+            elif self._requal_active and self._requal_index >= len(self._requal_active):
+                # Earn one renewal only when the completed application changed
+                # the visible protected state. Stasis is a counterexample.
+                if obs.frame_digest != self._requal_last_digest:
+                    self._requal_attempted_levels.discard(obs.levels_completed)
+                    self._requal_renewals[obs.levels_completed] = self._requal_renewals.get(obs.levels_completed, 0) + 1
+                    self.crystal.stats['requalification_renewals'] = self.crystal.stats.get('requalification_renewals', 0) + 1
+                else:
+                    self._requal_blocked_levels.add(obs.levels_completed)
+                    self.crystal.stats['requalification_counterexamples'] = self.crystal.stats.get('requalification_counterexamples', 0) + 1
+                self._requal_active = ()
+                self._requal_index = 0
 
     def _next_archive(self, obs: Observation) -> ActionToken | None:
         # CLOSE before candidate transport. A live already-qualified archive
@@ -459,6 +480,7 @@ class DevelopmentalController(MemoryGraphController):
             return None
         self._requal_active = tuple(base)
         self._requal_index = 1
+        self._requal_last_digest = obs.frame_digest
         self._requal_attempted_levels.add(obs.levels_completed)
         return ActionToken(*base[0], source='crystal_requalified')
 
