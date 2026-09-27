@@ -132,7 +132,7 @@ class ResidualController(DevelopmentalController):
         self._role_splits = set()
         # EXPAND is authority-gated: finite probe exhaustion is UNKNOWN, not an obstruction.
         self._expressive_obstructions = {}
-        self._future_kernels = {}\n        self._future_kernel_contexts = {}
+        self._future_kernels = {}\n        self._future_kernel_contexts = {}\n        self._pending_acquisition_context = None
 
     def reset_episode(self):
         super().reset_episode()
@@ -220,7 +220,9 @@ class ResidualController(DevelopmentalController):
             role = self._pending_acquisition_role
             coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
             features = self._guard_features(self._last_causal_role)
-            ctx = future_context(**features)
+            # Bind applicability to the pre-action observation/role. The
+            # post-action board is evidence about consequence, not applicability.
+            ctx = self._pending_acquisition_context or future_context(**features)
             support = f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}'
             kernel = self._future_kernels.setdefault(coarse, ProtectedFutureKernel())
             self._future_kernel_contexts[support] = ctx
