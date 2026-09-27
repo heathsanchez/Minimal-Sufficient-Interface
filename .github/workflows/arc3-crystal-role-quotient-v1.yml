@@ -1,7 +1,7 @@
-name: ARC3 Crystal role quotient V1
+name: ARC3 Consequential Experiment Quotient V1
 on:
   push:
-    branches: [arc3-crystal-role-quotient-v1]
+    branches: [arc3-consequential-experiment-quotient-v1]
   workflow_dispatch:
 permissions:
   contents: read
