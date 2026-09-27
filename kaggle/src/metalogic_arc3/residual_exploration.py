@@ -201,6 +201,14 @@ class ResidualController(DevelopmentalController):
         self.crystal.stats['crystal_acquisitions'] = self.crystal.stats.get('crystal_acquisitions',0)+1
         return ActionToken(*action,source='crystal_acquire')
 
+    def ablate_separator_capability(self, capability_id: str) -> None:
+        """Qualification-only ancestor ablation; removes downstream reach."""
+        doomed=[key for key,cap in self._retained_separator_caps.items()
+                if cap['id']==capability_id]
+        for key in doomed:
+            self._retained_separator_caps.pop(key,None)
+        self.crystal._residual('separator_capability_ablated',capability=capability_id)
+
     def _genesis_next(self, obs: Observation) -> ActionToken | None:
         # EXPAND only over the inherited finite legal action substrate. Search
         # programs by length, then inherited catalog order: explicit minimum
