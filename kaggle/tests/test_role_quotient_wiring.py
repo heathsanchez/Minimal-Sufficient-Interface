@@ -18,7 +18,8 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'kaggle/src'))
-from metalogic_arc3.residual_exploration import ResidualController\nfrom metalogic_arc3.protected_future_kernel import ProtectedFutureKernel, context as future_context
+from metalogic_arc3.residual_exploration import ResidualController
+from metalogic_arc3.protected_future_kernel import ProtectedFutureKernel, context as future_context
 from metalogic_arc3.runtime import ActionToken, normalize_frame
 
 
