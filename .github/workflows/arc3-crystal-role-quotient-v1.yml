@@ -1,7 +1,7 @@
 name: ARC3 Consequential Experiment Quotient V1
 on:
   push:
-    branches: [arc3-consequential-experiment-quotient-v1]
+    branches: [arc3-consequential-experiment-quotient-v1, arc3-protected-future-kernel-v1]
   workflow_dispatch:
 permissions:
   contents: read
