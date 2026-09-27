@@ -151,7 +151,7 @@ class ResidualController(DevelopmentalController):
                 if pout is None:
                     return None
                 sup = f'observed:{pkey!r}'
-                rows.append(Prediction(h, (probe.action_id,probe.x,probe.y), pout, (sup,)))
+                rows.append(Prediction(h, (probe.action_id,probe.x,probe.y), pout))
                 supports.append(sup)
         ans = self._separator.choose_separator(
             hypotheses=hypotheses,
