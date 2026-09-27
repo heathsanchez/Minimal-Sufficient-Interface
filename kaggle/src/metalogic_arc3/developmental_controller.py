@@ -474,7 +474,9 @@ class DevelopmentalController(MemoryGraphController):
     def _action_catalog(self, obs: Observation) -> tuple[ActionToken, ...]:
         catalog = super()._action_catalog(obs)
         board = getattr(self, '_live_probe_board', None)
-        if not board:
+        if hasattr(board, 'tolist'):
+            board = board.tolist()
+        if board is None or len(board) == 0:
             return catalog
         plain = [a for a in catalog if a.action_id != 6 or a.x is None or a.y is None]
         clicks = [a for a in catalog if a.action_id == 6 and a.x is not None and a.y is not None]
