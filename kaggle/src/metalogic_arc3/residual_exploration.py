@@ -136,7 +136,7 @@ class ResidualController(DevelopmentalController):
         self._future_kernel_contexts = {}
         self._pending_acquisition_context = None
         self._retained_separator_caps = {}
-        self._pending_parent_caps = ()
+        self._pending_parent_caps = ()\n        self._pending_acquisition_coarse = None
 
     def reset_episode(self):
         super().reset_episode()
@@ -158,27 +158,26 @@ class ResidualController(DevelopmentalController):
     def _expansion_authorized(self, obs: Observation) -> bool:
         return obs.levels_completed in self._expressive_obstructions
 
+    def _acquisition_coarse_role(self, token: ActionToken, obs: Observation):
+        # Pre-conflict quotient: pool by intervention kind and level only.
+        # Coordinates are execution parameters, not identity, until a witnessed
+        # future conflict earns them back as a separator.
+        kind = 'CLICK' if token.action_id == 6 else 'ACTION'
+        return ('procedure-effect-v3',kind,obs.levels_completed)
+
     def _crystal_acquisition_next(self, obs: Observation) -> ActionToken | None:
         atoms = tuple(self._action_catalog(obs))[:8]
         if not atoms:
             return None
         hypotheses = tuple(f'p{i}' for i in range(len(atoms)))
         actions = tuple((a.action_id,a.x,a.y) for a in atoms)
-        # Procedure hypotheses expose candidate role/action pairs. Start from
-        # the smallest current observable role; Crystal, not this controller,
-        # decides which UNKNOWN role is worth acquiring next.
         roles = {}
         for h in hypotheses:
-            hi = int(h[1:])
             for a in actions:
-                coarse = ('procedure-effect-v2',a[0],a[1],a[2],obs.levels_completed)
-                # Self-use the protected-future quotient. Once a separator has
-                # been earned by an actual consequence conflict, future role
-                # identity carries exactly that admitted coordinate and no
-                # unrelated surface detail.
+                token = ActionToken(a[0],a[1],a[2])
+                coarse = self._acquisition_coarse_role(token,obs)
                 kernel = self._future_kernels.get(coarse)
                 if kernel is not None and kernel.separators:
-                    token = ActionToken(a[0],a[1],a[2])
                     ctx = dict(future_context(**self._guard_features(self._causal_role(obs,token))))
                     parent_caps = tuple(
                         self._retained_separator_caps.get((coarse,name))
@@ -192,16 +191,22 @@ class ResidualController(DevelopmentalController):
         wanted = ArcCrystal.next_acquisition(hypotheses,actions,roles,self._residual_crystal)
         if wanted is None:
             return None
-        # The role encodes the real action whose consequence must be purchased.
-        # v2 = (kind, action_id, x, y, level[, split]); split suffix is not an action.
-        action = (wanted[1],wanted[2],wanted[3])
+        # Role identity is deliberately coarser than execution identity. Choose
+        # the cheapest still-UNKNOWN legal action carrying the selected role.
+        choices=[(a,roles[(h,a)]) for h in hypotheses for a in actions if roles[(h,a)]==wanted]
+        if not choices:
+            return None
+        action=min((a for a,_ in choices),key=repr)
         if action[0] not in obs.available_actions:
             return None
-        self._pending_acquisition_role = wanted
-        coarse = ('procedure-effect-v2',action[0],action[1],action[2],obs.levels_completed)
-        self._pending_parent_caps = tuple(sorted(
+        coarse=self._acquisition_coarse_role(ActionToken(*action),obs)
+        self._pending_acquisition_role=wanted
+        self._pending_acquisition_coarse=coarse
+        self._pending_parent_caps=tuple(sorted(
             cap['id'] for (r,_),cap in self._retained_separator_caps.items() if r==coarse))
-        self.crystal.stats['crystal_acquisitions'] = self.crystal.stats.get('crystal_acquisitions',0)+1
+        self._pending_acquisition_context=future_context(
+            **self._guard_features(self._causal_role(obs,ActionToken(*action))))
+        self.crystal.stats['crystal_acquisitions']=self.crystal.stats.get('crystal_acquisitions',0)+1
         return ActionToken(*action,source='crystal_acquire')
 
     def ablate_separator_capability(self, capability_id: str) -> None:
@@ -247,7 +252,7 @@ class ResidualController(DevelopmentalController):
         if previous is not None and last is not None and last.source == 'crystal_acquire' and self._pending_acquisition_role is not None:
             outcome = repr((obs.state,obs.levels_completed-previous.levels_completed,obs.board_digest != previous.board_digest))
             role = self._pending_acquisition_role
-            coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
+            coarse = self._pending_acquisition_coarse or role
             features = self._guard_features(self._last_causal_role)
             # Bind applicability to the pre-action observation/role. The
             # post-action board is evidence about consequence, not applicability.
