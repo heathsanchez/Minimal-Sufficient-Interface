@@ -33,8 +33,8 @@ class RoleActionDecodingContracts(unittest.TestCase):
         ctl = ResidualController((expected.action_id,),
                                  archived_capabilities=(), trace_capabilities=())
         ctl._action_catalog = lambda obs: (expected,)
-        coarse = ('procedure-effect-v2', expected.action_id, expected.x,
-                  expected.y, 3)
+        kind = 'CLICK' if expected.action_id == 6 else 'ACTION'
+        coarse = ('procedure-effect-v3', kind, 3)
         if split:
             ctl._role_splits.add(coarse)
         token = ctl._crystal_acquisition_next(observation([expected.action_id]))
@@ -46,10 +46,10 @@ class RoleActionDecodingContracts(unittest.TestCase):
         self.assertEqual(ctl._pending_acquisition_coarse, coarse)
         self.assertGreaterEqual(len(ctl._pending_acquisition_role), 3)
 
-    def test_coarse_directional_role_preserves_action_id(self):
+    def test_coarse_directional_role_preserves_execution_action(self):
         self.check_action(ActionToken(1))
 
-    def test_coarse_click_role_preserves_coordinates(self):
+    def test_coarse_click_role_preserves_execution_coordinates(self):
         self.check_action(ActionToken(6, 17, 29))
 
     def test_legacy_split_marker_no_longer_changes_role_identity(self):
