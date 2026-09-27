@@ -80,6 +80,37 @@ jobs:
         timeout-minutes: 18
         run: |
           timeout 16m python kaggle/scripts/qualify_developmental_controller.py --public-catalog --causal-bank out/causal-law-product-bank.json --environments public-environments --output out/public-catalog-causal.json
+      - name: Consequential experiment quotient constitution gate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.load(open('out/public-catalog.json'))
+          rows=p['results']
+          candidate=[life for r in rows for life in r['arms']['candidate']]
+          sources={}
+          for life in candidate:
+              for k,v in life['sources'].items(): sources[k]=sources.get(k,0)+v
+          genesis=sources.get('crystal_genesis',0)
+          # This branch's constitutional claim: ordinary probe exhaustion must
+          # not silently authorize expansion. Public play has no independent
+          # obstruction certificate yet, so genesis must be absent.
+          assert genesis == 0, sources
+          assert not p['observed_regression'], p
+          report={
+            'schema':'arc3.consequential-experiment-quotient@1',
+            'games':len(rows),
+            'candidate_sources':sources,
+            'genesis_actions':genesis,
+            'probe_uses':p['probe_uses'],
+            'live_crystal_uses':p['live_crystal_uses'],
+            'observed_improvement':p['observed_improvement'],
+            'observed_regression':p['observed_regression'],
+            'claim':'probe exhaustion remained UNKNOWN; no uncertified EXPAND'
+          }
+          Path('out/consequential-experiment-quotient.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,sort_keys=True))
+          PY
       - name: Consequential promotion gate
         run: |
           python - <<'PY'
