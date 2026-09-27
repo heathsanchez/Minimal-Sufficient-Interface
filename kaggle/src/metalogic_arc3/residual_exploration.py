@@ -9,6 +9,7 @@ from typing import Callable
 from itertools import product
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
+from .crystal_laws import ArcCrystal, Prediction, LawStatus
 
 
 
@@ -125,6 +126,8 @@ class ResidualController(DevelopmentalController):
         self._genesis_start_level = None
         self._probe_spend_by_level = {}
         self._genesis_threshold = 24
+        self._procedure_predictions = {}
+        self._separator = ArcCrystal()
 
     def reset_episode(self):
         super().reset_episode()
@@ -133,6 +136,33 @@ class ResidualController(DevelopmentalController):
         self._genesis_index = 0
         self._genesis_step = 0
         self._genesis_start_level = None
+
+    def _frontier_separator_next(self, obs: Observation) -> ActionToken | None:
+        atoms = tuple(self._action_catalog(obs))[:8]
+        if len(atoms) < 2:
+            return None
+        hypotheses = [f'p{i}' for i in range(len(atoms))]
+        rows = []
+        supports = []
+        for h in hypotheses:
+            for probe in atoms:
+                pkey = (obs.levels_completed, probe.action_id, probe.x, probe.y)
+                pout = self._procedure_predictions.get(pkey)
+                if pout is None:
+                    return None
+                sup = f'observed:{pkey!r}'
+                rows.append(Prediction(h, (probe.action_id,probe.x,probe.y), pout, (sup,)))
+                supports.append(sup)
+        ans = self._separator.choose_separator(
+            hypotheses=hypotheses,
+            actions=[(a.action_id,a.x,a.y) for a in atoms],
+            predictions=rows,
+            support_refs=supports,
+            live_supports=supports)
+        if ans.status != LawStatus.WARRANTED or ans.action is None:
+            return None
+        self.crystal.stats['procedure_separators'] = self.crystal.stats.get('procedure_separators',0)+1
+        return ActionToken(*ans.action,source='crystal_procedure_separator')
 
     def _genesis_next(self, obs: Observation) -> ActionToken | None:
         # EXPAND only over the inherited finite legal action substrate. Search
@@ -166,6 +196,15 @@ class ResidualController(DevelopmentalController):
         previous = self._previous
         last = self._last_action
         super()._process_previous_outcome(obs)
+        if previous is not None and last is not None and last.source in ('crystal_probe','crystal_probe_route','crystal_genesis','crystal_procedure_separator'):
+            key = (previous.levels_completed,last.action_id,last.x,last.y)
+            outcome = repr((obs.state, obs.levels_completed-previous.levels_completed, obs.board_digest != previous.board_digest))
+            old = self._procedure_predictions.get(key)
+            if old is None:
+                self._procedure_predictions[key] = outcome
+            elif old != outcome:
+                self._procedure_predictions.pop(key,None)
+                self.crystal.stats['prediction_conflicts'] = self.crystal.stats.get('prediction_conflicts',0)+1
         if previous is not None and last is not None and last.source == 'crystal_genesis':
             if obs.levels_completed > previous.levels_completed:
                 self.crystal.stats['genesis_progress'] = self.crystal.stats.get('genesis_progress',0)+1
@@ -190,7 +229,9 @@ class ResidualController(DevelopmentalController):
         # flat probes forever.
         spent = self._probe_spend_by_level.get(obs.levels_completed, 0)
         if spent >= self._genesis_threshold:
-            token = self._genesis_next(obs)
+            token = self._frontier_separator_next(obs)
+            if token is None:
+                token = self._genesis_next(obs)
             if token is not None:
                 return token
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
