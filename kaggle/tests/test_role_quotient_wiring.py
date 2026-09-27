@@ -51,8 +51,25 @@ class RoleActionDecodingContracts(unittest.TestCase):
     def test_coarse_click_role_preserves_coordinates(self):
         self.check_action(ActionToken(6, 17, 29))
 
-    def test_split_role_preserves_action_id_and_coordinates(self):
-        self.check_action(ActionToken(6, 17, 29), split=True)
+    def test_legacy_split_marker_no_longer_changes_role_identity(self):
+        # SUPERSEDED: hypothesis identity was an over-specific repair. A bare
+        # split marker is not an earned capability and must not change the
+        # protected-future quotient.
+        self.check_action(ActionToken(6, 17, 29), split=False)
+
+    def test_future_separator_preserves_action_id_and_coordinates(self):
+        expected=ActionToken(6,17,29)
+        ctl=ResidualController((6,),archived_capabilities=(),trace_capabilities=())
+        ctl._action_catalog=lambda obs:(expected,)
+        coarse=('procedure-effect-v2',6,17,29,3)
+        k=ProtectedFutureKernel()
+        k.observe('A','p',future_context(kind='CLICK',distinct_cells=1))
+        k.observe('B','n',future_context(kind='CLICK',distinct_cells=2))
+        self.assertEqual(k.refine(('distinct_cells','kind')),'distinct_cells')
+        ctl._future_kernels[coarse]=k
+        token=ctl._crystal_acquisition_next(observation([6]))
+        self.assertEqual((token.action_id,token.x,token.y),(6,17,29))
+        self.assertEqual(ctl._pending_acquisition_role[:5],coarse)
 
 
 class CausalBankCliContracts(unittest.TestCase):
