@@ -123,6 +123,8 @@ class ResidualController(DevelopmentalController):
         self._genesis_index = 0
         self._genesis_step = 0
         self._genesis_start_level = None
+        self._probe_spend_by_level = {}
+        self._genesis_threshold = 24
 
     def reset_episode(self):
         super().reset_episode()
@@ -186,7 +188,13 @@ class ResidualController(DevelopmentalController):
         # experiment. Once its current finite interface is exhausted, EXPAND
         # into bounded guarded procedure construction rather than repeating
         # flat probes forever.
+        spent = self._probe_spend_by_level.get(obs.levels_completed, 0)
+        if spent >= self._genesis_threshold:
+            token = self._genesis_next(obs)
+            if token is not None:
+                return token
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
+            self._probe_spend_by_level[obs.levels_completed] = spent + 1
             return decision.action
         return self._genesis_next(obs)
