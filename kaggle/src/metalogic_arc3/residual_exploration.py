@@ -128,6 +128,7 @@ class ResidualController(DevelopmentalController):
         self._genesis_threshold = 24
         self._residual_crystal = ArcCrystal()
         self._pending_acquisition_role = None
+        self._role_splits = set()
 
     def reset_episode(self):
         super().reset_episode()
@@ -150,7 +151,10 @@ class ResidualController(DevelopmentalController):
         for h in hypotheses:
             hi = int(h[1:])
             for a in actions:
-                roles[(h,a)] = ('procedure-effect-v1',hi,a[0],a[1],a[2],obs.levels_completed)
+                coarse = ('procedure-effect-v2',a[0],a[1],a[2],obs.levels_completed)
+                # Begin at the consequence quotient. Hypothesis identity enters
+                # only after the coarse role has witnessed conflicting futures.
+                roles[(h,a)] = coarse + (('split-h',hi),) if coarse in self._role_splits else coarse
         wanted = ArcCrystal.next_acquisition(hypotheses,actions,roles,self._residual_crystal)
         if wanted is None:
             return None
@@ -196,10 +200,17 @@ class ResidualController(DevelopmentalController):
         super()._process_previous_outcome(obs)
         if previous is not None and last is not None and last.source == 'crystal_acquire' and self._pending_acquisition_role is not None:
             outcome = repr((obs.state,obs.levels_completed-previous.levels_completed,obs.board_digest != previous.board_digest))
+            role = self._pending_acquisition_role
+            before_conflict = self._residual_crystal.conflicted(role)
             self._residual_crystal.observe(CapabilityEvidence(
-                self._pending_acquisition_role,outcome,
+                role,outcome,
                 source=f'live:{previous.board_digest}:{last.action_id}:{last.x}:{last.y}',
                 consequence_grade=1 if obs.levels_completed>previous.levels_completed else 0))
+            if self._residual_crystal.conflicted(role) and not before_conflict:
+                coarse = role[:5] if role and role[0]=='procedure-effect-v2' else role
+                self._role_splits.add(coarse)
+                self.crystal.stats['role_splits'] = self.crystal.stats.get('role_splits',0)+1
+                self.crystal._residual('consequence_conflict_requires_split',role=repr(coarse))
             self._pending_acquisition_role = None
         if previous is not None and last is not None and last.source == 'crystal_genesis':
             if obs.levels_completed > previous.levels_completed:
