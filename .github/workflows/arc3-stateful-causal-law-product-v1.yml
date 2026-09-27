@@ -77,7 +77,7 @@ jobs:
       - name: Stateful leave-one-game-out causal-law-product replay
         timeout-minutes: 18
         run: |
-          timeout 16m python kaggle/scripts/qualify_developmental_controller.py --public-catalog --causal-bank out/causal-world-bank.json --environments public-environments --output out/public-catalog-causal.json
+          timeout 16m python kaggle/scripts/qualify_developmental_controller.py --public-catalog --causal-bank out/causal-law-product-bank.json --environments public-environments --output out/public-catalog-causal.json
       - name: Consequential promotion gate
         run: |
           python - <<'PY'
