@@ -85,25 +85,14 @@ class ResidualExplorationContracts(unittest.TestCase):
         k.observe('STUCK','n',api.future_context(action_id=2,kind='ACTION'))
         self.assertEqual(k.refine(('action_id','kind')),'action_id')
         ctl._future_kernels[coarse]=k
-        o=obs(1)
-        atoms=tuple(ctl._action_catalog(o))[:8]
-        hypotheses=tuple(f'p{i}' for i in range(len(atoms)))
-        actions=tuple((a.action_id,a.x,a.y) for a in atoms)
-        # The learned separator must now refine the deliberately coarse role.
-        roles=[]
-        for a in actions:
-            token=ActionToken(a[0],a[1],a[2])
-            base=ctl._acquisition_coarse_role(token,o)
-            kk=ctl._future_kernels.get(base)
-            if kk and kk.separators:
-                ctx=dict(api.future_context(**ctl._guard_features(ctl._causal_role(o,token))))
-                base=base+tuple(
-                    ('future-cap','test:'+name,ctx.get(name,'<UNKNOWN>'))
-                    for name in kk.separators)
-            roles.append(base)
+        ctl._retained_separator_caps[(coarse,'action_id')]={
+            'id':'cap:action_id','separator':'action_id','role':coarse,'support':('p','n')}
+        ctl._action_catalog=lambda _: (ActionToken(1),ActionToken(2))
+        token=ctl._crystal_acquisition_next(obs(1))
+        self.assertIsNotNone(token)
         self.assertTrue(any(
-            any(isinstance(part,tuple) and part[0]=='future-cap' for part in r[3:])
-            for r in roles if len(r)>3))
+            isinstance(part,tuple) and part[0]=='future-cap'
+            for part in ctl._pending_acquisition_role[3:]))
 
     def test_separator_capability_survives_restart_and_ancestor_ablation_removes_reach(self):
         api=self.api(); ctl=api.ResidualController((1,),archived_capabilities=(),trace_capabilities=())
