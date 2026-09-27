@@ -458,29 +458,41 @@ class DevelopmentalController(MemoryGraphController):
                 return ('CLICK', self._canonical_probe_patch(board, action.x, action.y))
         return ('ACTION', action.action_id)
 
+    @staticmethod
+    def _guard_features(role):
+        r = role
+        out = {}
+        if not isinstance(r,(tuple,list)) or not r:
+            return out
+        out['kind'] = r[0]
+        if r[0] == 'ACTION' and len(r)>1:
+            out['action_id'] = r[1]
+        elif r[0] == 'CLICK' and len(r)>1:
+            patch = r[1]
+            flat = [x for row in patch for x in row]
+            out['patch_shape'] = [len(patch), len(patch[0]) if patch else 0]
+            out['boundary_count'] = sum(1 for x in flat if x and x[0]=='BOUNDARY')
+            cells = [x[1] for x in flat if x and x[0]=='CELL']
+            out['distinct_cells'] = len(set(cells))
+            if patch: out['center'] = list(patch[len(patch)//2][len(patch[0])//2])
+        return out
+
     def _transport_frontier(self, obs: Observation, catalog):
         bank = self._causal_bank or {}
-        if bank.get('schema') != 'arc3.certified-continuation-transport-bank@1':
+        if bank.get('schema') != 'arc3.applicability-genesis-bank@1':
             return ()
-        role_to_action = {}
+        action_rows = []
         for action in catalog:
-            role_to_action.setdefault(self._role_text(self._causal_role(obs,action)), action)
-        live = []
+            role = self._causal_role(obs,action)
+            action_rows.append((action,role,self._guard_features(role)))
+        live=[]
         for t in bank.get('transports',()):
-            if t.get('game') == self._causal_exclude:
-                continue
-            tests = t.get('source_tests',())
-            matched = sum(1 for r in tests if r in role_to_action)
-            if matched == 0:
-                continue
-            # A transport becomes executable only when every declared source
-            # test is present in the live action/test interface. Partial match
-            # remains an applicability residual, not permission to replay.
-            if matched == len(tests) and t.get('program_roles'):
-                first = role_to_action.get(t['program_roles'][0])
-                if first is not None:
-                    live.append((t.get('cost',10**9), t['id'], first))
-        return tuple(sorted(live,key=lambda x:(x[0],x[1])))
+            if t.get('game') == self._causal_exclude: continue
+            for guard in t.get('guard_alternatives',()):
+                for action,role,feat in action_rows:
+                    if feat.get(guard.get('key')) == guard.get('value'):
+                        live.append((t.get('cost',10**9),t['id'],guard['key'],action))
+        return tuple(sorted(live,key=lambda x:(x[0],x[1],x[2],x[3].action_id,x[3].x or -1,x[3].y or -1)))
 
     def _causal_reorder(self, obs: Observation, catalog):
         frontier = self._transport_frontier(obs,catalog)
