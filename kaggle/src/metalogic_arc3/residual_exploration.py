@@ -160,6 +160,20 @@ class ResidualController(DevelopmentalController):
             level=obs.levels_completed,max_program_length=3,atom_bound=8)
         return None
 
+    def _process_previous_outcome(self, obs: Observation) -> None:
+        previous = self._previous
+        last = self._last_action
+        super()._process_previous_outcome(obs)
+        if previous is not None and last is not None and last.source == 'crystal_genesis':
+            if obs.levels_completed > previous.levels_completed:
+                self.crystal.stats['genesis_progress'] = self.crystal.stats.get('genesis_progress',0)+1
+                # ProgressMemory has already observed the successful segment;
+                # reset search so subsequent execution begins from compiled
+                # consequence rather than continuing enumeration.
+                self._genesis_level = None
+                self._genesis_programs = ()
+                self._genesis_index = self._genesis_step = 0
+
     def _next_retained(self, obs: Observation) -> ActionToken | None:
         # CLOSE before INTERACT: after a candidate continuation is revoked,
         # reclose over every still-live inherited/retained capability before
