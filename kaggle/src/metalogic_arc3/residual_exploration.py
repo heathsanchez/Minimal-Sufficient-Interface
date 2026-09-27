@@ -134,7 +134,9 @@ class ResidualController(DevelopmentalController):
         self._expressive_obstructions = {}
         self._future_kernels = {}
         self._future_kernel_contexts = {}
-        self._pending_acquisition_context = None\n        self._retained_separator_caps = {}\n        self._pending_parent_caps = ()
+        self._pending_acquisition_context = None
+        self._retained_separator_caps = {}
+        self._pending_parent_caps = ()
 
     def reset_episode(self):
         super().reset_episode()
