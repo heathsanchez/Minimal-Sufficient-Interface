@@ -129,6 +129,8 @@ class ResidualController(DevelopmentalController):
         self._residual_crystal = ArcCrystal()
         self._pending_acquisition_role = None
         self._role_splits = set()
+        # EXPAND is authority-gated: finite probe exhaustion is UNKNOWN, not an obstruction.
+        self._expressive_obstructions = {}
 
     def reset_episode(self):
         super().reset_episode()
@@ -137,6 +139,18 @@ class ResidualController(DevelopmentalController):
         self._genesis_index = 0
         self._genesis_step = 0
         self._genesis_start_level = None
+
+    def certify_expressive_obstruction(self, level: int, support: str) -> None:
+        """Admit EXPAND only after an independently named obstruction.
+
+        The support string is provenance, not proof by itself; qualification
+        must establish it at the declared current-class boundary.
+        """
+        self._expressive_obstructions[int(level)] = str(support)
+        self.crystal.stats['expressive_obstructions'] = self.crystal.stats.get('expressive_obstructions',0)+1
+
+    def _expansion_authorized(self, obs: Observation) -> bool:
+        return obs.levels_completed in self._expressive_obstructions
 
     def _crystal_acquisition_next(self, obs: Observation) -> ActionToken | None:
         atoms = tuple(self._action_catalog(obs))[:8]
@@ -238,12 +252,19 @@ class ResidualController(DevelopmentalController):
         spent = self._probe_spend_by_level.get(obs.levels_completed, 0)
         if spent >= self._genesis_threshold:
             token = self._crystal_acquisition_next(obs)
-            if token is None:
-                token = self._genesis_next(obs)
             if token is not None:
                 return token
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             self._probe_spend_by_level[obs.levels_completed] = spent + 1
             return decision.action
-        return self._genesis_next(obs)
+        # MDA boundary: exhausting the admitted probe interface is UNKNOWN.
+        # Bounded procedure genesis is lawful only after a separately certified
+        # obstruction to the current reachable experiment class.
+        if self._expansion_authorized(obs):
+            self.crystal.stats['authorized_expansions'] = self.crystal.stats.get('authorized_expansions',0)+1
+            return self._genesis_next(obs)
+        self.crystal._residual('expressive_obstruction_required_before_expand',
+            level=obs.levels_completed,
+            current_class='inherited_bounded_legal_catalog')
+        return None
