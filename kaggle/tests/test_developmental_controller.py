@@ -253,5 +253,35 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertIsNone(ctl._next_retained(obs))
 
 
+
+    def test_requalified_role_renews_only_after_observed_change(self):
+        api = self.api()
+        ctl = api.DevelopmentalController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        ctx = (0,'NOT_FINISHED',(1,2,3),2,2,'old')
+        ctl.memory.add_capability(ctx, ((2,None,None),), source_level=0, target_level=1)
+        a = normalize_frame(frame(7, level=1))
+        b = normalize_frame(frame(8, level=1))
+        ctl._previous = a
+        first = ctl._next_requalified(a)
+        ctl._last_action = first
+        ctl._process_previous_outcome(b)
+        renewed = ctl._next_requalified(b)
+        self.assertIsNotNone(renewed)
+        self.assertEqual(renewed.source, 'crystal_requalified')
+
+    def test_requalified_role_stasis_blocks_renewal(self):
+        api = self.api()
+        ctl = api.DevelopmentalController((1,2,3), archived_capabilities=(), trace_capabilities=())
+        ctx = (0,'NOT_FINISHED',(1,2,3),2,2,'old')
+        ctl.memory.add_capability(ctx, ((2,None,None),), source_level=0, target_level=1)
+        a = normalize_frame(frame(7, level=1))
+        ctl._previous = a
+        first = ctl._next_requalified(a)
+        ctl._last_action = first
+        ctl._process_previous_outcome(a)
+        self.assertIsNone(ctl._next_requalified(a))
+        self.assertEqual(ctl.crystal.stats.get('requalification_counterexamples'), 1)
+
+
 if __name__ == '__main__':
     unittest.main()
