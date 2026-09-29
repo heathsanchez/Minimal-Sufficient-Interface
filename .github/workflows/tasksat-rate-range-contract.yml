@@ -1,0 +1,48 @@
+name: TaskSAT Rate Range Contract Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - tasksat-rate-range-contract-v1
+    paths:
+      - "experiments/tasksat_rate_range_contract.py"
+      - "TASKSAT_RATE_RANGE_CONTRACT.md"
+      - ".github/workflows/tasksat-rate-range-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out audit repo
+        uses: actions/checkout@v4
+
+      - name: Check out pinned TaskSAT
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/tasksat
+          ref: f9d6063b45967a3fea578c47f54806aadaafe1b0
+          path: vendor/tasksat
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned TaskSAT
+        run: python -m pip install -e vendor/tasksat
+
+      - name: Run minimal rate-interval separator
+        run: >-
+          python experiments/tasksat_rate_range_contract.py vendor/tasksat
+          --out results/tasksat_rate_range_contract.json
+
+      - name: Upload exact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasksat-rate-range-contract
+          path: results/tasksat_rate_range_contract.json
+          if-no-files-found: error
