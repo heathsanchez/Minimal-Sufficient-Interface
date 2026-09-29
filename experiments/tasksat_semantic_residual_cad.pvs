@@ -1,0 +1,65 @@
+tasksat_semantic_residual_cad: THEORY
+%----------------------------------------------------------------------------
+% Cheapest decisive residual for the TaskSAT bounded-assignment CAD audit.
+%
+% Previous run proved 7/8 observable-validity formulas.  The sole residual was
+% the 5-variable clamp-graph theorem for the strict-interior R subset B case,
+% which timed out / stayed OPEN.  This file removes the auxiliary clamp-output
+% variable and splits the equivalence into two one-way implications.
+%
+% Normalize:
+%   B = [0,W]
+%   R = [p,W-q]
+% with W>=0, p>0, q>0, p+q<=W.
+%
+% Reference validity of clamp_B(a) is expanded directly into the three clamp
+% regions.  Python validity is simply a in R.
+%----------------------------------------------------------------------------
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  % Expanded reference-validity formula:
+  %
+  %   (a<0    and 0 in R)
+  % or
+  %   (0<=a<=W and a in R)
+  % or
+  %   (a>W    and W in R).
+  %
+  % Under strict interior, only the middle region can be reference-valid.
+  % Therefore reference-validity implies raw-assignment validity.
+
+  strict_interior_reference_valid_implies_python_valid: THEOREM
+    FORALL (W: real):
+      FORALL (p: real):
+        FORALL (q: real):
+          FORALL (a: real):
+            (W >= 0 AND p > 0 AND q > 0 AND p + q <= W
+             AND
+             ((a < 0 AND p <= 0 AND 0 <= W - q)
+              OR
+              (0 <= a AND a <= W AND p <= a AND a <= W - q)
+              OR
+              (a > W AND p <= W AND W <= W - q)))
+            IMPLIES
+              (p <= a AND a <= W - q)
+
+  % Conversely, any raw assignment in the strict-interior admissible range is
+  % already inside B, so clamp_B(a)=a and the middle reference-validity branch
+  % holds.
+
+  strict_interior_python_valid_implies_reference_valid: THEOREM
+    FORALL (W: real):
+      FORALL (p: real):
+        FORALL (q: real):
+          FORALL (a: real):
+            (W >= 0 AND p > 0 AND q > 0 AND p + q <= W
+             AND p <= a AND a <= W - q)
+            IMPLIES
+              ((a < 0 AND p <= 0 AND 0 <= W - q)
+               OR
+               (0 <= a AND a <= W AND p <= a AND a <= W - q)
+               OR
+               (a > W AND p <= W AND W <= W - q))
+
+END tasksat_semantic_residual_cad
