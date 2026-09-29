@@ -113,10 +113,20 @@ def frontier_continuation(
 
 
 class ResidualController(DevelopmentalController):
-    """Progress reuse plus first-goal experiments; old controllers are ablations."""
+    """Warranted replay, then reusable progress, then the unresolved frontier.
+
+    OnlineController invokes this hook only after exact archive/trace/continuation
+    evidence has declined. At that point a supported relative-progress capability
+    is cheaper and better-grounded than buying a fresh UNKNOWN probe. Only when
+    no reusable capability applies do we pay for a new experiment. The older
+    unconstrained cross-level constructor remains the final fallback.
+    """
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
+        decision = self.crystal.plan(obs)
+        if decision is not None:
+            return decision.action
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             return decision.action
-        return super()._next_retained(obs)
+        return self._next_transfer(obs)
