@@ -116,6 +116,14 @@ class ResidualController(DevelopmentalController):
     """Progress reuse plus first-goal experiments; old controllers are ablations."""
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
+        # Exact archive/trace/continuation evidence has already declined before
+        # this hook. A structurally warranted role binding is cheaper than a
+        # fresh UNKNOWN probe and is recomputed after every observed action.
+        if (obs.structural_kind == "cross-marker@1"
+                and obs.structural_action in obs.available_actions):
+            self.crystal.stats["structural_decisions"] = (
+                self.crystal.stats.get("structural_decisions", 0) + 1)
+            return ActionToken(obs.structural_action, source="crystal_cross_marker")
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             return decision.action
