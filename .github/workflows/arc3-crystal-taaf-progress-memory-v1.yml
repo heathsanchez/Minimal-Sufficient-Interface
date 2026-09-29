@@ -1,0 +1,97 @@
+name: ARC3 Crystal TAAF progress memory V1
+on:
+  push:
+    branches: [arc3-crystal-taaf-progress-memory-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  patch-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: vendor/duck-harness
+
+      - name: Apply Crystal overlay to pinned TAAF
+        run: |
+          python kaggle/scripts/patch_taaf_crystal_progress_memory.py \
+            vendor/duck-harness/ARC3-Inference/inference/agent/tool_agent.py
+          python -m py_compile vendor/duck-harness/ARC3-Inference/inference/agent/tool_agent.py
+
+      - name: Execute extracted progress-memory helper contract
+        run: |
+          python - <<'PY'
+          import ast
+          from dataclasses import dataclass
+          from pathlib import Path
+          from typing import Any
+
+          path=Path('vendor/duck-harness/ARC3-Inference/inference/agent/tool_agent.py')
+          source=path.read_text()
+          tree=ast.parse(source)
+          wanted={'_crystal_compress_program','_crystal_verified_progress_programs'}
+          nodes=[n for n in tree.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name in wanted]
+          if {n.name for n in nodes} != wanted:
+              raise SystemExit('missing Crystal helper functions after patch')
+          future=ast.ImportFrom(module='__future__',names=[ast.alias(name='annotations')],level=0)
+          module=ast.Module(body=[future,*nodes],type_ignores=[])
+          ast.fix_missing_locations(module)
+
+          @dataclass
+          class Frame:
+              grid: tuple
+              level: int
+
+          @dataclass
+          class HistoryEntry:
+              action: str
+              frame: Frame
+
+          ns={'Any':Any,'HistoryEntry':HistoryEntry}
+          exec(compile(module,'<crystal-helper>','exec'),ns)
+
+          h=[
+              HistoryEntry('',Frame(((0,),),1)),
+              HistoryEntry('RIGHT',Frame(((1,),),1)),
+              HistoryEntry('UP',Frame(((2,),),2)),
+              HistoryEntry('LEFT',Frame(((3,),),2)),
+              HistoryEntry('DOWN',Frame(((4,),),3)),
+          ]
+          got=ns['_crystal_verified_progress_programs'](h)
+          assert len(got)==2, got
+          assert got[0]['source_level']==1 and got[0]['target_level']==2
+          assert got[0]['action_count']==2
+          assert 'RIGHT' in got[0]['program'] and 'UP' in got[0]['program']
+          assert got[1]['source_level']==2 and got[1]['target_level']==3
+          assert got[1]['action_count']==2
+          print(got)
+          PY
+
+      - name: Seal candidate overlay
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path('vendor/duck-harness/ARC3-Inference/inference/agent/tool_agent.py')
+          result={
+            'schema':'arc3.crystal-taaf-progress-memory@1',
+            'classification':'CANDIDATE_INTEGRATION',
+            'source':'Tufalabs/duck-harness@7652836056c59e044f093e3c13ed7438c814169e',
+            'patched_tool_agent_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'boundary':'CPU contract only; no GPU/model score claim',
+          }
+          Path('crystal-taaf-progress-memory.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-crystal-taaf-progress-memory-v1
+          path: |
+            crystal-taaf-progress-memory.json
+            vendor/duck-harness/ARC3-Inference/inference/agent/tool_agent.py
