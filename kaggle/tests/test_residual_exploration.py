@@ -63,7 +63,7 @@ class ResidualExplorationContracts(unittest.TestCase):
 
 
 
-    def test_relative_reuse_outranks_fresh_unknown_probe(self):
+    def test_primitive_relative_program_is_not_portable_on_hot_path(self):
         api=self.api()
         ctl=api.ResidualController((1,2),archived_capabilities=(),trace_capabilities=())
         def frame(value,level=0):
@@ -75,8 +75,9 @@ class ResidualExplorationContracts(unittest.TestCase):
         ctl.crystal.observe(b,ActionToken(2),g)
         ctl.reset_episode()
         token=ctl.observe_and_choose(frame(20,1))
-        self.assertEqual(token.source,'crystal_relative')
-        self.assertEqual(token.action_id,1)
+        # V2 rejected source action-sequence transfer. Primitive programs stay
+        # available only as an ablation; the live V3 route pays for UNKNOWN.
+        self.assertEqual(token.source,'crystal_probe')
 
         empty=api.ResidualController((1,2),archived_capabilities=(),trace_capabilities=())
         self.assertEqual(empty.observe_and_choose(frame(20,1)).source,'crystal_probe')
