@@ -37,6 +37,10 @@ jobs:
         run: |
           PYTHONPATH=experiments python experiments/arc3_prospective_collisions_v4.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-prospective-collisions-v4.json
 
+      - name: Test prospective effect quotient
+        run: |
+          python experiments/arc3_effect_quotient_prospective_v1.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-effect-quotient-prospective-v1.json
+
       - name: Run ARC contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
 
