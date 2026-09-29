@@ -1,0 +1,35 @@
+name: ARC3 click role transport census V1
+on:
+  push:
+    branches: [arc3-click-role-rebind-v3]
+    paths:
+      - 'experiments/arc3_click_role_transport_census_v1.py'
+      - 'kaggle/src/metalogic_arc3/developmental_controller.py'
+      - '.github/workflows/arc3-click-role-transport-census-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/checkout@v4
+        with:
+          repository: Tufalabs/duck-harness
+          ref: 7652836056c59e044f093e3c13ed7438c814169e
+          path: duck
+      - name: Run exact public click-role census
+        run: |
+          mkdir -p out
+          python experiments/arc3_click_role_transport_census_v1.py \
+            --events-dir duck/example-run/artifacts \
+            --output out/click-role-transport-census.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-click-role-transport-census-v1
+          path: out/click-role-transport-census.json
+          if-no-files-found: error
