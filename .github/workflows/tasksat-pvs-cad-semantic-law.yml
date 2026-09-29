@@ -104,7 +104,7 @@ jobs:
           export PVS_LIBRARY_PATH="$NASALIB"
           mkdir -p results
           bash vendor/pvs_cad/tools/prove_each.sh             tasksat_semantic_drift_cad             "$GITHUB_WORKSPACE/vendor/pvs_cad/cad/tasksat_semantic_drift_cad.cmds"             | tee results/tasksat_pvs_cad_semantic_law.txt
-          test "$(grep -c ' QED$' results/tasksat_pvs_cad_semantic_law.txt)" -eq 6
+          test "$(grep -c ' QED$' results/tasksat_pvs_cad_semantic_law.txt)" -eq 7
 
       - name: Capture verifier boundary
         shell: bash

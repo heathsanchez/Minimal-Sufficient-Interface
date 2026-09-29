@@ -1,57 +1,19 @@
 # TaskSAT × PVS CAD semantic law
 
-## Current objective
+## Objective
 
 Use J. Tanner Slagel's verified PVS CAD as an independent real-algebraic oracle for the exact semantic boundary exposed by the TaskSAT bounded-assignment audit.
-
-This branch extends `tasksat-semantic-boundary-audit-v1`; it changes neither TaskSAT nor pvs_cad.
 
 Pinned evidence:
 
 - TaskSAT: `nasa-jpl/tasksat@f9d6063b45967a3fea578c47f54806aadaafe1b0`
 - pvs_cad: `j-tanner-slagel/pvs_cad@8750362e99c2ba0e9a0307dcaa39b9766c562feb`
-- PVS: `pvs8.1.2`, Linux x86_64 asset SHA-256 `5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b`
+- PVS: `pvs8.1.2`, Linux x86_64 SHA-256 `5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b`
 - NASALib: `nasa/pvslib@e426f69dc2680ad575491f93c5a51739ec8b25fa`
 
-## What changed after the first CAD launch
+## Warranted before CAD
 
-The first formulation silently treated TaskSAT's interval contract as (B\subseteq R). A source reconciliation found that the repository itself does not have one interval contract.
-
-### Contract A — public AST/manual
-
-`src/smt/tasknet_ast.py` says:
-
-- `range`: interval a valid schedule must stay within;
-- `bounds`: the timeline's type, with computed values clamped into it;
-- “`range` is effectively a subtype of `bounds`.”
-
-The public manual says the same thing. This is
-
-[
-R\subseteq B.
-]
-
-### Contract B — TaskNetPaper Lean skeleton
-
-`src/lean/TaskNetPaper/TaskNet/semantics.lean` explicitly declares
-
-[
-B\subseteq R
-]
-
-via `bounds_in_range : Rlo ≤ Blo ∧ Bhi ≤ Rhi`.
-
-This file describes itself as a semantics skeleton and contains schematic material, so it is not being treated as stronger authority than the executable validator or current public manual. It is nevertheless direct evidence that the opposite contract exists in the repository.
-
-### Executable Python well-formedness
-
-`src/smt/tasknet_wellformedness.py` contains no comparison of timeline `range` and `bounds`. The executable audit on this branch supplies both opposite nestings to the pinned checker and requires both to be accepted.
-
-Therefore the containment direction is itself part of the semantic residual; it must not be silently chosen.
-
-## Already warranted implementation divergence
-
-For a bounded numeric assignment (a), the prior source-locked executable audit established:
+The prior executable audit established, for a bounded numeric assignment (a),
 
 [
 	ext{Lean/reference}=\operatorname{clamp}_{[\ell,u]}(a),
@@ -59,93 +21,79 @@ qquad
 	ext{Python/Z3}=a.
 ]
 
-The minimized TaskSAT witness (R=[0,100], B=[0,10], a=20) is reported `VIOLATED` by the Python/Z3 property checker and evaluates to (10) under the executable Lean assignment/clamp ordering. The candidate re-clamp repair flips the property to `HOLDS` and preserves TaskSAT's original numeric-assignment regression.
+The minimized TaskSAT witness (R=[0,100], B=[0,10], a=20) is reported `VIOLATED` by the Python/Z3 property checker and evaluates to (10) under the executable Lean assignment/clamp ordering. Re-clamping after assignment flips the property to `HOLDS` and preserves TaskSAT's original numeric-assignment regression.
 
-## What CAD now decides
+## The interval-contract fork
 
-The PVS theory avoids `min`, `max`, and `IF`: clamp is represented by its graph, entirely with polynomial equalities/inequalities.
+Source reconciliation found two incompatible contracts:
 
-### 1. Exact agreement quotient
+- current AST/manual: `range` is a subtype of `bounds`, i.e. (R\subseteq B);
+- TaskNetPaper Lean skeleton: `bounds_in_range`, i.e. (B\subseteq R).
 
-CAD proves or rejects:
+The pinned Python well-formedness checker contains no comparison of the two intervals. The executable contract audit on this branch requires both opposite nesting directions to be accepted before it reports `WARRANTED_MISSING_CONTAINMENT_CHECK`.
+
+This means the algebraic observability question is conditional on which contract the authors intend.
+
+## CAD formulation
+
+All submitted formulas are explicit **closed prenex formulas**, matching pvs_cad's declared `cad-direct` interface. Clamp is represented by its graph rather than by an unverified `IF`/min/max wrapper.
+
+### Agreement quotient
+
+For any (y) on the clamp graph,
 
 [
-\operatorname{clamp}_{B}(a)=a
-iff
-a\in B.
+y=a quad\Longleftrightarrowquad \ell\le a\le u.
 ]
 
-This is the exact observational quotient for the assignment-only divergence.
+The PVS theorem spells this as the two implications inside the bounds/clamp-graph guard.
 
-### 2. If (B\subseteq R)
+### (B\subseteq R) branch
 
-Normalize
+Normalize (R=[-L,W+R_s]), (B=[0,W]), with nonnegative parameters.
 
-[
-R=[-L,W+R_s],qquad B=[0,W],
-]
-
-where (L,W,R_s\ge0). CAD checks:
+CAD separately checks both directions of the exact statement
 
 [
 exists a\in R\setminus B
-iff
+quad\Longleftrightarrowquad
 L>0\lor R_s>0.
 ]
 
-Thus the drift is observable on a range-valid assignment exactly when the admissible range is strictly wider than the clamping interval.
+The split into an all-universal theorem and an (orallorallorallexists) theorem keeps each formula prenex.
 
-### 3. If (R\subseteq B)
+### (R\subseteq B) branch
 
-Normalize
+Normalize (R=[0,W]), (B=[-L,W+R_s]). CAD checks universally that every range-valid (a) is in the bounds, hence there is no range-valid separator on this assignment-only slice.
 
-[
-R=[0,W],qquad B=[-L,W+R_s].
-]
+### Repair invariant
 
-CAD checks:
+A (orallorallorallexists) formula checks that a clamp-graph output always exists and lies in the declared bounds.
 
-[
-\neg\exists a\in R\setminus B.
-]
+### Concrete witness
 
-Under this contract, the assignment/clamp ordering difference cannot be exposed by a range-valid assignment on this slice: the range predicate quotients the two implementations together.
-
-### 4. Repair invariant
-
-CAD checks that re-clamping always returns an output in the declared bounds.
-
-### 5. Concrete witness and contract direction
-
-The original (R=[0,100],B=[0,10],a=20) witness is checked as range-valid/outside-bounds, and a separate formula records that it belongs to the (B\subseteq R) branch rather than (R\subseteq B).
+Two one-quantifier closed formulas independently check that (a=20) is range-valid/outside (B=[0,10]) for (R=[0,100]), and that this witness selects the (B\subseteq R) containment branch.
 
 ## Promotion rule
 
-Only an external run in which all six PVS formulas finish `QED` under pvs_cad's `(cad)` strategy promotes these algebraic laws to **WARRANTED**.
+Seven `cad-direct` proofs must end in `QED`. Only then are the exact algebraic characterizations **WARRANTED**.
 
-Separately, only a green TaskSAT static audit that accepts both opposite nestings promotes the missing-containment-check claim to **WARRANTED**.
+Separately, the TaskSAT contract audit must be green before “no containment direction is enforced” is **WARRANTED**.
 
-Until those gates finish:
-
-- TaskSAT assignment/clamp implementation divergence: **WARRANTED**
-- candidate re-clamp repair on minimized witness: **WARRANTED_FOR_MINIMIZED_WITNESS**
-- interval-contract fork: **WARRANTED_SOURCE_CONFLICT**
-- missing containment check: **CANDIDATE**
-- exact CAD characterizations: **CANDIDATE**
-- intended MEXEC containment/clamping semantics: **UNKNOWN**
+The earlier non-prenex CAD draft is **SUPERSEDED** by this formulation; its run is evidence only about the failed experiment path, not about the mathematics.
 
 ## Reusable structure
-
-The experiment now exposes a more general semantic-audit law:
 
 [
 	ext{implementation disagreement}
 	o
-	ext{observation quotient}
+	ext{minimal separator}
 	o
 	ext{admissibility contract}
 	o
-	ext{observable disagreement region}.
+	ext{exact observable region}
+	o
+	ext{independent verified decision}.
 ]
 
-A semantic difference is consequential only where the surrounding admissibility contract does not quotient it away. That contract must itself be audited rather than assumed.
+The key lesson is sharper than “find a bug”: a semantic difference matters only outside the quotient induced by the surrounding admissibility contract, so that contract must be audited too.
