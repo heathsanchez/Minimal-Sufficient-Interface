@@ -113,10 +113,20 @@ def frontier_continuation(
 
 
 class ResidualController(DevelopmentalController):
-    """Progress reuse plus first-goal experiments; old controllers are ablations."""
+    """Reuse before experiment: pay for a new distinction only after Crystal declines."""
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
+        # OnlineController reaches this hook only after exact archive/trace/
+        # continuation evidence has declined. Query already-earned Crystal
+        # capability before purchasing another environment intervention.
+        reuse = self.crystal.plan(obs)
+        if reuse is not None:
+            return reuse.action
+
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
         if decision is not None:
             return decision.action
-        return super()._next_retained(obs)
+
+        # Historical prospective constructor remains a lower-priority
+        # candidate after both compiled reuse and the explicit residual query.
+        return self._next_transfer(obs)
