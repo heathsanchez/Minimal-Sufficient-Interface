@@ -1,0 +1,7 @@
+assignment_output_agreement_exact (cad-direct)
+r_subset_b_lower_touch_has_validity_divergence (cad-direct)
+r_subset_b_upper_touch_has_validity_divergence (cad-direct)
+b_subset_r_always_has_validity_divergence (cad-direct)
+reclamp_preserves_bounds (cad-direct)
+contract_compliant_witness_has_validity_divergence (cad-direct)
+historical_witness_is_b_subset_r (cad-direct)

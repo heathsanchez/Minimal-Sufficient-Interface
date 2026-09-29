@@ -1,0 +1,28 @@
+tasksat_semantic_closeout_cad: THEORY
+%----------------------------------------------------------------------------
+% Final case-exhaustion lemma for the TaskSAT bounded-assignment CAD closeout.
+%
+% Public/current contract normalization:
+%   B = [0,W]
+%   R = [p,W-q]
+%   W>=0, p>=0, q>=0, p+q<=W.
+%
+% Earlier CAD obligations establish:
+%   p>0 AND q>0  -> validity verdicts agree for every assignment;
+%   p=0          -> a=-1 separates the verdicts;
+%   q=0          -> a=W+1 separates the verdicts.
+%
+% This theorem proves those cases are exhaustive.
+%----------------------------------------------------------------------------
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  r_subset_b_cases_exhaustive: THEOREM
+    FORALL (W: real):
+      FORALL (p: real):
+        FORALL (q: real):
+          (W >= 0 AND p >= 0 AND q >= 0 AND p + q <= W)
+          IMPLIES
+            ((p > 0 AND q > 0) OR p = 0 OR q = 0)
+
+END tasksat_semantic_closeout_cad
