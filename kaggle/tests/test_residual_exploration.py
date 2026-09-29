@@ -61,6 +61,31 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertIsNone(m.plan(a))
         self.assertTrue(any(r['reason']=='observed_frontier_exhausted_not_impossible' for r in m.residuals))
 
+
+
+    def test_compiled_relative_reuse_precedes_new_probe(self):
+        api=self.api()
+        ctl=api.ResidualController((1,2,3),archived_capabilities=(),trace_capabilities=())
+        m=ctl.crystal
+        source_a=normalize_frame(dict(frame=[[[1]]],levels_completed=0,
+                                      state='NOT_FINISHED',available_actions=[1,2,3]))
+        source_b=normalize_frame(dict(frame=[[[2]]],levels_completed=0,
+                                      state='NOT_FINISHED',available_actions=[1,2,3]))
+        source_g=normalize_frame(dict(frame=[[[3]]],levels_completed=1,
+                                      state='NOT_FINISHED',available_actions=[1,2,3]))
+        m.begin(source_a)
+        m.observe(source_a,ActionToken(2),source_b)
+        m.observe(source_b,ActionToken(3),source_g)
+        self.assertEqual(m.stats['relative_capabilities_compiled'],1)
+
+        ctl.reset_episode()
+        target=dict(frame=[[[9]]],levels_completed=1,
+                    state='NOT_FINISHED',available_actions=[1,2,3])
+        token=ctl.observe_and_choose(target)
+        self.assertEqual(token.source,'crystal_relative')
+        self.assertEqual(token.action_id,2)
+        self.assertEqual(ctl.crystal.stats.get('probe_actions',0),0)
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
