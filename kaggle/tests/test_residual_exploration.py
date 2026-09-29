@@ -63,6 +63,11 @@ class ResidualExplorationContracts(unittest.TestCase):
 
 
 
+    def test_delivered_residual_controller_defaults_to_role_grounding(self):
+        api=self.api()
+        ctl=api.ResidualController((6,),archived_capabilities=(),trace_capabilities=())
+        self.assertTrue(ctl.role_grounding)
+
     def test_compiled_relative_reuse_precedes_new_probe(self):
         api=self.api()
         ctl=api.ResidualController((1,2,3),archived_capabilities=(),trace_capabilities=())
