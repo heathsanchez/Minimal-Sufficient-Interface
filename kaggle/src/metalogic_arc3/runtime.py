@@ -218,6 +218,7 @@ class OnlineController:
         max_history: int = 8,
         grounding_stride: int = 8,
         max_grounded_actions: int = 256,
+        role_grounding: bool = False,
         archived_capabilities: Iterable[ArchivedCapability] | None = None,
         trace_capabilities: Iterable[TraceCapability] | None = None,
     ):
@@ -232,6 +233,9 @@ class OnlineController:
         self.max_history = max_history
         self.grounding_stride = grounding_stride
         self.max_grounded_actions = max_grounded_actions
+        self.role_grounding = bool(role_grounding)
+        self._role_grounding_digest: str | None = None
+        self._role_grounding_coordinates: tuple[tuple[int, int], ...] = ()
         self.archived_capabilities = tuple(
             DEFAULT_ARCHIVED_CAPABILITIES
             if archived_capabilities is None
@@ -326,12 +330,145 @@ class OnlineController:
                 return legal
         return self.action_ids
 
+    @staticmethod
+    def _canonical_local_patch(
+        board: list[list[Any]], x: int, y: int, radius: int = 1
+    ) -> tuple[tuple[int, ...], ...]:
+        """Palette-invariant local patch used only as an action-grounding role."""
+        height = len(board)
+        width = len(board[0]) if height else 0
+        remap: dict[Any, int] = {}
+        next_id = 0
+        rows: list[tuple[int, ...]] = []
+        for yy in range(y - radius, y + radius + 1):
+            row: list[int] = []
+            for xx in range(x - radius, x + radius + 1):
+                value: Any = ("OUTSIDE",)
+                if 0 <= yy < height and 0 <= xx < width:
+                    value = board[yy][xx]
+                key = json.dumps(value, sort_keys=True, default=str)
+                if key not in remap:
+                    remap[key] = next_id
+                    next_id += 1
+                row.append(remap[key])
+            rows.append(tuple(row))
+        return tuple(rows)
+
+    @classmethod
+    def _role_grounded_coordinates_from_frame(
+        cls, frame: Any
+    ) -> tuple[tuple[int, int], ...]:
+        """One representative per repeated visible local component role.
+
+        This is a proposal ordering only. The ordinary dense lattice remains
+        complete fallback, so no coordinate becomes unreachable.
+        """
+        raw_frame = _plain(_field(frame, "frame", []))
+        layers = raw_frame if isinstance(raw_frame, list) else []
+        board = layers[0] if layers else []
+        if not isinstance(board, list) or not board or not isinstance(board[0], list):
+            return ()
+        height = len(board)
+        width = len(board[0])
+        if width < 1:
+            return ()
+        area = height * width
+        seen: set[tuple[int, int]] = set()
+        components: list[dict[str, Any]] = []
+        for y in range(height):
+            for x in range(width):
+                if (x, y) in seen:
+                    continue
+                color = board[y][x]
+                stack = [(x, y)]
+                seen.add((x, y))
+                points: list[tuple[int, int]] = []
+                while stack:
+                    px, py = stack.pop()
+                    points.append((px, py))
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        qx, qy = px + dx, py + dy
+                        if not (0 <= qx < width and 0 <= qy < height):
+                            continue
+                        if (qx, qy) in seen or board[qy][qx] != color:
+                            continue
+                        seen.add((qx, qy))
+                        stack.append((qx, qy))
+                # Giant connected regions are usually board/background, not
+                # useful interaction handles. They remain reachable by fallback.
+                if len(points) > max(8, area // 4):
+                    continue
+                xs = [p[0] for p in points]
+                ys = [p[1] for p in points]
+                min_x, max_x = min(xs), max(xs)
+                min_y, max_y = min(ys), max(ys)
+                cx = (min_x + max_x) / 2.0
+                cy = (min_y + max_y) / 2.0
+                rep_x, rep_y = min(
+                    points,
+                    key=lambda p: (
+                        abs(p[0] - cx) + abs(p[1] - cy),
+                        p[1], p[0],
+                    ),
+                )
+                patch = cls._canonical_local_patch(board, rep_x, rep_y, radius=1)
+                role = (
+                    max_y - min_y + 1,
+                    max_x - min_x + 1,
+                    len(points),
+                    patch,
+                )
+                components.append(
+                    dict(role=role, point=(rep_x, rep_y), size=len(points))
+                )
+
+        counts: dict[Any, int] = {}
+        for row in components:
+            counts[row["role"]] = counts.get(row["role"], 0) + 1
+
+        # A single representative per role is the smallest safe front. Repeated
+        # copies are still explored later through the unchanged lattice.
+        chosen: dict[Any, dict[str, Any]] = {}
+        for row in components:
+            role = row["role"]
+            previous = chosen.get(role)
+            if previous is None or row["point"][::-1] < previous["point"][::-1]:
+                chosen[role] = row
+        ordered = sorted(
+            chosen.values(),
+            key=lambda row: (
+                counts[row["role"]],
+                row["size"],
+                row["point"][1],
+                row["point"][0],
+            ),
+        )
+        return tuple(row["point"] for row in ordered)
+
+    def _prepare_role_grounding(self, frame: Any, obs: Observation) -> None:
+        if not self.role_grounding:
+            self._role_grounding_digest = None
+            self._role_grounding_coordinates = ()
+            return
+        self._role_grounding_digest = obs.frame_digest
+        self._role_grounding_coordinates = self._role_grounded_coordinates_from_frame(frame)
+
     def _coordinate_candidates(self, obs: Observation) -> tuple[tuple[int, int], ...]:
         if obs.height < 1 or obs.width < 1:
             raise ValueError("No public image dimensions")
 
         seen: set[tuple[int, int]] = set()
         result: list[tuple[int, int]] = []
+        if (
+            self.role_grounding
+            and self._role_grounding_digest == obs.frame_digest
+        ):
+            for coordinate in self._role_grounding_coordinates:
+                if coordinate in seen:
+                    continue
+                seen.add(coordinate)
+                result.append(coordinate)
+
         for step in (self.grounding_stride, max(1, self.grounding_stride // 2), 1):
             for y in range(step // 2, obs.height, step):
                 for x in range(step // 2, obs.width, step):
@@ -471,6 +608,7 @@ class OnlineController:
 
     def observe_and_choose(self, frame: Any) -> ActionToken | None:
         obs = normalize_frame(frame)
+        self._prepare_role_grounding(frame, obs)
         self._process_previous_outcome(obs)
         if self._level_start_guard is None:
             self._level_start_guard = self._retention_guard(obs)
