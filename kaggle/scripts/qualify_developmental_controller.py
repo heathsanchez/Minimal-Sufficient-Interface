@@ -181,13 +181,23 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
     relative_use = sum(row['candidate_stats'].get('relative_capability_decisions',0) for row in rows)
     relative_progress = sum(row['candidate_stats'].get('relative_capability_progress',0) for row in rows)
     relative_mismatches = sum(row['candidate_stats'].get('relative_capability_mismatches',0) for row in rows)
+    relative_context_rejections = sum(row['candidate_stats'].get('relative_context_rejections',0) for row in rows)
+    relative_projection_rejections = sum(row['candidate_stats'].get('relative_projection_rejections',0) for row in rows)
+    relative_mechanism_rejections = sum(row['candidate_stats'].get('relative_mechanism_rejections',0) for row in rows)
+    relative_retry_suppressions = sum(row['candidate_stats'].get('relative_retry_suppressions',0) for row in rows)
     use = absolute_use + relative_use
     probe_use = sum(row['candidate_stats'].get('residual_decisions',0) for row in rows)
     return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
                 results=rows,candidate_uses=use,absolute_uses=absolute_use,
                 relative_uses=relative_use,relative_progress=relative_progress,
-                relative_mismatches=relative_mismatches,probe_uses=probe_use,
+                relative_mismatches=relative_mismatches,
+                relative_context_rejections=relative_context_rejections,
+                relative_projection_rejections=relative_projection_rejections,
+                relative_mechanism_rejections=relative_mechanism_rejections,
+                relative_retry_suppressions=relative_retry_suppressions,
+                probe_uses=probe_use,
                 observed_improvement=improvement, observed_regression=regression,
+                safe_negative_memory=bool(relative_context_rejections and not regression),
                 release_qualified=bool(improvement and not regression and relative_use and relative_progress))
 
 
