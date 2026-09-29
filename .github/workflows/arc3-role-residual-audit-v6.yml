@@ -1,0 +1,52 @@
+name: ARC3 role residual audit V6
+on:
+  push:
+    branches: [arc3-role-residual-audit-v6]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - name: Freeze lp85 public development environment
+        run: |
+          python - <<'PY'
+          from arc_agi import Arcade,OperationMode
+          from pathlib import Path
+          root=Path("public-environments");root.mkdir(exist_ok=True)
+          arc=Arcade(operation_mode=OperationMode.NORMAL,
+                     environments_dir=str(root.resolve()))
+          env=arc.make("lp85-305b61c3")
+          if env is None: raise SystemExit("missing lp85")
+          arc.close_scorecard()
+          PY
+      - name: Audit role residual
+        run: |
+          mkdir -p out
+          python kaggle/scripts/audit_role_residual.py \
+            --environments public-environments \
+            --game lp85-305b61c3 \
+            --budget 100 \
+            --output out/lp85-role-residual.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-role-residual-audit-v6
+          path: out/
+          if-no-files-found: error
