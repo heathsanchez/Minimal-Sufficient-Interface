@@ -115,6 +115,13 @@ def frontier_continuation(
 class ResidualController(DevelopmentalController):
     """Reuse before experiment: pay for a new distinction only after Crystal declines."""
 
+    def __init__(self, *args, **kwargs):
+        # V5 public no-trace qualification earned palette-invariant local-role
+        # grounding as the default proposal order for ACTION6. The historical
+        # dense lattice remains complete fallback inside OnlineController.
+        kwargs.setdefault("role_grounding", True)
+        super().__init__(*args, **kwargs)
+
     def _next_retained(self, obs: Observation) -> ActionToken | None:
         # OnlineController reaches this hook only after exact archive/trace/
         # continuation evidence has declined. Query already-earned Crystal
