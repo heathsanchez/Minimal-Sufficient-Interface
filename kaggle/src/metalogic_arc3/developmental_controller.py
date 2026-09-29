@@ -19,6 +19,27 @@ from .memory_controller import MemoryGraphController
 from .runtime import ActionToken, Observation, normalize_frame
 
 
+def _frame_board(frame: Any) -> tuple[tuple[int, ...], ...]:
+    raw = frame.get('frame', []) if isinstance(frame, dict) else getattr(frame, 'frame', [])
+    if hasattr(raw, 'tolist'):
+        raw = raw.tolist()
+    layers = raw if isinstance(raw, (list, tuple)) else ()
+    first = layers[0] if layers else ()
+    if hasattr(first, 'tolist'):
+        first = first.tolist()
+    if not isinstance(first, (list, tuple)):
+        return ()
+    return tuple(tuple(int(v) for v in row) for row in first)
+
+
+def _freeze_role(value: Any) -> Any:
+    if isinstance(value, list):
+        return tuple(_freeze_role(v) for v in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_role(v) for v in value)
+    return value
+
+
 @dataclass(frozen=True)
 class ProgressDecision:
     action: ActionToken
@@ -58,6 +79,7 @@ class ProgressMemory:
             relative_capability_progress=0, relative_capability_mismatches=0,
             relative_terminal_extensions=0, relative_extension_decisions=0,
             relative_extension_progress=0, relative_extension_exhausted=0,
+            click_role_bindings=0, click_role_ambiguous=0, click_role_unbound=0,
         )
         self._record_ids: set[str] = set()
         self._history: tuple = ()
@@ -108,6 +130,79 @@ class ProgressMemory:
                 after.state == 'WIN' and before.state != 'WIN')
         return int(after['levels_completed']) > int(before['levels_completed']) or (
             after['state'] == 'WIN' and before['state'] != 'WIN')
+
+    @staticmethod
+    def _component_map(board: tuple[tuple[int, ...], ...]) -> dict[tuple[int, int], tuple[int, int, int, int, int, int, int]]:
+        if not board or not board[0]:
+            return {}
+        h, w = len(board), len(board[0])
+        seen: set[tuple[int, int]] = set()
+        out: dict[tuple[int, int], tuple[int, int, int, int, int, int, int]] = {}
+        for y0 in range(h):
+            for x0 in range(w):
+                if (x0, y0) in seen:
+                    continue
+                color = board[y0][x0]
+                stack=[(x0,y0)]; seen.add((x0,y0)); cells=[]
+                while stack:
+                    x,y=stack.pop(); cells.append((x,y))
+                    for nx,ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                        if 0 <= nx < w and 0 <= ny < h and (nx,ny) not in seen and board[ny][nx] == color:
+                            seen.add((nx,ny)); stack.append((nx,ny))
+                xs=[p[0] for p in cells]; ys=[p[1] for p in cells]
+                minx,maxx,miny,maxy=min(xs),max(xs),min(ys),max(ys)
+                size=len(cells); bh=maxy-miny+1; bw=maxx-minx+1
+                for x,y in cells:
+                    degree=sum(
+                        1 for nx,ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1))
+                        if 0 <= nx < w and 0 <= ny < h and board[ny][nx] == color)
+                    out[(x,y)]=(size,bh,bw,y-miny,x-minx,degree,int(minx==0 or miny==0 or maxx==w-1 or maxy==h-1))
+        return out
+
+    @staticmethod
+    def _canonical_patch(board: tuple[tuple[int, ...], ...], x: int, y: int, radius: int = 1) -> tuple[tuple[int, ...], ...]:
+        if not board or not board[0]:
+            return ()
+        h,w=len(board),len(board[0]); palette={}; nxt=0; rows=[]
+        for yy in range(y-radius,y+radius+1):
+            row=[]
+            for xx in range(x-radius,x+radius+1):
+                if not (0 <= xx < w and 0 <= yy < h):
+                    row.append(-1); continue
+                value=board[yy][xx]
+                if value not in palette:
+                    palette[value]=nxt; nxt+=1
+                row.append(palette[value])
+            rows.append(tuple(row))
+        return tuple(rows)
+
+    @classmethod
+    def click_role(cls, board: tuple[tuple[int, ...], ...] | None, x: int | None, y: int | None) -> tuple[Any, ...] | None:
+        if board is None or x is None or y is None or not board or not board[0]:
+            return None
+        h,w=len(board),len(board[0])
+        if not (0 <= int(x) < w and 0 <= int(y) < h):
+            return None
+        comp=cls._component_map(board).get((int(x),int(y)))
+        if comp is None:
+            return None
+        return ('click.local-role@1',)+tuple(comp)+(cls._canonical_patch(board,int(x),int(y),1),)
+
+    @classmethod
+    def _unique_click_binding(cls, board: tuple[tuple[int, ...], ...] | None, role: Any) -> tuple[int, int] | None:
+        if board is None or not board or not board[0] or role is None:
+            return None
+        target=_freeze_role(role); h,w=len(board),len(board[0]); cmap=cls._component_map(board)
+        matches=[]
+        for y in range(h):
+            for x in range(w):
+                comp=cmap.get((x,y))
+                candidate=('click.local-role@1',)+tuple(comp)+(cls._canonical_patch(board,x,y,1),)
+                if _freeze_role(candidate)==target:
+                    matches.append((x,y))
+                    if len(matches)>1:
+                        return None
+        return matches[0] if len(matches)==1 else None
 
     def reset_transient(self) -> None:
         self._history = ()
@@ -171,17 +266,22 @@ class ProgressMemory:
                     int(before_row['height']), int(before_row['width']),
                 ],
                 action=list(row['action']),
+                action_role=row.get('action_role'),
                 board_relation=self._relation(before_row, after_row, 'board_digest'),
                 frame_relation=self._relation(before_row, after_row, 'frame_digest'),
                 progress=self._relative_progress(before_row, after_row),
             ))
-        payload = dict(target_delta=target_delta, steps=steps)
+        portable_kind = 'click_role_v1' if steps and all(
+            int(step['action'][0]) == 6 and step.get('action_role') is not None
+            for step in steps) else 'direct_only'
+        payload = dict(target_delta=target_delta, portable_kind=portable_kind, steps=steps)
         capability_id = content_id(payload, prefix='arc-relative-progress')
         support_refs = sorted({row['evidence'] for row in rows})
         existing = self.relative_capabilities.get(capability_id)
         if existing is None:
             self.relative_capabilities[capability_id] = dict(
-                id=capability_id, target_delta=target_delta, steps=steps,
+                id=capability_id, target_delta=target_delta,
+                portable_kind=portable_kind, steps=steps,
                 source_levels=[start_level], support_refs=support_refs)
             self.stats['relative_capabilities_compiled'] += 1
         else:
@@ -323,7 +423,9 @@ class ProgressMemory:
             ),
         )
 
-    def observe(self, before: Observation, action: ActionToken, after: Observation) -> None:
+    def observe(self, before: Observation, action: ActionToken, after: Observation,
+                *, before_board: tuple[tuple[int, ...], ...] | None = None,
+                after_board: tuple[tuple[int, ...], ...] | None = None) -> None:
         if self._current is None:
             self.begin(before)
         if self._current != before:
@@ -347,9 +449,10 @@ class ProgressMemory:
                                predicted=list(expected.expected_targets))
         self._pending = None
         self._validate_relative_pending(before, action, after)
+        action_role = self.click_role(before_board, action.x, action.y) if action.action_id == 6 else None
         record = dict(before=self._obs_data(before), after=self._obs_data(after),
-                      action=self._action(action), history=self._history,
-                      next_history=next_history, cost=1)
+                      action=self._action(action), action_role=action_role,
+                      history=self._history, next_history=next_history, cost=1)
         evidence = content_id(record, prefix='arc-observation')
         segment_record = dict(record, evidence=evidence)
         if evidence not in self._record_ids:
@@ -476,11 +579,13 @@ class ProgressMemory:
             ref for ref in capability['support_refs'] if ref not in self.revoked
         ))
 
-    def _relative_candidate(self, obs: Observation) -> dict[str, Any] | None:
+    def _relative_candidate(self, obs: Observation, *, portable_kind: str | None = None) -> dict[str, Any] | None:
         if self._active_relative is not None:
             return self._active_relative
         candidates = []
         for capability in self.relative_capabilities.values():
+            if portable_kind is not None and capability.get('portable_kind') != portable_kind:
+                continue
             if capability['id'] in self._relative_failed_caps:
                 continue
             if not any(obs.levels_completed > int(level) for level in capability['source_levels']):
@@ -501,7 +606,9 @@ class ProgressMemory:
         return self._active_relative
 
     def _plan_relative(
-        self, obs: Observation, *, remaining_actions: int | None = None
+        self, obs: Observation, *, remaining_actions: int | None = None,
+        raw_board: tuple[tuple[int, ...], ...] | None = None,
+        portable_kind: str | None = None,
     ) -> ProgressDecision | None:
         extension = self._relative_extension
         if extension is not None:
@@ -536,7 +643,7 @@ class ProgressMemory:
                 token, 1, self._live_relative_support(capability), (),
                 status='CANDIDATE_RELATIVE_EXTENSION')
 
-        capability = self._relative_candidate(obs)
+        capability = self._relative_candidate(obs, portable_kind=portable_kind)
         if capability is None:
             return None
         index = self._relative_index
@@ -561,6 +668,20 @@ class ProgressMemory:
                            needed=remaining, remaining=remaining_actions)
             return None
         action = tuple(step['action'])
+        if int(action[0]) == 6 and capability.get('portable_kind') == 'click_role_v1':
+            binding = self._unique_click_binding(raw_board, step.get('action_role'))
+            if binding is None:
+                if raw_board is None:
+                    self.stats['click_role_unbound'] += 1
+                    self._residual('click_role_board_unavailable', capability=capability['id'], step=index)
+                else:
+                    self.stats['click_role_ambiguous'] += 1
+                    self._residual('click_role_unbound_or_ambiguous', capability=capability['id'], step=index)
+                self._active_relative = None
+                self._relative_index = 0
+                return None
+            action = (6, int(binding[0]), int(binding[1]))
+            self.stats['click_role_bindings'] += 1
         if action[0] not in obs.available_actions:
             self._relative_failed_caps.add(capability['id'])
             self._active_relative = None
@@ -579,15 +700,19 @@ class ProgressMemory:
             self._residual('relative_action_binding_out_of_bounds',
                            capability=capability['id'], action=list(action))
             return None
-        token = ActionToken(*action, source='crystal_relative')
-        self._relative_pending = (capability['id'], index, step)
+        source = 'crystal_click_role' if capability.get('portable_kind') == 'click_role_v1' else 'crystal_relative'
+        token = ActionToken(*action, source=source)
+        pending_step = dict(step); pending_step['action'] = list(action)
+        self._relative_pending = (capability['id'], index, pending_step)
         self._relative_index += 1
         self.stats['relative_capability_decisions'] += 1
         return ProgressDecision(
             token, remaining, self._live_relative_support(capability), (),
             status='CANDIDATE_RELATIVE_PROGRESS')
 
-    def plan(self, obs: Observation, *, remaining_actions: int | None = None) -> ProgressDecision | None:
+    def plan(self, obs: Observation, *, remaining_actions: int | None = None,
+             raw_board: tuple[tuple[int, ...], ...] | None = None,
+             portable_kind: str | None = None) -> ProgressDecision | None:
         self._pending = None
         if obs.state in ('WIN', 'GAME_OVER'):
             return None
@@ -595,7 +720,9 @@ class ProgressMemory:
         source = self.state_id(obs, self._history)
         row = policy.get(source)
         if row is None:
-            relative = self._plan_relative(obs, remaining_actions=remaining_actions)
+            relative = self._plan_relative(
+                obs, remaining_actions=remaining_actions,
+                raw_board=raw_board, portable_kind=portable_kind)
             if relative is not None:
                 return relative
             self._residual('no_supported_progress_continuation', source=source)
@@ -661,7 +788,9 @@ class ProgressMemory:
         result.stats = defaults
         result.relative_capabilities = data.get('relative_capabilities', {})
         for capability_id, capability in result.relative_capabilities.items():
-            payload = dict(target_delta=capability['target_delta'], steps=capability['steps'])
+            payload = dict(target_delta=capability['target_delta'],
+                           portable_kind=capability.get('portable_kind','direct_only'),
+                           steps=capability['steps'])
             if capability_id != content_id(payload, prefix='arc-relative-progress'):
                 raise ValueError('relative capability identity mismatch')
             if not set(capability['support_refs']).issubset(result._record_ids):
@@ -683,6 +812,8 @@ class DevelopmentalController(MemoryGraphController):
     """Existing online discovery plus a live compiled continuation consumer."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._previous_board: tuple[tuple[int, ...], ...] | None = None
+        self._incoming_board: tuple[tuple[int, ...], ...] | None = None
         max_relative_depth = int(kwargs.pop('max_relative_depth', 32))
         self.crystal = ProgressMemory(
             max_history=kwargs.get('max_history', 8),
@@ -693,10 +824,14 @@ class DevelopmentalController(MemoryGraphController):
     def reset_episode(self) -> None:
         super().reset_episode()
         self.crystal.reset_transient()
+        self._previous_board = None
+        self._incoming_board = None
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         if self._previous is not None and self._last_action is not None:
-            self.crystal.observe(self._previous, self._last_action, obs)
+            self.crystal.observe(
+                self._previous, self._last_action, obs,
+                before_board=self._previous_board, after_board=self._incoming_board)
         elif self.crystal._current is None:
             self.crystal.begin(obs)
         super()._process_previous_outcome(obs)
@@ -709,13 +844,23 @@ class DevelopmentalController(MemoryGraphController):
         # OnlineController reaches this hook only after exact archive, trace and
         # continuation replay have all declined. Candidate Crystal transport may
         # now act, with the older cross-level constructor as the final fallback.
-        decision = self.crystal.plan(obs)
+        decision = self.crystal.plan(obs, raw_board=self._incoming_board)
         if decision is not None:
             return decision.action
         return self._next_transfer(obs)
 
+    def observe_and_choose(self, frame: Any) -> ActionToken | None:
+        self._incoming_board = _frame_board(frame)
+        token = super().observe_and_choose(frame)
+        self._previous_board = self._incoming_board
+        self._incoming_board = None
+        return token
+
     def observe_terminal(self, frame: Any) -> None:
+        self._incoming_board = _frame_board(frame)
         obs = normalize_frame(frame)
         self._process_previous_outcome(obs)
         self._previous = obs
+        self._previous_board = self._incoming_board
+        self._incoming_board = None
         self._last_action = None
