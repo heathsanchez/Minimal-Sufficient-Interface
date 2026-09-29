@@ -1,4 +1,6 @@
 assignment_agreement_exact (cad)
-observable_drift_exact (cad)
+bounds_inside_range_observable_drift_exact (cad)
+range_inside_bounds_no_observable_drift (cad)
 reclamp_preserves_bounds (cad)
 minimized_witness_is_observable (cad)
+minimized_witness_contract_direction (cad)

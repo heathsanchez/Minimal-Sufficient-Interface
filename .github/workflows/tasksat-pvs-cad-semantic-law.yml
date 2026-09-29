@@ -8,6 +8,7 @@ on:
     paths:
       - "experiments/tasksat_semantic_drift_cad.pvs"
       - "experiments/tasksat_semantic_drift_cad.cmds"
+      - "experiments/tasksat_range_bounds_contract_audit.py"
       - "TASKSAT_PVS_CAD_SEMANTIC_LAW.md"
       - ".github/workflows/tasksat-pvs-cad-semantic-law.yml"
 
@@ -17,7 +18,7 @@ permissions:
 jobs:
   pvs-cad:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out audit repo
         uses: actions/checkout@v4
@@ -36,6 +37,13 @@ jobs:
           ref: e426f69dc2680ad575491f93c5a51739ec8b25fa
           path: vendor/pvslib
 
+      - name: Check out pinned TaskSAT
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/tasksat
+          ref: f9d6063b45967a3fea578c47f54806aadaafe1b0
+          path: vendor/tasksat
+
       - name: Install PVS 8.1.2 x86_64
         shell: bash
         run: |
@@ -45,14 +53,19 @@ jobs:
           echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  $RUNNER_TEMP/pvs.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/pvs.tgz" -C vendor/pvs-dist
           PVS_BIN=$(find "$GITHUB_WORKSPACE/vendor/pvs-dist" -type f -name pvs -perm -u+x | head -1)
-          if [ -z "$PVS_BIN" ]; then
-            echo "No PVS executable found after extracting release bundle" >&2
-            exit 1
-          fi
+          test -n "$PVS_BIN"
           PVS_DIR=$(dirname "$PVS_BIN")
           echo "PVS_BIN=$PVS_BIN" >> "$GITHUB_ENV"
           echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
           "$PVS_BIN" -raw -version
+
+      - name: Install Python dependencies for TaskSAT static audit
+        run: python -m pip install lark==1.3.1 ply==3.11
+
+      - name: Audit unresolved range-bounds contract
+        run: >-
+          python experiments/tasksat_range_bounds_contract_audit.py vendor/tasksat
+          --out results/tasksat_range_bounds_contract_audit.json
 
       - name: Install audit theory into external CAD checkout
         shell: bash
@@ -75,7 +88,7 @@ jobs:
           export PVS_LIBRARY_PATH="$NASALIB"
           bash vendor/pvs_cad/tools/setup.sh
 
-      - name: Prove exact TaskSAT semantic laws with verified CAD
+      - name: Prove both TaskSAT contract branches with verified CAD
         shell: bash
         env:
           CAD_ROOT: ${{ github.workspace }}/vendor/pvs_cad
@@ -91,18 +104,19 @@ jobs:
           export PVS_LIBRARY_PATH="$NASALIB"
           mkdir -p results
           bash vendor/pvs_cad/tools/prove_each.sh             tasksat_semantic_drift_cad             "$GITHUB_WORKSPACE/vendor/pvs_cad/cad/tasksat_semantic_drift_cad.cmds"             | tee results/tasksat_pvs_cad_semantic_law.txt
-          test "$(grep -c ' QED$' results/tasksat_pvs_cad_semantic_law.txt)" -eq 4
+          test "$(grep -c ' QED$' results/tasksat_pvs_cad_semantic_law.txt)" -eq 6
 
       - name: Capture verifier boundary
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo "TaskSAT semantic law independently checked by pvs_cad"
+            echo "TaskSAT semantic fork independently characterized by pvs_cad"
             echo "pvs_cad=8750362e99c2ba0e9a0307dcaa39b9766c562feb"
             echo "PVS=pvs8.1.2"
             echo "PVS_asset_sha256=5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b"
             echo "NASALib=e426f69dc2680ad575491f93c5a51739ec8b25fa"
+            echo "TaskSAT=f9d6063b45967a3fea578c47f54806aadaafe1b0"
             echo
             cat results/tasksat_pvs_cad_semantic_law.txt
           } > results/tasksat_pvs_cad_evidence.txt
@@ -114,4 +128,5 @@ jobs:
           path: |
             results/tasksat_pvs_cad_semantic_law.txt
             results/tasksat_pvs_cad_evidence.txt
+            results/tasksat_range_bounds_contract_audit.json
           if-no-files-found: error
