@@ -1,0 +1,86 @@
+name: ARC3 role grounded ACTION6 V5
+on:
+  push:
+    branches: [arc3-role-grounded-action6-v5]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+
+      - name: Build exact offline deliverables
+        run: |
+          mkdir -p out
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+
+      - run: python kaggle/scripts/slim_framework.py
+
+      - name: Run no-trace role-grounding A/B on frozen public catalogue
+        timeout-minutes: 25
+        run: |
+          timeout 23m python kaggle/scripts/qualify_role_grounding.py \
+            --environments public-environments \
+            --budget 220 \
+            --output out/role-grounding.json
+
+      - name: Classify role-grounding gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("out/role-grounding.json")
+          if not p.exists():
+              raise SystemExit("role-grounding result missing")
+          d=json.loads(p.read_text())
+          summary={
+              "schema":"arc3.role-grounding-gate@1",
+              "promotion_candidate":d["promotion_candidate"],
+              "sum_levels":d["sum_levels"],
+              "total_role_action6":d["total_role_action6"],
+              "total_action6":d["total_action6"],
+              "gains":d["gains"],
+              "action_savings":d["action_savings"],
+              "regressions":d["regressions"],
+          }
+          summary["classification"]=(
+              "PROMOTION_CANDIDATE" if summary["promotion_candidate"] else
+              "WARRANTED_NEGATIVE" if summary["regressions"] else
+              "EXACT_RESIDUAL" if summary["total_role_action6"] else
+              "NO_ROLE_GROUNDING_USE"
+          )
+          Path("out/role-grounding-gate.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-role-grounded-action6-v5
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+          if-no-files-found: error
