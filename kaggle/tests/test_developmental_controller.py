@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from metalogic_arc3.runtime import ActionToken, normalize_frame
+from metalogic_arc3.runtime import ActionToken, TraceCapability, normalize_frame
 
 
 def frame(value, level=0, state='NOT_FINISHED', actions=(1, 2, 3)):
@@ -207,6 +207,44 @@ class DevelopmentalContracts(unittest.TestCase):
         decision = restored.plan(normalize_frame(target))
         self.assertIsNotNone(decision)
         self.assertEqual(decision.action.source, 'crystal_relative')
+
+
+    def test_failed_relative_binding_survives_reset(self):
+        m = self.memory()
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+        target = frame(20, 1)
+        m.begin(normalize_frame(target))
+        first = m.plan(normalize_frame(target))
+        self.assertEqual(first.action.source, 'crystal_relative')
+        m.observe(normalize_frame(target), first.action, normalize_frame(target))
+        self.assertEqual(m.stats['relative_capability_mismatches'], 1)
+        m.reset_transient()
+        m.begin(normalize_frame(target))
+        self.assertIsNone(m.plan(normalize_frame(target)))
+
+    def test_warranted_trace_outranks_relative_candidate(self):
+        api = self.api()
+        a, b, g = frame(10), frame(11), frame(12, 1)
+        target = frame(20, 1)
+        target_next = frame(21, 1)
+        target_obs = normalize_frame(target)
+        target_next_obs = normalize_frame(target_next)
+        trace = TraceCapability(
+            board_digests=(target_obs.board_digest, target_next_obs.board_digest),
+            program=(ActionToken(1),),
+            provenance='unit-test-warranted-trace',
+        )
+        ctl = api.DevelopmentalController(
+            (1, 2, 3), archived_capabilities=(), trace_capabilities=(trace,))
+        # Learn a relative capability in the same controller.
+        ctl.observe_and_choose(a)
+        ctl.observe_and_choose(a)
+        ctl.observe_and_choose(b)
+        ctl.observe_terminal(g)
+        ctl.reset_episode()
+        token = ctl.observe_and_choose(target)
+        self.assertEqual(token.source, 'trace')
+        self.assertEqual(token.action_id, 1)
 
 
 if __name__ == '__main__':
