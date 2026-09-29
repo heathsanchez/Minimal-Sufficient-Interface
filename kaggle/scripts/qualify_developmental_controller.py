@@ -88,10 +88,15 @@ def synthetic(module):
               for name in ('baseline','candidate')}
     successes = {name: sum(life['levels'] for row in results for life in row['arms'][name])
                  for name in totals}
-    usages = sum(life['sources'].get('crystal_candidate',0) for row in results
-                 for life in row['arms']['candidate'])
+    absolute_usages = sum(life['sources'].get('crystal_candidate',0) for row in results
+                          for life in row['arms']['candidate'])
+    relative_usages = sum(life['sources'].get('crystal_relative',0) for row in results
+                          for life in row['arms']['candidate'])
+    usages = absolute_usages + relative_usages
     return dict(scope='fixed finite path-world stream; not ARC score or cross-mechanic generalization',
-                cases=results, charged=totals, completed=successes, candidate_uses=usages,
+                cases=results, charged=totals, completed=successes,
+                candidate_uses=usages, absolute_uses=absolute_usages,
+                relative_uses=relative_usages,
                 passed=(successes['candidate']==successes['baseline']==384 and
                         totals['candidate']<totals['baseline'] and usages>0))
 
@@ -172,12 +177,18 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
         for row in rows for b,c in zip(row['arms']['baseline'],row['arms']['candidate']))
     regression = any(c['levels'] < b['levels'] for row in rows
                      for b,c in zip(row['arms']['baseline'],row['arms']['candidate']))
-    use = sum(row['candidate_stats']['decisions'] for row in rows)
+    absolute_use = sum(row['candidate_stats']['decisions'] for row in rows)
+    relative_use = sum(row['candidate_stats'].get('relative_capability_decisions',0) for row in rows)
+    relative_progress = sum(row['candidate_stats'].get('relative_capability_progress',0) for row in rows)
+    relative_mismatches = sum(row['candidate_stats'].get('relative_capability_mismatches',0) for row in rows)
+    use = absolute_use + relative_use
     probe_use = sum(row['candidate_stats'].get('residual_decisions',0) for row in rows)
     return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
-                results=rows,candidate_uses=use,probe_uses=probe_use,observed_improvement=improvement,
-                observed_regression=regression,
-                release_qualified=bool(improvement and not regression and use))
+                results=rows,candidate_uses=use,absolute_uses=absolute_use,
+                relative_uses=relative_use,relative_progress=relative_progress,
+                relative_mismatches=relative_mismatches,probe_uses=probe_use,
+                observed_improvement=improvement, observed_regression=regression,
+                release_qualified=bool(improvement and not regression and relative_use and relative_progress))
 
 
 def main():
