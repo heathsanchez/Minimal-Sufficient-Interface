@@ -123,7 +123,9 @@ class ResidualController(DevelopmentalController):
     """
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
-        decision = self.crystal.plan(obs)
+        decision = self.crystal.plan(
+            obs, raw_board=getattr(self, '_incoming_board', None),
+            portable_kind='click_role_v1')
         if decision is not None:
             return decision.action
         decision = frontier_continuation(self.crystal,obs,self._action_catalog)
