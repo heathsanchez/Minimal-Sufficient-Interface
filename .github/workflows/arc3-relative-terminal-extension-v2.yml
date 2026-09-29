@@ -1,7 +1,7 @@
-name: ARC3 relative terminal extension V2
+name: ARC3 causal role rebinding V1
 on:
   push:
-    branches: [arc3-relative-terminal-extension-v2]
+    branches: [arc3-causal-role-rebinding-v1]
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,6 +13,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
+
+      - name: Qualify whole-game causal-role quotient
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+          mkdir -p out
+          python experiments/arc3_causal_role_rebinding_game_holdout_v1.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-causal-role-rebinding-v1.json
 
       - name: Run ARC contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
@@ -80,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-relative-terminal-extension-v2
+          name: arc3-causal-role-rebinding-v1
           path: |
             out/
             kaggle/agent/my_agent.py
