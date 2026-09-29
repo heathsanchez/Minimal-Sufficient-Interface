@@ -93,6 +93,7 @@ def _crystal_verified_progress_programs(
                     "action_count": len(sequence),
                     "program": compact,
                     "contains_mouse": any("MOUSE" in action.upper() for action in raw_actions),
+                    "raw_actions": raw_actions,
                 }
             )
         segment_start = index + 1
@@ -105,6 +106,29 @@ def _crystal_progress_memory_lines(history_entries: list[HistoryEntry]) -> list[
     if not programs:
         return []
 
+    current_level = int(history_entries[-1].frame.level) if history_entries else 1
+    segment_start = 0
+    for index in range(len(history_entries) - 1, 0, -1):
+        if history_entries[index - 1].frame.level != current_level:
+            segment_start = index + 1
+            break
+    if segment_start == 0:
+        segment_start = 1
+    current_actions = [
+        str(entry.action or "").strip()
+        for entry in history_entries[segment_start:]
+        if str(entry.action or "").strip()
+    ]
+
+    def already_failed_here(raw_actions: list[str]) -> bool:
+        width = len(raw_actions)
+        if width <= 0 or len(current_actions) < width:
+            return False
+        return any(
+            current_actions[offset: offset + width] == raw_actions
+            for offset in range(len(current_actions) - width + 1)
+        )
+
     lines = [
         "Crystal verified progress memory (environment-derived evidence; not a replay command):"
     ]
@@ -115,9 +139,15 @@ def _crystal_progress_memory_lines(history_entries: list[HistoryEntry]) -> list[
             if item["contains_mouse"]
             else ""
         )
+        rejection = ""
+        if item["source_level"] < current_level and already_failed_here(item["raw_actions"]):
+            rejection = (
+                " EXACT source program has already been tried on this current level without "
+                "progress: its old terminal goal/projection is REJECTED here. Do not repeat it."
+            )
         lines.append(
             f"- Level {item['source_level']}→{item['target_level']} was actually advanced by "
-            f"{item['action_count']} actions: {item['program']}.{qualifier}"
+            f"{item['action_count']} actions: {item['program']}.{qualifier}{rejection}"
         )
     lines.extend(
         [
