@@ -66,3 +66,32 @@ otleftrightarrow;
 ]
 
 The CAD branch handles the exact real-algebraic disagreement region once the source contract is fixed. This branch tests whether the symbols feeding that algebraic layer have a stable meaning in the first place.
+
+## Causal lineage
+
+The divergence localizes to upstream commit
+`094f61abe00835927278d90c0020654a8dc44da2` ("made major changes to atomic
+timelines and rate timelines", 2026-03-31).
+
+That single commit did all of the following:
+
+- introduced separate RATE variables in the SMT encoder;
+- added `initial_rate`;
+- kept the first `RateTimeline.range` attached to the VALUE variables and to
+  `_encode_timeline_ranges`;
+- added manual prose saying that each numeric timeline's first interval is a
+  range that a valid schedule must stay within and that this range is a subtype
+  of `bounds`;
+- then, in the very next documentation block, introduced the concrete example
+  `rate [-5,5] bounds [0,100] = 50 initial_rate=-0.1` and labelled `[-5,5]`
+  as **Rate bounds**.
+
+So this is not a later documentation drift between unrelated revisions. The
+contradictory meanings were introduced together in the same semantic redesign.
+
+This explains why the issue can remain hidden: most committed fixtures use a
+first interval that also contains the initial VALUE (often equal to
+`bounds`), so the two readings are observationally identical there. The
+manual's own `[-5,5]` / initial VALUE `50` example is the smallest
+separator.
+
