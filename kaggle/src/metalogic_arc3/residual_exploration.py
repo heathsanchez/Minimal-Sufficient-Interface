@@ -5,6 +5,7 @@ or safety. Only actual observations enter the historical warrant graph. The
 fixed inherited action-grounding language is retained as an explicit boundary.
 """
 from __future__ import annotations
+import json
 from typing import Callable
 from .developmental_controller import DevelopmentalController, ProgressDecision, ProgressMemory
 from .runtime import ActionToken, Observation
@@ -113,18 +114,127 @@ def frontier_continuation(
 
 
 class ResidualController(DevelopmentalController):
-    """Progress reuse plus first-goal experiments; old controllers are ablations."""
+    """Exact replay, frozen structural plans, then unresolved experiments."""
 
-    def _next_retained(self, obs: Observation) -> ActionToken | None:
-        # Exact archive/trace/continuation evidence has already declined before
-        # this hook. A structurally warranted role binding is cheaper than a
-        # fresh UNKNOWN probe and is recomputed after every observed action.
-        if (obs.structural_kind == "cross-marker@1"
-                and obs.structural_action in obs.available_actions):
+    def reset_episode(self) -> None:
+        super().reset_episode()
+        self._cross_marker_level: int | None = None
+        self._cross_marker_targets: dict[int, tuple[int, int]] = {}
+        self._cross_marker_completed: set[int] = set()
+        self._cross_marker_pending_switch: int | None = None
+
+    def _clear_cross_marker(self, reason: str | None = None) -> None:
+        if reason and self._cross_marker_targets:
+            self.crystal._residual(
+                reason,
+                level=self._cross_marker_level,
+                targets=[[k, *v] for k, v in sorted(self._cross_marker_targets.items())],
+            )
+        self._cross_marker_level = None
+        self._cross_marker_targets = {}
+        self._cross_marker_completed = set()
+        self._cross_marker_pending_switch = None
+
+    def _acquire_cross_marker_targets(self, obs: Observation) -> bool:
+        if not obs.structural_targets:
+            return False
+        try:
+            rows = json.loads(obs.structural_targets)
+            targets = {
+                int(color): (int(row), int(col))
+                for color, row, col in rows
+            }
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return False
+        # The warranted source law has exactly two independently movable
+        # cross/marker families. More or fewer is a different mechanic.
+        if len(targets) != 2:
+            return False
+        if obs.structural_active_color not in targets:
+            return False
+        center = (obs.structural_center_r, obs.structural_center_c)
+        if None in center:
+            return False
+        tr, tc = targets[int(obs.structural_active_color)]
+        if (tr - int(center[0])) % 3 or (tc - int(center[1])) % 3:
+            return False
+        self._cross_marker_level = obs.levels_completed
+        self._cross_marker_targets = targets
+        self._cross_marker_completed = set()
+        self._cross_marker_pending_switch = None
+        self.crystal.stats["structural_plans_acquired"] = (
+            self.crystal.stats.get("structural_plans_acquired", 0) + 1)
+        return True
+
+    def _cross_marker_action(self, obs: Observation) -> ActionToken | None:
+        if obs.state in ("WIN", "GAME_OVER"):
+            self._clear_cross_marker()
+            return None
+        if self._cross_marker_level is not None and self._cross_marker_level != obs.levels_completed:
+            self._clear_cross_marker()
+        if not self._cross_marker_targets:
+            if not self._acquire_cross_marker_targets(obs):
+                return None
+
+        if (
+            obs.structural_kind != "cross-marker-pose@2"
+            or obs.structural_active_color is None
+            or obs.structural_center_r is None
+            or obs.structural_center_c is None
+        ):
+            self._clear_cross_marker("cross_marker_pose_separator")
+            return None
+
+        active = int(obs.structural_active_color)
+        if self._cross_marker_pending_switch is not None:
+            if active == self._cross_marker_pending_switch:
+                self._clear_cross_marker("cross_marker_switch_failed")
+                return None
+            self._cross_marker_pending_switch = None
+
+        target = self._cross_marker_targets.get(active)
+        if target is None:
+            self._clear_cross_marker("cross_marker_unbound_active_color")
+            return None
+        r, col = int(obs.structural_center_r), int(obs.structural_center_c)
+        tr, tc = target
+        dr, dc = tr - r, tc - col
+        if dr % 3 or dc % 3:
+            self._clear_cross_marker("cross_marker_lattice_separator")
+            return None
+
+        if dr == 0 and dc == 0:
+            self._cross_marker_completed.add(active)
+            if len(self._cross_marker_completed) == len(self._cross_marker_targets):
+                # Reaching both frozen targets without progress falsifies this
+                # capability on the current level. Do not guess a submit action.
+                self._clear_cross_marker("cross_marker_targets_aligned_no_progress")
+                return None
+            if 5 not in obs.available_actions:
+                self._clear_cross_marker("cross_marker_switch_unavailable")
+                return None
+            self._cross_marker_pending_switch = active
             self.crystal.stats["structural_decisions"] = (
                 self.crystal.stats.get("structural_decisions", 0) + 1)
-            return ActionToken(obs.structural_action, source="crystal_cross_marker")
-        decision = frontier_continuation(self.crystal,obs,self._action_catalog)
+            return ActionToken(5, source="crystal_cross_marker")
+
+        action = 1 if dr < 0 else 2 if dr > 0 else 3 if dc < 0 else 4
+        if action not in obs.available_actions:
+            self._clear_cross_marker("cross_marker_move_unavailable")
+            return None
+        self.crystal.stats["structural_decisions"] = (
+            self.crystal.stats.get("structural_decisions", 0) + 1)
+        return ActionToken(action, source="crystal_cross_marker")
+
+    def _next_retained(self, obs: Observation) -> ActionToken | None:
+        # OnlineController has already offered exact archive/trace/continuation
+        # evidence. A frozen structural plan therefore occupies the warranted-
+        # candidate layer immediately before buying a new UNKNOWN probe.
+        structural = self._cross_marker_action(obs)
+        if structural is not None:
+            return structural
+        decision = frontier_continuation(self.crystal, obs, self._action_catalog)
         if decision is not None:
             return decision.action
         return super()._next_retained(obs)
+
