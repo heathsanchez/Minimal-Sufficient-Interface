@@ -202,6 +202,39 @@ class RuntimeContracts(unittest.TestCase):
         diverged = c.observe_and_choose(frame(9, level=0, actions=(1, 2)))
         self.assertNotEqual(diverged.source, "trace")
 
+
+
+    def test_cross_marker_structural_role_is_coordinate_free(self):
+        h=w=32
+        grid=[[5 for _ in range(w)] for _ in range(h)]
+        def marker(r,col,color):
+            for rr in range(r-1,r+2):
+                for cc in range(col-1,col+2):
+                    grid[rr][cc]=4
+            grid[r][col]=color
+        # Active blue-like plus centered at (20,20).
+        grid[20][20]=0
+        for d in range(1,5):
+            grid[20-d][20]=9; grid[20+d][20]=9
+            grid[20][20-d]=9; grid[20][20+d]=9
+        # Target center for color 9 is (11,11).
+        for r,col in ((11,5),(11,17),(5,11),(17,11)):
+            marker(r,col,9)
+        # A second marker family ensures this is not a one-object coincidence.
+        for r,col in ((8,3),(8,27),(3,15),(25,15)):
+            marker(r,col,11)
+        raw={"frame":[grid],"levels_completed":0,"state":"NOT_FINISHED",
+             "available_actions":[1,2,3,4,5]}
+        obs=normalize_frame(raw)
+        self.assertEqual(obs.structural_kind,"cross-marker@1")
+        self.assertEqual(obs.structural_action,1)
+
+    def test_cross_marker_guard_fails_closed_without_unique_active_plus(self):
+        raw=frame(5,actions=(1,2,3,4,5),h=32,w=32)
+        obs=normalize_frame(raw)
+        self.assertEqual(obs.structural_kind,"")
+        self.assertIsNone(obs.structural_action)
+
     def test_unavailable_actions_are_not_selected(self):
         c = OnlineController((1, 2, 6))
         token = c.observe_and_choose(frame(actions=(2,)))
