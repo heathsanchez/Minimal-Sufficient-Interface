@@ -1,0 +1,46 @@
+name: ARC3 relative progress separator V2
+on:
+  push:
+    branches: [arc3-relative-progress-separator-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: arc3-relative-progress-capability-v1
+          path: prior
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 36525466564
+      - name: Compress all relative failures
+        run: |
+          python kaggle/scripts/analyze_relative_failures.py prior > relative-all.json
+          python kaggle/scripts/analyze_relative_failures.py prior \
+            --focus ft09-0d8bbf25 re86-8af5384d vc33-5430563c > relative-regressions.json
+          python - <<'PY'
+          import json
+          for path in ['relative-all.json','relative-regressions.json']:
+              d=json.load(open(path))
+              print(path, json.dumps(d['aggregate'], sort_keys=True))
+              for g in d['games']:
+                  print(json.dumps({
+                    'game':g['game'],
+                    'stats':{k:v for k,v in g['stats'].items() if k.startswith('relative_')},
+                    'capabilities':[{
+                      'id':c['id'],'source_levels':c['source_levels'],'length':c['length'],
+                      'actions':c['actions'],'effects':c['effects']
+                    } for c in g['capabilities']],
+                    'mismatches':g['mismatches'][:12],
+                  },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-relative-progress-separator-v2
+          path: |
+            relative-all.json
+            relative-regressions.json
