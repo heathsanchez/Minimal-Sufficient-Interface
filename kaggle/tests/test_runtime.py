@@ -132,6 +132,63 @@ class RuntimeContracts(unittest.TestCase):
         self.assertEqual(coords[64], (2, 2))
         self.assertNotIn(coords[64], coords[:64])
 
+
+    def test_role_grounding_prioritizes_small_component_and_preserves_grid(self):
+        raw = frame(actions=(6,), h=16, w=16)
+        raw["frame"][0][10][11] = 7
+        raw["frame"][0][10][12] = 7
+        raw["frame"][0][11][11] = 7
+        raw["frame"][0][11][12] = 7
+        obs = normalize_frame(raw)
+        c = OnlineController(
+            (6,), grounding_stride=8, max_grounded_actions=256,
+            role_grounding=True, archived_capabilities=(), trace_capabilities=(),
+        )
+        c._prepare_role_grounding(raw, obs)
+        coords = c._coordinate_candidates(obs)
+        self.assertEqual(coords[0], (11, 10))
+        self.assertIn((4, 4), coords)
+        self.assertEqual(len(coords), len(set(coords)))
+
+    def test_role_grounding_is_palette_invariant(self):
+        a = frame(actions=(6,), h=12, w=12)
+        b = frame(actions=(6,), h=12, w=12)
+        for raw, color in ((a, 7), (b, 13)):
+            raw["frame"][0][6][8] = color
+            raw["frame"][0][6][9] = color
+            raw["frame"][0][7][8] = color
+        self.assertEqual(
+            OnlineController._role_grounded_coordinates_from_frame(a),
+            OnlineController._role_grounded_coordinates_from_frame(b),
+        )
+
+    def test_role_grounding_deduplicates_equivalent_roles_but_fallback_retains_copies(self):
+        raw = frame(actions=(6,), h=24, w=24)
+        for y, x in ((5, 5), (15, 15)):
+            raw["frame"][0][y][x] = 7
+        obs = normalize_frame(raw)
+        c = OnlineController(
+            (6,), grounding_stride=8, max_grounded_actions=256,
+            role_grounding=True, archived_capabilities=(), trace_capabilities=(),
+        )
+        c._prepare_role_grounding(raw, obs)
+        front = c._role_grounding_coordinates
+        self.assertEqual(len(front), 1)
+        coords = c._coordinate_candidates(obs)
+        self.assertIn(front[0], coords)
+        # The dense fallback still covers the full board at step=1.
+        self.assertIn((15, 15), coords)
+
+    def test_role_grounding_disabled_preserves_historical_first_coordinate(self):
+        raw = frame(actions=(6,), h=64, w=64)
+        raw["frame"][0][30][31] = 7
+        c = OnlineController(
+            (6,), grounding_stride=8, max_grounded_actions=256,
+            role_grounding=False, archived_capabilities=(), trace_capabilities=(),
+        )
+        token = c.observe_and_choose(raw)
+        self.assertEqual((token.x, token.y), (4, 4))
+
     def test_archived_capability_is_exact_observation_guarded_and_aborts_on_divergence(self):
         start = frame(0, level=0, actions=(1, 2))
         middle = frame(1, level=0, actions=(1, 2))
