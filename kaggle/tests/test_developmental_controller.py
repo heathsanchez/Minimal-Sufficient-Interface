@@ -222,6 +222,48 @@ class DevelopmentalContracts(unittest.TestCase):
         m.begin(normalize_frame(target))
         self.assertIsNone(m.plan(normalize_frame(target)))
 
+    def test_terminal_effect_match_earns_bounded_extension_and_progress(self):
+        m = self.memory()
+        # Source level: 2 then 3 advances after one terminal 3.
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+        target_a, target_b = frame(20, 1), frame(21, 1)
+        target_c, target_goal = frame(22, 1), frame(23, 2)
+        m.begin(normalize_frame(target_a))
+
+        first = m.plan(normalize_frame(target_a))
+        self.assertEqual(first.action.action_id, 2)
+        m.observe(normalize_frame(target_a), first.action, normalize_frame(target_b))
+
+        terminal = m.plan(normalize_frame(target_b))
+        self.assertEqual(terminal.action.action_id, 3)
+        m.observe(normalize_frame(target_b), terminal.action, normalize_frame(target_c))
+        self.assertEqual(m.stats['relative_terminal_extensions'], 1)
+
+        extension = m.plan(normalize_frame(target_c))
+        self.assertIsNotNone(extension)
+        self.assertEqual(extension.action.action_id, 3)
+        self.assertEqual(extension.action.source, 'crystal_relative_extension')
+        m.observe(normalize_frame(target_c), extension.action, normalize_frame(target_goal))
+        self.assertEqual(m.stats['relative_extension_progress'], 1)
+        self.assertGreaterEqual(m.stats['relative_capability_progress'], 1)
+
+    def test_complex_terminal_action_does_not_self_extend(self):
+        m = self.memory()
+        a = frame(10, actions=(6,))
+        b = frame(11, 1, actions=(6,))
+        m.begin(normalize_frame(a))
+        m.observe(normalize_frame(a), ActionToken(6, 0, 0), normalize_frame(b))
+        target = frame(20, 1, actions=(6,))
+        changed = frame(21, 1, actions=(6,))
+        m.begin(normalize_frame(target))
+        first = m.plan(normalize_frame(target))
+        self.assertEqual(first.action.action_id, 6)
+        m.observe(normalize_frame(target), first.action, normalize_frame(changed))
+        self.assertEqual(m.stats['relative_terminal_extensions'], 0)
+        self.assertEqual(m.stats['relative_capability_mismatches'], 1)
+        self.assertIsNone(m.plan(normalize_frame(changed)))
+
+
     def test_warranted_trace_outranks_relative_candidate(self):
         api = self.api()
         a, b, g = frame(10), frame(11), frame(12, 1)
