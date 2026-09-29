@@ -1,0 +1,75 @@
+tasksat_semantic_drift_cad: THEORY
+%----------------------------------------------------------------------------
+% Independent CAD characterization of the TaskSAT bounded-assignment drift
+% exposed by tasksat-semantic-boundary-audit-v1.
+%
+% Upstream semantic situation at TaskSAT commit
+% f9d6063b45967a3fea578c47f54806aadaafe1b0:
+%
+%   executable Lean bounded numeric assignment = clamp_B(a)
+%   Python/Z3 bounded numeric assignment        = a
+%
+% The theorems below deliberately contain only first-order real polynomial
+% equalities/inequalities and Boolean connectives so they lie exactly in the
+% verified pvs_cad fragment.
+%----------------------------------------------------------------------------
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  % Graph form of clamp_B(a), used only relationally so no IF/min/max operator
+  % sits outside the CAD fragment.  The existential y is the Lean/reference
+  % output and Python/Z3's assigned output is a.
+
+  assignment_agreement_exact: THEOREM
+    FORALL (lo, hi: real):
+      FORALL (a: real):
+        lo <= hi IMPLIES
+          ((EXISTS (y: real):
+              ((a < lo AND y = lo) OR
+               (lo <= a AND a <= hi AND y = a) OR
+               (a > hi AND y = hi))
+              AND y = a)
+           IFF
+           (lo <= a AND a <= hi))
+
+  % Normalize any nested TaskSAT range/bounds pair by translation:
+  %
+  %   range  = [-left, width + right]
+  %   bounds = [0, width]
+  %
+  % with left,width,right >= 0.
+  %
+  % There exists a range-valid assignment on which Python/Z3 can differ from
+  % bounded Lean semantics iff the declared range is strictly wider than the
+  % bounds on at least one side.
+
+  observable_drift_exact: THEOREM
+    FORALL (left, width, right: real):
+      left >= 0 AND width >= 0 AND right >= 0 IMPLIES
+        ((EXISTS (a: real):
+            -left <= a AND a <= width + right
+            AND (a < 0 OR a > width))
+         IFF
+         (left > 0 OR right > 0))
+
+  % The candidate repair re-clamps value assignments.  This theorem states
+  % the semantic property it restores: the relational clamp always produces
+  % an output inside the declared bounds.
+
+  reclamp_preserves_bounds: THEOREM
+    FORALL (lo, hi: real):
+      FORALL (a: real):
+        lo <= hi IMPLIES
+          EXISTS (y: real):
+            (((a < lo AND y = lo) OR
+              (lo <= a AND a <= hi AND y = a) OR
+              (a > hi AND y = hi))
+             AND lo <= y AND y <= hi)
+
+  % Concrete minimized witness used by the TaskSAT executable audit:
+  % range [0,100], bounds [0,10], assignment 20.
+
+  minimized_witness_is_observable: THEOREM
+    0 <= 20 AND 20 <= 100 AND (20 < 0 OR 20 > 10)
+
+END tasksat_semantic_drift_cad

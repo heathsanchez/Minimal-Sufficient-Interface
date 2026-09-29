@@ -1,0 +1,117 @@
+name: TaskSAT PVS CAD Semantic Law
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - tasksat-pvs-cad-semantic-law-v1
+    paths:
+      - "experiments/tasksat_semantic_drift_cad.pvs"
+      - "experiments/tasksat_semantic_drift_cad.cmds"
+      - "TASKSAT_PVS_CAD_SEMANTIC_LAW.md"
+      - ".github/workflows/tasksat-pvs-cad-semantic-law.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pvs-cad:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out audit repo
+        uses: actions/checkout@v4
+
+      - name: Check out verified pvs_cad
+        uses: actions/checkout@v4
+        with:
+          repository: j-tanner-slagel/pvs_cad
+          ref: 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          path: vendor/pvs_cad
+
+      - name: Check out pinned NASALib
+        uses: actions/checkout@v4
+        with:
+          repository: nasa/pvslib
+          ref: e426f69dc2680ad575491f93c5a51739ec8b25fa
+          path: vendor/pvslib
+
+      - name: Install PVS 8.1.2 x86_64
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p vendor/pvs-dist
+          curl -L --fail --retry 3             https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz             -o "$RUNNER_TEMP/pvs.tgz"
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  $RUNNER_TEMP/pvs.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/pvs.tgz" -C vendor/pvs-dist
+          PVS_BIN=$(find "$GITHUB_WORKSPACE/vendor/pvs-dist" -type f -name pvs -perm -u+x | head -1)
+          if [ -z "$PVS_BIN" ]; then
+            echo "No PVS executable found after extracting release bundle" >&2
+            exit 1
+          fi
+          PVS_DIR=$(dirname "$PVS_BIN")
+          echo "PVS_BIN=$PVS_BIN" >> "$GITHUB_ENV"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" -raw -version
+
+      - name: Install audit theory into external CAD checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp experiments/tasksat_semantic_drift_cad.pvs vendor/pvs_cad/cad/
+          cp experiments/tasksat_semantic_drift_cad.cmds vendor/pvs_cad/cad/
+
+      - name: Configure pvs_cad environment
+        shell: bash
+        env:
+          CAD_ROOT: ${{ github.workspace }}/vendor/pvs_cad
+          CAD_LIB_DIR: ${{ github.workspace }}/vendor/pvs_cad/cad
+          NASALIB: ${{ github.workspace }}/vendor/pvslib
+        run: |
+          set -euo pipefail
+          export PATH="$PVS_DIR:$PATH"
+          export PVS="$PVS_DIR/pvs"
+          export PROVEIT="$PVS_DIR/proveit"
+          export PVS_LIBRARY_PATH="$NASALIB"
+          bash vendor/pvs_cad/tools/setup.sh
+
+      - name: Prove exact TaskSAT semantic laws with verified CAD
+        shell: bash
+        env:
+          CAD_ROOT: ${{ github.workspace }}/vendor/pvs_cad
+          CAD_LIB_DIR: ${{ github.workspace }}/vendor/pvs_cad/cad
+          NASALIB: ${{ github.workspace }}/vendor/pvslib
+          SCRATCH: ${{ runner.temp }}/cad_scratch
+          PVS_TIMEOUT: "900"
+        run: |
+          set -euo pipefail
+          export PATH="$PVS_DIR:$PATH"
+          export PVS="$PVS_DIR/pvs"
+          export PROVEIT="$PVS_DIR/proveit"
+          export PVS_LIBRARY_PATH="$NASALIB"
+          mkdir -p results
+          bash vendor/pvs_cad/tools/prove_each.sh             tasksat_semantic_drift_cad             "$GITHUB_WORKSPACE/vendor/pvs_cad/cad/tasksat_semantic_drift_cad.cmds"             | tee results/tasksat_pvs_cad_semantic_law.txt
+          test "$(grep -c ' QED$' results/tasksat_pvs_cad_semantic_law.txt)" -eq 4
+
+      - name: Capture verifier boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "TaskSAT semantic law independently checked by pvs_cad"
+            echo "pvs_cad=8750362e99c2ba0e9a0307dcaa39b9766c562feb"
+            echo "PVS=pvs8.1.2"
+            echo "PVS_asset_sha256=5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b"
+            echo "NASALib=e426f69dc2680ad575491f93c5a51739ec8b25fa"
+            echo
+            cat results/tasksat_pvs_cad_semantic_law.txt
+          } > results/tasksat_pvs_cad_evidence.txt
+
+      - name: Upload CAD evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasksat-pvs-cad-semantic-law
+          path: |
+            results/tasksat_pvs_cad_semantic_law.txt
+            results/tasksat_pvs_cad_evidence.txt
+          if-no-files-found: error
