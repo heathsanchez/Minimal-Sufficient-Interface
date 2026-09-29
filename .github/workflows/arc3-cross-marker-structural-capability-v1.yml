@@ -1,0 +1,96 @@
+name: ARC3 cross marker structural capability V1
+on:
+  push:
+    branches: [arc3-cross-marker-structural-capability-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+      - name: Build exact offline deliverables
+        run: |
+          mkdir -p out
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+      - run: python kaggle/scripts/slim_framework.py
+      - name: Run structural capability without trace bank on public re86
+        run: |
+          python - <<'PY'
+          import json, sys
+          from collections import Counter
+          from pathlib import Path
+          sys.path.insert(0,'kaggle/src')
+          sys.path.insert(0,'kaggle/vendor/ARC-AGI-3-Agents')
+          from arc_agi import Arcade, OperationMode
+          from arcengine import GameAction
+          from metalogic_arc3.residual_exploration import ResidualController
+          from metalogic_arc3.runtime import normalize_frame
+
+          out=Path('out'); envdir=Path('public-environments'); envdir.mkdir(exist_ok=True)
+          download=Arcade(operation_mode=OperationMode.NORMAL,environments_dir=str(envdir.resolve()))
+          game='re86-8af5384d'
+          env=download.make(game)
+          if env is None: raise SystemExit('public re86 unavailable')
+          download.close_scorecard()
+
+          ctl=ResidualController((1,2,3,4,5,6,7),archived_capabilities=(),trace_capabilities=())
+          ctl.reset_episode()
+          current=env.observation_space
+          steps=0; resets=1; peak=int(current.levels_completed); sources=Counter(); checkpoints=[]
+          while steps+resets < 401:
+              obs=normalize_frame(current)
+              if obs.state=='WIN':
+                  break
+              if obs.state in ('GAME_OVER','NOT_PLAYED'):
+                  ctl.observe_terminal(current)
+                  ctl.reset_episode()
+                  current=env.step(GameAction.RESET); resets+=1
+                  continue
+              token=ctl.observe_and_choose(current)
+              if token is None: break
+              action=GameAction.from_id(token.action_id)
+              data={'x':token.x,'y':token.y} if token.action_id==6 else {}
+              current=env.step(action,data=data)
+              steps+=1; sources[token.source]+=1
+              if int(current.levels_completed)>peak:
+                  peak=int(current.levels_completed)
+                  checkpoints.append({'level':peak,'charged':steps+resets})
+          result={
+            'schema':'arc3.cross-marker-structural-gate@1',
+            'game':game,'levels':peak,'steps':steps,'resets':resets,
+            'charged':steps+resets,'sources':dict(sources),'checkpoints':checkpoints,
+            'structural_uses':sources.get('crystal_cross_marker',0),
+            'final_state':str(getattr(current.state,'name',current.state)),
+          }
+          result['classification']=(
+            'STRUCTURAL_PROGRESS' if result['structural_uses'] and peak>0
+            else 'STRUCTURAL_FIRED_NO_PROGRESS' if result['structural_uses']
+            else 'NO_STRUCTURAL_BINDING')
+          out.joinpath('cross-marker-gate.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-cross-marker-structural-capability-v1
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+          if-no-files-found: error
