@@ -1,0 +1,92 @@
+name: ARC3 click role rebind V3
+on:
+  push:
+    branches: [arc3-click-role-rebind-v3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+
+      - name: Build exact offline deliverables
+        run: |
+          mkdir -p out
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+
+      - name: Preserve bounded acquisition/reuse regression
+        run: python kaggle/scripts/qualify_developmental_controller.py --output out/finite-stream.json
+
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+
+      - run: python kaggle/scripts/slim_framework.py
+
+      - name: Freeze public catalogue before evaluation
+        run: |
+          python kaggle/scripts/qualify_developmental_controller.py \
+            --public-catalog \
+            --environments public-environments \
+            --output out/public-catalog.json
+
+      - name: Classify relative-progress gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('out/public-catalog.json')
+          if not p.exists():
+              raise SystemExit('public catalogue result missing')
+          data=json.loads(p.read_text())
+          result={
+              'schema':'arc3.click-role-rebind-gate@1',
+              'relative_uses':data.get('relative_uses',0),
+              'relative_progress':data.get('relative_progress',0),
+              'relative_mismatches':data.get('relative_mismatches',0),
+              'observed_improvement':data.get('observed_improvement',False),
+              'observed_regression':data.get('observed_regression',False),
+              'release_qualified':data.get('release_qualified',False),
+              'extension_uses':data.get('relative_extension_uses',0),
+              'extension_progress':data.get('relative_extension_progress',0),
+              'extension_exhausted':data.get('relative_extension_exhausted',0),
+              'click_bindings':data.get('click_role_bindings',0),
+              'click_ambiguous':data.get('click_role_ambiguous',0),
+              'click_unbound':data.get('click_role_unbound',0),
+          }
+          result['classification']=(
+              'PROMOTION_CANDIDATE' if result['release_qualified'] else
+              'EXACT_RESIDUAL' if result['relative_uses'] else
+              'NO_LIVE_RELATIVE_BINDING'
+          )
+          Path('out/click-role-rebind-gate.json').write_text(
+              json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-click-role-rebind-v3
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/provenance/sources.json
+          if-no-files-found: error
