@@ -195,8 +195,62 @@ class DevelopmentalContracts(unittest.TestCase):
         # Source step changed the protected board; target step does not.
         m.observe(normalize_frame(target), first.action, normalize_frame(target))
         self.assertEqual(m.stats['relative_capability_mismatches'], 1)
-        self.assertEqual(m.last_residual['reason'], 'relative_progress_separator')
+        self.assertEqual(m.last_residual['reason'], 'relative_mechanism_separator')
+        self.assertEqual(m.stats['relative_mechanism_rejections'], 1)
         self.assertIsNone(m.plan(normalize_frame(target)))
+        # RESET must not buy another attempt at the same disproved binding.
+        m.reset_transient()
+        m.begin(normalize_frame(target))
+        self.assertIsNone(m.plan(normalize_frame(target)))
+        self.assertTrue(m.relative_rejections)
+
+
+    def test_terminal_projection_failure_is_rejected_without_revoking_mechanism(self):
+        m = self.memory()
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+
+        target_a, target_b, target_no_goal = frame(20, 1), frame(21, 1), frame(22, 1)
+        m.begin(normalize_frame(target_a))
+        first = m.plan(normalize_frame(target_a))
+        self.assertEqual(first.action.action_id, 2)
+        m.observe(normalize_frame(target_a), first.action, normalize_frame(target_b))
+        second = m.plan(normalize_frame(target_b))
+        self.assertEqual(second.action.action_id, 3)
+
+        # The whole mechanism behaves (changed -> changed), but the terminal
+        # transition does not advance the level in this target context.
+        m.observe(normalize_frame(target_b), second.action, normalize_frame(target_no_goal))
+        self.assertEqual(m.last_residual['reason'], 'relative_projection_separator')
+        self.assertEqual(m.stats['relative_projection_rejections'], 1)
+        capability_ids = set(m.relative_capabilities)
+        self.assertTrue(capability_ids)
+
+        # The exact target-level projection is remembered across RESET.
+        m.reset_transient()
+        m.begin(normalize_frame(target_a))
+        self.assertIsNone(m.plan(normalize_frame(target_a)))
+
+        # The mechanism itself was not globally revoked: a genuinely different
+        # later progress context may still query it and must earn its own evidence.
+        later = frame(30, 2)
+        m.begin(normalize_frame(later))
+        later_decision = m.plan(normalize_frame(later))
+        self.assertIsNotNone(later_decision)
+        self.assertEqual(later_decision.action.source, 'crystal_relative')
+        self.assertEqual(set(m.relative_capabilities), capability_ids)
+
+    def test_relative_rejection_survives_serialization(self):
+        m = self.memory()
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+        target = frame(20, 1)
+        m.begin(normalize_frame(target))
+        first = m.plan(normalize_frame(target))
+        m.observe(normalize_frame(target), first.action, normalize_frame(target))
+        restored = self.api().ProgressMemory.from_json(m.to_json())
+        restored.reset_transient()
+        restored.begin(normalize_frame(target))
+        self.assertIsNone(restored.plan(normalize_frame(target)))
+        self.assertEqual(restored.relative_rejections, m.relative_rejections)
 
     def test_relative_progress_capability_survives_serialization(self):
         m = self.memory()
