@@ -21,6 +21,10 @@ jobs:
           mkdir -p out
           python experiments/arc3_causal_role_rebinding_game_holdout_v1.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-causal-role-rebinding-v1.json
 
+      - name: Qualify within-game next-level role transfer
+        run: |
+          python experiments/arc3_within_game_level_role_transfer_v1.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-within-game-level-role-transfer-v1.json
+
       - name: Run ARC contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
 
