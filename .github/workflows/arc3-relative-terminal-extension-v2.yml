@@ -33,6 +33,10 @@ jobs:
         run: |
           python experiments/arc3_prospective_role_refinement_v3.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-prospective-role-refinement-v3.json
 
+      - name: Expose exact remaining prospective collisions
+        run: |
+          PYTHONPATH=experiments python experiments/arc3_prospective_collisions_v4.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-prospective-collisions-v4.json
+
       - name: Run ARC contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
 
