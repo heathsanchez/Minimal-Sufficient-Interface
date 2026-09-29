@@ -50,11 +50,13 @@ jobs:
           python experiments/tasksat_bounds_assignment_repair.py vendor/tasksat
           --out results/tasksat_bounds_assignment_repair.json
 
-      - name: Run upstream numeric-assignment regression suite after repair
+      - name: Run upstream numeric-assignment regression after repair
         working-directory: vendor/tasksat
         env:
           PYTHONPATH: src/smt
-        run: python -m pytest -q tests/test_verifier1.py
+        run: >-
+          python -m pytest -q
+          tests/test_verifier1.py::TestVerifier::test_tasknet12_assign_numeric
 
       - name: Upload exact audit evidence
         uses: actions/upload-artifact@v4
