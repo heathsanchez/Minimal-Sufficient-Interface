@@ -18,6 +18,8 @@ class Observation:
     evidence_sha256: str
     height: int
     width: int
+    structural_action: int | None = None
+    structural_kind: str = ""
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,102 @@ def _historical_evidence_sha256(
     ).hexdigest()
 
 
+
+def _cross_marker_structural_action(
+    board: list[list[Any]], actions: tuple[int, ...]
+) -> tuple[int | None, str]:
+    """Recognize the cross/marker causal geometry without a game identifier.
+
+    Guard: four primitive directions + switch are legal; framed 3x3 markers
+    expose at least two color families; exactly one white-centered plus is
+    active; matching marker centers determine a unique repeated row/column.
+    The 3x3 marker lattice earns the three-cell movement quantum.
+    """
+    if not board or not all(a in actions for a in (1, 2, 3, 4, 5)):
+        return None, ""
+    h, w = len(board), len(board[0])
+    if h < 12 or w < 12 or any(len(row) != w for row in board):
+        return None, ""
+
+    markers: dict[Any, list[tuple[int, int]]] = {}
+    for r in range(1, h - 1):
+        for col in range(1, w - 1):
+            center = board[r][col]
+            perimeter = (
+                board[r-1][col-1], board[r-1][col], board[r-1][col+1],
+                board[r][col-1], board[r][col+1],
+                board[r+1][col-1], board[r+1][col], board[r+1][col+1],
+            )
+            frame_color = perimeter[0]
+            if center == frame_color or any(v != frame_color for v in perimeter[1:]):
+                continue
+            # Require a true isolated 3x3 frame, not a crop inside a larger block.
+            outer = []
+            for rr, cc in ((r-2,col),(r+2,col),(r,col-2),(r,col+2)):
+                if 0 <= rr < h and 0 <= cc < w:
+                    outer.append(board[rr][cc])
+            if outer and all(v == frame_color for v in outer):
+                continue
+            markers.setdefault(center, []).append((r, col))
+
+    targets: dict[Any, tuple[int, int]] = {}
+    for color, pts in markers.items():
+        if len(pts) < 4:
+            continue
+        row_counts: dict[int, int] = {}
+        col_counts: dict[int, int] = {}
+        for r, col in pts:
+            row_counts[r] = row_counts.get(r, 0) + 1
+            col_counts[col] = col_counts.get(col, 0) + 1
+        best_rows = [r for r, n in row_counts.items() if n == max(row_counts.values()) and n >= 2]
+        best_cols = [col for col, n in col_counts.items() if n == max(col_counts.values()) and n >= 2]
+        if len(best_rows) == 1 and len(best_cols) == 1:
+            targets[color] = (best_rows[0], best_cols[0])
+    if len(targets) < 1:
+        return None, ""
+
+    active = []
+    for r in range(3, h - 3):
+        for col in range(3, w - 3):
+            if board[r][col] != 0:
+                continue
+            arm = board[r-1][col]
+            if arm == 0:
+                continue
+            if not (board[r+1][col] == arm == board[r][col-1] == board[r][col+1]):
+                continue
+            if not (board[r-2][col] == arm == board[r+2][col]
+                    == board[r][col-2] == board[r][col+2]):
+                continue
+            active.append((arm, r, col))
+    if len(active) != 1:
+        return None, ""
+    color, r, col = active[0]
+
+    target = targets.get(color)
+    if target is None:
+        # The active family has already been consumed; switch only if exactly
+        # one other well-formed target family remains.
+        if len(targets) == 1 and 5 in actions:
+            return 5, "cross-marker@1"
+        return None, ""
+
+    tr, tc = target
+    dr, dc = tr - r, tc - col
+    quantum = 3
+    if dr % quantum or dc % quantum:
+        return None, ""
+    if dr < 0:
+        return 1, "cross-marker@1"
+    if dr > 0:
+        return 2, "cross-marker@1"
+    if dc < 0:
+        return 3, "cross-marker@1"
+    if dc > 0:
+        return 4, "cross-marker@1"
+    return None, ""
+
+
 def normalize_frame(frame: Any) -> Observation:
     raw_frame = _plain(_field(frame, "frame", []))
     layers = raw_frame if isinstance(raw_frame, list) else []
@@ -132,6 +230,7 @@ def normalize_frame(frame: Any) -> Observation:
     evidence_sha256 = _historical_evidence_sha256(
         raw_frame, levels_completed, state, actions
     )
+    structural_action, structural_kind = _cross_marker_structural_action(first, actions)
     return Observation(
         levels_completed=levels_completed,
         state=state,
@@ -141,6 +240,8 @@ def normalize_frame(frame: Any) -> Observation:
         evidence_sha256=evidence_sha256,
         height=height,
         width=width,
+        structural_action=structural_action,
+        structural_kind=structural_kind,
     )
 
 
