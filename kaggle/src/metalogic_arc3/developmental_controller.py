@@ -114,7 +114,6 @@ class ProgressMemory:
         self._active_relative = None
         self._relative_index = 0
         self._relative_pending = None
-        self._relative_failed_caps = set()
 
     def begin(self, obs: Observation) -> None:
         self._history = ()
@@ -578,16 +577,16 @@ class DevelopmentalController(MemoryGraphController):
         super()._process_previous_outcome(obs)
 
     def _next_archive(self, obs: Observation) -> ActionToken | None:
-        # Reuse the existing priority hook; the token retains CANDIDATE status.
-        # The inherited baseline implementation itself remains byte-identical.
-        decision = self.crystal.plan(obs)
-        if decision is not None:
-            return decision.action
+        # Warranted exact archive evidence outranks every candidate transport.
         return super()._next_archive(obs)
 
     def _next_retained(self, obs: Observation) -> ActionToken | None:
-        # New online memory never falls back to the old start-only replay.
-        # Existing cross-level constructor proposals retain their candidate role.
+        # OnlineController reaches this hook only after exact archive, trace and
+        # continuation replay have all declined. Candidate Crystal transport may
+        # now act, with the older cross-level constructor as the final fallback.
+        decision = self.crystal.plan(obs)
+        if decision is not None:
+            return decision.action
         return self._next_transfer(obs)
 
     def observe_terminal(self, frame: Any) -> None:
