@@ -1,19 +1,23 @@
 tasksat_semantic_drift_cad: THEORY
 %----------------------------------------------------------------------------
-% Verified-CAD characterization of TaskSAT's bounded-assignment semantic fork.
+% Verified-CAD characterization of the OBSERVABLE validity difference between
+% TaskSAT's two bounded-assignment transition meanings.
 %
-% IMPORTANT pvs_cad interface discipline:
-%   cad-prefix accepts one real binding per quantifier node.
-% Therefore every quantified variable below has its own explicit
-% FORALL/EXISTS binder.
+% Pinned implementation divergence:
+%   Lean/reference output = clamp_B(a)
+%   Python/Z3 output       = a
+%
+% Validity is determined by membership of the resulting value in the timeline
+% admissible range R.  The protected observation is therefore whether
+% clamp_B(a) in R differs from a in R.
+%
+% Every theorem uses one real binding per quantifier node, exactly matching
+% pvs_cad's cad-prefix interface.
 %----------------------------------------------------------------------------
 BEGIN
   IMPORTING cad_decide5, mpoly_embed
 
-  % On the clamp graph, the Lean/reference output y equals Python/Z3's
-  % direct assignment output a exactly when a is inside the bounds.
-
-  assignment_agreement_exact: THEOREM
+  assignment_output_agreement_exact: THEOREM
     FORALL (lo: real):
       FORALL (hi: real):
         FORALL (a: real):
@@ -28,50 +32,74 @@ BEGIN
                AND
                ((lo <= a AND a <= hi) IMPLIES y = a))
 
-  % Contract A: bounds inside admissible range (B subset R).
-  % R=[-left,width+right], B=[0,width].
-  % Any range-valid separator forces strict extra range on a side.
+  % Public/current R subset B branch.
+  % Normalize B=[0,W], R=[p,W-q].
+  % If R is strictly interior to B, the two output values may differ but the
+  % range-validity verdict cannot differ.
 
-  bounds_inside_range_drift_only_if_wider: THEOREM
-    FORALL (left: real):
-      FORALL (width: real):
-        FORALL (right: real):
+  r_subset_b_strict_interior_validity_agreement: THEOREM
+    FORALL (W: real):
+      FORALL (p: real):
+        FORALL (q: real):
           FORALL (a: real):
-            (left >= 0 AND width >= 0 AND right >= 0
-             AND -left <= a AND a <= width + right
-             AND (a < 0 OR a > width))
-            IMPLIES
-              (left > 0 OR right > 0)
+            FORALL (y: real):
+              (W >= 0 AND p > 0 AND q > 0 AND p + q <= W
+               AND
+               ((a < 0 AND y = 0)
+                OR (0 <= a AND a <= W AND y = a)
+                OR (a > W AND y = W)))
+              IMPLIES
+                (((p <= y AND y <= W - q)
+                  IMPLIES
+                  (p <= a AND a <= W - q))
+                 AND
+                 ((p <= a AND a <= W - q)
+                  IMPLIES
+                  (p <= y AND y <= W - q)))
 
-  % Converse: strict extra range on a side supplies an admissible separator.
+  % If R touches the lower clamp endpoint, a=-1 separates validity.
 
-  bounds_inside_range_wider_has_drift: THEOREM
+  r_subset_b_lower_touch_has_validity_divergence: THEOREM
+    FORALL (W: real):
+      FORALL (q: real):
+        (W >= 0 AND q >= 0 AND q <= W)
+        IMPLIES
+          (((-1 < 0 AND 0 = 0)
+            OR (0 <= -1 AND -1 <= W AND 0 = -1)
+            OR (-1 > W AND 0 = W))
+           AND (0 <= 0 AND 0 <= W - q)
+           AND NOT (0 <= -1 AND -1 <= W - q))
+
+  % If R touches the upper clamp endpoint, a=W+1 separates validity.
+
+  r_subset_b_upper_touch_has_validity_divergence: THEOREM
+    FORALL (W: real):
+      FORALL (p: real):
+        (W >= 0 AND p >= 0 AND p <= W)
+        IMPLIES
+          ((((W + 1) < 0 AND W = 0)
+            OR (0 <= W + 1 AND W + 1 <= W AND W = W + 1)
+            OR (W + 1 > W AND W = W))
+           AND (p <= W AND W <= W)
+           AND NOT (p <= W + 1 AND W + 1 <= W))
+
+  % Opposite B subset R branch.
+  % Normalize B=[0,W], R=[-left,W+right].  Since assignments themselves are
+  % not statically restricted to R, a=-left-1 always separates validity.
+
+  b_subset_r_always_has_validity_divergence: THEOREM
     FORALL (left: real):
-      FORALL (width: real):
+      FORALL (W: real):
         FORALL (right: real):
-          EXISTS (a: real):
-            (left >= 0 AND width >= 0 AND right >= 0)
-            IMPLIES
-              ((left > 0 OR right > 0)
-               IMPLIES
-                 (-left <= a AND a <= width + right
-                  AND (a < 0 OR a > width)))
+          (left >= 0 AND W >= 0 AND right >= 0)
+          IMPLIES
+            (((-left - 1 < 0 AND 0 = 0)
+              OR (0 <= -left - 1 AND -left - 1 <= W AND 0 = -left - 1)
+              OR (-left - 1 > W AND 0 = W))
+             AND (-left <= 0 AND 0 <= W + right)
+             AND NOT (-left <= -left - 1 AND -left - 1 <= W + right))
 
-  % Contract B: admissible range inside bounds (R subset B).
-  % R=[0,width], B=[-left,width+right].
-  % Every admissible point is inside B.
-
-  range_inside_bounds_no_observable_drift: THEOREM
-    FORALL (left: real):
-      FORALL (width: real):
-        FORALL (right: real):
-          FORALL (a: real):
-            (left >= 0 AND width >= 0 AND right >= 0
-             AND 0 <= a AND a <= width)
-            IMPLIES
-              NOT (a < -left OR a > width + right)
-
-  % Candidate repair invariant: clamp-graph output exists and is bounded.
+  % Candidate repair invariant.
 
   reclamp_preserves_bounds: THEOREM
     FORALL (lo: real):
@@ -85,14 +113,23 @@ BEGIN
                 OR (a > hi AND y = hi))
                AND lo <= y AND y <= hi)
 
-  % Concrete minimized witness; one unused real keeps the theorem inside
-  % cad-direct's quantified interface.
+  % Contract-compliant executable witness under R subset B:
+  % R=[10,100], B=[0,100], assignment a=110, reference output y=100.
 
-  minimized_witness_is_observable: THEOREM
+  contract_compliant_witness_has_validity_divergence: THEOREM
     FORALL (dummy: real):
-      0 <= 20 AND 20 <= 100 AND (20 < 0 OR 20 > 10)
+      (0 <= 10 AND 100 <= 100)
+      AND
+      (((110 < 0 AND 100 = 0)
+        OR (0 <= 110 AND 110 <= 100 AND 100 = 110)
+        OR (110 > 100 AND 100 = 100))
+       AND (10 <= 100 AND 100 <= 100)
+       AND NOT (10 <= 110 AND 110 <= 100))
 
-  minimized_witness_contract_direction: THEOREM
+  % Historical minimized witness R=[0,100], B=[0,10], a=20.  It belongs to
+  % the opposite containment branch and is retained only as lineage.
+
+  historical_witness_is_b_subset_r: THEOREM
     FORALL (dummy: real):
       (0 <= 0 AND 10 <= 100) AND NOT (100 <= 10)
 
