@@ -90,6 +90,10 @@ class ProgressMemory:
         )
 
     @staticmethod
+    def _stored_interface(value: list[Any] | tuple[Any, ...]) -> tuple[Any, ...]:
+        return (str(value[0]), tuple(value[1]), int(value[2]), int(value[3]))
+
+    @staticmethod
     def _relation(before: dict[str, Any], after: dict[str, Any], key: str) -> str:
         return 'same' if before[key] == after[key] else 'changed'
 
@@ -158,7 +162,10 @@ class ProgressMemory:
         for row in rows:
             before_row, after_row = row['before'], row['after']
             steps.append(dict(
-                interface=list(self._interface(before_row)),
+                interface=[
+                    str(before_row['state']), list(before_row['available_actions']),
+                    int(before_row['height']), int(before_row['width']),
+                ],
                 action=list(row['action']),
                 board_relation=self._relation(before_row, after_row, 'board_digest'),
                 frame_relation=self._relation(before_row, after_row, 'frame_digest'),
@@ -193,7 +200,7 @@ class ProgressMemory:
         capability = self.relative_capabilities.get(capability_id)
         next_interface_ok = True
         if capability is not None and index + 1 < len(capability['steps']):
-            next_interface_ok = tuple(capability['steps'][index + 1]['interface']) == self._interface(after)
+            next_interface_ok = self._stored_interface(capability['steps'][index + 1]['interface']) == self._interface(after)
         matched = (
             board_relation == step['board_relation']
             and frame_relation == step['frame_relation']
@@ -391,7 +398,7 @@ class ProgressMemory:
                 continue
             if not capability['steps']:
                 continue
-            if tuple(capability['steps'][0]['interface']) != self._interface(obs):
+            if self._stored_interface(capability['steps'][0]['interface']) != self._interface(obs):
                 continue
             candidates.append(capability)
         if not candidates:
@@ -414,7 +421,7 @@ class ProgressMemory:
             self._relative_index = 0
             return None
         step = capability['steps'][index]
-        if tuple(step['interface']) != self._interface(obs):
+        if self._stored_interface(step['interface']) != self._interface(obs):
             self._relative_failed_caps.add(capability['id'])
             self._active_relative = None
             self._relative_index = 0
