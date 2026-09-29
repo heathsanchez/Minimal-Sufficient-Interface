@@ -20,6 +20,10 @@ class Observation:
     width: int
     structural_action: int | None = None
     structural_kind: str = ""
+    structural_active_color: int | None = None
+    structural_center_r: int | None = None
+    structural_center_c: int | None = None
+    structural_targets: str = ""
 
 
 @dataclass(frozen=True)
@@ -109,58 +113,21 @@ def _historical_evidence_sha256(
 
 
 
-def _cross_marker_structural_action(
+def _cross_marker_structural_state(
     board: list[list[Any]], actions: tuple[int, ...]
-) -> tuple[int | None, str]:
-    """Recognize the cross/marker causal geometry without a game identifier.
+) -> tuple[int | None, str, int | None, int | None, int | None, str]:
+    """Expose current cross pose plus target relations visible in this frame.
 
-    Guard: four primitive directions + switch are legal; framed 3x3 markers
-    expose at least two color families; exactly one white-centered plus is
-    active; matching marker centers determine a unique repeated row/column.
-    The 3x3 marker lattice earns the three-cell movement quantum.
+    Target markers may disappear as a cross overlaps them. Callers therefore
+    must treat the target table as acquisition evidence: freeze a complete
+    table at the first clean frame and thereafter update only the active pose.
     """
+    empty = (None, "", None, None, None, "")
     if not board or not all(a in actions for a in (1, 2, 3, 4, 5)):
-        return None, ""
+        return empty
     h, w = len(board), len(board[0])
     if h < 12 or w < 12 or any(len(row) != w for row in board):
-        return None, ""
-
-    markers: dict[Any, list[tuple[int, int]]] = {}
-    for r in range(1, h - 1):
-        for col in range(1, w - 1):
-            center = board[r][col]
-            perimeter = (
-                board[r-1][col-1], board[r-1][col], board[r-1][col+1],
-                board[r][col-1], board[r][col+1],
-                board[r+1][col-1], board[r+1][col], board[r+1][col+1],
-            )
-            frame_color = perimeter[0]
-            if center == frame_color or any(v != frame_color for v in perimeter[1:]):
-                continue
-            # Require a true isolated 3x3 frame, not a crop inside a larger block.
-            outer = []
-            for rr, cc in ((r-2,col),(r+2,col),(r,col-2),(r,col+2)):
-                if 0 <= rr < h and 0 <= cc < w:
-                    outer.append(board[rr][cc])
-            if outer and all(v == frame_color for v in outer):
-                continue
-            markers.setdefault(center, []).append((r, col))
-
-    targets: dict[Any, tuple[int, int]] = {}
-    for color, pts in markers.items():
-        if len(pts) < 4:
-            continue
-        row_counts: dict[int, int] = {}
-        col_counts: dict[int, int] = {}
-        for r, col in pts:
-            row_counts[r] = row_counts.get(r, 0) + 1
-            col_counts[col] = col_counts.get(col, 0) + 1
-        best_rows = [r for r, n in row_counts.items() if n == max(row_counts.values()) and n >= 2]
-        best_cols = [col for col, n in col_counts.items() if n == max(col_counts.values()) and n >= 2]
-        if len(best_rows) == 1 and len(best_cols) == 1:
-            targets[color] = (best_rows[0], best_cols[0])
-    if len(targets) < 1:
-        return None, ""
+        return empty
 
     active = []
     for r in range(3, h - 3):
@@ -175,34 +142,72 @@ def _cross_marker_structural_action(
             if not (board[r-2][col] == arm == board[r+2][col]
                     == board[r][col-2] == board[r][col+2]):
                 continue
-            active.append((arm, r, col))
+            active.append((int(arm), r, col))
     if len(active) != 1:
-        return None, ""
-    color, r, col = active[0]
+        return empty
+    color, active_r, active_c = active[0]
 
+    markers: dict[int, list[tuple[int, int]]] = {}
+    for r in range(1, h - 1):
+        for col in range(1, w - 1):
+            center = board[r][col]
+            perimeter = (
+                board[r-1][col-1], board[r-1][col], board[r-1][col+1],
+                board[r][col-1], board[r][col+1],
+                board[r+1][col-1], board[r+1][col], board[r+1][col+1],
+            )
+            frame_color = perimeter[0]
+            if center == frame_color or any(v != frame_color for v in perimeter[1:]):
+                continue
+            outer = []
+            for rr, cc in ((r-2, col), (r+2, col), (r, col-2), (r, col+2)):
+                if 0 <= rr < h and 0 <= cc < w:
+                    outer.append(board[rr][cc])
+            if outer and all(v == frame_color for v in outer):
+                continue
+            try:
+                center_key = int(center)
+            except (TypeError, ValueError):
+                continue
+            markers.setdefault(center_key, []).append((r, col))
+
+    targets: dict[int, tuple[int, int]] = {}
+    for marker_color, pts in markers.items():
+        if len(pts) < 4:
+            continue
+        row_counts: dict[int, int] = {}
+        col_counts: dict[int, int] = {}
+        for r, col in pts:
+            row_counts[r] = row_counts.get(r, 0) + 1
+            col_counts[col] = col_counts.get(col, 0) + 1
+        max_row = max(row_counts.values())
+        max_col = max(col_counts.values())
+        best_rows = [r for r, n in row_counts.items() if n == max_row and n >= 2]
+        best_cols = [col for col, n in col_counts.items() if n == max_col and n >= 2]
+        if len(best_rows) == 1 and len(best_cols) == 1:
+            targets[marker_color] = (best_rows[0], best_cols[0])
+
+    target_rows = [[k, v[0], v[1]] for k, v in sorted(targets.items())]
+    target_json = json.dumps(target_rows, separators=(",", ":")) if target_rows else ""
+
+    action = None
     target = targets.get(color)
-    if target is None:
-        # The active family has already been consumed; switch only if exactly
-        # one other well-formed target family remains.
-        if len(targets) == 1 and 5 in actions:
-            return 5, "cross-marker@1"
-        return None, ""
+    if target is not None:
+        tr, tc = target
+        dr, dc = tr - active_r, tc - active_c
+        if dr % 3 == 0 and dc % 3 == 0:
+            if dr < 0:
+                action = 1
+            elif dr > 0:
+                action = 2
+            elif dc < 0:
+                action = 3
+            elif dc > 0:
+                action = 4
 
-    tr, tc = target
-    dr, dc = tr - r, tc - col
-    quantum = 3
-    if dr % quantum or dc % quantum:
-        return None, ""
-    if dr < 0:
-        return 1, "cross-marker@1"
-    if dr > 0:
-        return 2, "cross-marker@1"
-    if dc < 0:
-        return 3, "cross-marker@1"
-    if dc > 0:
-        return 4, "cross-marker@1"
-    return None, ""
-
+    return (
+        action, "cross-marker-pose@2", color, active_r, active_c, target_json
+    )
 
 def normalize_frame(frame: Any) -> Observation:
     raw_frame = _plain(_field(frame, "frame", []))
@@ -230,7 +235,10 @@ def normalize_frame(frame: Any) -> Observation:
     evidence_sha256 = _historical_evidence_sha256(
         raw_frame, levels_completed, state, actions
     )
-    structural_action, structural_kind = _cross_marker_structural_action(first, actions)
+    (
+        structural_action, structural_kind, structural_active_color,
+        structural_center_r, structural_center_c, structural_targets,
+    ) = _cross_marker_structural_state(first, actions)
     return Observation(
         levels_completed=levels_completed,
         state=state,
@@ -242,6 +250,10 @@ def normalize_frame(frame: Any) -> Observation:
         width=width,
         structural_action=structural_action,
         structural_kind=structural_kind,
+        structural_active_color=structural_active_color,
+        structural_center_r=structural_center_r,
+        structural_center_c=structural_center_c,
+        structural_targets=structural_targets,
     )
 
 
