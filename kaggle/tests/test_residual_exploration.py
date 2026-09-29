@@ -61,6 +61,56 @@ class ResidualExplorationContracts(unittest.TestCase):
         self.assertIsNone(m.plan(a))
         self.assertTrue(any(r['reason']=='observed_frontier_exhausted_not_impossible' for r in m.residuals))
 
+
+
+    def test_cross_marker_targets_are_frozen_across_marker_occlusion(self):
+        api=self.api()
+        def structural_frame(center, color, *, with_markers):
+            h=w=32
+            grid=[[5 for _ in range(w)] for _ in range(h)]
+            if with_markers:
+                def marker(r,col,marker_color):
+                    for rr in range(r-1,r+2):
+                        for cc in range(col-1,col+2):
+                            grid[rr][cc]=4
+                    grid[r][col]=marker_color
+                for r,col in ((11,5),(11,17),(5,11),(17,11)):
+                    marker(r,col,9)
+                for r,col in ((8,3),(8,27),(3,15),(25,15)):
+                    marker(r,col,11)
+            r,col=center
+            grid[r][col]=0
+            for d in range(1,5):
+                grid[r-d][col]=color; grid[r+d][col]=color
+                grid[r][col-d]=color; grid[r][col+d]=color
+            return dict(frame=[grid],levels_completed=0,state='NOT_FINISHED',
+                        available_actions=[1,2,3,4,5])
+
+        ctl=api.ResidualController(
+            (1,2,3,4,5),archived_capabilities=(),trace_capabilities=())
+        first=ctl.observe_and_choose(structural_frame((20,20),9,with_markers=True))
+        self.assertEqual((first.action_id,first.source),(1,'crystal_cross_marker'))
+
+        # Marker evidence is now absent, but the target relation was acquired
+        # before motion and must remain stable while only the cross pose changes.
+        second=ctl.observe_and_choose(structural_frame((17,20),9,with_markers=False))
+        self.assertEqual((second.action_id,second.source),(1,'crystal_cross_marker'))
+        third=ctl.observe_and_choose(structural_frame((14,20),9,with_markers=False))
+        self.assertEqual((third.action_id,third.source),(1,'crystal_cross_marker'))
+        fourth=ctl.observe_and_choose(structural_frame((11,20),9,with_markers=False))
+        self.assertEqual((fourth.action_id,fourth.source),(3,'crystal_cross_marker'))
+        fifth=ctl.observe_and_choose(structural_frame((11,17),9,with_markers=False))
+        self.assertEqual((fifth.action_id,fifth.source),(3,'crystal_cross_marker'))
+        sixth=ctl.observe_and_choose(structural_frame((11,14),9,with_markers=False))
+        self.assertEqual((sixth.action_id,sixth.source),(3,'crystal_cross_marker'))
+        switch=ctl.observe_and_choose(structural_frame((11,11),9,with_markers=False))
+        self.assertEqual((switch.action_id,switch.source),(5,'crystal_cross_marker'))
+
+        # After switch the active color changes; the second frozen target is
+        # used without reacquiring any markers.
+        other=ctl.observe_and_choose(structural_frame((20,15),11,with_markers=False))
+        self.assertEqual((other.action_id,other.source),(1,'crystal_cross_marker'))
+
     def test_legacy_controller_remains_an_available_ablation(self):
         api=self.api()
         from metalogic_arc3.developmental_controller import DevelopmentalController
