@@ -52,7 +52,7 @@ jobs:
           ctl=ResidualController((1,2,3,4,5,6,7),archived_capabilities=(),trace_capabilities=())
           ctl.reset_episode()
           current=env.observation_space
-          steps=0; resets=1; peak=int(current.levels_completed); sources=Counter(); checkpoints=[]
+          steps=0; resets=1; peak=int(current.levels_completed); sources=Counter(); checkpoints=[]; decisions=[]
           while steps+resets < 401:
               obs=normalize_frame(current)
               if obs.state=='WIN':
@@ -66,6 +66,11 @@ jobs:
               if token is None: break
               action=GameAction.from_id(token.action_id)
               data={'x':token.x,'y':token.y} if token.action_id==6 else {}
+              if len(decisions)<100:
+                  decisions.append({'step':steps+1,'level':obs.levels_completed,
+                                    'source':token.source,'action':token.action_id,
+                                    'structural_kind':obs.structural_kind,
+                                    'structural_action':obs.structural_action})
               current=env.step(action,data=data)
               steps+=1; sources[token.source]+=1
               if int(current.levels_completed)>peak:
@@ -77,6 +82,7 @@ jobs:
             'charged':steps+resets,'sources':dict(sources),'checkpoints':checkpoints,
             'structural_uses':sources.get('crystal_cross_marker',0),
             'final_state':str(getattr(current.state,'name',current.state)),
+            'first_decisions':decisions,
           }
           result['classification']=(
             'STRUCTURAL_PROGRESS' if result['structural_uses'] and peak>0
