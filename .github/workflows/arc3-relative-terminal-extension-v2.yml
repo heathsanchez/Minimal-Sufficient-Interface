@@ -25,6 +25,10 @@ jobs:
         run: |
           python experiments/arc3_within_game_level_role_transfer_v1.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-within-game-level-role-transfer-v1.json
 
+      - name: Refine only falsified next-level roles
+        run: |
+          python experiments/arc3_within_game_role_refinement_v2.py --events-dir /tmp/duck/example-run/artifacts --output out/arc3-within-game-role-refinement-v2.json
+
       - name: Run ARC contracts
         run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
 
