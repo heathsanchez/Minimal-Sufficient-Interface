@@ -289,5 +289,71 @@ class DevelopmentalContracts(unittest.TestCase):
         self.assertEqual(token.action_id, 1)
 
 
+    @staticmethod
+    def click_frame(origins, level=0):
+        board=[[0]*10 for _ in range(10)]
+        for ox,oy in origins:
+            board[oy][ox]=1
+            board[oy][ox+1]=1
+            board[oy+1][ox]=1
+        return {'frame':[board], 'levels_completed':level,
+                'state':'NOT_FINISHED', 'available_actions':[6]}
+
+    def test_click_role_rebinds_shifted_object_without_reusing_source_coordinate(self):
+        api=self.api(); m=self.memory()
+        source=self.click_frame([(2,2)],0)
+        source_goal=self.click_frame([(2,2)],1)
+        sb=api._frame_board(source); sg=api._frame_board(source_goal)
+        m.begin(normalize_frame(source))
+        m.observe(normalize_frame(source),ActionToken(6,2,2),
+                  normalize_frame(source_goal),before_board=sb,after_board=sg)
+        cap=next(iter(m.relative_capabilities.values()))
+        self.assertEqual(cap['portable_kind'],'click_role_v1')
+
+        target=self.click_frame([(6,5)],1)
+        tb=api._frame_board(target)
+        m.begin(normalize_frame(target))
+        decision=m.plan(normalize_frame(target),raw_board=tb,portable_kind='click_role_v1')
+        self.assertIsNotNone(decision)
+        self.assertEqual(decision.action.source,'crystal_click_role')
+        self.assertEqual((decision.action.x,decision.action.y),(6,5))
+        self.assertNotEqual((decision.action.x,decision.action.y),(2,2))
+        self.assertEqual(m.stats['click_role_bindings'],1)
+
+    def test_click_role_ambiguous_target_fails_closed(self):
+        api=self.api(); m=self.memory()
+        source=self.click_frame([(2,2)],0)
+        source_goal=self.click_frame([(2,2)],1)
+        m.begin(normalize_frame(source))
+        m.observe(normalize_frame(source),ActionToken(6,2,2),
+                  normalize_frame(source_goal),
+                  before_board=api._frame_board(source),
+                  after_board=api._frame_board(source_goal))
+        target=self.click_frame([(2,5),(6,5)],1)
+        m.begin(normalize_frame(target))
+        decision=m.plan(normalize_frame(target),raw_board=api._frame_board(target),
+                        portable_kind='click_role_v1')
+        self.assertIsNone(decision)
+        self.assertEqual(m.last_residual['reason'],'no_supported_progress_continuation')
+        self.assertGreaterEqual(m.stats['click_role_ambiguous'],1)
+
+    def test_click_role_missing_shape_fails_closed(self):
+        api=self.api(); m=self.memory()
+        source=self.click_frame([(2,2)],0)
+        source_goal=self.click_frame([(2,2)],1)
+        m.begin(normalize_frame(source))
+        m.observe(normalize_frame(source),ActionToken(6,2,2),
+                  normalize_frame(source_goal),
+                  before_board=api._frame_board(source),
+                  after_board=api._frame_board(source_goal))
+        target={'frame':[[[0]*10 for _ in range(10)]], 'levels_completed':1,
+                'state':'NOT_FINISHED','available_actions':[6]}
+        m.begin(normalize_frame(target))
+        self.assertIsNone(m.plan(normalize_frame(target),
+                                 raw_board=api._frame_board(target),
+                                 portable_kind='click_role_v1'))
+        self.assertGreaterEqual(m.stats['click_role_ambiguous'],1)
+
+
 if __name__ == '__main__':
     unittest.main()
