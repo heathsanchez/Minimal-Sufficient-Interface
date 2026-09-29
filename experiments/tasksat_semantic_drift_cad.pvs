@@ -2,97 +2,95 @@ tasksat_semantic_drift_cad: THEORY
 %----------------------------------------------------------------------------
 % Verified-CAD characterization of TaskSAT's bounded-assignment semantic fork.
 %
-% Every theorem is written in explicit PRENEX form because pvs_cad's
-% cad-direct strategy accepts a closed real quantifier prefix followed by a
-% Boolean combination of polynomial sign conditions.
+% IMPORTANT pvs_cad interface discipline:
+%   cad-prefix accepts one real binding per quantifier node.
+% Therefore every quantified variable below has its own explicit
+% FORALL/EXISTS binder.
 %----------------------------------------------------------------------------
 BEGIN
   IMPORTING cad_decide5, mpoly_embed
 
-  % Clamp graph:
-  %
-  %   G(lo,hi,a,y) :=
-  %      (a < lo  and y = lo)
-  %   or (lo <= a and a <= hi and y = a)
-  %   or (a > hi and y = hi).
-  %
-  % On the graph, the Lean/reference output y equals Python/Z3's direct
-  % assignment output a exactly when a lies inside the bounds.
+  % On the clamp graph, the Lean/reference output y equals Python/Z3's
+  % direct assignment output a exactly when a is inside the bounds.
 
   assignment_agreement_exact: THEOREM
-    FORALL (lo, hi, a, y: real):
-      (lo <= hi
-       AND
-       ((a < lo AND y = lo)
-        OR (lo <= a AND a <= hi AND y = a)
-        OR (a > hi AND y = hi)))
-      IMPLIES
-        ((y = a IMPLIES (lo <= a AND a <= hi))
-         AND
-         ((lo <= a AND a <= hi) IMPLIES y = a))
+    FORALL (lo: real):
+      FORALL (hi: real):
+        FORALL (a: real):
+          FORALL (y: real):
+            (lo <= hi
+             AND
+             ((a < lo AND y = lo)
+              OR (lo <= a AND a <= hi AND y = a)
+              OR (a > hi AND y = hi)))
+            IMPLIES
+              ((y = a IMPLIES (lo <= a AND a <= hi))
+               AND
+               ((lo <= a AND a <= hi) IMPLIES y = a))
 
   % Contract A: bounds inside admissible range (B subset R).
-  % Normalize R=[-left,width+right], B=[0,width].
-  %
-  % First half of the exact characterization:
-  % any range-valid point outside B forces R to be strictly wider on a side.
+  % R=[-left,width+right], B=[0,width].
+  % Any range-valid separator forces strict extra range on a side.
 
   bounds_inside_range_drift_only_if_wider: THEOREM
-    FORALL (left, width, right, a: real):
-      (left >= 0 AND width >= 0 AND right >= 0
-       AND -left <= a AND a <= width + right
-       AND (a < 0 OR a > width))
-      IMPLIES
-        (left > 0 OR right > 0)
+    FORALL (left: real):
+      FORALL (width: real):
+        FORALL (right: real):
+          FORALL (a: real):
+            (left >= 0 AND width >= 0 AND right >= 0
+             AND -left <= a AND a <= width + right
+             AND (a < 0 OR a > width))
+            IMPLIES
+              (left > 0 OR right > 0)
 
-  % Converse half:
-  % if R is strictly wider than B on either side, an admissible separating
-  % assignment exists.
+  % Converse: strict extra range on a side supplies an admissible separator.
 
   bounds_inside_range_wider_has_drift: THEOREM
-    FORALL (left, width, right: real):
-      EXISTS (a: real):
-        (left >= 0 AND width >= 0 AND right >= 0)
-        IMPLIES
-          ((left > 0 OR right > 0)
-           IMPLIES
-             (-left <= a AND a <= width + right
-              AND (a < 0 OR a > width)))
+    FORALL (left: real):
+      FORALL (width: real):
+        FORALL (right: real):
+          EXISTS (a: real):
+            (left >= 0 AND width >= 0 AND right >= 0)
+            IMPLIES
+              ((left > 0 OR right > 0)
+               IMPLIES
+                 (-left <= a AND a <= width + right
+                  AND (a < 0 OR a > width)))
 
   % Contract B: admissible range inside bounds (R subset B).
-  % Normalize R=[0,width], B=[-left,width+right].
-  % Every admissible point is then inside B, so this assignment-only
-  % implementation difference cannot be observed by the range predicate.
+  % R=[0,width], B=[-left,width+right].
+  % Every admissible point is inside B.
 
   range_inside_bounds_no_observable_drift: THEOREM
-    FORALL (left, width, right, a: real):
-      (left >= 0 AND width >= 0 AND right >= 0
-       AND 0 <= a AND a <= width)
-      IMPLIES
-        NOT (a < -left OR a > width + right)
+    FORALL (left: real):
+      FORALL (width: real):
+        FORALL (right: real):
+          FORALL (a: real):
+            (left >= 0 AND width >= 0 AND right >= 0
+             AND 0 <= a AND a <= width)
+            IMPLIES
+              NOT (a < -left OR a > width + right)
 
-  % Candidate repair invariant.  For every well-formed bounds interval and
-  % every assigned value, a clamp-graph output exists and lies in the bounds.
+  % Candidate repair invariant: clamp-graph output exists and is bounded.
 
   reclamp_preserves_bounds: THEOREM
-    FORALL (lo, hi, a: real):
-      EXISTS (y: real):
-        lo <= hi
-        IMPLIES
-          (((a < lo AND y = lo)
-            OR (lo <= a AND a <= hi AND y = a)
-            OR (a > hi AND y = hi))
-           AND lo <= y AND y <= hi)
+    FORALL (lo: real):
+      FORALL (hi: real):
+        FORALL (a: real):
+          EXISTS (y: real):
+            lo <= hi
+            IMPLIES
+              (((a < lo AND y = lo)
+                OR (lo <= a AND a <= hi AND y = a)
+                OR (a > hi AND y = hi))
+               AND lo <= y AND y <= hi)
 
-  % Concrete minimized TaskSAT witness, padded with an unused real quantifier
-  % so it stays inside cad-direct's closed-prenex interface.
+  % Concrete minimized witness; one unused real keeps the theorem inside
+  % cad-direct's quantified interface.
 
   minimized_witness_is_observable: THEOREM
     FORALL (dummy: real):
       0 <= 20 AND 20 <= 100 AND (20 < 0 OR 20 > 10)
-
-  % The same witness satisfies B subset R ([0,10] inside [0,100]) and violates
-  % the reverse containment.
 
   minimized_witness_contract_direction: THEOREM
     FORALL (dummy: real):

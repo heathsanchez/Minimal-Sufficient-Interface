@@ -13,74 +13,57 @@ Pinned evidence:
 
 ## Warranted before CAD
 
-The prior executable audit established, for a bounded numeric assignment (a),
+The executable TaskSAT audit established:
 
 [
 	ext{Lean/reference}=\operatorname{clamp}_{[\ell,u]}(a),
 qquad
-	ext{Python/Z3}=a.
+	ext{Python/Z3}=a
 ]
 
-The minimized TaskSAT witness (R=[0,100], B=[0,10], a=20) is reported `VIOLATED` by the Python/Z3 property checker and evaluates to (10) under the executable Lean assignment/clamp ordering. Re-clamping after assignment flips the property to `HOLDS` and preserves TaskSAT's original numeric-assignment regression.
+for a bounded numeric assignment (a). The minimized witness (R=[0,100]), (B=[0,10]), (a=20) gives 10 versus 20 and produces an observable TaskSAT property disagreement.
 
 ## The interval-contract fork
 
 Source reconciliation found two incompatible contracts:
 
-- current AST/manual: `range` is a subtype of `bounds`, i.e. (R\subseteq B);
-- TaskNetPaper Lean skeleton: `bounds_in_range`, i.e. (B\subseteq R).
+- AST/manual: (R\subseteq B) — range is effectively a subtype of bounds;
+- TaskNetPaper Lean skeleton: (B\subseteq R) — its field is literally `bounds_in_range`.
 
-The pinned Python well-formedness checker contains no comparison of the two intervals. The executable contract audit on this branch requires both opposite nesting directions to be accepted before it reports `WARRANTED_MISSING_CONTAINMENT_CHECK`.
+The pinned Python well-formedness checker compares neither interval against the other. The executable contract audit on this branch accepts both opposite nesting directions, so the implementation itself does not resolve the source conflict.
 
-This means the algebraic observability question is conditional on which contract the authors intend.
+## Exact CAD questions
 
-## CAD formulation
+The clamp is represented by its polynomial graph. CAD is asked to decide:
 
-All submitted formulas are explicit **closed prenex formulas**, matching pvs_cad's declared `cad-direct` interface. Clamp is represented by its graph rather than by an unverified `IF`/min/max wrapper.
+1. **Agreement quotient:** on the clamp graph, (y=a) exactly when (a\in B).
+2. **If (B\subseteq R):** an admissible separator exists exactly when (R) is strictly wider than (B) on at least one side. The two directions are separate prenex theorems.
+3. **If (R\subseteq B):** no range-valid assignment can be outside (B), hence this assignment-only difference is invisible to the range predicate.
+4. **Repair invariant:** re-clamping has a bounded output for every assignment.
+5. **Concrete witness:** the existing (a=20) witness is outside (B=[0,10]), inside (R=[0,100]), and selects the (B\subseteq R) branch.
 
-### Agreement quotient
+## pvs_cad interface boundary
 
-For any (y) on the clamp graph,
+Two earlier drafts are deliberately retained in Git history as failed experiments.
 
-[
-y=a quad\Longleftrightarrowquad \ell\le a\le u.
-]
+- Draft 1 placed existential quantifiers inside Boolean structure. Run `36617796090` returned all formulas **OPEN**. pvs_cad's `cad-direct` expects a closed prenex formula.
+- Draft 2 moved quantifiers to the prefix but grouped several variables in one PVS binder. Inspection of pvs_cad's `cad-prefix` showed that it accepts **exactly one binding per quantifier node**.
 
-The PVS theorem spells this as the two implications inside the bounds/clamp-graph guard.
+This version is therefore the first representation matching the verifier interface exactly: one explicit `FORALL` or `EXISTS` per real variable, followed by a quantifier-free Boolean combination of polynomial sign conditions.
 
-### (B\subseteq R) branch
-
-Normalize (R=[-L,W+R_s]), (B=[0,W]), with nonnegative parameters.
-
-CAD separately checks both directions of the exact statement
-
-[
-exists a\in R\setminus B
-quad\Longleftrightarrowquad
-L>0\lor R_s>0.
-]
-
-The split into an all-universal theorem and an (orallorallorallexists) theorem keeps each formula prenex.
-
-### (R\subseteq B) branch
-
-Normalize (R=[0,W]), (B=[-L,W+R_s]). CAD checks universally that every range-valid (a) is in the bounds, hence there is no range-valid separator on this assignment-only slice.
-
-### Repair invariant
-
-A (orallorallorallexists) formula checks that a clamp-graph output always exists and lies in the declared bounds.
-
-### Concrete witness
-
-Two one-quantifier closed formulas independently check that (a=20) is range-valid/outside (B=[0,10]) for (R=[0,100]), and that this witness selects the (B\subseteq R) containment branch.
+The proof commands use `(cad-direct)`, the verified decision path without the heuristic witness-search front end.
 
 ## Promotion rule
 
-Seven `cad-direct` proofs must end in `QED`. Only then are the exact algebraic characterizations **WARRANTED**.
+Seven `cad-direct` calls must end in `QED`. Only then are the algebraic laws **WARRANTED**.
 
-Separately, the TaskSAT contract audit must be green before “no containment direction is enforced” is **WARRANTED**.
+Separately, the already-green TaskSAT static containment audit promotes:
 
-The earlier non-prenex CAD draft is **SUPERSEDED** by this formulation; its run is evidence only about the failed experiment path, not about the mathematics.
+[
+oxed{	ext{Python well-formedness enforces neither }R\subseteq B	ext{ nor }B\subseteq R}
+]
+
+to **WARRANTED_MISSING_CONTAINMENT_CHECK**.
 
 ## Reusable structure
 
@@ -96,4 +79,4 @@ The earlier non-prenex CAD draft is **SUPERSEDED** by this formulation; its run 
 	ext{independent verified decision}.
 ]
 
-The key lesson is sharper than “find a bug”: a semantic difference matters only outside the quotient induced by the surrounding admissibility contract, so that contract must be audited too.
+The key lesson is that a semantic difference matters only outside the quotient induced by the surrounding admissibility contract, and the admissibility contract itself must be verified rather than inferred from prose.
