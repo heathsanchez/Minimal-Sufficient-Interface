@@ -226,8 +226,11 @@ class RuntimeContracts(unittest.TestCase):
         raw={"frame":[grid],"levels_completed":0,"state":"NOT_FINISHED",
              "available_actions":[1,2,3,4,5]}
         obs=normalize_frame(raw)
-        self.assertEqual(obs.structural_kind,"cross-marker@1")
+        self.assertEqual(obs.structural_kind,"cross-marker-pose@2")
         self.assertEqual(obs.structural_action,1)
+        self.assertEqual(obs.structural_active_color,9)
+        self.assertEqual((obs.structural_center_r,obs.structural_center_c),(20,20))
+        self.assertTrue(obs.structural_targets)
 
     def test_cross_marker_guard_fails_closed_without_unique_active_plus(self):
         raw=frame(5,actions=(1,2,3,4,5),h=32,w=32)
