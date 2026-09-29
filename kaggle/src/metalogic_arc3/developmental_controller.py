@@ -38,23 +38,36 @@ class ProgressMemory:
 
     SCHEMA = 'arc.live-observed-continuations@1'
 
-    def __init__(self, max_history: int = 8) -> None:
+    def __init__(self, max_history: int = 8, max_relative_depth: int = 32) -> None:
         if max_history < 1:
             raise ValueError('max_history must be positive')
+        if max_relative_depth < 1:
+            raise ValueError('max_relative_depth must be positive')
         self.max_history = int(max_history)
+        self.max_relative_depth = int(max_relative_depth)
         self.history_depth = 0
         self.records: list[dict[str, Any]] = []
         self.revoked: dict[str, str] = {}
         self.residuals: list[dict[str, Any]] = []
         self.last_residual: dict[str, Any] | None = None
-        self.stats = dict(decisions=0, observed_progress=0, matched_predictions=0,
-                          prediction_mismatches=0, refinements=0, closure_builds=0)
+        self.relative_capabilities: dict[str, dict[str, Any]] = {}
+        self.stats = dict(
+            decisions=0, observed_progress=0, matched_predictions=0,
+            prediction_mismatches=0, refinements=0, closure_builds=0,
+            relative_capabilities_compiled=0, relative_capability_decisions=0,
+            relative_capability_progress=0, relative_capability_mismatches=0,
+        )
         self._record_ids: set[str] = set()
         self._history: tuple = ()
         self._current: Observation | None = None
         self._pending: ProgressDecision | None = None
         self._compiled = None
         self._policies: dict[int, Any] = {}
+        self._segment_rows: list[dict[str, Any]] = []
+        self._active_relative: dict[str, Any] | None = None
+        self._relative_index = 0
+        self._relative_pending: tuple[str, int, dict[str, Any]] | None = None
+        self._relative_failed_caps: set[str] = set()
 
     @staticmethod
     def _obs_data(obs: Observation) -> dict[str, Any]:
@@ -67,10 +80,46 @@ class ProgressMemory:
     def _next_history(self, before: Observation, action: ActionToken) -> tuple:
         return (self._history + ((before.frame_digest, self._action(action)),))[-self.max_history:]
 
+    @staticmethod
+    def _interface(obs: Observation | dict[str, Any]) -> tuple[Any, ...]:
+        if isinstance(obs, Observation):
+            return (obs.state, obs.available_actions, obs.height, obs.width)
+        return (
+            str(obs['state']), tuple(obs['available_actions']),
+            int(obs['height']), int(obs['width']),
+        )
+
+    @staticmethod
+    def _relation(before: dict[str, Any], after: dict[str, Any], key: str) -> str:
+        return 'same' if before[key] == after[key] else 'changed'
+
+    @staticmethod
+    def _relative_progress(before: Observation | dict[str, Any],
+                           after: Observation | dict[str, Any]) -> bool:
+        if isinstance(before, Observation):
+            return after.levels_completed > before.levels_completed or (
+                after.state == 'WIN' and before.state != 'WIN')
+        return int(after['levels_completed']) > int(before['levels_completed']) or (
+            after['state'] == 'WIN' and before['state'] != 'WIN')
+
+    def reset_transient(self) -> None:
+        self._history = ()
+        self._current = None
+        self._pending = None
+        self._segment_rows = []
+        self._active_relative = None
+        self._relative_index = 0
+        self._relative_pending = None
+        self._relative_failed_caps = set()
+
     def begin(self, obs: Observation) -> None:
         self._history = ()
         self._current = obs
         self._pending = None
+        self._segment_rows = []
+        self._active_relative = None
+        self._relative_index = 0
+        self._relative_pending = None
 
     def state_id(self, obs: Observation, history: tuple) -> str:
         return self._state_id(self._obs_data(obs), history, self.history_depth)
@@ -91,6 +140,90 @@ class ProgressMemory:
     def _invalidate(self) -> None:
         self._compiled = None
         self._policies.clear()
+
+    def _compile_relative(self, rows: list[dict[str, Any]]) -> None:
+        if not rows or len(rows) > self.max_relative_depth:
+            if rows:
+                self._residual('relative_program_too_long',
+                               observed_length=len(rows),
+                               max_relative_depth=self.max_relative_depth)
+            return
+        start_level = int(rows[0]['before']['levels_completed'])
+        end_level = int(rows[-1]['after']['levels_completed'])
+        terminal_progress = rows[-1]['after']['state'] == 'WIN'
+        target_delta = max(0, end_level - start_level)
+        if target_delta <= 0 and not terminal_progress:
+            return
+        steps = []
+        for row in rows:
+            before_row, after_row = row['before'], row['after']
+            steps.append(dict(
+                interface=list(self._interface(before_row)),
+                action=list(row['action']),
+                board_relation=self._relation(before_row, after_row, 'board_digest'),
+                frame_relation=self._relation(before_row, after_row, 'frame_digest'),
+                progress=self._relative_progress(before_row, after_row),
+            ))
+        payload = dict(target_delta=target_delta, steps=steps)
+        capability_id = content_id(payload, prefix='arc-relative-progress')
+        support_refs = sorted({row['evidence'] for row in rows})
+        existing = self.relative_capabilities.get(capability_id)
+        if existing is None:
+            self.relative_capabilities[capability_id] = dict(
+                id=capability_id, target_delta=target_delta, steps=steps,
+                source_levels=[start_level], support_refs=support_refs)
+            self.stats['relative_capabilities_compiled'] += 1
+        else:
+            existing['source_levels'] = sorted(set(existing['source_levels']) | {start_level})
+            existing['support_refs'] = sorted(set(existing['support_refs']) | set(support_refs))
+
+    def _validate_relative_pending(
+        self, before: Observation, action: ActionToken, after: Observation
+    ) -> None:
+        pending = self._relative_pending
+        if pending is None:
+            return
+        capability_id, index, step = pending
+        self._relative_pending = None
+        if tuple(step['action']) != self._action(action):
+            return
+        progress = self._relative_progress(before, after)
+        board_relation = 'same' if before.board_digest == after.board_digest else 'changed'
+        frame_relation = 'same' if before.frame_digest == after.frame_digest else 'changed'
+        capability = self.relative_capabilities.get(capability_id)
+        next_interface_ok = True
+        if capability is not None and index + 1 < len(capability['steps']):
+            next_interface_ok = tuple(capability['steps'][index + 1]['interface']) == self._interface(after)
+        matched = (
+            board_relation == step['board_relation']
+            and frame_relation == step['frame_relation']
+            and bool(progress) == bool(step['progress'])
+            and next_interface_ok
+        )
+        if not matched:
+            self.stats['relative_capability_mismatches'] += 1
+            self._relative_failed_caps.add(capability_id)
+            self._active_relative = None
+            self._relative_index = 0
+            self._residual(
+                'relative_progress_separator',
+                capability=capability_id, step=index,
+                expected=dict(
+                    board_relation=step['board_relation'],
+                    frame_relation=step['frame_relation'],
+                    progress=bool(step['progress']),
+                    next_interface=(None if capability is None or index + 1 >= len(capability['steps'])
+                                    else capability['steps'][index + 1]['interface']),
+                ),
+                actual=dict(
+                    board_relation=board_relation, frame_relation=frame_relation,
+                    progress=bool(progress), next_interface=list(self._interface(after)),
+                ),
+            )
+        elif progress:
+            self.stats['relative_capability_progress'] += 1
+            self._active_relative = None
+            self._relative_index = 0
 
     def observe(self, before: Observation, action: ActionToken, after: Observation) -> None:
         if self._current is None:
@@ -115,19 +248,25 @@ class ProgressMemory:
                                action=list(self._action(action)), actual=actual,
                                predicted=list(expected.expected_targets))
         self._pending = None
+        self._validate_relative_pending(before, action, after)
         record = dict(before=self._obs_data(before), after=self._obs_data(after),
                       action=self._action(action), history=self._history,
                       next_history=next_history, cost=1)
         evidence = content_id(record, prefix='arc-observation')
+        segment_record = dict(record, evidence=evidence)
         if evidence not in self._record_ids:
-            record['evidence'] = evidence
-            self.records.append(record)
+            self.records.append(segment_record)
             self._record_ids.add(evidence)
             self._invalidate()
             self._refine()
-        if after.levels_completed > before.levels_completed or (
-                after.state == 'WIN' and before.state != 'WIN'):
+        self._segment_rows.append(segment_record)
+        progressed = self._relative_progress(before, after)
+        if progressed:
             self.stats['observed_progress'] += 1
+            self._compile_relative(self._segment_rows)
+            self._segment_rows = []
+        elif after.state == 'GAME_OVER':
+            self._segment_rows = []
         self._history = next_history
         self._current = after
 
@@ -234,6 +373,89 @@ class ProgressMemory:
         self._policies[level] = (rank, policy, actions)
         return self._policies[level]
 
+    def _live_relative_support(self, capability: dict[str, Any]) -> tuple[str, ...]:
+        return tuple(sorted(
+            ref for ref in capability['support_refs'] if ref not in self.revoked
+        ))
+
+    def _relative_candidate(self, obs: Observation) -> dict[str, Any] | None:
+        if self._active_relative is not None:
+            return self._active_relative
+        candidates = []
+        for capability in self.relative_capabilities.values():
+            if capability['id'] in self._relative_failed_caps:
+                continue
+            if not any(obs.levels_completed > int(level) for level in capability['source_levels']):
+                continue
+            if not self._live_relative_support(capability):
+                continue
+            if not capability['steps']:
+                continue
+            if tuple(capability['steps'][0]['interface']) != self._interface(obs):
+                continue
+            candidates.append(capability)
+        if not candidates:
+            return None
+        candidates.sort(key=lambda row: (
+            -len(row['source_levels']), len(row['steps']), row['id']))
+        self._active_relative = candidates[0]
+        self._relative_index = 0
+        return self._active_relative
+
+    def _plan_relative(
+        self, obs: Observation, *, remaining_actions: int | None = None
+    ) -> ProgressDecision | None:
+        capability = self._relative_candidate(obs)
+        if capability is None:
+            return None
+        index = self._relative_index
+        if index >= len(capability['steps']):
+            self._active_relative = None
+            self._relative_index = 0
+            return None
+        step = capability['steps'][index]
+        if tuple(step['interface']) != self._interface(obs):
+            self._relative_failed_caps.add(capability['id'])
+            self._active_relative = None
+            self._relative_index = 0
+            self._residual('relative_applicability_separator',
+                           capability=capability['id'], step=index,
+                           expected=step['interface'],
+                           actual=list(self._interface(obs)))
+            return None
+        remaining = len(capability['steps']) - index
+        if remaining_actions is not None and remaining > remaining_actions:
+            self._residual('insufficient_relative_action_budget',
+                           capability=capability['id'],
+                           needed=remaining, remaining=remaining_actions)
+            return None
+        action = tuple(step['action'])
+        if action[0] not in obs.available_actions:
+            self._relative_failed_caps.add(capability['id'])
+            self._active_relative = None
+            self._relative_index = 0
+            self._residual('relative_changed_legal_interface',
+                           capability=capability['id'], action=list(action))
+            return None
+        if action[0] == 6 and (
+            action[1] is None or action[2] is None
+            or not 0 <= int(action[1]) < obs.width
+            or not 0 <= int(action[2]) < obs.height
+        ):
+            self._relative_failed_caps.add(capability['id'])
+            self._active_relative = None
+            self._relative_index = 0
+            self._residual('relative_action_binding_out_of_bounds',
+                           capability=capability['id'], action=list(action))
+            return None
+        token = ActionToken(*action, source='crystal_relative')
+        self._relative_pending = (capability['id'], index, step)
+        self._relative_index += 1
+        self.stats['relative_capability_decisions'] += 1
+        return ProgressDecision(
+            token, remaining, self._live_relative_support(capability), (),
+            status='CANDIDATE_RELATIVE_PROGRESS')
+
     def plan(self, obs: Observation, *, remaining_actions: int | None = None) -> ProgressDecision | None:
         self._pending = None
         if obs.state in ('WIN', 'GAME_OVER'):
@@ -242,6 +464,9 @@ class ProgressMemory:
         source = self.state_id(obs, self._history)
         row = policy.get(source)
         if row is None:
+            relative = self._plan_relative(obs, remaining_actions=remaining_actions)
+            if relative is not None:
+                return relative
             self._residual('no_supported_progress_continuation', source=source)
             return None
         rank, label, edges = row
@@ -264,9 +489,12 @@ class ProgressMemory:
     def to_json(self) -> str:
         return canonical_bytes(dict(
             schema=self.SCHEMA, max_history=self.max_history,
+            max_relative_depth=self.max_relative_depth,
             history_depth=self.history_depth, records=self.records,
             revoked=self.revoked, residuals=self.residuals,
             last_residual=self.last_residual, stats=self.stats,
+            relative_capabilities=self.relative_capabilities,
+            segment_rows=self._segment_rows,
             history=self._history,
             current=None if self._current is None else self._obs_data(self._current),
             pending=None if self._pending is None else asdict(self._pending),
@@ -277,7 +505,7 @@ class ProgressMemory:
         data = json.loads(text)
         if data['schema'] != cls.SCHEMA:
             raise ValueError('unsupported continuation memory schema')
-        result = cls(data['max_history'])
+        result = cls(data['max_history'], data.get('max_relative_depth', 32))
         if not 0 <= data['history_depth'] <= result.max_history:
             raise ValueError('invalid history depth')
         result.history_depth = data['history_depth']
@@ -297,7 +525,17 @@ class ProgressMemory:
         result.revoked = data['revoked']
         result.residuals = data['residuals']
         result.last_residual = data['last_residual']
-        result.stats = data['stats']
+        defaults = dict(result.stats)
+        defaults.update(data['stats'])
+        result.stats = defaults
+        result.relative_capabilities = data.get('relative_capabilities', {})
+        for capability_id, capability in result.relative_capabilities.items():
+            payload = dict(target_delta=capability['target_delta'], steps=capability['steps'])
+            if capability_id != content_id(payload, prefix='arc-relative-progress'):
+                raise ValueError('relative capability identity mismatch')
+            if not set(capability['support_refs']).issubset(result._record_ids):
+                raise ValueError('relative capability has unknown support')
+        result._segment_rows = data.get('segment_rows', [])
         result._history = tuple(data['history'])
         if data['current'] is not None:
             current = data['current']
@@ -314,14 +552,16 @@ class DevelopmentalController(MemoryGraphController):
     """Existing online discovery plus a live compiled continuation consumer."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.crystal = ProgressMemory(max_history=kwargs.get('max_history', 8))
+        max_relative_depth = int(kwargs.pop('max_relative_depth', 32))
+        self.crystal = ProgressMemory(
+            max_history=kwargs.get('max_history', 8),
+            max_relative_depth=max_relative_depth,
+        )
         super().__init__(*args, **kwargs)
 
     def reset_episode(self) -> None:
         super().reset_episode()
-        self.crystal._current = None
-        self.crystal._history = ()
-        self.crystal._pending = None
+        self.crystal.reset_transient()
 
     def _process_previous_outcome(self, obs: Observation) -> None:
         if self._previous is not None and self._last_action is not None:
