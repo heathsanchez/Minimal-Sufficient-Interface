@@ -92,11 +92,13 @@ def synthetic(module):
                           for life in row['arms']['candidate'])
     relative_usages = sum(life['sources'].get('crystal_relative',0) for row in results
                           for life in row['arms']['candidate'])
-    usages = absolute_usages + relative_usages
+    extension_usages = sum(life['sources'].get('crystal_relative_extension',0) for row in results
+                           for life in row['arms']['candidate'])
+    usages = absolute_usages + relative_usages + extension_usages
     return dict(scope='fixed finite path-world stream; not ARC score or cross-mechanic generalization',
                 cases=results, charged=totals, completed=successes,
                 candidate_uses=usages, absolute_uses=absolute_usages,
-                relative_uses=relative_usages,
+                relative_uses=relative_usages, relative_extension_uses=extension_usages,
                 passed=(successes['candidate']==successes['baseline']==384 and
                         totals['candidate']<totals['baseline'] and usages>0))
 
@@ -181,12 +183,19 @@ def real_public(module, environments: Path, output: Path, games=None, lives_coun
     relative_use = sum(row['candidate_stats'].get('relative_capability_decisions',0) for row in rows)
     relative_progress = sum(row['candidate_stats'].get('relative_capability_progress',0) for row in rows)
     relative_mismatches = sum(row['candidate_stats'].get('relative_capability_mismatches',0) for row in rows)
-    use = absolute_use + relative_use
+    relative_extension_use = sum(row['candidate_stats'].get('relative_extension_decisions',0) for row in rows)
+    relative_extension_progress = sum(row['candidate_stats'].get('relative_extension_progress',0) for row in rows)
+    relative_extension_exhausted = sum(row['candidate_stats'].get('relative_extension_exhausted',0) for row in rows)
+    use = absolute_use + relative_use + relative_extension_use
     probe_use = sum(row['candidate_stats'].get('residual_decisions',0) for row in rows)
     return dict(scope='public development/regression environments; no Kaggle score or sealed holdout',
                 results=rows,candidate_uses=use,absolute_uses=absolute_use,
                 relative_uses=relative_use,relative_progress=relative_progress,
-                relative_mismatches=relative_mismatches,probe_uses=probe_use,
+                relative_mismatches=relative_mismatches,
+                relative_extension_uses=relative_extension_use,
+                relative_extension_progress=relative_extension_progress,
+                relative_extension_exhausted=relative_extension_exhausted,
+                probe_uses=probe_use,
                 observed_improvement=improvement, observed_regression=regression,
                 release_qualified=bool(improvement and not regression and relative_use and relative_progress))
 
