@@ -155,5 +155,59 @@ class DevelopmentalContracts(unittest.TestCase):
                             empty.observe_and_choose(a).action_id)
 
 
+    def test_relative_progress_capability_fires_before_new_context_goal_is_seen(self):
+        m = self.memory()
+        source_a, source_b, source_goal = frame(10), frame(11), frame(12, 1)
+        self.feed(m, [source_a, source_b, source_goal], [2, 3])
+        self.assertEqual(m.stats['relative_capabilities_compiled'], 1)
+
+        # New level, new protected observations: the old absolute target states
+        # are useless here. Only the relative progress contract can fire.
+        target_a, target_b, target_goal = frame(20, 1), frame(21, 1), frame(22, 2)
+        m.begin(normalize_frame(target_a))
+        first = m.plan(normalize_frame(target_a))
+        self.assertIsNotNone(first)
+        self.assertEqual(first.action.action_id, 2)
+        self.assertEqual(first.action.source, 'crystal_relative')
+        m.observe(normalize_frame(target_a), first.action, normalize_frame(target_b))
+
+        second = m.plan(normalize_frame(target_b))
+        self.assertIsNotNone(second)
+        self.assertEqual(second.action.action_id, 3)
+        self.assertEqual(second.action.source, 'crystal_relative')
+        m.observe(normalize_frame(target_b), second.action, normalize_frame(target_goal))
+        self.assertEqual(m.stats['relative_capability_progress'], 1)
+        self.assertEqual(m.stats['relative_capability_mismatches'], 0)
+
+        # Empty-memory ablation cannot make the same first-visit decision.
+        empty = self.memory()
+        empty.begin(normalize_frame(target_a))
+        self.assertIsNone(empty.plan(normalize_frame(target_a)))
+
+    def test_relative_progress_capability_aborts_on_first_effect_separator(self):
+        m = self.memory()
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+        target = frame(20, 1)
+        m.begin(normalize_frame(target))
+        first = m.plan(normalize_frame(target))
+        self.assertEqual(first.action.source, 'crystal_relative')
+
+        # Source step changed the protected board; target step does not.
+        m.observe(normalize_frame(target), first.action, normalize_frame(target))
+        self.assertEqual(m.stats['relative_capability_mismatches'], 1)
+        self.assertEqual(m.last_residual['reason'], 'relative_progress_separator')
+        self.assertIsNone(m.plan(normalize_frame(target)))
+
+    def test_relative_progress_capability_survives_serialization(self):
+        m = self.memory()
+        self.feed(m, [frame(10), frame(11), frame(12, 1)], [2, 3])
+        restored = self.api().ProgressMemory.from_json(m.to_json())
+        target = frame(20, 1)
+        restored.begin(normalize_frame(target))
+        decision = restored.plan(normalize_frame(target))
+        self.assertIsNotNone(decision)
+        self.assertEqual(decision.action.source, 'crystal_relative')
+
+
 if __name__ == '__main__':
     unittest.main()
