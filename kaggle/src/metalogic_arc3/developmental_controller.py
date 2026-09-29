@@ -100,6 +100,13 @@ class ProgressMemory:
         return (str(value[0]), tuple(value[1]), int(value[2]), int(value[3]))
 
     @staticmethod
+    def _interface_payload(obs: Observation) -> list[Any]:
+        return [
+            str(obs.state), list(obs.available_actions),
+            int(obs.height), int(obs.width),
+        ]
+
+    @staticmethod
     def _relation(before: dict[str, Any], after: dict[str, Any], key: str) -> str:
         return 'same' if before[key] == after[key] else 'changed'
 
@@ -175,7 +182,7 @@ class ProgressMemory:
             self.relative_rejections[key] = dict(
                 capability=capability_id,
                 progress_level=int(before.levels_completed),
-                interface=list(self._interface(before)),
+                interface=self._interface_payload(before),
                 failure_kind=failure_kind,
                 step=int(step),
                 expected=expected,
@@ -263,7 +270,7 @@ class ProgressMemory:
             )
             actual = dict(
                 board_relation=board_relation, frame_relation=frame_relation,
-                progress=bool(progress), next_interface=list(self._interface(after)),
+                progress=bool(progress), next_interface=self._interface_payload(after),
             )
             # If all observable mechanism effects still match and only the
             # terminal progress bit fails, preserve the mechanism and reject
