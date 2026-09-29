@@ -56,6 +56,8 @@ class ProgressMemory:
             prediction_mismatches=0, refinements=0, closure_builds=0,
             relative_capabilities_compiled=0, relative_capability_decisions=0,
             relative_capability_progress=0, relative_capability_mismatches=0,
+            relative_terminal_extensions=0, relative_extension_decisions=0,
+            relative_extension_progress=0, relative_extension_exhausted=0,
         )
         self._record_ids: set[str] = set()
         self._history: tuple = ()
@@ -66,8 +68,9 @@ class ProgressMemory:
         self._segment_rows: list[dict[str, Any]] = []
         self._active_relative: dict[str, Any] | None = None
         self._relative_index = 0
-        self._relative_pending: tuple[str, int, dict[str, Any]] | None = None
+        self._relative_pending: tuple[Any, ...] | None = None
         self._relative_failed_caps: set[str] = set()
+        self._relative_extension: dict[str, Any] | None = None
 
     @staticmethod
     def _obs_data(obs: Observation) -> dict[str, Any]:
@@ -114,6 +117,7 @@ class ProgressMemory:
         self._active_relative = None
         self._relative_index = 0
         self._relative_pending = None
+        self._relative_extension = None
 
     def begin(self, obs: Observation) -> None:
         self._history = ()
@@ -123,6 +127,7 @@ class ProgressMemory:
         self._active_relative = None
         self._relative_index = 0
         self._relative_pending = None
+        self._relative_extension = None
 
     def state_id(self, obs: Observation, history: tuple) -> str:
         return self._state_id(self._obs_data(obs), history, self.history_depth)
@@ -183,53 +188,140 @@ class ProgressMemory:
             existing['source_levels'] = sorted(set(existing['source_levels']) | {start_level})
             existing['support_refs'] = sorted(set(existing['support_refs']) | set(support_refs))
 
+    def _fail_relative(
+        self, capability_id: str, reason: str, **details: Any
+    ) -> None:
+        self._relative_failed_caps.add(capability_id)
+        self._active_relative = None
+        self._relative_extension = None
+        self._relative_index = 0
+        self._residual(reason, capability=capability_id, **details)
+
     def _validate_relative_pending(
         self, before: Observation, action: ActionToken, after: Observation
     ) -> None:
         pending = self._relative_pending
         if pending is None:
             return
-        capability_id, index, step = pending
+        capability_id, index, step, *mode_tail = pending
+        mode = mode_tail[0] if mode_tail else 'base'
         self._relative_pending = None
         if tuple(step['action']) != self._action(action):
             return
+
         progress = self._relative_progress(before, after)
         board_relation = 'same' if before.board_digest == after.board_digest else 'changed'
         frame_relation = 'same' if before.frame_digest == after.frame_digest else 'changed'
         capability = self.relative_capabilities.get(capability_id)
-        next_interface_ok = True
-        if capability is not None and index + 1 < len(capability['steps']):
-            next_interface_ok = self._stored_interface(capability['steps'][index + 1]['interface']) == self._interface(after)
-        matched = (
+        relation_ok = (
             board_relation == step['board_relation']
             and frame_relation == step['frame_relation']
+        )
+
+        if mode == 'extension':
+            extension = self._relative_extension
+            if extension is None or extension['capability'] != capability_id:
+                return
+            if progress:
+                self.stats['relative_capability_progress'] += 1
+                self.stats['relative_extension_progress'] += 1
+                self._relative_extension = None
+                self._active_relative = None
+                self._relative_index = 0
+                return
+            if not relation_ok:
+                self.stats['relative_capability_mismatches'] += 1
+                self._fail_relative(
+                    capability_id, 'relative_extension_effect_separator',
+                    step=index,
+                    expected=dict(
+                        board_relation=step['board_relation'],
+                        frame_relation=step['frame_relation']),
+                    actual=dict(
+                        board_relation=board_relation,
+                        frame_relation=frame_relation),
+                )
+                return
+            if extension['attempts'] >= extension['max_attempts']:
+                self.stats['relative_extension_exhausted'] += 1
+                self._fail_relative(
+                    capability_id, 'relative_terminal_extension_exhausted',
+                    step=index, attempts=extension['attempts'],
+                    action=list(step['action']))
+            return
+
+        next_interface_ok = True
+        if capability is not None and index + 1 < len(capability['steps']):
+            next_interface_ok = (
+                self._stored_interface(capability['steps'][index + 1]['interface'])
+                == self._interface(after)
+            )
+        matched = (
+            relation_ok
             and bool(progress) == bool(step['progress'])
             and next_interface_ok
         )
-        if not matched:
-            self.stats['relative_capability_mismatches'] += 1
-            self._relative_failed_caps.add(capability_id)
+        if matched:
+            if progress:
+                self.stats['relative_capability_progress'] += 1
+                self._active_relative = None
+                self._relative_index = 0
+            return
+
+        # Crystal refinement: if the only failed consequence is the terminal
+        # progress bit, while the lower-order protected effect still matches,
+        # a primitive non-coordinate operator may extend until progress or the
+        # first effect separator. The bound is exactly the trailing source run
+        # length, so the residual—not a free search budget—earns the extension.
+        final_step = capability is not None and index == len(capability['steps']) - 1
+        terminal_only = (
+            final_step
+            and bool(step['progress'])
+            and not progress
+            and relation_ok
+            and next_interface_ok
+            and int(step['action'][0]) != 6
+        )
+        if terminal_only:
+            trailing = 0
+            for candidate_step in reversed(capability['steps']):
+                if tuple(candidate_step['action']) != tuple(step['action']):
+                    break
+                trailing += 1
             self._active_relative = None
             self._relative_index = 0
-            self._residual(
-                'relative_progress_separator',
-                capability=capability_id, step=index,
-                expected=dict(
-                    board_relation=step['board_relation'],
-                    frame_relation=step['frame_relation'],
-                    progress=bool(step['progress']),
-                    next_interface=(None if capability is None or index + 1 >= len(capability['steps'])
-                                    else capability['steps'][index + 1]['interface']),
-                ),
-                actual=dict(
-                    board_relation=board_relation, frame_relation=frame_relation,
-                    progress=bool(progress), next_interface=list(self._interface(after)),
-                ),
+            self._relative_extension = dict(
+                capability=capability_id,
+                step=index,
+                action=list(step['action']),
+                board_relation=step['board_relation'],
+                frame_relation=step['frame_relation'],
+                attempts=0,
+                max_attempts=max(1, trailing),
             )
-        elif progress:
-            self.stats['relative_capability_progress'] += 1
-            self._active_relative = None
-            self._relative_index = 0
+            self.stats['relative_terminal_extensions'] += 1
+            self._residual(
+                'relative_terminal_extension_earned',
+                capability=capability_id, step=index,
+                action=list(step['action']), max_attempts=max(1, trailing))
+            return
+
+        self.stats['relative_capability_mismatches'] += 1
+        self._fail_relative(
+            capability_id, 'relative_progress_separator',
+            step=index,
+            expected=dict(
+                board_relation=step['board_relation'],
+                frame_relation=step['frame_relation'],
+                progress=bool(step['progress']),
+                next_interface=(None if capability is None or index + 1 >= len(capability['steps'])
+                                else capability['steps'][index + 1]['interface']),
+            ),
+            actual=dict(
+                board_relation=board_relation, frame_relation=frame_relation,
+                progress=bool(progress), next_interface=list(self._interface(after)),
+            ),
+        )
 
     def observe(self, before: Observation, action: ActionToken, after: Observation) -> None:
         if self._current is None:
@@ -411,6 +503,39 @@ class ProgressMemory:
     def _plan_relative(
         self, obs: Observation, *, remaining_actions: int | None = None
     ) -> ProgressDecision | None:
+        extension = self._relative_extension
+        if extension is not None:
+            capability_id = extension['capability']
+            capability = self.relative_capabilities.get(capability_id)
+            if capability is None or capability_id in self._relative_failed_caps:
+                self._relative_extension = None
+                return None
+            if extension['attempts'] >= extension['max_attempts']:
+                self.stats['relative_extension_exhausted'] += 1
+                self._fail_relative(
+                    capability_id, 'relative_terminal_extension_exhausted',
+                    step=extension['step'], attempts=extension['attempts'],
+                    action=extension['action'])
+                return None
+            action = tuple(extension['action'])
+            if action[0] not in obs.available_actions:
+                self.stats['relative_capability_mismatches'] += 1
+                self._fail_relative(
+                    capability_id, 'relative_extension_changed_legal_interface',
+                    step=extension['step'], action=list(action))
+                return None
+            if remaining_actions is not None and remaining_actions < 1:
+                return None
+            step = capability['steps'][extension['step']]
+            extension['attempts'] += 1
+            self._relative_pending = (
+                capability_id, extension['step'], step, 'extension')
+            self.stats['relative_extension_decisions'] += 1
+            token = ActionToken(*action, source='crystal_relative_extension')
+            return ProgressDecision(
+                token, 1, self._live_relative_support(capability), (),
+                status='CANDIDATE_RELATIVE_EXTENSION')
+
         capability = self._relative_candidate(obs)
         if capability is None:
             return None
