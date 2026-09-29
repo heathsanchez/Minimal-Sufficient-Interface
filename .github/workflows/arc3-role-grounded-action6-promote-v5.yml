@@ -1,0 +1,103 @@
+name: ARC3 role grounded ACTION6 promotion V5
+on:
+  push:
+    branches: [arc3-role-grounded-action6-promote-v5]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+
+      - name: Build exact offline deliverables
+        run: |
+          mkdir -p out
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+
+      - run: python kaggle/scripts/slim_framework.py
+
+      - name: Reproduce no-trace V5 A/B
+        timeout-minutes: 25
+        run: |
+          timeout 23m python kaggle/scripts/qualify_role_grounding.py \
+            --environments public-environments \
+            --budget 220 \
+            --output out/role-grounding.json
+
+      - name: Full delivered-agent public regression
+        timeout-minutes: 18
+        run: |
+          timeout 16m python kaggle/scripts/qualify_developmental_controller.py \
+            --public-catalog \
+            --environments public-delivered \
+            --output out/public-delivered.json
+
+      - name: Promotion gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          role=Path("out/role-grounding.json")
+          public=Path("out/public-delivered.json")
+          if not role.exists() or not public.exists():
+              raise SystemExit("qualification outputs missing")
+          r=json.loads(role.read_text())
+          p=json.loads(public.read_text())
+          public_regressions=[]
+          for row in p["results"]:
+              b=row["arms"]["baseline"][0]
+              c=row["arms"]["candidate"][0]
+              if c["levels"] < b["levels"]:
+                  public_regressions.append({
+                      "game":row["game"],"baseline":b["levels"],"candidate":c["levels"]})
+          result={
+              "schema":"arc3.role-grounded-action6-promotion@1",
+              "role_promotion_candidate":r["promotion_candidate"],
+              "role_action_savings":r["action_savings"],
+              "role_regressions":r["regressions"],
+              "public_regressions":public_regressions,
+              "public_observed_improvement":p.get("observed_improvement",False),
+              "delivered_agent_sha256":p["agent_sha256"],
+          }
+          result["promoted"]=bool(
+              result["role_promotion_candidate"]
+              and not result["role_regressions"]
+              and not result["public_regressions"])
+          Path("out/promotion.json").write_text(
+              json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          if not result["promoted"]:
+              raise SystemExit("ROLE_GROUNDING_PROMOTION=BLOCKED")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-role-grounded-action6-promote-v5
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/provenance/sources.json
+          if-no-files-found: error
