@@ -51,11 +51,17 @@ class ProgressMemory:
         self.residuals: list[dict[str, Any]] = []
         self.last_residual: dict[str, Any] | None = None
         self.relative_capabilities: dict[str, dict[str, Any]] = {}
+        # Negative evidence is durable across environment RESETs. A failed
+        # binding does not revoke the source mechanism globally; it rejects
+        # only this capability in the observed target progress context.
+        self.relative_rejections: dict[str, dict[str, Any]] = {}
         self.stats = dict(
             decisions=0, observed_progress=0, matched_predictions=0,
             prediction_mismatches=0, refinements=0, closure_builds=0,
             relative_capabilities_compiled=0, relative_capability_decisions=0,
             relative_capability_progress=0, relative_capability_mismatches=0,
+            relative_context_rejections=0, relative_projection_rejections=0,
+            relative_mechanism_rejections=0, relative_retry_suppressions=0,
         )
         self._record_ids: set[str] = set()
         self._history: tuple = ()
@@ -115,6 +121,8 @@ class ProgressMemory:
         self._relative_index = 0
         self._relative_pending = None
         self._relative_failed_caps = set()
+        # Deliberately preserve relative_rejections. RESET is not evidence
+        # that a disproved capability→goal binding became valid again.
 
     def begin(self, obs: Observation) -> None:
         self._history = ()
@@ -144,6 +152,40 @@ class ProgressMemory:
     def _invalidate(self) -> None:
         self._compiled = None
         self._policies.clear()
+
+    @staticmethod
+    def _relative_context_key(capability_id: str, obs: Observation) -> str:
+        # Progress level is used only as a local negative-evidence scope inside
+        # one game/controller. It is not an applicability feature for positive
+        # cross-context transfer.
+        return f"{capability_id}|progress-level={int(obs.levels_completed)}"
+
+    def _reject_relative_context(
+        self,
+        capability_id: str,
+        before: Observation,
+        *,
+        failure_kind: str,
+        step: int,
+        expected: dict[str, Any],
+        actual: dict[str, Any],
+    ) -> None:
+        key = self._relative_context_key(capability_id, before)
+        if key not in self.relative_rejections:
+            self.relative_rejections[key] = dict(
+                capability=capability_id,
+                progress_level=int(before.levels_completed),
+                interface=list(self._interface(before)),
+                failure_kind=failure_kind,
+                step=int(step),
+                expected=expected,
+                actual=actual,
+            )
+            self.stats['relative_context_rejections'] += 1
+            if failure_kind == 'projection':
+                self.stats['relative_projection_rejections'] += 1
+            else:
+                self.stats['relative_mechanism_rejections'] += 1
 
     def _compile_relative(self, rows: list[dict[str, Any]]) -> None:
         if not rows or len(rows) > self.max_relative_depth:
@@ -212,20 +254,37 @@ class ProgressMemory:
             self._relative_failed_caps.add(capability_id)
             self._active_relative = None
             self._relative_index = 0
+            expected = dict(
+                board_relation=step['board_relation'],
+                frame_relation=step['frame_relation'],
+                progress=bool(step['progress']),
+                next_interface=(None if capability is None or index + 1 >= len(capability['steps'])
+                                else capability['steps'][index + 1]['interface']),
+            )
+            actual = dict(
+                board_relation=board_relation, frame_relation=frame_relation,
+                progress=bool(progress), next_interface=list(self._interface(after)),
+            )
+            # If all observable mechanism effects still match and only the
+            # terminal progress bit fails, preserve the mechanism and reject
+            # just its target projection in this context. Otherwise the
+            # mechanism binding itself is rejected here.
+            projection_failure = (
+                bool(step['progress'])
+                and not bool(progress)
+                and board_relation == step['board_relation']
+                and frame_relation == step['frame_relation']
+                and next_interface_ok
+            )
+            failure_kind = 'projection' if projection_failure else 'mechanism'
+            self._reject_relative_context(
+                capability_id, before, failure_kind=failure_kind, step=index,
+                expected=expected, actual=actual)
             self._residual(
-                'relative_progress_separator',
+                'relative_projection_separator' if projection_failure
+                else 'relative_mechanism_separator',
                 capability=capability_id, step=index,
-                expected=dict(
-                    board_relation=step['board_relation'],
-                    frame_relation=step['frame_relation'],
-                    progress=bool(step['progress']),
-                    next_interface=(None if capability is None or index + 1 >= len(capability['steps'])
-                                    else capability['steps'][index + 1]['interface']),
-                ),
-                actual=dict(
-                    board_relation=board_relation, frame_relation=frame_relation,
-                    progress=bool(progress), next_interface=list(self._interface(after)),
-                ),
+                failure_kind=failure_kind, expected=expected, actual=actual,
             )
         elif progress:
             self.stats['relative_capability_progress'] += 1
@@ -394,6 +453,10 @@ class ProgressMemory:
                 continue
             if not any(obs.levels_completed > int(level) for level in capability['source_levels']):
                 continue
+            context_key = self._relative_context_key(capability['id'], obs)
+            if context_key in self.relative_rejections:
+                self.stats['relative_retry_suppressions'] += 1
+                continue
             if not self._live_relative_support(capability):
                 continue
             if not capability['steps']:
@@ -501,6 +564,7 @@ class ProgressMemory:
             revoked=self.revoked, residuals=self.residuals,
             last_residual=self.last_residual, stats=self.stats,
             relative_capabilities=self.relative_capabilities,
+            relative_rejections=self.relative_rejections,
             segment_rows=self._segment_rows,
             history=self._history,
             current=None if self._current is None else self._obs_data(self._current),
@@ -536,6 +600,13 @@ class ProgressMemory:
         defaults.update(data['stats'])
         result.stats = defaults
         result.relative_capabilities = data.get('relative_capabilities', {})
+        result.relative_rejections = data.get('relative_rejections', {})
+        for rejection in result.relative_rejections.values():
+            capability_id = rejection.get('capability')
+            if capability_id not in result.relative_capabilities:
+                raise ValueError('relative rejection refers to unknown capability')
+            if rejection.get('failure_kind') not in ('mechanism', 'projection'):
+                raise ValueError('invalid relative rejection kind')
         for capability_id, capability in result.relative_capabilities.items():
             payload = dict(target_delta=capability['target_delta'], steps=capability['steps'])
             if capability_id != content_id(payload, prefix='arc-relative-progress'):
