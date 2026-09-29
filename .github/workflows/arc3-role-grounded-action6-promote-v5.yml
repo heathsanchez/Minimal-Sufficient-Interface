@@ -64,26 +64,55 @@ jobs:
               raise SystemExit("qualification outputs missing")
           r=json.loads(role.read_text())
           p=json.loads(public.read_text())
+          def checkpoint_map(run):
+              return {int(x["level"]):int(x["charged"]) for x in run.get("checkpoints",[])}
+
+          role_action_regressions=[]
+          for row in r["rows"]:
+              b=row["arms"]["baseline"]; c=row["arms"]["candidate"]
+              bm=checkpoint_map(b); cm=checkpoint_map(c)
+              for level in sorted(set(bm)&set(cm)):
+                  if cm[level] > bm[level]:
+                      role_action_regressions.append({
+                          "game":row["game"],"level":level,
+                          "baseline":bm[level],"candidate":cm[level],
+                          "extra":cm[level]-bm[level]})
+
           public_regressions=[]
+          public_action_regressions=[]
           for row in p["results"]:
               b=row["arms"]["baseline"][0]
               c=row["arms"]["candidate"][0]
               if c["levels"] < b["levels"]:
                   public_regressions.append({
                       "game":row["game"],"baseline":b["levels"],"candidate":c["levels"]})
+              bm=checkpoint_map(b); cm=checkpoint_map(c)
+              for level in sorted(set(bm)&set(cm)):
+                  if cm[level] > bm[level]:
+                      public_action_regressions.append({
+                          "game":row["game"],"level":level,
+                          "baseline":bm[level],"candidate":cm[level],
+                          "extra":cm[level]-bm[level]})
+
           result={
-              "schema":"arc3.role-grounded-action6-promotion@1",
+              "schema":"arc3.role-grounded-action6-promotion@2",
               "role_promotion_candidate":r["promotion_candidate"],
               "role_action_savings":r["action_savings"],
-              "role_regressions":r["regressions"],
-              "public_regressions":public_regressions,
+              "role_level_regressions":r["regressions"],
+              "role_action_regressions":role_action_regressions,
+              "public_level_regressions":public_regressions,
+              "public_action_regressions":public_action_regressions,
               "public_observed_improvement":p.get("observed_improvement",False),
               "delivered_agent_sha256":p["agent_sha256"],
           }
+          # ARC-AGI-3 rewards action efficiency. A deployment promotion may not
+          # hide extra actions behind an unchanged level count.
           result["promoted"]=bool(
               result["role_promotion_candidate"]
-              and not result["role_regressions"]
-              and not result["public_regressions"])
+              and not result["role_level_regressions"]
+              and not result["role_action_regressions"]
+              and not result["public_level_regressions"]
+              and not result["public_action_regressions"])
           Path("out/promotion.json").write_text(
               json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,sort_keys=True))
