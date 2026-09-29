@@ -155,6 +155,7 @@ def _crystal_progress_memory_lines(history_entries: list[HistoryEntry]) -> list[
             "- Before reuse, bind actions to the current visible roles/objects. If an early expected effect fails, reject that mechanism binding here.",
             "- If the mechanism behaves but its terminal action does not advance the level, preserve the mechanism as useful evidence but mark the terminal goal/projection UNKNOWN; do NOT replay the whole source program unchanged again.",
             "- Prefer adapting only the smallest unresolved suffix/projection over rediscovering already-supported mechanism structure.",
+            "Crystal probe law: if several live hypotheses remain, spend an information action only when you can state distinct predicted protected outcomes for that legal probe. Prefer the probe minimizing the worst-case number of surviving hypotheses. If the supplied predictions do not separate the hypotheses, do not probe merely for curiosity; keep the residual UNKNOWN and seek a cheaper consequential distinction.",
         ]
     )
     return lines
