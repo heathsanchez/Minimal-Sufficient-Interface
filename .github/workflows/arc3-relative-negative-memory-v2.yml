@@ -1,0 +1,112 @@
+name: ARC3 relative negative memory V2
+on:
+  push:
+    branches: [arc3-relative-progress-separator-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Run ARC contracts
+        run: python -m unittest discover -s kaggle/tests -p 'test_*.py' -v
+
+      - name: Build exact offline deliverables
+        run: |
+          mkdir -p out
+          python kaggle/scripts/build_agent.py
+          python kaggle/scripts/build_notebook.py
+          python -m py_compile kaggle/agent/my_agent.py
+
+      - name: Preserve bounded acquisition/reuse regression
+        run: python kaggle/scripts/qualify_developmental_controller.py --output out/finite-stream.json
+
+      - name: Install pinned public ARC runtime
+        run: python -m pip install arc-agi==0.9.9 python-dotenv
+
+      - uses: actions/checkout@v4
+        with:
+          repository: arcprize/ARC-AGI-3-Agents
+          ref: 4743e7d0aaae0ded0d98a89a7e282e63564cd58b
+          path: kaggle/vendor/ARC-AGI-3-Agents
+
+      - run: python kaggle/scripts/slim_framework.py
+
+      - name: Freeze public catalogue before evaluation
+        run: |
+          python kaggle/scripts/qualify_developmental_controller.py \
+            --public-catalog \
+            --environments public-environments \
+            --output out/public-catalog.json
+
+      - name: Classify negative-memory gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('out/public-catalog.json')
+          if not p.exists():
+              raise SystemExit('public catalogue result missing')
+          d=json.loads(p.read_text())
+          result={
+              'schema':'arc3.relative-negative-memory-gate@1',
+              'relative_uses':d.get('relative_uses',0),
+              'relative_progress':d.get('relative_progress',0),
+              'relative_mismatches':d.get('relative_mismatches',0),
+              'context_rejections':d.get('relative_context_rejections',0),
+              'projection_rejections':d.get('relative_projection_rejections',0),
+              'mechanism_rejections':d.get('relative_mechanism_rejections',0),
+              'retry_suppressions':d.get('relative_retry_suppressions',0),
+              'observed_improvement':d.get('observed_improvement',False),
+              'observed_regression':d.get('observed_regression',False),
+              'safe_negative_memory':d.get('safe_negative_memory',False),
+              'release_qualified':d.get('release_qualified',False),
+          }
+          if result['release_qualified']:
+              result['classification']='PROMOTION_CANDIDATE'
+          elif result['safe_negative_memory']:
+              result['classification']='WARRANTED_NEGATIVE_MEMORY'
+          elif result['relative_uses']:
+              result['classification']='EXACT_RESIDUAL'
+          else:
+              result['classification']='NO_LIVE_RELATIVE_BINDING'
+          Path('out/negative-memory-gate.json').write_text(
+              json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+
+          rows=d.get('results',[])
+          for row in rows:
+              b=row['arms']['baseline'][0]
+              c=row['arms']['candidate'][0]
+              if b['levels'] != c['levels'] or c['sources'].get('crystal_relative',0):
+                  print(json.dumps({
+                      'game':row['game_id'],
+                      'baseline_levels':b['levels'],
+                      'candidate_levels':c['levels'],
+                      'baseline_checkpoints':b['checkpoints'],
+                      'candidate_checkpoints':c['checkpoints'],
+                      'candidate_sources':c['sources'],
+                      'relative_stats':{
+                          k:v for k,v in row.get('candidate_stats',{}).items()
+                          if k.startswith('relative_')
+                      },
+                  },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-relative-negative-memory-v2
+          path: |
+            out/
+            kaggle/agent/my_agent.py
+            kaggle/notebooks/submission.ipynb
+            kaggle/provenance/sources.json
+          if-no-files-found: error
