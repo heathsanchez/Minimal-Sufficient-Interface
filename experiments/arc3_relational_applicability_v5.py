@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse,json
 from collections import Counter,defaultdict
 from pathlib import Path
-from arc3_typed_local_refinement_v4 import board,base,effect,richtrace,learn
+from arc3_typed_local_refinement_v4 import board,effect,richtrace,learn
 
 def app_features(g):
     h=len(g);w=len(g[0]) if h else 0;nz={(r,c) for r,row in enumerate(g) for c,v in enumerate(row) if str(v) not in ("0","0.0")}
