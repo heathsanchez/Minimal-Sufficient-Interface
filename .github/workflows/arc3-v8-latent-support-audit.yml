@@ -1,0 +1,39 @@
+name: ARC3 V8 Latent Support Audit
+on:
+  push:
+    branches: [arc3-latent-support-audit-v8]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  v8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Fetch pinned replay corpus
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+
+      - name: Audit support-preserving corrections
+        run: |
+          mkdir -p out
+          PYTHONPATH=experiments python experiments/arc3_latent_support_audit_v8.py \
+            --events-dir /tmp/duck/example-run/artifacts \
+            --game-prefix ka59 \
+            --target-level 1 \
+            --output out/arc3-latent-support-audit-v8.json
+          test -s out/arc3-latent-support-audit-v8.json
+          cat out/arc3-latent-support-audit-v8.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-v8-latent-support-audit
+          path: out/
+          if-no-files-found: error
