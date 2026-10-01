@@ -47,9 +47,12 @@ def train(rows,target,keyfn,outix):
     return {k:next(iter(v)) for k,v in s.items() if len(v)==1}
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--events-dir",type=Path,required=True);ap.add_argument("--output",type=Path,required=True);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument("--events-dir",type=Path,required=True);ap.add_argument("--output",type=Path,required=True);ap.add_argument("--game-prefix",default="");a=ap.parse_args()
     games=defaultdict(list)
-    for p in sorted(a.events_dir.glob("*_events.jsonl")):games[p.name.split("_p",1)[0]].append(traced(p))
+    for p in sorted(a.events_dir.glob("*_events.jsonl")):
+        game=p.name.split("_p",1)[0]
+        if a.game_prefix and not game.startswith(a.game_prefix): continue
+        games[game].append(traced(p))
     candidates=("prev_action","prev_effect","same_action_run","since_change","since_reset")
     totals={q:dict(cells=0,known=0,wrong=0,folds=[]) for q in candidates}
     for game,trs in sorted(games.items()):
