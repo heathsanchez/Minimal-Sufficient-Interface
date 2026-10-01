@@ -1,0 +1,40 @@
+name: ARC3 V11 External Selector Gate
+on:
+  push:
+    branches: [arc3-causal-role-rebinding-v1]
+    paths:
+      - experiments/arc3_selector_external_v11.py
+      - .github/workflows/arc3-v11-external-selector.yml
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  v11:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Fetch independent pinned ka59 corpus
+        run: |
+          git clone --quiet --filter=blob:none --no-checkout https://github.com/canivel/kaggle.git /tmp/canivel
+          git -C /tmp/canivel sparse-checkout init --cone
+          git -C /tmp/canivel sparse-checkout set \
+            arc-prize-2026/runs/a22_compaction_v1 \
+            arc-prize-2026/runs/a22_v2_seed1 \
+            arc-prize-2026/runs/tmp_pullback_duckgate_v1post \
+            arc-prize-2026/runs/tmp_pullback_gate_eval_s2v3
+          git -C /tmp/canivel checkout --quiet c0c613391082a5209053ed108cfc2657dd7f3807
+      - name: Prospective frozen selector test
+        run: |
+          mkdir -p out
+          python experiments/arc3_selector_external_v11.py \
+            --runs-root /tmp/canivel/arc-prize-2026/runs \
+            --output out/arc3-selector-external-v11.json
+          test -s out/arc3-selector-external-v11.json
+          cat out/arc3-selector-external-v11.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-v11-external-selector
+          path: out/
+          if-no-files-found: error
