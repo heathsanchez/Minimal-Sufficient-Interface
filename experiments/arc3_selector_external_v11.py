@@ -7,7 +7,7 @@ Frozen before touching the external outcomes:
 Authority surface is independent public ka59-38d34dbb traces in canivel/kaggle,
 pinned by the workflow.  No candidate tournament is allowed here.
 
-The gate asks a narrower causal question than V4-V10:
+The gate asks a narrower causal question than V4-V10 (pre-registered external test):
 does adding that frozen selector coordinate make repeated (full frame, UP)
 transitions more deterministic on genuinely independent streams?
 """
