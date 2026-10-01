@@ -24,11 +24,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--events-dir", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--game-prefix", default="")
     a = ap.parse_args()
 
     games = defaultdict(list)
     for p in sorted(a.events_dir.glob("*_events.jsonl")):
-        games[p.name.split("_p", 1)[0]].append(traced(p))
+        game = p.name.split("_p", 1)[0]
+        if a.game_prefix and not game.startswith(a.game_prefix):
+            continue
+        games[game].append(traced(p))
 
     second_coordinates = (
         "prev_action",
