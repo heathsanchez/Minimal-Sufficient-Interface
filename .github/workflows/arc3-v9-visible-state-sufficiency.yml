@@ -1,0 +1,39 @@
+name: ARC3 V9 Visible State Sufficiency
+on:
+  push:
+    branches: [arc3-visible-state-sufficiency-v9]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  v9:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Fetch pinned replay corpus
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+
+      - name: Audit visible-state sufficiency
+        run: |
+          mkdir -p out
+          PYTHONPATH=experiments python experiments/arc3_visible_state_sufficiency_v9.py \
+            --events-dir /tmp/duck/example-run/artifacts \
+            --game-prefix ka59 \
+            --target-level 1 \
+            --output out/arc3-visible-state-sufficiency-v9.json
+          test -s out/arc3-visible-state-sufficiency-v9.json
+          cat out/arc3-visible-state-sufficiency-v9.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-v9-visible-state-sufficiency
+          path: out/
+          if-no-files-found: error
