@@ -1,0 +1,37 @@
+name: ARC3 V7 Latent Pair Gate
+on:
+  push:
+    branches: [arc3-latent-control-pair-v7]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  v7:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - name: Fetch pinned replay corpus
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+
+      - name: Tournament V6-earned latent pairs
+        run: |
+          mkdir -p out
+          PYTHONPATH=experiments python experiments/arc3_latent_control_pair_tournament_v7.py \
+            --events-dir /tmp/duck/example-run/artifacts \
+            --output out/arc3-latent-control-pair-tournament-v7.json
+          test -s out/arc3-latent-control-pair-tournament-v7.json
+          cat out/arc3-latent-control-pair-tournament-v7.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-v7-latent-pair
+          path: out/
+          if-no-files-found: error
