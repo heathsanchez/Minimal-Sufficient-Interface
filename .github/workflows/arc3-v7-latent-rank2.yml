@@ -22,11 +22,12 @@ jobs:
         run: |
           git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
           git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
-      - name: Tournament one earned rank-2 latent extension at a time
+      - name: Tournament one earned rank-2 latent extension at a time on exact residual
         run: |
           mkdir -p out
           PYTHONPATH=experiments python experiments/arc3_latent_control_rank2_v7.py \
             --events-dir /tmp/duck/example-run/artifacts \
+            --game-prefix ka59 \
             --output out/arc3-latent-control-rank2-v7.json
           test -s out/arc3-latent-control-rank2-v7.json
           cat out/arc3-latent-control-rank2-v7.json
