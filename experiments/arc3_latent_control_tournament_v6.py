@@ -58,22 +58,35 @@ def main():
     for game,trs in sorted(games.items()):
         cal=[tr for i,tr in enumerate(trs) if i%2==0];ev=[tr for i,tr in enumerate(trs) if i%2==1]
         for target in sorted({r[0] for tr in trs for r in tr if r[0]>0}):
-            coarse=learn(cal,target,lambda r:r[1],4)
-            noop_bad=set()
+            coarse=train(cal,target,lambda r:r[1],4)
+            noop_bad=set();effect_bad=set()
             for tr in cal:
                 for row in tr:
                     lev,c,_,_,y,_,ctrl=row
-                    if lev==target and c in coarse and coarse[c]!=y and (y[0]=="same" or coarse[c][0]=="same"):noop_bad.add(c)
+                    if lev!=target or c not in coarse or coarse[c]==y:continue
+                    if y[0]=="same" or coarse[c][0]=="same":
+                        noop_bad.add(c)
+                    else:
+                        effect_bad.add(c)
+            # Preserve V4 exactly: changed->changed conflicts use the local
+            # fine-role motion/effect quotient. Only no-op conflicts may use
+            # one candidate latent coordinate.
+            me=train(cal,target,lambda r:r[2],5)
             for q in candidates:
                 m=train(cal,target,lambda r:(r[1],r[6][q]),4)
                 k=w=n=0
                 for tr in ev:
                     for row in tr:
-                        lev,c,_,_,y,_,ctrl=row
+                        lev,c,f,_,y,e,ctrl=row
                         if lev!=target:continue
                         n+=1
-                        pred=m.get((c,ctrl[q])) if c in noop_bad else coarse.get(c)
-                        if pred is not None:k+=1;w+=pred!=y
+                        if c in effect_bad:
+                            pred=me.get(f);actual=e
+                        elif c in noop_bad:
+                            pred=m.get((c,ctrl[q]));actual=y
+                        else:
+                            pred=coarse.get(c);actual=y
+                        if pred is not None:k+=1;w+=pred!=actual
                 t=totals[q];t["cells"]+=n;t["known"]+=k;t["wrong"]+=w
                 if n:t["folds"].append(dict(game=game,target_level=target,cells=n,known=k,wrong=w,coverage=k/n,refined_roles=len(noop_bad)))
     for q,t in totals.items():t["coverage"]=t["known"]/t["cells"] if t["cells"] else 0
