@@ -25,6 +25,7 @@ jobs:
           mkdir -p out
           PYTHONPATH=experiments python experiments/arc3_latent_control_pair_tournament_v7.py \
             --events-dir /tmp/duck/example-run/artifacts \
+            --game-prefix ka59 \
             --output out/arc3-latent-control-pair-tournament-v7.json
           test -s out/arc3-latent-control-pair-tournament-v7.json
           cat out/arc3-latent-control-pair-tournament-v7.json
