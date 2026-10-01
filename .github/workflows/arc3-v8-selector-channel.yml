@@ -1,0 +1,35 @@
+name: ARC3 V8 Selector Channel Diagnostic
+on:
+  push:
+    branches: [arc3-causal-role-rebinding-v1]
+    paths:
+      - experiments/arc3_selector_channel_diagnostic_v8.py
+      - .github/workflows/arc3-v8-selector-channel.yml
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  v8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Fetch pinned replay corpus
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+      - name: Bind erased selector channel
+        run: |
+          mkdir -p out
+          python experiments/arc3_selector_channel_diagnostic_v8.py \
+            --events-dir /tmp/duck/example-run/artifacts \
+            --game-prefix ka59 \
+            --output out/arc3-selector-channel-diagnostic-v8.json
+          test -s out/arc3-selector-channel-diagnostic-v8.json
+          cat out/arc3-selector-channel-diagnostic-v8.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-v8-selector-channel
+          path: out/
+          if-no-files-found: error
