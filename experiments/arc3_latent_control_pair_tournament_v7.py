@@ -187,7 +187,7 @@ def main():
             else "EXACT_RESIDUAL"
         ),
         epistemic_scope="CANDIDATE_DIAGNOSTIC_ON_ALREADY_OBSERVED_V6_SPLIT",
-        promotion_requires_fresh_prospective_holdout=True,
+        promotion_requires_fresh_prospective_holdout=True,\n        game_prefix=a.game_prefix,
         boundary=(
             "V4 effect branch frozen exactly. V6-earned same_action_run is fixed; "
             "one additional scalar at a time only on calibration-earned no-op "
