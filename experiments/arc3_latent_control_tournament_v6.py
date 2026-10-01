@@ -94,6 +94,7 @@ def main():
     best=ranked[0]
     out=dict(schema="msi.arc3-latent-control-tournament-v6",candidates=totals,ranking=ranked,best=best,
              status="ZERO_ERROR_CANDIDATE" if totals[best]["known"] and totals[best]["wrong"]==0 else "EXACT_RESIDUAL",
+             game_prefix=a.game_prefix,
              boundary="V4 frozen. One latent coordinate at a time, only on calibration-earned no-op collisions; disjoint evaluation; no bundled history vector.")
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n");print(json.dumps(out,sort_keys=True))
 if __name__=="__main__":main()
