@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse,json
 from collections import defaultdict
 from pathlib import Path
-from arc3_typed_local_refinement_v4 import board,richtrace,learn
+from arc3_typed_local_refinement_v4 import board,richtrace
 
 def traced(p):
     base_rows=richtrace(p);out=[];prev=None;i=0;prev_action=0;prev_changed=0;run=0;since_change=0;since_reset=0
@@ -95,6 +95,6 @@ def main():
     out=dict(schema="msi.arc3-latent-control-tournament-v6",candidates=totals,ranking=ranked,best=best,
              status="ZERO_ERROR_CANDIDATE" if totals[best]["known"] and totals[best]["wrong"]==0 else "EXACT_RESIDUAL",
              game_prefix=a.game_prefix,
-             boundary="V4 frozen. One latent coordinate at a time, only on calibration-earned no-op collisions; disjoint evaluation; no bundled history vector.")
+             boundary="V4 effect branch frozen exactly. One latent coordinate at a time only on calibration-earned no-op collisions; disjoint evaluation; no bundled history vector.")
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n");print(json.dumps(out,sort_keys=True))
 if __name__=="__main__":main()
