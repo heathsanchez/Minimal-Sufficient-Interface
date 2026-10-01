@@ -1,0 +1,36 @@
+name: ARC3 V6 Latent Control Gate
+on:
+  push:
+    branches: [arc3-causal-role-rebinding-v1]
+    paths:
+      - experiments/arc3_latent_control_tournament_v6.py
+      - experiments/arc3_typed_local_refinement_v4.py
+      - experiments/arc3_prospective_role_refinement_v3.py
+      - .github/workflows/arc3-v6-latent-control.yml
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  v6:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Fetch pinned replay corpus
+        run: |
+          git clone --quiet https://github.com/Tufalabs/duck-harness.git /tmp/duck
+          git -C /tmp/duck checkout --quiet 7652836056c59e044f093e3c13ed7438c814169e
+      - name: Tournament one latent coordinate at a time
+        run: |
+          mkdir -p out
+          PYTHONPATH=experiments python experiments/arc3_latent_control_tournament_v6.py \
+            --events-dir /tmp/duck/example-run/artifacts \
+            --output out/arc3-latent-control-tournament-v6.json
+          test -s out/arc3-latent-control-tournament-v6.json
+          cat out/arc3-latent-control-tournament-v6.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc3-v6-latent-control
+          path: out/
+          if-no-files-found: error
