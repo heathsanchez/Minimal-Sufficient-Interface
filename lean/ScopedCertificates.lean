@@ -67,7 +67,7 @@ theorem reaches_valid (check : Record → Prop) (depends : Record → Record →
     {r p : Record} (path : Reaches depends r p) :
     Valid check depends r → Valid check depends p := by
   intro hv
-  induction path generalizing hv with
+  induction path with
   | direct hp =>
     exact valid_dependency check depends hv hp
   | next hp tail ih =>
@@ -118,35 +118,35 @@ theorem err_open_disjoint {X : Type v}
   exact hopen.2.1 herr.2
 
 /-- A scope declares admitted continuations and a monotone extension contract. -/
-structure ScopeAdmission (Σ : Type v) (M : Type w) where
-  extends : Σ → Σ → Prop
-  allows : Σ → M → Prop
+structure ScopeAdmission (Scope : Type v) (M : Type w) where
+  extends : Scope → Scope → Prop
+  allows : Scope → M → Prop
   monotone : ∀ {σ τ}, extends σ τ → ∀ m, allows σ m → allows τ m
 
-variable {Σ : Type v} {M : Type w} {X : Type z} {O : Type u}
+variable {Scope : Type v} {M : Type w} {X : Type z} {O : Type u}
 
 /-- A merge certificate establishes agreement for all futures in its scope. -/
-def MergeAt (S : ScopeAdmission Σ M) (act : M → X → X) (obs : X → O)
-    (σ : Σ) (x y : X) : Prop :=
+def MergeAt (S : ScopeAdmission Scope M) (act : M → X → X) (obs : X → O)
+    (σ : Scope) (x y : X) : Prop :=
   ∀ m, S.allows σ m → obs (act m x) = obs (act m y)
 
 /-- A separator identifies an admitted future with different observations. -/
-def SeparateAt (S : ScopeAdmission Σ M) (act : M → X → X) (obs : X → O)
-    (σ : Σ) (x y : X) : Prop :=
+def SeparateAt (S : ScopeAdmission Scope M) (act : M → X → X) (obs : X → O)
+    (σ : Scope) (x y : X) : Prop :=
   ∃ m, S.allows σ m ∧ obs (act m x) ≠ obs (act m y)
 
 /-- Larger-scope merge evidence is reusable at a smaller scope. -/
-theorem merge_restrict (S : ScopeAdmission Σ M)
+theorem merge_restrict (S : ScopeAdmission Scope M)
     (act : M → X → X) (obs : X → O)
-    {σ τ : Σ} (hExt : S.extends σ τ) {x y : X}
+    {σ τ : Scope} (hExt : S.extends σ τ) {x y : X}
     (h : MergeAt S act obs τ x y) : MergeAt S act obs σ x y := by
   intro m hm
   exact h m (S.monotone hExt m hm)
 
 /-- A witnessed separator remains a separator at every larger scope. -/
-theorem separator_extend (S : ScopeAdmission Σ M)
+theorem separator_extend (S : ScopeAdmission Scope M)
     (act : M → X → X) (obs : X → O)
-    {σ τ : Σ} (hExt : S.extends σ τ) {x y : X}
+    {σ τ : Scope} (hExt : S.extends σ τ) {x y : X}
     (h : SeparateAt S act obs σ x y) : SeparateAt S act obs τ x y := by
   rcases h with ⟨m, hm, hneq⟩
   exact ⟨m, S.monotone hExt m hm, hneq⟩
