@@ -48,7 +48,11 @@ theorem refS_compatible (S : Stage C) (E : Relation C A) :
     Compatible C A D d (RefS C A D d S E) := by
   intro X x y h
   have hId := h.2 X (C.id X) (S.id_allow X)
-  simpa only [A.map_id] using hId
+  calc
+    d X x = d X (A.map (C.id X) x) :=
+      congrArg (d X) (A.map_id x).symm
+    _ = d X (A.map (C.id X) y) := hId
+    _ = d X y := congrArg (d X) (A.map_id y)
 
 /-- E stage-invariant implies its canonical refinement is stage-invariant. -/
 theorem refS_invariant (S : Stage C) (E : Relation C A)
@@ -58,7 +62,13 @@ theorem refS_invariant (S : Stage C) (E : Relation C A)
   refine ⟨hInv f hf x y hxy.1, ?_⟩
   intro Z g hg
   have h := hxy.2 Z (C.comp g f) (S.comp_allow g f hg hf)
-  simpa only [A.map_comp] using h
+  calc
+    d Z (A.map g (A.map f x)) =
+        d Z (A.map (C.comp g f) x) :=
+          congrArg (d Z) (A.map_comp g f x).symm
+    _ = d Z (A.map (C.comp g f) y) := h
+    _ = d Z (A.map g (A.map f y)) :=
+          congrArg (d Z) (A.map_comp g f y)
 
 /-- The canonical refinement is the greatest admissible-action-invariant
     subrelation of E that respects the newly protected local observation. -/
