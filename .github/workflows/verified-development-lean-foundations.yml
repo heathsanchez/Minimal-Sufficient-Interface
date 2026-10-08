@@ -1,23 +1,22 @@
-name: R7.1 Daniel Lean-first proofs
-
+name: Verified Development Lean Foundations
 on:
   push:
-    branches: [r7-1-daniel-lean-first-v1]
+    branches: [verified-development-lean-foundations-v1]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  check:
+  lean-foundations:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install pinned Lean
+      - name: Install pinned Lean toolchain
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Kernel-check all claims including worked example
+      - name: Check foundational and worked-example Lean sources
         env:
           LEAN_PATH: lean
         run: |
@@ -25,8 +24,8 @@ jobs:
           lean --version
           lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
           lean -o lean/ScopedCertificates.olean lean/ScopedCertificates.lean
-          lean -o lean/DanielCore.olean lean/DanielCore.lean
-          lean lean/DanielExample.lean
+          lean -o lean/VerifiedDevelopmentCore.olean lean/VerifiedDevelopmentCore.lean
+          lean lean/VerifiedDevelopmentExample.lean
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
           lean lean/CanonicalRefinement.lean

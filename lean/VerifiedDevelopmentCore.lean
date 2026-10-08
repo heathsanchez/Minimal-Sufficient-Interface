@@ -8,9 +8,9 @@ The typed/categorical theorems remain in R7.
 No axioms, sorry, Mathlib, games, or automata.
 -/
 
-universe u v w z q
+universe u v w z q t
 
-namespace DanielCore
+namespace VerifiedDevelopmentCore
 
 open ScopedCertificates
 
@@ -62,13 +62,14 @@ theorem behEqAt_greatest (A : ActionMonoid M X) (S : Stage A)
   exact hObs _ _ (hInv m hm x y hxy)
 
 /-- Canonical repair: keep E, but protect a new observation after each future. -/
-def Refine (A : ActionMonoid M X) (S : Stage A)
-    (E : X → X → Prop) (d : X → O) (x y : X) : Prop :=
+def Refine {D : Type t} (A : ActionMonoid M X) (S : Stage A)
+    (E : X → X → Prop) (d : X → D) (x y : X) : Prop :=
   E x y ∧ ∀ m, S.allow m → d (A.act m x) = d (A.act m y)
 
 /-- Every invariant relation preserving d is included in the canonical repair. -/
-theorem refine_greatest (A : ActionMonoid M X) (S : Stage A)
-    (E R : X → X → Prop) (d : X → O)
+theorem refine_greatest {D : Type t}
+    (A : ActionMonoid M X) (S : Stage A)
+    (E R : X → X → Prop) (d : X → D)
     (hInv : InvariantAt A S R)
     (hSub : ∀ x y, R x y → E x y)
     (hD : ∀ x y, R x y → d x = d y) :
@@ -79,8 +80,9 @@ theorem refine_greatest (A : ActionMonoid M X) (S : Stage A)
   exact hD _ _ (hInv m hm x y hxy)
 
 /-- A witnessed distinction necessarily splits any class that contained the pair. -/
-theorem separator_forces_split (A : ActionMonoid M X) (S : Stage A)
-    (E : X → X → Prop) (d : X → O)
+theorem separator_forces_split {D : Type t}
+    (A : ActionMonoid M X) (S : Stage A)
+    (E : X → X → Prop) (d : X → D)
     {x y : X} (hOld : E x y)
     (m : M) (hm : S.allow m)
     (hsep : d (A.act m x) ≠ d (A.act m y)) :
@@ -113,14 +115,14 @@ def CertifiedMerge {Record : Type q} {Scope : Type z}
     (A : ActionMonoid M X) (B : CertBank A Record Scope O)
     (σ : Scope) (x y : X) : Prop :=
   ∃ r, Valid B.check B.depends r ∧
-    B.claim r = .merge x y ∧ B.admitted.extendsScope σ (B.scope r)
+    B.claim r = .merge x y ∧ B.admitted.scopeLE σ (B.scope r)
 
 /-- A separator is warranted only by a valid record available at this scope. -/
 def CertifiedSeparator {Record : Type q} {Scope : Type z}
     (A : ActionMonoid M X) (B : CertBank A Record Scope O)
     (σ : Scope) (x y : X) : Prop :=
   ∃ r, Valid B.check B.depends r ∧
-    B.claim r = .separate x y ∧ B.admitted.extendsScope (B.scope r) σ
+    B.claim r = .separate x y ∧ B.admitted.scopeLE (B.scope r) σ
 
 /-- Recover the meaning of a certificate, using its DECLARED soundness premise. -/
 theorem certifiedMerge_sound {Record : Type q} {Scope : Type z}
@@ -186,4 +188,4 @@ theorem dependent_record_retracted {Record : Type q} {Scope : Type z}
     ¬ Valid (revoke B.check revoked) B.depends r :=
   revoke_recloses B.check B.depends revoked r path
 
-end DanielCore
+end VerifiedDevelopmentCore

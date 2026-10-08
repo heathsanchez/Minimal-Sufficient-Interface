@@ -119,9 +119,9 @@ theorem err_open_disjoint {X : Type v}
 
 /-- A scope declares admitted continuations and a monotone extension contract. -/
 structure ScopeAdmission (Scope : Type v) (M : Type w) where
-  extendsScope : Scope → Scope → Prop
+  scopeLE : Scope → Scope → Prop
   allows : Scope → M → Prop
-  monotone : ∀ {σ τ}, extendsScope σ τ → ∀ m, allows σ m → allows τ m
+  monotone : ∀ {σ τ}, scopeLE σ τ → ∀ m, allows σ m → allows τ m
 
 variable {Scope : Type v} {M : Type w} {X : Type z} {O : Type u}
 
@@ -138,7 +138,7 @@ def SeparateAt (S : ScopeAdmission Scope M) (act : M → X → X) (obs : X → O
 /-- Larger-scope merge evidence is reusable at a smaller scope. -/
 theorem merge_restrict (S : ScopeAdmission Scope M)
     (act : M → X → X) (obs : X → O)
-    {σ τ : Scope} (hExt : S.extendsScope σ τ) {x y : X}
+    {σ τ : Scope} (hExt : S.scopeLE σ τ) {x y : X}
     (h : MergeAt S act obs τ x y) : MergeAt S act obs σ x y := by
   intro m hm
   exact h m (S.monotone hExt m hm)
@@ -146,7 +146,7 @@ theorem merge_restrict (S : ScopeAdmission Scope M)
 /-- A witnessed separator remains a separator at every larger scope. -/
 theorem separator_extend (S : ScopeAdmission Scope M)
     (act : M → X → X) (obs : X → O)
-    {σ τ : Scope} (hExt : S.extendsScope σ τ) {x y : X}
+    {σ τ : Scope} (hExt : S.scopeLE σ τ) {x y : X}
     (h : SeparateAt S act obs σ x y) : SeparateAt S act obs τ x y := by
   rcases h with ⟨m, hm, hneq⟩
   exact ⟨m, S.monotone hExt m hm, hneq⟩
