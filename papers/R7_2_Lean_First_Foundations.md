@@ -153,6 +153,15 @@ structure CertBank (A : ActionMonoid M X)
 
 **`checker_sound` is a premise of the structure.** Merely accepting a record does not magically prove its content: the instance must justify that checker acceptance implies the stated semantics. The `ScopeAdmission` relation records which actions belong to each scope and how admission grows. Its field `scopeLE σ τ` means **scope σ is included in scope τ** (σ ≤ τ), not that σ extends τ. This makes the variance of certificate authority unambiguous.
 
+```lean
+structure ScopeAdmission (Scope : Type v) (M : Type w) where
+  scopeLE : Scope → Scope → Prop
+  allows : Scope → M → Prop
+  monotone : ∀ {σ τ}, scopeLE σ τ →
+    ∀ m, allows σ m → allows τ m
+```
+
+
 A checked record is not sufficient if it relies on an unsupported dependency. The existing `ScopedCertificates.lean` uses the inductively generated predicate:
 
 ```lean
@@ -308,7 +317,7 @@ This second example exercises the action law, actual continuation separation and
 
 ## 7. Verification, boundaries, and next discussion
 
-The exact R7.2 source is in the [verified-development foundation branch](https://github.com/heathsanchez/Minimal-Sufficient-Interface/tree/verified-development-lean-foundations-v1). It reuses the earlier pinned files `BehaviouralCongruence.lean`, `ScopedCertificates.lean`, `TypedBehaviouralCongruence.lean`, `DevelopmentalCategory.lean`, and `CanonicalRefinement.lean`. The new files are [`VerifiedDevelopmentCore.lean`](https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/verified-development-lean-foundations-v1/lean/VerifiedDevelopmentCore.lean) and [`VerifiedDevelopmentExample.lean`](https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/verified-development-lean-foundations-v1/lean/VerifiedDevelopmentExample.lean). The [dedicated Lean 4.24.0 workflow](https://github.com/heathsanchez/Minimal-Sufficient-Interface/actions/workflows/verified-development-lean-foundations.yml) compiles the elementary core, both examples, and the previously checked typed extension. The predecessor [R7.1 exact-head qualification](https://github.com/heathsanchez/Minimal-Sufficient-Interface/actions/runs/37845384769) passed at `210b31e8cc8403bd005f9cf11fe11c01c1bff29b`. The R7.2 source is admitted only after the corresponding **new exact-head** workflow run is successful. This section records the run and commit after qualification.
+The exact R7.2 source is in the [verified-development foundation branch](https://github.com/heathsanchez/Minimal-Sufficient-Interface/tree/verified-development-lean-foundations-v1). It reuses the earlier pinned files `BehaviouralCongruence.lean`, `ScopedCertificates.lean`, `TypedBehaviouralCongruence.lean`, `DevelopmentalCategory.lean`, and `CanonicalRefinement.lean`. The new files are [`VerifiedDevelopmentCore.lean`](https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/verified-development-lean-foundations-v1/lean/VerifiedDevelopmentCore.lean) and [`VerifiedDevelopmentExample.lean`](https://github.com/heathsanchez/Minimal-Sufficient-Interface/blob/verified-development-lean-foundations-v1/lean/VerifiedDevelopmentExample.lean). **Pinned new Lean authority:** [source commit `aa42b38fd2ec395370ce31ce1c1cc051f2b61373`](https://github.com/heathsanchez/Minimal-Sufficient-Interface/commit/aa42b38fd2ec395370ce31ce1c1cc051f2b61373) and [successful verification run 37846112492](https://github.com/heathsanchez/Minimal-Sufficient-Interface/actions/runs/37846112492), using Lean **4.24.0**. The [dedicated verified-development workflow](https://github.com/heathsanchez/Minimal-Sufficient-Interface/actions/workflows/verified-development-lean-foundations.yml) compiles the elementary core, both examples, the scoped-certificate code and the previously checked typed extension. The predecessor [R7.1 exact-head qualification](https://github.com/heathsanchez/Minimal-Sufficient-Interface/actions/runs/37845384769) passed at `210b31e8cc8403bd005f9cf11fe11c01c1bff29b`. The current commit changes only manuscript wording; verify the new head as well before distributing this revision.
 
 What is established **within these assumptions**: deterministic action semantics; a greatest observationally compatible stage-invariant relation; certified separation and its scope-direction rules; dependency reclosure; and the theorem connecting certified residuals to refinement. The complete executable finite example also checks.
 
