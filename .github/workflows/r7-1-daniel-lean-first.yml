@@ -1,0 +1,32 @@
+name: R7.1 Daniel Lean-first proofs
+
+on:
+  push:
+    branches: [r7-1-daniel-lean-first-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check all claims including worked example
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          lean --version
+          lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
+          lean -o lean/ScopedCertificates.olean lean/ScopedCertificates.lean
+          lean -o lean/DanielCore.olean lean/DanielCore.lean
+          lean lean/DanielExample.lean
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean lean/CanonicalRefinement.lean
