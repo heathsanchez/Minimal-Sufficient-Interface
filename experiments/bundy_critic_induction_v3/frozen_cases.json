@@ -1,0 +1,76 @@
+{
+  "source_author": "David Thrane Christiansen, Functional Programming in Lean; adapted functions",
+  "source_repo": "leanprover/fp-lean",
+  "source_sha": "0abeea545d560a324e2561f7210fbd6ed154fa02",
+  "pin_lean_toolchain": "leanprover/lean4:v4.24.0",
+  "frozen_before_generator": true,
+  "development": [
+    {
+      "name": "reverse",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "List Nat",
+      "operation": "append",
+      "plain": "revPlain",
+      "accumulator": "revAccum",
+      "samples": "lists_0_3"
+    }
+  ],
+  "heldout": [
+    {
+      "name": "sum",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "Nat",
+      "operation": "add",
+      "plain": "sumPlain",
+      "accumulator": "sumAccum",
+      "samples": "naturals_0_3"
+    },
+    {
+      "name": "product",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "Nat",
+      "operation": "mul",
+      "plain": "prodPlain",
+      "accumulator": "prodAccum",
+      "samples": "naturals_0_3"
+    },
+    {
+      "name": "reverse_map",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "List Nat",
+      "operation": "append",
+      "plain": "mapRevPlain",
+      "accumulator": "mapRevAccum",
+      "parameters": [
+        "f : Nat → Nat"
+      ],
+      "samples": "lists_0_3"
+    },
+    {
+      "name": "words",
+      "recursor": "List",
+      "element": "List Nat",
+      "carrier": "List Nat",
+      "operation": "append",
+      "plain": "wordsPlain",
+      "accumulator": "wordsAccum",
+      "samples": "nested_lists_0_3"
+    }
+  ],
+  "negative": [
+    {
+      "name": "reverse_bad_accumulator",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "List Nat",
+      "operation": "append",
+      "plain": "badPlain",
+      "accumulator": "badAccum",
+      "samples": "lists_0_3"
+    }
+  ]
+}
