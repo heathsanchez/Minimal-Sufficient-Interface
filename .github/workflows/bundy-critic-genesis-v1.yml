@@ -1,0 +1,74 @@
+name: Bundy proof-critic genesis falsifier
+on:
+  push:
+    branches: [bundy-critic-genesis-falsifier-v1]
+    paths:
+      - 'experiments/bundy_critic_genesis_v1/**'
+      - 'lean/LemmaSynthesis/Target14ContextBoundary.lean'
+      - '.github/workflows/bundy-critic-genesis-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-critic-verification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-exact finite critic synthesis and protected-future replay
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/bundy_critic_genesis_v1/run.py experiments/bundy_critic_genesis_v1/heldout.py
+          python -m experiments.bundy_critic_genesis_v1.run > critic-genesis-result.json
+          python - <<'PY'
+          import json
+          e=json.load(open('critic-genesis-result.json'))
+          assert all(e['gates'].values()), e['gates']
+          assert e['selected_program']['opcode']=='repeat'
+          assert e['new_protected']['positive_solved']==8
+          assert e['old_protected']['positive_solved']==1
+          assert e['claims']['strict_gain_over_strong_stateless']=='REJECTED_ON_THIS_CASE'
+          print('Finite controls qualified; strong stateless tie retained.')
+          PY
+      - name: Install pinned Lean 4.24 using elan
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel check context counterexample and generated proof terms
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.24.0"
+          lean --version
+          lean -o lean/ConstitutionalFailedFactorization.olean lean/ConstitutionalFailedFactorization.lean
+          lean -o lean/LemmaSynthesis/Target13Result.olean lean/LemmaSynthesis/Target13Result.lean
+          lean lean/LemmaSynthesis/Target14ContextBoundary.lean
+          lean experiments/bundy_critic_genesis_v1/results/GeneratedProofs.lean
+      - name: Verify negative classifications after Lean gate
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('experiments/bundy_critic_genesis_v1/results/evidence.json')
+          x=json.loads(p.read_text())
+          assert x['claims']['general_autonomous_critic_invention']=='UNKNOWN'
+          assert x['claims']['strict_gain_over_exact_executable_memory']=='REJECTED_ON_THIS_CASE'
+          assert x['claims']['new_primitive_or_meta_interpreter_semantics'].startswith('REJECTED_')
+          print('Boundaries: no unrestricted critic invention or unique memory gain.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundy-critic-genesis-falsifier
+          path: |
+            critic-genesis-result.json
+            experiments/bundy_critic_genesis_v1/results/evidence.json
+            experiments/bundy_critic_genesis_v1/results/GeneratedProofs.lean
+            experiments/bundy_critic_genesis_v1/results/pre_holdout_freeze.json
+          if-no-files-found: warn
