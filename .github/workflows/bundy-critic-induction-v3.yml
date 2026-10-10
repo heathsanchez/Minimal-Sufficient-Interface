@@ -1,0 +1,41 @@
+name: Bundy induction V3 honest residual gate
+on:
+  push:
+    branches: [bundy-critic-induction-genesis-v3]
+    paths:
+      - 'experiments/bundy_critic_induction_v3/**'
+      - '.github/workflows/bundy-critic-induction-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v3-residual:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute frozen source-bound residual gate
+        run: |
+          set -euo pipefail
+          python -m experiments.bundy_critic_induction_v3.run > v3-output.json
+          python - <<'PY'
+          import json
+          d=json.load(open('v3-output.json'))
+          assert d['status']=='UNKNOWN_CHOICE'
+          assert d['protected_proofs_attempted']==0
+          assert d['lean_proofs_generated']==0
+          assert d['protected_positive_count']==4
+          assert d['protected_negative_count']==1
+          print(json.dumps(d,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundy-v3-unknown-choice-evidence
+          path: |
+            v3-output.json
+            experiments/bundy_critic_induction_v3/results/*.json
