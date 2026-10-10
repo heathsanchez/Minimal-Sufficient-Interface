@@ -1,0 +1,14 @@
+{
+  "development": [
+    {
+      "name": "reverse",
+      "recursor": "List",
+      "element": "Nat",
+      "carrier": "List Nat",
+      "operation": "append",
+      "plain": "revPlain",
+      "accumulator": "revAccum",
+      "samples": "lists_0_3"
+    }
+  ]
+}
