@@ -1,0 +1,88 @@
+name: Bundy V2 unbounded old-critic and generated schema gate
+on:
+  push:
+    branches: [bundy-critic-structural-genesis-v2]
+    paths:
+      - 'experiments/bundy_critic_genesis_v2/**'
+      - '.github/workflows/bundy-critic-structural-genesis-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-proof-critic-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify independently precommitted heldout corpus and protocol
+        run: |
+          set -euo pipefail
+          echo 'a7ae7f4a98d782598b9fdd81e051700cbaca27d71c4000500ce3198d14bad3ff  experiments/bundy_critic_genesis_v2/heldout.py' | sha256sum -c -
+          echo 'bf840facde6e28afd4ba6534e161b5f695d86831c78688afcfbcaaa80ec7c179  experiments/bundy_critic_genesis_v2/PREREGISTRATION.md' | sha256sum -c -
+      - name: Source-exact fresh generator replay and synthetic controls
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/bundy_critic_genesis_v2/run.py experiments/bundy_critic_genesis_v2/heldout.py
+          PYTHONPATH=experiments python -m bundy_critic_genesis_v2.run > v2-result.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('experiments/bundy_critic_genesis_v2/results')
+          d=json.loads((p/'evidence.json').read_text())
+          f=json.loads((p/'pre_holdout_freeze.json').read_text())
+          assert all(d['gates'].values()), d['gates']
+          assert d['summary']['protected_positives']==8
+          assert d['summary']['old_positive_solved']==1
+          assert d['summary']['new_positive_solved']==8
+          assert d['summary']['strong_stateless_positive_solved']==8
+          assert d['summary']['protected_negatives']==3
+          assert d['systematic_extra_cases']==132
+          assert d['schema_sha256']==f['schema_sha256']
+          assert d['source_heldout_sha256']==f['frozen_heldout_source_sha256']
+          assert d['claims']['strict_gain_over_strong_stateless']=='REJECTED_ON_THIS_CASE'
+          assert d['claims']['breakthrough_autonomous_repair_language_growth']=='UNKNOWN'
+          print(json.dumps(d['summary'],indent=2))
+          PY
+      - name: Install pinned Lean via elan
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.24.0'
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Independent Lean proofs — unbounded old-language impossibility, new-schema soundness, generated proofs
+        run: |
+          set -euo pipefail
+          lean --version
+          for f in \
+            experiments/bundy_critic_genesis_v2/Target15UnboundedOldObstruction.lean \
+            experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean; do
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom)([^[:alnum:]_]|$)' "$f"; then
+              echo "Forbidden proof hole in $f" >&2
+              exit 1
+            fi
+            lean "$f"
+          done
+      - name: Deterministic replay with identical schema and proof bytes
+        run: |
+          set -euo pipefail
+          cp experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean /tmp/proofs.lean
+          cp experiments/bundy_critic_genesis_v2/results/evidence.json /tmp/evidence.json
+          PYTHONPATH=experiments python -m bundy_critic_genesis_v2.run > /tmp/v2-rerun.json
+          cmp /tmp/proofs.lean experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean
+          cmp /tmp/evidence.json experiments/bundy_critic_genesis_v2/results/evidence.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundy-v2-independently-checked-critic-schema
+          path: |
+            v2-result.json
+            experiments/bundy_critic_genesis_v2/results/*.json
+            experiments/bundy_critic_genesis_v2/results/GeneratedProofs.lean
+          if-no-files-found: warn

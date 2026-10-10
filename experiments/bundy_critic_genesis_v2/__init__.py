@@ -1,0 +1,1 @@
+"""Bounded source-driven critic schema experiment, independently checked by Lean."""
