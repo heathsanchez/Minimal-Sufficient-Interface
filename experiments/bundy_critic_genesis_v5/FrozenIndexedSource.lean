@@ -7,8 +7,11 @@ inductive Vec (α : Type) : Nat → Type where
   | cons : α → Vec α n → Vec α (n+1)
 
 def append : Vec α n → Vec α m → Vec α (n+m)
-  | .nil, ys => ys
-  | .cons x xs, ys => .cons x (append xs ys)
+  | .nil, ys => by
+      simpa using ys
+  | .cons x xs, ys => by
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        (Vec.cons x (append xs ys))
 
 def length : Vec α n → Nat
   | .nil => 0
