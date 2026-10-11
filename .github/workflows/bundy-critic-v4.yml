@@ -1,0 +1,44 @@
+name: Bundy V4 branching critic falsifier
+on:
+  push:
+    branches: [bundy-critic-induction-genesis-v4]
+    paths:
+      - 'experiments/bundy_critic_genesis_v4/**'
+      - '.github/workflows/bundy-critic-v4.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  old-grammar-and-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check frozen V3 compiler grammar against V4 branching source
+        run: |
+          set -euo pipefail
+          python experiments/bundy_critic_genesis_v4/obstruction.py
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.24.0"
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Independently check V4 tree reference theorems and negative
+        env:
+          LEAN_PATH: experiments/bundy_critic_genesis_v4
+        run: |
+          set -euo pipefail
+          lean -o experiments/bundy_critic_genesis_v4/FrozenSource.olean experiments/bundy_critic_genesis_v4/FrozenSource.lean
+          lean experiments/bundy_critic_genesis_v4/ReferenceObligations.lean
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundy-v4-grammar-and-reference
+          path: experiments/bundy_critic_genesis_v4/results/*.json
+          if-no-files-found: warn
