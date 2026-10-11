@@ -18,7 +18,10 @@ theorem rev_acc_left_false :
     ¬ (∀ acc xs : List Nat, revAccum acc xs = acc ++ revPlain xs) := by
   intro h
   have bad := h [1] [2]
-  have impossible : False := by\n    have hne : revAccum [1] [2] ≠ [1] ++ revPlain [2] := by decide\n    exact hne bad\n  exact impossible.elim
+  have impossible : False := by
+    have hne : revAccum [1] [2] ≠ [1] ++ revPlain [2] := by decide
+    exact hne bad
+  exact impossible.elim
 
 theorem rev_plain_eq_acc (xs : List Nat) :
     revPlain xs = revAccum [] xs := by
