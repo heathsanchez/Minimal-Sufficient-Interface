@@ -24,6 +24,7 @@ jobs:
           set -euo pipefail
           python experiments/bundy_critic_genesis_v4/obstruction.py
           python experiments/bundy_critic_genesis_v4/adversarial_audit.py
+          python experiments/bundy_critic_genesis_v4/template_dependency_audit.py
           python experiments/bundy_critic_genesis_v4/construct_plan.py
           python -m experiments.bundy_critic_genesis_v4.generate_tree_proofs
       - name: Install pinned Lean
