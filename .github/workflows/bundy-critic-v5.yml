@@ -1,0 +1,28 @@
+name: Bundy V5 indexed source validation
+on:
+  push:
+    branches: [bundy-critic-constructor-genesis-v5]
+    paths:
+      - 'experiments/bundy_critic_genesis_v5/**'
+      - '.github/workflows/bundy-critic-v5.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.24.0"
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check frozen indexed source without proof imports
+        run: |
+          set -euo pipefail
+          lean experiments/bundy_critic_genesis_v5/FrozenIndexedSource.lean
