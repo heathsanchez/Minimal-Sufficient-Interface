@@ -9,7 +9,7 @@ import hashlib, itertools, json, pathlib, re
 ROOT=pathlib.Path(__file__).parent
 def digest(x): return hashlib.sha256(json.dumps(x,sort_keys=True).encode()).hexdigest()
 def definition(source,name):
-    pattern=r"(?m)^def "+re.escape(name)+r"\\b[\\s\\S]*?(?=^def |^-- Protected|^-- Development|^end |\\Z)"
+    pattern=r"(?m)^def "+re.escape(name)+r"\b[\s\S]*?(?=^def |^-- Protected|^-- Development|^end |\Z)"
     m=re.search(pattern,source,re.M)
     if not m: raise ValueError("missing frozen definition "+name)
     return m.group(0)
@@ -17,11 +17,11 @@ def interpret_pair(source,plain,accum):
     p=definition(source,plain);a=definition(source,accum)
     # Exact, frozen-source-extracted structural interpreter for list cons,
     # singleton append, and accumulator cons. Reject unknown syntax.
-    if not re.search(r"\\| \\[\\] => \\[\\]",p): raise ValueError("unsupported plain base")
-    if not re.search(r"\\| \\[\\] => acc",a): raise ValueError("unsupported accumulator base")
-    if not re.search(r"\\| x :: xs => "+re.escape(plain)+r" xs \\+\\+ \\[x\\]",p):
+    if not re.search(r"\| \[\] => \[\]",p): raise ValueError("unsupported plain base")
+    if not re.search(r"\| \[\] => acc",a): raise ValueError("unsupported accumulator base")
+    if not re.search(r"\| x :: xs => "+re.escape(plain)+r" xs \+\+ \[x\]",p):
         raise ValueError("unsupported plain recursion")
-    if not re.search(r"\\| x :: xs => "+re.escape(accum)+r" \\(x :: acc\\) xs",a):
+    if not re.search(r"\| x :: xs => "+re.escape(accum)+r" \(x :: acc\) xs",a):
         raise ValueError("unsupported accumulator recursion")
     def ordinary(xs):
         if not xs:return ()
@@ -61,7 +61,7 @@ def run():
       "selection":selection}
     receipt["digest"]=digest(receipt)
     out=ROOT/"results";out.mkdir(exist_ok=True)
-    (out/"pre_holdout_freeze.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\\n")
+    (out/"pre_holdout_freeze.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
     held=json.loads((ROOT/"protected_cases.json").read_text())
     evidence={"status":selection["status"],"orientation":selection["orientation"],
       "frozen_receipt":receipt["digest"],
@@ -73,6 +73,6 @@ def run():
                 "automatic_induction_critic":"UNKNOWN",
                 "protected_transfer":"UNKNOWN"},
       "next_required":"Source-derived general invariant AST and Lean proof-producing compiler"}
-    (out/"evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\\n")
+    (out/"evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     print(json.dumps(evidence,sort_keys=True))
 if __name__=="__main__":run()
