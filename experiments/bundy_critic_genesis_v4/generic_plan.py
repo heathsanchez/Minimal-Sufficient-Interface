@@ -41,7 +41,7 @@ def main():
         body=(f"theorem generated_{name} (t : Tree Nat) : {goal} := by\n"
               "  induction t with\n"
               f"  | leaf x => simp [{unfolding}]\n"
-              f"  | node l r ihl ihr => simp [{unfolding}, ihl, ihr, List.reverse_append, Nat.max_comm]; omega\n")
+              f"  | node l r ihl ihr => simp [{unfolding}, ihl, ihr, List.reverse_append, Nat.max_comm]; all_goals omega\n")
         out.append(body)
     out.append("end BundyCriticV4")
     result=ROOT/"results";result.mkdir(exist_ok=True)
