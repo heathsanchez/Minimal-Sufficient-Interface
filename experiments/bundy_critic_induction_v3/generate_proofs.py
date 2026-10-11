@@ -49,6 +49,7 @@ def main():
         extra_binder="(f : Nat → Nat) " if extra else ""
         extra_arg="f " if extra else ""
         theorem="generated_"+case["name"]
+        element_type=f"({element})" if " " in element else element
         body=(f"theorem {theorem} {extra_binder}(acc : {carrier}) (xs : List {element}) :\n"
               f"    {acc} {extra_arg}acc xs = {plain} {extra_arg}xs {sym} acc := by\n"
               "  induction xs generalizing acc with\n"
