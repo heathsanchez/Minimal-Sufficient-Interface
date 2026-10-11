@@ -38,6 +38,17 @@ jobs:
           assert d['claims']['automatic_induction_critic']=='UNKNOWN'
           print(json.dumps(d,indent=2))
           PY
+      - name: Generate source-validated protected induction proof plans
+        run: |
+          set -euo pipefail
+          python -m experiments.bundy_critic_induction_v3.generate_proofs > /tmp/v3-generated.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/v3-generated.json'))
+          assert d['generated_count']==4
+          assert d['negative_case_generated'] is False
+          assert d['claims']['autonomous_meta_constructor']=='UNKNOWN'
+          PY
       - name: Kernel-check calibration invariant and negative orientation
         env:
           LEAN_PATH: experiments/bundy_critic_induction_v3
@@ -47,3 +58,4 @@ jobs:
           lean -o experiments/bundy_critic_induction_v3/FrozenSource.olean experiments/bundy_critic_induction_v3/FrozenSource.lean
           lean experiments/bundy_critic_induction_v3/CalibrationObligations.lean
           lean experiments/bundy_critic_induction_v3/ProtectedReferenceObligations.lean
+          lean experiments/bundy_critic_induction_v3/results/GeneratedProtected.lean
