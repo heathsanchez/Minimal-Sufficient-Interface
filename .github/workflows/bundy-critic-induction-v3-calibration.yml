@@ -1,0 +1,32 @@
+name: Bundy induction V3 calibration Lean check
+on:
+  push:
+    branches: [bundy-critic-induction-genesis-v3]
+    paths:
+      - 'experiments/bundy_critic_induction_v3/**'
+      - '.github/workflows/bundy-critic-induction-v3-calibration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.24.0"
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check calibration invariant and negative orientation
+        env:
+          LEAN_PATH: experiments/bundy_critic_induction_v3
+        run: |
+          set -euo pipefail
+          lean --version
+          lean -o experiments/bundy_critic_induction_v3/FrozenSource.olean experiments/bundy_critic_induction_v3/FrozenSource.lean
+          lean experiments/bundy_critic_induction_v3/CalibrationObligations.lean
