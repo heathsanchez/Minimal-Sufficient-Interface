@@ -46,3 +46,4 @@ jobs:
           lean --version
           lean -o experiments/bundy_critic_induction_v3/FrozenSource.olean experiments/bundy_critic_induction_v3/FrozenSource.lean
           lean experiments/bundy_critic_induction_v3/CalibrationObligations.lean
+          lean experiments/bundy_critic_induction_v3/ProtectedReferenceObligations.lean
