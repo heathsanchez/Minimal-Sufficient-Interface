@@ -1,0 +1,27 @@
+{
+  "development": [
+    {
+      "name": "append_index",
+      "consequence": "dependent index arithmetic in vector append"
+    }
+  ],
+  "protected": [
+    {
+      "name": "map_append",
+      "consequence": "vector map distributes over indexed append"
+    },
+    {
+      "name": "length_index",
+      "consequence": "length agrees with vector index"
+    }
+  ],
+  "negative": [
+    {
+      "name": "index_mismatch",
+      "consequence": "do not equate Vec alpha n and Vec alpha m without equality witness"
+    }
+  ],
+  "old_language": "V4 generic tree induction plan with non-indexed Tree Nat binder",
+  "new_semantics": "UNKNOWN",
+  "protected_proofs_written": false
+}
