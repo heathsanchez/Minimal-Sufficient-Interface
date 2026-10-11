@@ -1,5 +1,5 @@
 import Std
-import BundyInductionV3.FrozenSource
+import FrozenSource
 
 /-! Exact candidate obligations for V3. These are checked mathematical
 consequences, not evidence that the generator autonomously discovered them. -/
@@ -18,7 +18,7 @@ theorem rev_acc_left_false :
     ¬ (∀ acc xs : List Nat, revAccum acc xs = acc ++ revPlain xs) := by
   intro h
   have bad := h [1] [2]
-  decide +kernel at bad
+  decide at bad
 
 theorem rev_plain_eq_acc (xs : List Nat) :
     revPlain xs = revAccum [] xs := by
