@@ -22,6 +22,22 @@ jobs:
           test "$(cat lean-toolchain)" = "leanprover/lean4:v4.24.0"
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-derived finite discriminator and protected freeze
+        run: |
+          set -euo pipefail
+          python -m experiments.bundy_critic_induction_v3.run > /tmp/v3-result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/v3-result.json'))
+          assert d['status']=='CANDIDATE_FINITE_DISCRIMINATOR',d
+          assert d['orientation']=='right',d
+          assert d['protected_proofs_attempted']==0
+          assert d['claims']['automatic_induction_critic']=='UNKNOWN'
+          print(json.dumps(d,indent=2))
+          PY
       - name: Kernel-check calibration invariant and negative orientation
         env:
           LEAN_PATH: experiments/bundy_critic_induction_v3
