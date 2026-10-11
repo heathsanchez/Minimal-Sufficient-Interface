@@ -1,0 +1,52 @@
+{
+  "source_type": "self-contained branching tree recursion",
+  "frozen_before_generator": true,
+  "development": [
+    {
+      "name": "mirror_count",
+      "functions": [
+        "mirror",
+        "leafCount"
+      ],
+      "consequence": "count preservation under mirror"
+    }
+  ],
+  "protected": [
+    {
+      "name": "mirror_involution",
+      "functions": [
+        "mirror"
+      ],
+      "consequence": "mirror twice returns tree"
+    },
+    {
+      "name": "mirror_leaves",
+      "functions": [
+        "mirror",
+        "leaves"
+      ],
+      "consequence": "mirror reverses leaves"
+    },
+    {
+      "name": "height_mirror",
+      "functions": [
+        "mirror",
+        "height"
+      ],
+      "consequence": "height preservation"
+    }
+  ],
+  "negative": [
+    {
+      "name": "wrong_count",
+      "functions": [
+        "wrongCount",
+        "leafCount"
+      ],
+      "consequence": "counts coincide for all trees",
+      "expected": false
+    }
+  ],
+  "prior_capability": "V3 linear-list accumulator induction",
+  "no_proofs_in_frozen_source": true
+}
