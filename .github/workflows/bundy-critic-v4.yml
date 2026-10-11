@@ -23,6 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           python experiments/bundy_critic_genesis_v4/obstruction.py
+          python experiments/bundy_critic_genesis_v4/adversarial_audit.py
       - name: Install pinned Lean
         run: |
           set -euo pipefail
