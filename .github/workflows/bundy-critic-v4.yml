@@ -25,6 +25,7 @@ jobs:
           python experiments/bundy_critic_genesis_v4/obstruction.py
           python experiments/bundy_critic_genesis_v4/adversarial_audit.py
           python experiments/bundy_critic_genesis_v4/construct_plan.py
+          python -m experiments.bundy_critic_genesis_v4.generate_tree_proofs
       - name: Install pinned Lean
         run: |
           set -euo pipefail
@@ -38,6 +39,7 @@ jobs:
           set -euo pipefail
           lean -o experiments/bundy_critic_genesis_v4/FrozenSource.olean experiments/bundy_critic_genesis_v4/FrozenSource.lean
           lean experiments/bundy_critic_genesis_v4/ReferenceObligations.lean
+          lean experiments/bundy_critic_genesis_v4/results/GeneratedTreeProofs.lean
       - uses: actions/upload-artifact@v4
         if: always()
         with:
