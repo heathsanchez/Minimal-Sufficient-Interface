@@ -24,8 +24,11 @@ def construct(source):
     if len(ctors)<2:raise ValueError("no branching constructor evidence")
     recursive=[]
     for name,signature in ctors:
-        n=len(re.findall(r"\b"+re.escape(typ)+r"\s+α\b",signature))
-        if n:recursive.append((name,n))
+        parts=re.split(r"\s+→\s+",signature)
+        if len(parts)<2 or parts[-1].strip()!=f"{typ} α":
+            raise ValueError(f"unsupported constructor result type: {name}: {signature}")
+        n=sum(part.strip()==f"{typ} α" for part in parts[:-1])
+        recursive.append((name,n))
     if not recursive:raise ValueError("no recursive fields")
     if not any(n>=2 for _,n in recursive):raise ValueError("no branching recursion")
     return Plan(typ,tuple(x for x,_ in ctors),tuple(recursive),"structural_induction_with_one_IH_per_recursive_field")
