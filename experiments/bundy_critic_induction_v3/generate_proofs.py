@@ -50,7 +50,7 @@ def main():
         extra_arg="f " if extra else ""
         theorem="generated_"+case["name"]
         element_type=f"({element})" if " " in element else element
-        body=(f"theorem {theorem} {extra_binder}(acc : {carrier}) (xs : List {element}) :\n"
+        body=(f"theorem {theorem} {extra_binder}(acc : {carrier}) (xs : List {element_type}) :\n"
               f"    {acc} {extra_arg}acc xs = {plain} {extra_arg}xs {sym} acc := by\n"
               "  induction xs generalizing acc with\n"
               f"  | nil => simp [{acc}, {plain}]\n"
