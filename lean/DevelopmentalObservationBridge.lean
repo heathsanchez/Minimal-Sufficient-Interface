@@ -22,8 +22,8 @@ namespace DevelopmentalObservationBridge
 open VerifiedDevelopmentCore
 open ScopedCertificates
 
-variable {M : Type u} {X : Type v} {Q : Type w}
-variable {D : Type z} {T : Type t}
+-- FiniteCLC.Form is Type-0-only; specialize the existing universe-generic R7.2 API.
+variable {M X Q D T : Type}
 
 /-- Actions admitted in this frozen stage. -/
 abbrev Allowed (A : ActionMonoid M X) (S : Stage A) :=
