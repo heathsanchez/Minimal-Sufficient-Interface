@@ -1,0 +1,21 @@
+import DevelopmentalObservationBridge
+import DevelopmentalObservationBridgeExample
+
+/-!
+Kernel axiom inspection. Classical.choice is expected for the factorization
+surjection theorem; propext is expected for predicate-function equality.
+No sorryAx is allowed in any theorem accepted by this workflow.
+-/
+
+#print axioms DevelopmentalObservationBridge.extended_eq_iff_refine
+#print axioms DevelopmentalObservationBridge.extended_invariant
+#print axioms DevelopmentalObservationBridge.future_separator_forces_split
+#print axioms DevelopmentalObservationBridge.factor_iff_kernel
+#print axioms DevelopmentalObservationBridge.extensionTransport_valid
+#print axioms DevelopmentalObservationBridge.old_decisive_preserved
+#print axioms DevelopmentalObservationBridge.withdraw_retracts_descendants
+#print axioms DevelopmentalObservationBridge.independent_cone_survives
+#print axioms DevelopmentalObservationBridge.alternative_claim_survives
+#print axioms DevelopmentalObservationBridge.no_permission_escalation
+#print axioms DevelopmentalObservationBridgeExample.future_history_splits
+#print axioms DevelopmentalObservationBridgeExample.current_claim_remains
