@@ -42,8 +42,9 @@ jobs:
           lean -o lean/VerifiedDevelopmentExample.olean lean/VerifiedDevelopmentExample.lean
           lean -o lean/DevelopmentalObservationBridge.olean lean/DevelopmentalObservationBridge.lean
           lean -o lean/DevelopmentalObservationBridgeExample.olean lean/DevelopmentalObservationBridgeExample.lean
+          lean -o lean/EffectfulObservationBridge.olean lean/EffectfulObservationBridge.lean | tee /tmp/effectful_axioms.log
           lean lean/DevelopmentalObservationBridgeAudit.lean | tee /tmp/bridge_axioms.log
-          if grep -qE 'sorryAx|sorryAx' /tmp/bridge_axioms.log; then
+          if grep -qE 'sorryAx' /tmp/bridge_axioms.log /tmp/effectful_axioms.log; then
             echo "FAIL: admitted theorem contains sorryAx"; exit 1
           fi
           echo "BOTH FORMAL BRIDGES PASS: future-safe quotient/CLC and snapshot requalification"
