@@ -34,7 +34,7 @@ def history (A : ActionMonoid M X) (S : Stage A)
     (d : X → D) (x : X) : Allowed A S → D :=
   fun m => d (A.act m.1 x)
 
-/-- Retain the original representation and append protected future history. -/
+/-- Retain the original representation and append oldProtected future history. -/
 def extended (A : ActionMonoid M X) (S : Stage A)
     (q : X → Q) (d : X → D) (x : X) :
     Q × (Allowed A S → D) :=
@@ -116,7 +116,7 @@ theorem factor_iff_kernel (q : X → Q) (d : X → D)
 /-- Old test values depend only on old representation q.
     The old form reserves NONE as an expressly unresolved future observation. -/
 def sourceForm (q : X → Q) (valQ : Q → T → FiniteCLC.Verdict)
-    (protected : T → Bool) : FiniteCLC.Form X (Option T) where
+    (oldProtected : T → Bool) : FiniteCLC.Form X (Option T) where
   eval := fun x p =>
     match p with
     | none => .unknown
@@ -124,14 +124,14 @@ def sourceForm (q : X → Q) (valQ : Q → T → FiniteCLC.Verdict)
   isProtected := fun p =>
     match p with
     | none => true
-    | some t => protected t
+    | some t => oldProtected t
 
 /-- Target tests include each new admitted future.
     Classification D -> Verdict is supplied; no sensor authenticity is assumed. -/
 def targetForm (A : ActionMonoid M X) (S : Stage A)
     (valQ : Q → T → FiniteCLC.Verdict)
     (classify : D → FiniteCLC.Verdict)
-    (protected : T → Bool) :
+    (oldProtected : T → Bool) :
     FiniteCLC.Form (Q × (Allowed A S → D)) (T ⊕ Allowed A S) where
   eval := fun z p =>
     match p with
@@ -139,19 +139,19 @@ def targetForm (A : ActionMonoid M X) (S : Stage A)
     | .inr m => classify (z.2 m)
   isProtected := fun p =>
     match p with
-    | .inl t => protected t
+    | .inl t => oldProtected t
     | .inr _ => true
 
 /-- All newly introduced target tests map to UNKNOWN on the old side.
-    Each original protected test lifts back exactly.
+    Each original oldProtected test lifts back exactly.
     The stage identity provides an image for the UNKNOWN placeholder. -/
 def extensionTransport (A : ActionMonoid M X) (S : Stage A)
     (q : X → Q) (d : X → D)
     (valQ : Q → T → FiniteCLC.Verdict)
     (classify : D → FiniteCLC.Verdict)
-    (protected : T → Bool) :
-    FiniteCLC.Transport (sourceForm q valQ protected)
-      (targetForm A S valQ classify protected) where
+    (oldProtected : T → Bool) :
+    FiniteCLC.Transport (sourceForm q valQ oldProtected)
+      (targetForm A S valQ classify oldProtected) where
   forward := extended A S q d
   pull := fun p =>
     match p with
@@ -163,16 +163,16 @@ def extensionTransport (A : ActionMonoid M X) (S : Stage A)
     | some t => .inl t
 
 /-- Constructed, not merely postulated: stage extension satisfies the original
-    CLC validity contract, including target pullback, protected lift and split. -/
+    CLC validity contract, including target pullback, oldProtected lift and split. -/
 theorem extensionTransport_valid (A : ActionMonoid M X) (S : Stage A)
     (q : X → Q) (d : X → D)
     (valQ : Q → T → FiniteCLC.Verdict)
     (classify : D → FiniteCLC.Verdict)
-    (protected : T → Bool) :
+    (oldProtected : T → Bool) :
     FiniteCLC.Valid
-      (sourceForm q valQ protected)
-      (targetForm A S valQ classify protected)
-      (extensionTransport A S q d valQ classify protected) := by
+      (sourceForm q valQ oldProtected)
+      (targetForm A S valQ classify oldProtected)
+      (extensionTransport A S q d valQ classify oldProtected) := by
   constructor
   · intro x p
     cases p with
@@ -194,14 +194,14 @@ theorem old_decisive_preserved (A : ActionMonoid M X) (S : Stage A)
     (q : X → Q) (d : X → D)
     (valQ : Q → T → FiniteCLC.Verdict)
     (classify : D → FiniteCLC.Verdict)
-    (protected : T → Bool)
+    (oldProtected : T → Bool)
     (x : X) (p : T)
-    (hDec : (sourceForm q valQ protected).eval x (some p) ≠ .unknown) :
-    (sourceForm q valQ protected).eval x (some p) =
-      (targetForm A S valQ classify protected).eval
+    (hDec : (sourceForm q valQ oldProtected).eval x (some p) ≠ .unknown) :
+    (sourceForm q valQ oldProtected).eval x (some p) =
+      (targetForm A S valQ classify oldProtected).eval
         (extended A S q d x) (.inl p) := by
   exact FiniteCLC.preserve_decisive
-    (extensionTransport_valid A S q d valQ classify protected)
+    (extensionTransport_valid A S q d valQ classify oldProtected)
     x (.inl p) hDec
 
 /-- A snapshot is NOT the representation. Negative policy guards are explicit. -/
