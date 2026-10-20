@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - research/developmental-observation-clc-bridge-20261020
+  pull_request:
+    branches:
+      - verified-development-lean-foundations-v1
   workflow_dispatch:
 
 permissions:
