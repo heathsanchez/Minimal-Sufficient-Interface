@@ -1,0 +1,58 @@
+name: Certified Observation Extension R7.2-CLC Bridge
+
+on:
+  push:
+    branches:
+      - research/developmental-observation-clc-bridge-20261020
+  pull_request:
+    branches:
+      - verified-development-lean-foundations-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact pinned formal source blobs
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.24.0'
+          test "$(git hash-object lean/VerifiedDevelopmentCore.lean)" = '105a4354dd8353a82bb78215247cea7d0b6a4395'
+          test "$(git hash-object lean/ScopedCertificates.lean)" = '1fbb87452c576da280e7c854a84582ba9e9c1aef'
+          test "$(git hash-object lean/FiniteCLC.lean)" = '00f33c608609e735483f323ebac8572a964aff69'
+          echo "R7.2 and CLC sources match pinned original Git blob contents"
+      - name: Install pinned Lean toolchain
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check native original R7.2, CLC, bridge, real-action control and axioms
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          lean --version
+          lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
+          lean -o lean/ScopedCertificates.olean lean/ScopedCertificates.lean
+          lean -o lean/VerifiedDevelopmentCore.olean lean/VerifiedDevelopmentCore.lean
+          lean -o lean/FiniteCLC.olean lean/FiniteCLC.lean
+          lean -o lean/VerifiedDevelopmentExample.olean lean/VerifiedDevelopmentExample.lean
+          lean -o lean/DevelopmentalObservationBridge.olean lean/DevelopmentalObservationBridge.lean
+          lean -o lean/DevelopmentalObservationBridgeExample.olean lean/DevelopmentalObservationBridgeExample.lean
+          lean -o lean/EffectfulObservationBridge.olean lean/EffectfulObservationBridge.lean | tee /tmp/effectful_axioms.log
+          lean lean/DevelopmentalObservationBridgeAudit.lean | tee /tmp/bridge_axioms.log
+          if grep -qE 'sorryAx' /tmp/bridge_axioms.log /tmp/effectful_axioms.log; then
+            echo "FAIL: admitted theorem contains sorryAx"; exit 1
+          fi
+          echo "BOTH FORMAL BRIDGES PASS: future-safe quotient/CLC and snapshot requalification"
+      - name: Original pinned R7.2 regression
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean lean/CanonicalRefinement.lean
