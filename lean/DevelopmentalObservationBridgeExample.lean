@@ -18,7 +18,7 @@ def newD : Bool × Bool → Bool := visible
 def oldEval (_ : Unit) (_ : Unit) : FiniteCLC.Verdict := .eq
 def classify (d : Bool) : FiniteCLC.Verdict :=
   if d then .dist else .eq
-def protected (_ : Unit) : Bool := true
+def oldProtected (_ : Unit) : Bool := true
 
 /-- Naive pointwise observation incorrectly merges this pair. -/
 theorem pointwise_still_merges :
@@ -36,19 +36,19 @@ theorem future_history_splits :
 /-- This is the constructed original CLC predicate, not a bespoke replacement. -/
 theorem finite_clc_valid :
     FiniteCLC.Valid
-      (sourceForm oldQ oldEval protected)
-      (targetForm revealAction expandedStage oldEval classify protected)
+      (sourceForm oldQ oldEval oldProtected)
+      (targetForm revealAction expandedStage oldEval classify oldProtected)
       (extensionTransport revealAction expandedStage
-        oldQ newD oldEval classify protected) := by
+        oldQ newD oldEval classify oldProtected) := by
   exact extensionTransport_valid
-    revealAction expandedStage oldQ newD oldEval classify protected
+    revealAction expandedStage oldQ newD oldEval classify oldProtected
 
 theorem old_known_test_preserved :
-    (sourceForm oldQ oldEval protected).eval before (some ()) =
-      (targetForm revealAction expandedStage oldEval classify protected).eval
+    (sourceForm oldQ oldEval oldProtected).eval before (some ()) =
+      (targetForm revealAction expandedStage oldEval classify oldProtected).eval
         (extended revealAction expandedStage oldQ newD before) (.inl ()) := by
   apply old_decisive_preserved
-    revealAction expandedStage oldQ newD oldEval classify protected
+    revealAction expandedStage oldQ newD oldEval classify oldProtected
     before ()
   decide
 
