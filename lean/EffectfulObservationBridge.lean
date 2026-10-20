@@ -214,7 +214,11 @@ theorem destructive_not_clc_valid :
   intro hValid
   have hOld := hValid.1 (true, false) (.inl ())
   change FiniteCLC.Refines .eq .dist at hOld
-  exact (by decide : ¬ FiniteCLC.Refines .eq .dist) hOld
+  change (FiniteCLC.Verdict.eq = FiniteCLC.Verdict.unknown) ∨
+    (FiniteCLC.Verdict.eq = FiniteCLC.Verdict.dist) at hOld
+  rcases hOld with h | h
+  · cases h
+  · cases h
 
 end EffectfulObservationBridgeExample
 
