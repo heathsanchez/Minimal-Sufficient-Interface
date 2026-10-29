@@ -6,12 +6,16 @@ on:
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
       - 'lean/BlindRecursiveCrossGrammarGenesis.lean'
       - 'BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md'
+      - 'g3_physical_k1_ancestry.py'
+      - 'tests/test_g3_physical_k1_ancestry.py'
       - '.github/workflows/blind-recursive-cross-grammar-genesis.yml'
   pull_request:
     paths:
       - 'tests/test_blind_recursive_cross_grammar_genesis.py'
       - 'lean/BlindRecursiveCrossGrammarGenesis.lean'
       - 'BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md'
+      - 'g3_physical_k1_ancestry.py'
+      - 'tests/test_g3_physical_k1_ancestry.py'
       - '.github/workflows/blind-recursive-cross-grammar-genesis.yml'
 
 permissions:
@@ -28,6 +32,8 @@ jobs:
           python-version: '3.12'
       - name: Blind discovery, transfer, controls, interventions, compounding
         run: python -m unittest tests.test_blind_recursive_cross_grammar_genesis -v
+      - name: Physical K1 ancestry, withdrawal and oracle-laundering controls
+        run: python -m unittest tests.test_g3_physical_k1_ancestry -v
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
